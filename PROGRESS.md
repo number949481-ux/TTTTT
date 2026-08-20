@@ -5,14 +5,40 @@
 
 ---
 
-## 🟢 نقطة الاستئناف الحالية — 2026-08-20 (جلسة S41 — صيانة: استعادة حارسَي P17 + تأكيد البوابة)
+## 🟢 نقطة الاستئناف الحالية — 2026-08-20 (جلسة S42 — P22: LiveOpsReporter شفافية الباك-إند الكاملة)
 
 ### الإصدار النشط
-- **الملف الأساسي**: `01.31_telegram_gen_bridge.py` (6390 سطراً — +4 بعد إصلاح P21)
+- **الملف الأساسي**: `01.31_telegram_gen_bridge.py` (6590 سطراً — +200 بعد P22)
 - **BUILD_VERSION**: `01.31`
 - **BUILD_PARENT_BASELINE**: `01.30` (`0130_p19_copy_settings_baseline`)
-- **الحالة**: ✅ كل الاختبارات ناجحة — **221 passed** (`python3 -m pytest tests/ -q`)
-  + بوابة `scripts/hadith_sijil.py` ➔ Exit Code 0 (تأكدت في S41)
+- **الحالة**: ✅ كل الاختبارات ناجحة — **241 passed** (`python3 -m pytest tests/ -q`)
+  + بوابة `scripts/hadith_sijil.py` ➔ Exit Code 0 — OK 241/241 PASS (تأكدت في S42)
+
+### ✅ ما أُنجز في S42 (P22 — مراسل العمليات الحية LiveOpsReporter)
+1. **استئناف عمل مقطوع**: جلسة سابقة انقطعت أثناء إدراج كلاس `LiveOpsReporter` —
+   الحقل `live_ops_reporter` في `BridgeConfig` (سطر 639) كان قد وصل، والكلاس لم يصل.
+   تم التحقق من الحالة الفعلية أولاً ثم أُعيد الإدراج كاملاً.
+2. **P22 — طبقة الشفافية** (بعد `attach_account_selection_live_transport` — سطر ~1147):
+   - `format_elapsed_seconds`: تنسيق «X.X ثانية».
+   - `LiveOpsReporter`: timeline موحّد — `event`/`stage` (مراحل مرقمة موقوتة بدالة
+     إغلاق)/`heartbeat` (نبضات polling)/`render_telegram` (تهريب HTML + آخر 10 أحداث)/
+     `push_telegram` (رسالة حية واحدة: sendMessage أولاً ثم editMessageText مع
+     throttle 4s — force يتجاوزه)/`finish` (صندوق ختامي بالتيرمينال + سطر
+     «⏱️ اخد X ثانية» + دفعة أخيرة force — idempotent).
+   - `get_live_ops_reporter` (آمنة — isinstance check) + `attach_live_ops_reporter` (idempotent).
+3. **الربط في `process_user_task_async`** (p11): attach بعد transport (نفس حارس
+   monkeypatch للاختبارات) + stage «التوليد والمتابعة على Genspark» حول
+   `send_message_with_auto_account_failover` + finish في `finally` قبل
+   `release_project_run` — **كل نقاط الربط معزولة بـ try/except** (فشل الريبورتر
+   لا يكسر المهمة أبداً).
+4. **20 اختباراً جديداً** في `tests/test_p22_live_ops_reporter.py`
+   (حقل الإعدادات + التنسيق + timeline/stages + طبقة تليجرام/throttle +
+   finish/idempotency + accessors + فحص مصدر لربط الـ worker) — الإجمالي **241**.
+5. **PARTS boundaries** في `scripts/rebuild_refactor.py` مُحدَّثة
+   (p03→831، p04→1375 «+LiveOpsReporter»، p05→1620 … p11→5609، p12→6590)
+   + إعادة بناء `bridge_refactor/` — parity 11/11 ✅ byte-parity.
+6. **صيانة متكررة**: المزامنة التلقائية أعادت تتبع `.pytest_cache/` و
+   `bridge_bot.log` مجدداً ➔ أُخرجا من التتبع (`git rm --cached`) — حارسا P17 سليمان.
 
 ### ✅ ما أُنجز في S41 (صيانة — لا كود جديد)
 1. **استعادة حارسَي P17**: المزامنة التلقائية أعادت تتبع `.pytest_cache/` و `bridge_bot.log`
