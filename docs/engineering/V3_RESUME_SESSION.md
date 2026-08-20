@@ -11,7 +11,7 @@
 2. **فحص سجل الجلسات:**
    * افتح `docs/engineering/SESSION_LOG.md` لمعرفة آخر جلسة وآخر مهمة نُفذت.
 3. **التحقق من سلامة الاختبارات الشاملة:**
-   * شغل الأمر: `python scripts/hadith_sijil.py` وتأكد من اجتياز 221/221 اختبار بـ Exit Code 0.
+   * شغل الأمر: `python scripts/hadith_sijil.py` وتأكد من اجتياز 241/241 اختبار بـ Exit Code 0.
 4. **معرفة الملفات النشطة المعتمدة:**
    * ملف البوت النشط: `01.31_telegram_gen_bridge.py`.
    * محرك كوين المستقل: `qwen_engine.py` (يستورده `04_upload_to_Fable_github.py`).
@@ -22,7 +22,7 @@
 
 ## 🛡️ 2. القواعد المعمارية الإلزامية غير القابلة للكسر (Non-Negotiable Rules)
 * **Single-File Doctrine:** ممنوع تشتيت الاعتماديات؛ التعديل يتم داخل الملفات المعتمدة فقط.
-* **Test-Before-Talk:** ممنوع إبلاغ المستخدم بنجاح أي تعديل دون تشغيل `py_compile` واختبارات الوحدة الـ 221 والتأكد من خروج Exit Code 0.
+* **Test-Before-Talk:** ممنوع إبلاغ المستخدم بنجاح أي تعديل دون تشغيل `py_compile` واختبارات الوحدة الـ 241 والتأكد من خروج Exit Code 0.
 * **REST-Only Upload (S39/P20):** الرفع لـ GitHub يتم حصرياً عبر Contents REST API داخل `_default_github_uploader` — ممنوع إعادة أي مسار git native (clone/push/init) أو إرجاع `_git_native_sync_uploader`/`_generate_ai_commit_message` (محروس بـ 8 اختبارات في `tests/test_p20_rest_only_data_retention.py`).
 * **DATA_RETENTION Failover (S39/P20):** خطأ "requires AI Data Retention" يُكشف أولاً في `detect_response_status` ويُعامل كنفاد رصيد: تبريد 29h + حساب تالٍ + إعادة إرسال **نفس آخر رسالة** (ممنوع التحويل لبرومبت الاستئناف) + تنبيه مميز `data-retention-blocked` (محروس بـ 16 اختباراً في `tests/test_p20_rest_only_data_retention.py`).
 * **True SSE Streaming (S29):** طلب `ask_proxy` يجب أن يبقى `stream=True` والقراءة عبر `iter_lines()` — الرجوع لـ `r.text` يؤخر زر المعاينة الحية حتى اكتمال التوليد (محروس باختبارات 8–10).
