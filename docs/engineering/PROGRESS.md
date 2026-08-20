@@ -19,7 +19,7 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-20 — S40 |
+| **last-updated** | 2026-08-20 — S41 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.31` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
@@ -28,9 +28,9 @@
 | **program-stage** | Stage 3 — Execution |
 | **current WBS phase** | **P21 — دقة تصنيف commit في الرفع REST (جديد ➕ vs معدل ✏️)** 🎯 |
 | **current slice** | `TSK-3901` (DONE) ➔ إصلاح `_default_github_uploader`: الملف الموجود على الريموت بمحتوى مختلف يُصنّف `modified` (✏️ معدل) بدل دمجه مع `uploaded` (➕ جديد) — التصنيف عبر `remote_sha` المتاح أصلاً قبل الـ PUT + حارسان جديدان في test_p20 (اختبارات 09/10) + تحديث PARTS (+4 أسطر → 6390) وإعادة بناء bridge_refactor بتطابق بايت |
-| **current-task** | `P21 complete` — إحصائيات رسالة تليجرام (➕ جديد / ✏️ معدل / 🗑 محذوف / ⏸ مطابق) صارت دقيقة: `modified` تُملأ فعلياً من الـ uploader وتصل للعرض عبر `github_sync` — مع بقاء P18/P20 فعّالة بلا انحدار |
-| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
-| **current-blocker** | لا يوجد — البوابة مجتازة بالكامل (Push/PR اليدوي بانتظار تفويض GitHub من المالك) |
+| **current-task** | `P21 complete` + صيانة S41: المزامنة التلقائية أعادت تتبع `.pytest_cache/` و `bridge_bot.log` فكسرت حارسَي P17 (219/221) ➔ أُخرجا من التتبع مجدداً (commit `e1a388b`) — عادت 221/221 + بوابة Exit 0 |
+| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + قرارا مالك معلّقان: (أ) حد قص التاريخ المحقون في استئناف الجسر، (ب) مصير `01.30_telegram_gen_bridge.py` القديم — وفي بداية كل جلسة: فحص `git ls-files | grep -E "pytest_cache|bridge_bot.log"` لأن المزامنة التلقائية تعيد تتبعهما |
+| **current-blocker** | `BLOCKED-ON-OWNER` — كل البنود المتبقية تحتاج قرار مالك صريح (E2E حي + قرارا القص/حذف 01.30) — البوابة مجتازة بالكامل |
 | **completion** | 221/221 Tests Verified (100%) 🧪 |
 | **quality-gate** | `python scripts/hadith_sijil.py` ➔ 221/221 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
