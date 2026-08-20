@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 443..830
-المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig + accounts I/O + readiness + cooldown + refresh_cookies_on_401
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 443..831
+المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P22: حقل live_ops_reporter) + accounts I/O + readiness + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 _ENGINE_CACHE = {"mod": None, "path": None}
@@ -199,6 +199,7 @@ class BridgeConfig:
     project_resume_prompt_runtime: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_runtime_binding_source: str = ""
     account_selection_observer: object | None = None
+    live_ops_reporter: object | None = None   # 📡 [P22] مراسل العمليات الحية (ترمنال + تليجرام)
 
 
 # ══════════════════════════════════════════════════════════════
