@@ -636,6 +636,7 @@ class BridgeConfig:
     project_resume_prompt_runtime: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_runtime_binding_source: str = ""
     account_selection_observer: object | None = None
+    live_ops_reporter: object | None = None   # 📡 [P22] مراسل العمليات الحية (ترمنال + تليجرام)
 
 
 # ══════════════════════════════════════════════════════════════
