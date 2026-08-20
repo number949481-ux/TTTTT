@@ -136,3 +136,11 @@
 * **الحراسة:** حارسان جديدان في `tests/test_p20_rest_only_data_retention.py` (test_09_p21_uploader_distinguishes_new_vs_modified + test_10_p21_github_sync_consumes_modified).
 * **الأدلة:** pytest ➔ 221 passed + `python scripts/hadith_sijil.py` ➔ Exit Code 0. PARTS محدثة (+4 أسطر ➔ 6390) و bridge_refactor بتطابق بايت.
 * **الحالة:** مُعتمد وفعال.
+
+### [DEC-018] — LiveOpsReporter: شفافية الباك-إند الكاملة (S42 / P22)
+* **القرار:** إضافة طبقة شفافية تشغيلية موحّدة في `01.31_telegram_gen_bridge.py`: (1) حقل `live_ops_reporter` في `BridgeConfig` (كان قد وصل من جلسة انقطعت قبل اكتمال الإدراج — تم التحقق من الحالة الفعلية ثم أُكمل الباقي). (2) `format_elapsed_seconds` — تنسيق «X.X ثانية». (3) كلاس `LiveOpsReporter`: timeline موحّد — `event` (سطر ترمنال موقوت [+X.Xs])، `stage` (مراحل مرقمة تُغلق بدالة إغلاق تطبع مدة المرحلة)، `heartbeat` (نبضات polling خفيفة)، `render_telegram` (تهريب HTML + آخر 10 أحداث)، `push_telegram` (رسالة تليجرام حية واحدة: sendMessage أول مرة ثم editMessageText مع throttle 4 ثوانٍ — force يتجاوزه)، `finish` (صندوق ختامي بالتيرمينال + سطر «⏱️ اخد X ثانية» + دفعة تليجرام أخيرة force — idempotent). (4) accessors آمنة: `get_live_ops_reporter` (isinstance check) + `attach_live_ops_reporter` (idempotent). (5) الربط في `process_user_task_async` (p11): attach بعد transport (نفس حارس monkeypatch للاختبارات) + stage «التوليد والمتابعة على Genspark» حول `send_message_with_auto_account_failover` + finish في `finally` قبل `release_project_run` — **كل نقاط الربط معزولة بـ try/except: فشل الريبورتر لا يكسر المهمة أبداً**.
+* **السبب:** طلب المالك: شفافية كاملة لما يحدث في الباك-إند أثناء المهمة (ترمنال + رسالة تليجرام حية) مع زمن إجمالي «اخد كام ثانية».
+* **الحراسة:** `tests/test_p22_live_ops_reporter.py` (20 اختباراً — حقل الإعدادات + التنسيق + timeline/stages + طبقة تليجرام/throttle + finish/idempotency + accessors + فحص مصدر لربط الـ worker).
+* **الأدلة:** pytest ➔ 241 passed + `python scripts/hadith_sijil.py` ➔ 241/241 PASS, Exit Code 0 (0.674s). PARTS محدثة (➔ 6590 سطراً) و bridge_refactor بتطابق بايت 11/11. صيانة متكررة: untrack `.pytest_cache/` و `bridge_bot.log` مجدداً بعد أن أعادتهما المزامنة التلقائية.
+* **توسعة اختيارية معلّقة (قرار مالك):** بث `heartbeat` من داخل حلقة polling نفسها (p06) — التركيب الحالي يغطي attach/stage/finish في الـ worker فقط.
+* **الحالة:** مُعتمد وفعال.
