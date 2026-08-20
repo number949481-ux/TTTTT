@@ -22,3 +22,6 @@ downloads/
 cache/
 .tmp/
 bridge_bot.log
+
+# Generated (P17 guard)
+.pytest_cache/
