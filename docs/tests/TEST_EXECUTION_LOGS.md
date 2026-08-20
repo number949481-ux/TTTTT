@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-20 22:56:54 UTC`
+* **التاريخ والوقت:** `2026-08-20 23:17:05 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.644 ثانية`
-* **النتيجة العامة:** `Ran 221 tests — OK`
+* **الزمن المقاس:** `0.674 ثانية`
+* **النتيجة العامة:** `Ran 241 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -260,6 +260,26 @@ test_09_p21_uploader_distinguishes_new_vs_modified (test_p20_rest_only_data_rete
 🎯 [P21] عقد دقة التصنيف: ملف موجود على الريموت بمحتوى مختلف = modified، ... ok
 test_10_p21_github_sync_consumes_modified (test_p20_rest_only_data_retention.TestRestOnlyUpload.test_10_p21_github_sync_consumes_modified)
 github_sync يقرأ modified من نتيجة التنفيذ ويمررها لرسالة تليجرام ... ok
+test_15_get_reporter_safe (test_p22_live_ops_reporter.TestAccessors.test_15_get_reporter_safe) ... ok
+test_16_attach_idempotent (test_p22_live_ops_reporter.TestAccessors.test_16_attach_idempotent) ... ok
+test_01_field_exists_default_none (test_p22_live_ops_reporter.TestBridgeConfigField.test_01_field_exists_default_none) ... ok
+test_12_finish_prints_summary_box_and_elapsed (test_p22_live_ops_reporter.TestFinish.test_12_finish_prints_summary_box_and_elapsed) ... ok
+test_13_finish_idempotent (test_p22_live_ops_reporter.TestFinish.test_13_finish_idempotent) ... ok
+test_14_finish_forces_final_telegram_push (test_p22_live_ops_reporter.TestFinish.test_14_finish_forces_final_telegram_push) ... ok
+test_02_format_arabic_seconds (test_p22_live_ops_reporter.TestFormatElapsed.test_02_format_arabic_seconds) ... ok
+test_03_format_bad_input_safe (test_p22_live_ops_reporter.TestFormatElapsed.test_03_format_bad_input_safe) ... ok
+test_04_disabled_without_chat_id (test_p22_live_ops_reporter.TestReporterCore.test_04_disabled_without_chat_id) ... ok
+test_05_event_appends_timeline_and_logs (test_p22_live_ops_reporter.TestReporterCore.test_05_event_appends_timeline_and_logs) ... ok
+test_06_stage_sequential_numbering_and_close_timing (test_p22_live_ops_reporter.TestReporterCore.test_06_stage_sequential_numbering_and_close_timing) ... ok
+test_07_heartbeat_updates_status_and_timeline (test_p22_live_ops_reporter.TestReporterCore.test_07_heartbeat_updates_status_and_timeline) ... ok
+test_08_first_push_sends_then_edits (test_p22_live_ops_reporter.TestTelegramLiveLayer.test_08_first_push_sends_then_edits) ... ok
+test_09_throttle_blocks_rapid_edits (test_p22_live_ops_reporter.TestTelegramLiveLayer.test_09_throttle_blocks_rapid_edits) ... ok
+test_10_push_network_error_never_raises (test_p22_live_ops_reporter.TestTelegramLiveLayer.test_10_push_network_error_never_raises) ... ok
+test_11_render_escapes_html_and_caps_lines (test_p22_live_ops_reporter.TestTelegramLiveLayer.test_11_render_escapes_html_and_caps_lines) ... ok
+test_17_attach_after_transport (test_p22_live_ops_reporter.TestWorkerWiring.test_17_attach_after_transport) ... ok
+test_18_stage_wraps_failover_call (test_p22_live_ops_reporter.TestWorkerWiring.test_18_stage_wraps_failover_call) ... ok
+test_19_finish_in_finally_isolated (test_p22_live_ops_reporter.TestWorkerWiring.test_19_finish_in_finally_isolated) ... ok
+test_20_wiring_isolated_by_try_except (test_p22_live_ops_reporter.TestWorkerWiring.test_20_wiring_isolated_by_try_except) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
@@ -322,7 +342,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 221 tests in 0.222s
+Ran 241 tests in 0.296s
 
 OK
 ```
