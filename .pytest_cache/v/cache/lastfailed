@@ -1,0 +1,10 @@
+{
+  "tests/test_p19_copy_settings.py::TestSequentialProjectName::test_05_unrelated_names_ignored": true,
+  "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_01_helper_exists_and_used_in_uploader": true,
+  "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_02_static_fallback_preserved": true,
+  "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_03_lazy_import_with_silent_fallback": true,
+  "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_04_uses_generate_ai_summary_contract": true,
+  "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_05_empty_changes_return_none": true,
+  "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_06_ai_failure_returns_none": true,
+  "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_07_ai_success_returns_first_line_trimmed": true
+}
