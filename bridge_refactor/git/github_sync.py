@@ -1,0 +1,71 @@
+"""bridge_refactor.git.github_sync
+فحص مستودعات GitHub وربط إعدادات المزامنة
+واجهة إعادة تصدير من الـ runtime الموحّد — الرموز أدناه مصدرها
+الأجزاء: p09_github_dashboard
+"""
+from bridge_refactor.runtime import ns as _ns
+
+__all__ = [
+    "parse_github_repository_ref",
+    "build_github_api_headers",
+    "_extract_items_from_github_response",
+    "_github_api_get_json",
+    "inspect_github_repository",
+    "configure_project_github_settings",
+    "list_known_projects",
+    "get_latest_project_for_chat",
+    "get_project_dashboard_snapshot",
+    "count_ready_accounts",
+    "build_dashboard_snapshot",
+    "ALLOWED_BUTTON_STYLES",
+    "make_inline_keyboard",
+    "render_dashboard_text",
+    "render_project_status_text",
+    "render_project_checkpoints_text",
+    "render_project_archive_text",
+    "render_project_history_text",
+    "render_project_file_report_text",
+    "render_project_github_status_text",
+    "render_project_settings_text",
+    "render_project_resume_summary_text",
+    "build_project_settings_keyboard",
+    "build_project_resume_summary_keyboard",
+    "build_unbound_resume_keyboard",
+    "build_copy_settings_source_keyboard",
+    "build_bound_project_github_choice_keyboard",
+    "build_bound_project_resume_prompt_keyboard",
+    "present_resume_summary",
+    "send_project_settings_panel",
+    "run_project_upload_control",
+    "build_current_project_keyboard",
+    "build_dashboard_keyboard",
+    "build_project_model_keyboard",
+    "build_new_project_model_keyboard",
+    "build_new_project_github_choice_keyboard",
+    "format_github_repo_inspection_summary",
+    "build_project_branch_choice_keyboard",
+    "build_new_project_branch_choice_keyboard",
+    "build_existing_project_branch_choice_keyboard",
+    "build_bound_project_branch_choice_keyboard",
+    "build_new_project_resume_prompt_keyboard",
+    "get_project_selected_model",
+    "finalize_new_project_setup",
+    "finalize_new_project_from_state",
+    "PROJECT_SETTINGS_TOKEN_UNSET",
+    "update_existing_project_github_settings",
+    "finalize_existing_project_github_from_state",
+    "present_external_resume_decision",
+    "finalize_bound_external_project_from_state",
+    "generate_sequential_project_name",
+    "copy_project_settings_to_new_project",
+    "format_copied_settings_summary",
+    "start_project_resume_from_key",
+]
+
+def __getattr__(name):
+    if name in __all__:
+        return getattr(_ns, name)
+    raise AttributeError(name)
+
+def __dir__():
+    return sorted(__all__)
