@@ -1194,6 +1194,51 @@ def attach_account_selection_live_transport(bridge_cfg, chat_id: int | str, proj
     return transport
 
 
+# ══════════════════════════════════════════════════════════════
+# 📄 [P28] استقبال ملفات المهام (.txt / .md) — Document Ingestion
+# ══════════════════════════════════════════════════════════════
+# الامتدادات النصية المسموح تحويلها إلى Prompt (تُقارن بعد lower()).
+ALLOWED_DOCUMENT_EXTENSIONS = frozenset({".txt", ".md", ".markdown", ".text"})
+# حد أقصى وقائي — أكبر منه يُرفض ودياً قبل أي تنزيل (يحمي خيط الـ Polling).
+MAX_DOCUMENT_SIZE_BYTES = 5 * 1024 * 1024
+
+
+def download_telegram_document_text(file_id: str) -> str | None:
+    """تنزيل ملف نصي من تليجرام عبر getFile ثم رابط الملف، وإرجاع محتواه كنص UTF-8.
+
+    أي فشل (شبكة / HTTP غير 200 / ok=false / file_path مفقود) يُرجع None
+    بدون أي استثناء يتسرب لخيط الـ Polling — التنبيه الودي مسؤولية المستدعي.
+    """
+    if not TELEGRAM_BOT_TOKEN:
+        log_event("error", "توكن البوت غير مضبوط — لا يمكن تنزيل الملفات")
+        return None
+    try:
+        import requests
+        meta_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getFile"
+        meta_resp = requests.get(meta_url, params={"file_id": str(file_id)}, timeout=(10, 30))
+        if meta_resp.status_code != 200:
+            log_event("error", f"getFile فشل: HTTP {meta_resp.status_code} - {meta_resp.text[:200]}")
+            return None
+        meta = meta_resp.json()
+        if not meta.get("ok"):
+            log_event("error", f"getFile أعاد ok=false: {str(meta)[:200]}")
+            return None
+        file_path = (meta.get("result") or {}).get("file_path") or ""
+        if not file_path:
+            log_event("error", "getFile نجح لكن file_path مفقود — لا يمكن التنزيل")
+            return None
+        file_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
+        file_resp = requests.get(file_url, timeout=(10, 60))
+        if file_resp.status_code != 200:
+            log_event("error", f"تنزيل الملف فشل: HTTP {file_resp.status_code}")
+            return None
+        # errors="replace" يضمن عدم الانهيار على بايتات غير UTF-8 (ترميزات قديمة).
+        return file_resp.content.decode("utf-8", errors="replace")
+    except Exception as err:
+        log_event("error", f"استثناء أثناء تنزيل الملف من تليجرام: {err}")
+        return None
+
+
 def send_telegram_document(
     chat_id: int | str,
     document_path: str | pathlib.Path,
@@ -6605,6 +6650,42 @@ def handle_telegram_update(update: dict):
         # [P17] مسار message: نحكم بالجروب أو بهوية المُرسِل نفسه (msg.from)
         if not is_chat_allowed(chat_id, (msg.get("from") or {}).get("id")):
             return
+
+        # 📄 [P28] Document Ingestion: ملف .txt/.md يتحول لمحتوى نصي يغذي
+        # نفس مسار text أدناه (كل حالات الـ Wizard + المسار الافتراضي) بلا تكرار.
+        # رسائل الـ Document لا تحمل text أصلاً — الشرط يضمن Zero Regression للنصوص العادية.
+        document = msg.get("document") or {}
+        if document and not text:
+            doc_name = str(document.get("file_name") or "")
+            doc_ext = pathlib.Path(doc_name).suffix.lower()
+            if doc_ext not in ALLOWED_DOCUMENT_EXTENSIONS:
+                send_telegram_message(
+                    chat_id,
+                    "⚠️ <b>نوع الملف غير مدعوم.</b>\n"
+                    f"المدعوم حالياً: <code>.txt</code> و <code>.md</code> فقط — "
+                    f"استلمت: <code>{html_escape(doc_name or 'ملف بلا اسم')}</code>"
+                )
+                return
+            doc_size = int(document.get("file_size") or 0)
+            if doc_size > MAX_DOCUMENT_SIZE_BYTES:
+                send_telegram_message(
+                    chat_id,
+                    "⚠️ <b>الملف أكبر من الحد المسموح (5 MB).</b>\n"
+                    f"حجم الملف: <code>{doc_size / (1024 * 1024):.1f} MB</code> — "
+                    "قسّمه أو اختصر محتواه ثم أعد الإرسال."
+                )
+                return
+            doc_content = download_telegram_document_text(document.get("file_id") or "")
+            if doc_content is None or not doc_content.strip():
+                send_telegram_message(
+                    chat_id,
+                    "❌ <b>تعذر قراءة محتوى الملف.</b>\n"
+                    "تأكد أنه ملف نصي سليم غير فارغ ثم أعد المحاولة."
+                )
+                return
+            caption = str(msg.get("caption") or "").strip()
+            text = f"{caption}\n\n{doc_content}".strip() if caption else doc_content.strip()
+            log_event("info", f"📄 [P28] تم استيعاب ملف مهمة [{doc_name}] ({doc_size} بايت) من Chat {chat_id}")
 
         if text in ["/start", "/help"]:
             send_telegram_message(chat_id, render_dashboard_text(chat_id), reply_markup=get_main_keyboard(chat_id))
