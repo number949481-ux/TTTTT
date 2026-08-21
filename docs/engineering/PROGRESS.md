@@ -19,20 +19,20 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S41 |
+| **last-updated** | 2026-08-21 — S42 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.31` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
 | **target bot script** | `01.31_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P21 — دقة تصنيف commit في الرفع REST (جديد ➕ vs معدل ✏️)** 🎯 |
+| **current WBS phase** | **P23 — البحث الهرمي للملفات المشتركة (Shared Secrets Auto-Discovery)** 🎯 |
 | **current slice** | `TSK-3901` (DONE) ➔ إصلاح `_default_github_uploader`: الملف الموجود على الريموت بمحتوى مختلف يُصنّف `modified` (✏️ معدل) بدل دمجه مع `uploaded` (➕ جديد) — التصنيف عبر `remote_sha` المتاح أصلاً قبل الـ PUT + حارسان جديدان في test_p20 (اختبارات 09/10) + تحديث PARTS (+4 أسطر → 6390) وإعادة بناء bridge_refactor بتطابق بايت |
-| **current-task** | `S41` — استرجاع المالك لتعديلات P22 غير المصرّح بها (الكود عاد إلى 01.31 نظيف) + إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع مجدداً بموافقة المالك الصريحة |
+| **current-task** | `S42` — إغلاق P23 (T1–T4 + AGENTS.md/GEMINI.md + 17 اختبار حراسة + PARTS +16 + parity) — 238/238 PASS + Gate Exit 0 |
 | **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
-| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ملف `tests/test_p22_live_ops_reporter.py` يتيم بعد الاسترجاع ➔ pytest collection error وبوابة Exit 1؛ حذفه ينتظر موافقة المالك الصريحة. (ب) قرار `AI_RACE_ACCOUNTS` (0 الحالي أم 2 عشوائي). (ج) ميزة P22 معلّقة كلياً — لا تنفيذ إلا بخطة معتمدة Approve أولاً |
-| **completion** | 221/221 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 221/221 PASS — Exit Code 0 |
+| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) قرار `AI_RACE_ACCOUNTS` (0 الحالي أم 2 عشوائي). (ب) ميزة P22 معلّقة كلياً — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (حاجز test_p22 اليتيم زال — المالك حذف الملف) |
+| **completion** | 238/238 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 238/238 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
 | **release decision** | `READY` 🟢 (P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P19 نسخ الإعدادات + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
 
@@ -231,3 +231,16 @@
 - [x] **`[TSK-3704]`** واجهة تيليجرام: زر «📋 نسخ إعدادات من مشروع آخر» في `build_unbound_resume_keyboard` + لوحة `build_copy_settings_source_keyboard` (أزرار `cpysrc:<key>` + رجوع) + `format_copied_settings_summary` + الـ callbacks الثلاثة (`cmd:resume_copy_settings` بحارس حالة، `cmd:resume_copy_back`، `cpysrc:` ➔ نسخ + انتقال لـ `AWAITING_CONT_PROMPT`). — دليل: `TestCopySettingsKeyboard` + `TestCopiedSettingsSummary` + `TestHandlersIntegration` PASS.
 - [x] **`[TSK-3705]`** حزمة حراسة `tests/test_p19_copy_settings.py` (24 اختباراً — 6 مجموعات). — دليل: 24/24 PASS ضمن 195/195.
 - [x] **`[TSK-3706]`** مواءمة كاملة: تحديث كل مراجع `01.29 ➔ 01.30` في `scripts/` + `tests/` (صفر مرجع متبقٍ)، إعادة توليد `bridge_refactor/` بتطابق بايت من 01.30، بوابة `hadith_sijil.py` = **195/195 PASS Exit Code 0 (0.595s)**، وتحديث منظومة التوثيق (هذا الملف + SESSION_LOG + V3_RESUME + README). — دليل: Gate 195/195 + هذا الـ commit.
+
+---
+
+## 🔎 P23 — البحث الهرمي للملفات المشتركة Shared Secrets Auto-Discovery (S42): سجل مركزي في الفولدر الأب + Zero Breaking Changes
+
+> **طلب المالك (خطة معتمدة في `P23_Shared_Secrets_And_Project_Registry_Auto_Discovery.md`):** توحيد ملفات الحسابات والأسرار (`telegram_bot_token.txt`, `accounts_genspark.json`, `project_registry/`, `projects_tree.json`) في الفولدر الأب الكبير (`W___webapp/`) بحيث كل نسخ الجسر تلقطها تلقائياً — بأولوية محلية (لو الملف جنب النسخة يُستخدم) وبدون كسر أي نسخة قديمة، + يافطة `AGENTS.md`/`GEMINI.md` لأي AI يفتح المشروع.
+
+- [x] **`[TSK-4001]`** T1 — `resolve_shared_path(name)` (سطر ~117): محلي ➔ الأب ➔ المحلي (للإنشاء). — دليل: `TestResolveSharedPath` 5/5 PASS (أولوية محلية + fallback الأب + الإنشاء + المجلدات).
+- [x] **`[TSK-4002]`** T2 — `load_bot_token` يقرأ `telegram_bot_token.txt` عبر الدالة الموحدة. — دليل: `TestLoadBotTokenHierarchy` 3/3 PASS (env أولاً / الأب عند غياب المحلي / المحلي يكسب).
+- [x] **`[TSK-4003]`** T3 — `PROJECT_REGISTRY_HOME` + `PROJECTS_TREE_FILE` عبر `resolve_shared_path` (و`registry.json` يرث المركزية). — دليل: `TestSharedPathWiring` tests 02/03/05 PASS.
+- [x] **`[TSK-4004]`** T4 — المرشح الأول في `get_accounts_file_path` هو `resolve_shared_path("accounts_genspark.json")` مع إبقاء fallback القديم. — دليل: `TestSharedPathWiring::test_04` PASS.
+- [x] **`[TSK-4005]`** القفل الثاني — إنشاء `AGENTS.md` + `GEMINI.md` بيافطة القاعدة المركزية والقواعد الإلزامية. — دليل: `TestCentralRuleSignage` 3/3 PASS (+ حارس صفر hardcode للتوكن).
+- [x] **`[TSK-4006]`** مواءمة كاملة: PARTS boundaries مُزاحة +16 (p01 → 154 … p12 → 6406) + إعادة بناء `bridge_refactor/` بتطابق بايت (parity 11/11) + بوابة `hadith_sijil.py` = **238/238 PASS Exit Code 0** + تحديث التوثيق (هذا الملف + PROGRESS الجذري + SESSION_LOG DEC-018 + V3_RESUME). — دليل: Gate 238/238 + هذا الـ commit.
