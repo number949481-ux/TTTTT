@@ -1,6 +1,6 @@
-# 🚀 Genspark Multi-Project WebApp Bridge System (01.32)
+# 🚀 Genspark Multi-Project WebApp Bridge System (01.33)
 
-> **Active Version:** `01.32` (`01.32_telegram_gen_bridge.py`)  
+> **Active Version:** `01.33` (`01.33_telegram_gen_bridge.py`)  
 > **Core Engine:** `01.03Genspark_claude-opus-5-code.py`  
 > **Active Milestone:** `Phase 20 (REST-Only Upload + AI Data Retention Failover)` 🧬🔧 — مع P18 Activity-Stop حيّاً («لو غيرت مهام وقف مش تكمل»)  
 > **Test Status:** `221/221 PASS (100% OK)` — Gate Exit Code 0  
