@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p04_telegram_api
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 851..1249
-المحتوى: Telegram API core + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport + send_document
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 851..1294
+المحتوى: Telegram API core + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport + send_document + P28: ALLOWED_DOCUMENT_EXTENSIONS/MAX_DOCUMENT_SIZE_BYTES + download_telegram_document_text (getFile → تنزيل UTF-8 آمن بلا Crash)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -347,6 +347,51 @@ def attach_account_selection_live_transport(bridge_cfg, chat_id: int | str, proj
     transport = AccountSelectionLiveTransport(chat_id=chat_id, project_key=project_key, project_name=project_name)
     bridge_cfg.account_selection_observer = transport.publish
     return transport
+
+
+# ══════════════════════════════════════════════════════════════
+# 📄 [P28] استقبال ملفات المهام (.txt / .md) — Document Ingestion
+# ══════════════════════════════════════════════════════════════
+# الامتدادات النصية المسموح تحويلها إلى Prompt (تُقارن بعد lower()).
+ALLOWED_DOCUMENT_EXTENSIONS = frozenset({".txt", ".md", ".markdown", ".text"})
+# حد أقصى وقائي — أكبر منه يُرفض ودياً قبل أي تنزيل (يحمي خيط الـ Polling).
+MAX_DOCUMENT_SIZE_BYTES = 5 * 1024 * 1024
+
+
+def download_telegram_document_text(file_id: str) -> str | None:
+    """تنزيل ملف نصي من تليجرام عبر getFile ثم رابط الملف، وإرجاع محتواه كنص UTF-8.
+
+    أي فشل (شبكة / HTTP غير 200 / ok=false / file_path مفقود) يُرجع None
+    بدون أي استثناء يتسرب لخيط الـ Polling — التنبيه الودي مسؤولية المستدعي.
+    """
+    if not TELEGRAM_BOT_TOKEN:
+        log_event("error", "توكن البوت غير مضبوط — لا يمكن تنزيل الملفات")
+        return None
+    try:
+        import requests
+        meta_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getFile"
+        meta_resp = requests.get(meta_url, params={"file_id": str(file_id)}, timeout=(10, 30))
+        if meta_resp.status_code != 200:
+            log_event("error", f"getFile فشل: HTTP {meta_resp.status_code} - {meta_resp.text[:200]}")
+            return None
+        meta = meta_resp.json()
+        if not meta.get("ok"):
+            log_event("error", f"getFile أعاد ok=false: {str(meta)[:200]}")
+            return None
+        file_path = (meta.get("result") or {}).get("file_path") or ""
+        if not file_path:
+            log_event("error", "getFile نجح لكن file_path مفقود — لا يمكن التنزيل")
+            return None
+        file_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
+        file_resp = requests.get(file_url, timeout=(10, 60))
+        if file_resp.status_code != 200:
+            log_event("error", f"تنزيل الملف فشل: HTTP {file_resp.status_code}")
+            return None
+        # errors="replace" يضمن عدم الانهيار على بايتات غير UTF-8 (ترميزات قديمة).
+        return file_resp.content.decode("utf-8", errors="replace")
+    except Exception as err:
+        log_event("error", f"استثناء أثناء تنزيل الملف من تليجرام: {err}")
+        return None
 
 
 def send_telegram_document(
