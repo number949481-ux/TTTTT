@@ -19,20 +19,20 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S43 |
+| **last-updated** | 2026-08-21 — S44 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.31` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
 | **target bot script** | `01.31_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P23 — البحث الهرمي للملفات المشتركة (Shared Secrets Auto-Discovery)** 🎯 |
+| **current WBS phase** | **P24 — الكوميت الذكي: حقن محرك كوين في رفع GitHub (Qwen Commit Bridge)** 🎯 ✅ مغلقة |
 | **current slice** | `TSK-3901` (DONE) ➔ إصلاح `_default_github_uploader`: الملف الموجود على الريموت بمحتوى مختلف يُصنّف `modified` (✏️ معدل) بدل دمجه مع `uploaded` (➕ جديد) — التصنيف عبر `remote_sha` المتاح أصلاً قبل الـ PUT + حارسان جديدان في test_p20 (اختبارات 09/10) + تحديث PARTS (+4 أسطر → 6390) وإعادة بناء bridge_refactor بتطابق بايت |
-| **current-task** | `S43` — جلسة نظافة فقط: إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع (المرة الخامسة) بعد أن كسرت اختبارَي P17 — عاد 238/238 + Gate Exit 0. لا عمل هندسي جديد (كله BLOCKED-ON-OWNER) |
+| **current-task** | `S44` — P24 مكتملة: `_qwen_commit_prefix_for_job` (مرة/job قبل حلقة PUT) + fallback حرفي للرسالة القديمة + مركزية `accounts_qwen.json` عبر `resolve_shared_path` في `qwen_engine.py` + 17 حارساً جديداً (test_p24) + PARTS +24 (6430) + parity 11/11 |
 | **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
-| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) قرار `AI_RACE_ACCOUNTS` (0 الحالي أم 2 عشوائي). (ب) ميزة P22 معلّقة كلياً — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (حاجز test_p22 اليتيم زال — المالك حذف الملف) |
-| **completion** | 238/238 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 238/238 PASS — Exit Code 0 |
+| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
+| **completion** | 255/255 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 255/255 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
 | **release decision** | `READY` 🟢 (P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P19 نسخ الإعدادات + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
 
@@ -244,3 +244,16 @@
 - [x] **`[TSK-4004]`** T4 — المرشح الأول في `get_accounts_file_path` هو `resolve_shared_path("accounts_genspark.json")` مع إبقاء fallback القديم. — دليل: `TestSharedPathWiring::test_04` PASS.
 - [x] **`[TSK-4005]`** القفل الثاني — إنشاء `AGENTS.md` + `GEMINI.md` بيافطة القاعدة المركزية والقواعد الإلزامية. — دليل: `TestCentralRuleSignage` 3/3 PASS (+ حارس صفر hardcode للتوكن).
 - [x] **`[TSK-4006]`** مواءمة كاملة: PARTS boundaries مُزاحة +16 (p01 → 154 … p12 → 6406) + إعادة بناء `bridge_refactor/` بتطابق بايت (parity 11/11) + بوابة `hadith_sijil.py` = **238/238 PASS Exit Code 0** + تحديث التوثيق (هذا الملف + PROGRESS الجذري + SESSION_LOG DEC-018 + V3_RESUME). — دليل: Gate 238/238 + هذا الـ commit.
+
+---
+
+## 🤖 P24 — الكوميت الذكي: حقن محرك كوين في رفع GitHub (S44): Qwen Commit Bridge + المسار المشترك لحسابات كوين
+
+> **طلب المالك:** رسائل الكوميت في الرفع REST كانت ثابتة بلا معنى (`sync {job_id}: {rel}`) رغم جاهزية `qwen_engine.py` — المطلوب حقن الملخص الذكي من كوين كبادئة للرسالة **بدون أي مخاطرة على الرفع نفسه** + مركزية `accounts_qwen.json` بنفس منطق P23.
+
+- [x] **`[TSK-4101]`** M1 — `resolve_shared_path` داخل `qwen_engine.py` (سطر ~182): `QWEN_ACCOUNTS_FILE = resolve_shared_path("accounts_qwen.json")` — محلي ➔ الأب `W___webapp/` ➔ المحلي للإنشاء. — دليل: مجموعة المسار المشترك 5/5 PASS في `test_p24_qwen_commit_bridge.py`.
+- [x] **`[TSK-4102]`** M2 — `ProjectRegistry._qwen_commit_prefix_for_job` (سطر ~2994 في `01.31`): استدعاء `qwen_engine.generate_ai_summary()` **مرة واحدة/job** قبل حلقة PUT في `_default_github_uploader` (سطر ~3032)؛ الملخص = بادئة رسائل sync/delete. — دليل: مجموعة prefix mock (بدون شبكة) 5/5 PASS.
+- [x] **`[TSK-4103]`** M3 — Fallback حرفي معزول: أي فشل (None / Exception / فشل استيراد / job فارغ) ➔ prefix فارغ ➔ **نفس الرسالة القديمة حرفياً** — الرفع لا ينكسر أبداً بسبب كوين. — دليل: مجموعة عقد رسائل uploader 4/4 PASS.
+- [x] **`[TSK-4104]`** قرارات المالك مثبتة: `AI_RACE_ACCOUNTS = 0` (كل الحسابات النشطة تتسابق — حُسم في S44) + مهلة المحرك الأصلية 30ث/مرحلة بلا تغيير. — دليل: مجموعة قرارات المالك 3/3 PASS.
+- [x] **`[TSK-4105]`** مواءمة كاملة: PARTS boundaries مُزاحة +24 (p07 ➔ 3382 … p12 ➔ 6430) + إعادة بناء `bridge_refactor/` بتطابق بايت (parity 11/11) + بوابة `hadith_sijil.py` = **255/255 PASS Exit Code 0** + التوثيق (هذا الملف + PROGRESS الجذري + SESSION_LOG DEC-019 + TEST_SUITE_CATALOG + V3_RESUME). — دليل: Gate 255/255 + هذا الـ commit.
+- [x] **`[TSK-4106]`** نظافة git (المرة السادسة): إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع بعد أن أعادتهما المزامنة التلقائية وكسرا حارسي P17 (الموافقة الدائمة من S41). — دليل: `TestGeneratedFilesUntracked` 3/3 PASS.
