@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 08:20:15 UTC`
+* **التاريخ والوقت:** `2026-08-21 08:45:17 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.552 ثانية`
-* **النتيجة العامة:** `Ran 221 tests — OK`
+* **الزمن المقاس:** `0.643 ثانية`
+* **النتيجة العامة:** `Ran 238 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -260,6 +260,31 @@ test_09_p21_uploader_distinguishes_new_vs_modified (test_p20_rest_only_data_rete
 🎯 [P21] عقد دقة التصنيف: ملف موجود على الريموت بمحتوى مختلف = modified، ... ok
 test_10_p21_github_sync_consumes_modified (test_p20_rest_only_data_retention.TestRestOnlyUpload.test_10_p21_github_sync_consumes_modified)
 github_sync يقرأ modified من نتيجة التنفيذ ويمررها لرسالة تليجرام ... ok
+test_01_agents_md_exists_with_rule (test_p23_shared_paths.TestCentralRuleSignage.test_01_agents_md_exists_with_rule) ... ok
+test_02_gemini_md_exists_with_rule (test_p23_shared_paths.TestCentralRuleSignage.test_02_gemini_md_exists_with_rule) ... ok
+test_03_no_hardcoded_bot_token (test_p23_shared_paths.TestCentralRuleSignage.test_03_no_hardcoded_bot_token)
+ممنوع الـ hardcode: لا يوجد توكن تيليجرام حرفي في المصدر ... ok
+test_01_env_var_wins (test_p23_shared_paths.TestLoadBotTokenHierarchy.test_01_env_var_wins) ... ok
+test_02_parent_token_file_used_when_local_missing (test_p23_shared_paths.TestLoadBotTokenHierarchy.test_02_parent_token_file_used_when_local_missing) ... ok
+test_03_local_token_file_wins_over_parent (test_p23_shared_paths.TestLoadBotTokenHierarchy.test_03_local_token_file_wins_over_parent) ... ok
+test_01_function_exists_and_returns_path (test_p23_shared_paths.TestResolveSharedPath.test_01_function_exists_and_returns_path) ... ok
+test_02_local_file_wins (test_p23_shared_paths.TestResolveSharedPath.test_02_local_file_wins)
+أولوية محلية: الملف الموجود جنب النسخة يُستخدم حتى لو الأب فيه نسخة ... ok
+test_03_parent_fallback_when_local_missing (test_p23_shared_paths.TestResolveSharedPath.test_03_parent_fallback_when_local_missing)
+لو الملف مش موجود محلياً يُلقط من الفولدر الأب تلقائياً ... ok
+test_04_missing_everywhere_returns_local_for_creation (test_p23_shared_paths.TestResolveSharedPath.test_04_missing_everywhere_returns_local_for_creation)
+لو غير موجود في الاثنين يرجع المسار المحلي (عشان الإنشاء الجديد) ... ok
+test_05_works_for_directories_too (test_p23_shared_paths.TestResolveSharedPath.test_05_works_for_directories_too)
+يدعم المجلدات (project_registry) وليس الملفات فقط ... ok
+test_01_token_uses_resolver (test_p23_shared_paths.TestSharedPathWiring.test_01_token_uses_resolver) ... ok
+test_02_registry_home_uses_resolver (test_p23_shared_paths.TestSharedPathWiring.test_02_registry_home_uses_resolver) ... ok
+test_03_projects_tree_uses_resolver (test_p23_shared_paths.TestSharedPathWiring.test_03_projects_tree_uses_resolver) ... ok
+test_04_accounts_candidates_use_resolver_first (test_p23_shared_paths.TestSharedPathWiring.test_04_accounts_candidates_use_resolver_first)
+المرشح الأول في get_accounts_file_path هو المسار الموحد ... ok
+test_05_registry_index_derived_from_home (test_p23_shared_paths.TestSharedPathWiring.test_05_registry_index_derived_from_home)
+registry.json يظل مشتقاً من PROJECT_REGISTRY_HOME (فيرث المركزية) ... ok
+test_06_resolver_defined_before_first_use (test_p23_shared_paths.TestSharedPathWiring.test_06_resolver_defined_before_first_use)
+الدالة معرفة قبل أول استخدام (load_bot_token) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
@@ -322,7 +347,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 221 tests in 0.215s
+Ran 238 tests in 0.319s
 
 OK
 ```
