@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p04_telegram_api
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 831..1198
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 847..1214
 المحتوى: Telegram API core + send/edit + AccountSelection Live Renderer/Transport + send_document
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
