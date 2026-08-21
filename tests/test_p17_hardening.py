@@ -15,7 +15,7 @@ import unittest
 import importlib.util
 
 ROOT = pathlib.Path(__file__).parent.parent.resolve()
-BRIDGE = ROOT / "01.32_telegram_gen_bridge.py"
+BRIDGE = ROOT / "01.33_telegram_gen_bridge.py"
 BRIDGE_SRC = BRIDGE.read_text(encoding="utf-8")
 
 
