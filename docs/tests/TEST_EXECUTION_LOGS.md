@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 17:55:21 UTC`
+* **التاريخ والوقت:** `2026-08-21 19:42:55 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.935 ثانية`
-* **النتيجة العامة:** `Ran 369 tests — OK`
+* **الزمن المقاس:** `1.291 ثانية`
+* **النتيجة العامة:** `Ran 406 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -455,6 +455,43 @@ test_page_flip_has_send_fallback (test_p27_projects_pagination.TestSourceContrac
 لو غاب message_id (حالة نادرة) ➔ fallback بإرسال رسالة جديدة بلا Crash ... ok
 test_pagination_keyboard_defined_before_dispatcher (test_p27_projects_pagination.TestSourceContracts.test_pagination_keyboard_defined_before_dispatcher)
 الدوال تُعرَّف قبل الموزّع (سلامة ترتيب single-file) ... ok
+test_allowed_extensions_exact_set (test_p28_document_input.TestP28Constants.test_allowed_extensions_exact_set) ... ok
+test_allowed_extensions_is_frozenset (test_p28_document_input.TestP28Constants.test_allowed_extensions_is_frozenset) ... ok
+test_extensions_are_lowercase_with_dot (test_p28_document_input.TestP28Constants.test_extensions_are_lowercase_with_dot) ... ok
+test_max_size_is_exactly_5mb (test_p28_document_input.TestP28Constants.test_max_size_is_exactly_5mb) ... ok
+test_caption_merged_before_content (test_p28_document_input.TestP28DispatcherAccepted.test_caption_merged_before_content) ... ok
+test_document_inside_awaiting_new_prompt_feeds_wizard (test_p28_document_input.TestP28DispatcherAccepted.test_document_inside_awaiting_new_prompt_feeds_wizard) ... ok
+test_markdown_extension_accepted (test_p28_document_input.TestP28DispatcherAccepted.test_markdown_extension_accepted) ... ok
+test_md_file_accepted (test_p28_document_input.TestP28DispatcherAccepted.test_md_file_accepted) ... ok
+test_no_caption_content_only_stripped (test_p28_document_input.TestP28DispatcherAccepted.test_no_caption_content_only_stripped) ... ok
+test_txt_file_schedules_task_with_content (test_p28_document_input.TestP28DispatcherAccepted.test_txt_file_schedules_task_with_content) ... ok
+test_uppercase_extension_accepted (test_p28_document_input.TestP28DispatcherAccepted.test_uppercase_extension_accepted) ... ok
+test_download_failure_sends_friendly_error (test_p28_document_input.TestP28DispatcherRejected.test_download_failure_sends_friendly_error) ... ok
+test_empty_content_sends_friendly_error (test_p28_document_input.TestP28DispatcherRejected.test_empty_content_sends_friendly_error) ... ok
+test_exactly_5mb_accepted (test_p28_document_input.TestP28DispatcherRejected.test_exactly_5mb_accepted) ... ok
+test_missing_file_name_rejected (test_p28_document_input.TestP28DispatcherRejected.test_missing_file_name_rejected) ... ok
+test_oversize_rejected_no_download (test_p28_document_input.TestP28DispatcherRejected.test_oversize_rejected_no_download) ... ok
+test_pdf_rejected_no_download (test_p28_document_input.TestP28DispatcherRejected.test_pdf_rejected_no_download) ... ok
+test_zip_rejected (test_p28_document_input.TestP28DispatcherRejected.test_zip_rejected) ... ok
+test_download_http_404_returns_none (test_p28_document_input.TestP28DownloadFunction.test_download_http_404_returns_none) ... ok
+test_empty_bot_token_returns_none_without_network (test_p28_document_input.TestP28DownloadFunction.test_empty_bot_token_returns_none_without_network) ... ok
+test_getfile_http_500_returns_none (test_p28_document_input.TestP28DownloadFunction.test_getfile_http_500_returns_none) ... ok
+test_getfile_ok_false_returns_none (test_p28_document_input.TestP28DownloadFunction.test_getfile_ok_false_returns_none) ... ok
+test_getfile_passes_file_id_param (test_p28_document_input.TestP28DownloadFunction.test_getfile_passes_file_id_param) ... ok
+test_invalid_utf8_bytes_replaced_not_crash (test_p28_document_input.TestP28DownloadFunction.test_invalid_utf8_bytes_replaced_not_crash) ... ok
+test_missing_file_path_returns_none (test_p28_document_input.TestP28DownloadFunction.test_missing_file_path_returns_none) ... ok
+test_network_exception_returns_none_no_crash (test_p28_document_input.TestP28DownloadFunction.test_network_exception_returns_none_no_crash) ... ok
+test_success_returns_utf8_text (test_p28_document_input.TestP28DownloadFunction.test_success_returns_utf8_text) ... ok
+test_download_uses_errors_replace (test_p28_document_input.TestP28SourceContracts.test_download_uses_errors_replace) ... ok
+test_extension_normalized_lowercase (test_p28_document_input.TestP28SourceContracts.test_extension_normalized_lowercase) ... ok
+test_guard_condition_document_and_not_text (test_p28_document_input.TestP28SourceContracts.test_guard_condition_document_and_not_text) ... ok
+test_helper_lives_in_p04_next_to_send_document (test_p28_document_input.TestP28SourceContracts.test_helper_lives_in_p04_next_to_send_document) ... ok
+test_ingestion_block_after_permission_gate (test_p28_document_input.TestP28SourceContracts.test_ingestion_block_after_permission_gate) ... ok
+test_ingestion_block_before_start_command (test_p28_document_input.TestP28SourceContracts.test_ingestion_block_before_start_command) ... ok
+test_document_from_disallowed_chat_blocked_before_download (test_p28_document_input.TestP28ZeroRegression.test_document_from_disallowed_chat_blocked_before_download) ... ok
+test_message_with_both_text_and_document_treated_as_text (test_p28_document_input.TestP28ZeroRegression.test_message_with_both_text_and_document_treated_as_text) ... ok
+test_plain_text_message_never_touches_document_path (test_p28_document_input.TestP28ZeroRegression.test_plain_text_message_never_touches_document_path) ... ok
+test_start_command_still_shows_dashboard (test_p28_document_input.TestP28ZeroRegression.test_start_command_still_shows_dashboard) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
@@ -517,7 +554,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 369 tests in 0.543s
+Ran 406 tests in 0.841s
 
 OK
 ```
