@@ -19,22 +19,22 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S44 |
+| **last-updated** | 2026-08-21 — S45 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
-| **target-version** | `01.31` |
+| **target-version** | `01.32` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
-| **target bot script** | `01.31_telegram_gen_bridge.py` 🚀 |
+| **target bot script** | `01.32_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P24 — الكوميت الذكي: حقن محرك كوين في رفع GitHub (Qwen Commit Bridge)** 🎯 ✅ مغلقة |
-| **current slice** | `TSK-3901` (DONE) ➔ إصلاح `_default_github_uploader`: الملف الموجود على الريموت بمحتوى مختلف يُصنّف `modified` (✏️ معدل) بدل دمجه مع `uploaded` (➕ جديد) — التصنيف عبر `remote_sha` المتاح أصلاً قبل الـ PUT + حارسان جديدان في test_p20 (اختبارات 09/10) + تحديث PARTS (+4 أسطر → 6390) وإعادة بناء bridge_refactor بتطابق بايت |
-| **current-task** | `S44` — P24 مكتملة: `_qwen_commit_prefix_for_job` (مرة/job قبل حلقة PUT) + fallback حرفي للرسالة القديمة + مركزية `accounts_qwen.json` عبر `resolve_shared_path` في `qwen_engine.py` + 17 حارساً جديداً (test_p24) + PARTS +24 (6430) + parity 11/11 |
-| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
+| **current WBS phase** | **P25 — الإلغاء التفاعلي وإيقاف التوليد الفوري (Interactive Cancellation Flow)** 🎯 ✅ مغلقة |
+| **current slice** | `TSK-4205` (DONE) ➔ مواءمة P25 كاملة: PARTS boundaries الجديدة (p03 ➔ 850 … p12 ➔ 6702) + parity 11/11 + بوابة 295/295 Exit 0 + توثيق شامل |
+| **current-task** | `S45` — P25 مكتملة + ترقية 01.32: مسجل أحداث الإلغاء (7 دوال + Lock) + زر 🛑 أحمر بخطوتي أمان في بطاقة المعاينة + قطع بث SSE تعاوني في المحرك 01.03 (`__USER_CANCELLED__` بأولوية قبل تصنيف الرصيد + `r.close()`) + `Event.wait(5)` بدل sleep + `CANCELLED` بلا عقوبة حساب + تنظيف مضمون في `finally` + 40 حارساً جديداً (test_p25) |
+| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.32 (زر الإلغاء التفاعلي على تيليجرام حي + مسار DATA_RETENTION + الرفع REST) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
 | **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
-| **completion** | 255/255 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 255/255 PASS — Exit Code 0 |
+| **completion** | 295/295 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 295/295 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
-| **release decision** | `READY` 🟢 (P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P19 نسخ الإعدادات + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
+| **release decision** | `READY` 🟢 (P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
 
 ---
 
@@ -257,3 +257,16 @@
 - [x] **`[TSK-4104]`** قرارات المالك مثبتة: `AI_RACE_ACCOUNTS = 0` (كل الحسابات النشطة تتسابق — حُسم في S44) + مهلة المحرك الأصلية 30ث/مرحلة بلا تغيير. — دليل: مجموعة قرارات المالك 3/3 PASS.
 - [x] **`[TSK-4105]`** مواءمة كاملة: PARTS boundaries مُزاحة +24 (p07 ➔ 3382 … p12 ➔ 6430) + إعادة بناء `bridge_refactor/` بتطابق بايت (parity 11/11) + بوابة `hadith_sijil.py` = **255/255 PASS Exit Code 0** + التوثيق (هذا الملف + PROGRESS الجذري + SESSION_LOG DEC-019 + TEST_SUITE_CATALOG + V3_RESUME). — دليل: Gate 255/255 + هذا الـ commit.
 - [x] **`[TSK-4106]`** نظافة git (المرة السادسة): إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع بعد أن أعادتهما المزامنة التلقائية وكسرا حارسي P17 (الموافقة الدائمة من S41). — دليل: `TestGeneratedFilesUntracked` 3/3 PASS.
+
+---
+
+## 🛑 P25 — الإلغاء التفاعلي وإيقاف التوليد الفوري Interactive Cancellation Flow (S45): زر 🛑 بخطوتي أمان + Cooperative Stream Abort + ترقية 01.32
+
+> **طلب المالك (`Cancel_Flag.md`):** أثناء البناء لا توجد أي وسيلة لإيقاف التوليد — المطلوب زر [🛑 إلغاء البناء الحالي] أحمر أسفل زر المعاينة، بتأكيد أمان تفاعلي من خطوتين، وإيقاف قهري آمن يقطع بث SSE فوراً (مطابق لزر ⏹️ Stop) مع صفر تسريب موارد وصفر تعارض مع باقي الأزرار.
+
+- [x] **`[TSK-4201]`** T1 — مسجل أحداث الإلغاء (سطر ~3495 في `01.32`): `_ACTIVE_CANCEL_EVENTS` + `_CANCEL_EVENTS_GUARD` (Lock) + 7 دوال (`new_cancel_token` 12-hex ≤64 بايت callback_data / `register` / `get_entry` / `update_entry` / `trigger` / `is_requested` / `unregister`) + الثابتان `CANCELLED_STATUS` و `USER_CANCELLED_MARKER`. — دليل: `TestCancellationManager` 12/12 PASS.
+- [x] **`[TSK-4202]`** T2 — الكيبورد والمعالجات: `build_live_preview_keyboard(cancel_token=None)` توافق خلفي كامل — زر 🛑 danger أثناء running، وكيبورد تأكيد (🚨 نعم danger / ↩️ تراجع primary) عند `confirm_cancel`؛ بلوك callbacks مبكر معزول (`cancel_prompt:/cancel_exec:/cancel_abort:` سطر ~5700) صفر تعارض مع `pctl:*`؛ دالتان جديدتان `edit_telegram_message_text` (~925) و `edit_telegram_message_reply_markup` (~962). — دليل: `TestLivePreviewKeyboard` 5/5 PASS.
+- [x] **`[TSK-4203]`** T3 — الإيقاف القهري التعاوني: `BridgeConfig.cancel_event/cancel_token` (~656) ➔ المحرك `01.03` يفحص الـ Event كأول سطر داخل `r.iter_lines()` ➔ `break` ➔ `r.close()` (قطع ask_proxy) ➔ `__USER_CANCELLED__` بأولوية قبل تصنيف `__CREDIT_EXHAUSTED__` (~1997-2087)؛ الجسر p06: فحص قبل الإرسال وداخل المتابعة + `Event.wait(timeout=5)` بدل sleep (استيقاظ فوري) + `CANCELLED` يخرج من failover **بلا عقوبة/تبريد** (~1886-2264)؛ الـ worker: تسجيل قبل أي عمل + `update_cancel_entry(live_pid=...)` عند التقاط pid (~5509) + رسالة نهائية هادئة (~5544) + **`unregister_cancel_event` في `finally`** = Zero Leaks (~5670). — دليل: `TestWorkerIntegrationContracts` 16/16 + `TestEngineStreamAbortContract` 5/5 PASS.
+- [x] **`[TSK-4204]`** T4 — حزمة الحراسة `tests/test_p25_interactive_cancel.py`: **40 اختباراً** (مسجل 12 + كيبورد 5 + عقود worker/failover 16 + عقد قطع بث المحرك 5 + محاكاة تدفق كامل 2 تشمل تسجيل ➔ زر ➔ تأكيد ➔ استيقاظ فوري ➔ تنظيف). — دليل: 40/40 PASS.
+- [x] **`[TSK-4205]`** المواءمة الكاملة + ترقية الإصدار: `BUILD_VERSION = "01.32"` والملف النشط `01.32_telegram_gen_bridge.py` (6702 سطراً) + PARTS boundaries الجديدة (p03 ➔ 850 … p12 ➔ 6702) + إعادة بناء `bridge_refactor/` بتطابق بايت (parity 11/11) + تصحيح ليبلات «01.31» النصية القديمة في `hadith_sijil.py`/`generate_docs.py` + بوابة `hadith_sijil.py` = **295/295 PASS Exit Code 0** + التوثيق (هذا الملف + PROGRESS الجذري + SESSION_LOG DEC-020 + TEST_SUITE_CATALOG + README + V3_RESUME). — دليل: Gate 295/295 + هذا الـ commit.
+- [x] **`[TSK-4206]`** نظافة git (المرة السابعة): إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع بعد أن أعادتهما المزامنة التلقائية وكسرا حارسي P17 (الموافقة الدائمة من S41). — دليل: `TestGeneratedFilesUntracked` 3/3 PASS.
