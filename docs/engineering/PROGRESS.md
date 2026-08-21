@@ -19,22 +19,22 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-20 — S42 |
+| **last-updated** | 2026-08-20 — S40 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.31` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
 | **target bot script** | `01.31_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P22 — LiveOpsReporter: شفافية الباك-إند الكاملة (timeline ترمنال + رسالة تليجرام حية + «⏱️ اخد X ثانية»)** 🎯 |
-| **current slice** | `TSK-4001` (DONE) ➔ P22: حقل `live_ops_reporter` في `BridgeConfig` + `format_elapsed_seconds` + كلاس `LiveOpsReporter` (event/stage موقوتة/heartbeat/render_telegram/push_telegram برسالة حية واحدة + throttle 4s/finish idempotent بصندوق ختامي وسطر «⏱️ اخد X ثانية») + accessors آمنة + ربط معزول بـ try/except في `process_user_task_async` (attach ➔ stage توليد ➔ finish في finally) + 20 حارساً في `tests/test_p22_live_ops_reporter.py` + PARTS ➔ 6590 سطراً وإعادة بناء bridge_refactor بتطابق بايت 11/11 |
-| **current-task** | `P22 complete` — استؤنف من انقطاع جلسة سابقة (الحقل وصل والكلاس لم يصل) وأُكمل الإدراج والربط والاختبارات — 241/241 + بوابة Exit 0 + صيانة متكررة: untrack `.pytest_cache/` و `bridge_bot.log` مجدداً بعد أن أعادتهما المزامنة التلقائية |
-| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (DATA_RETENTION + الرفع REST + الرسالة الحية P22) + قرارات مالك معلّقة: (أ) حد قص التاريخ المحقون، (ب) مصير `01.30_telegram_gen_bridge.py`، (ج) توسعة P22: بث heartbeat من داخل حلقة polling في p06 — وفي بداية كل جلسة: فحص `git ls-files | grep -E "pytest_cache|bridge_bot.log"` لأن المزامنة التلقائية تعيد تتبعهما |
-| **current-blocker** | `BLOCKED-ON-OWNER` — كل البنود المتبقية تحتاج قرار مالك صريح (E2E حي + قرارا القص/حذف 01.30) — البوابة مجتازة بالكامل |
-| **completion** | 241/241 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 241/241 PASS — Exit Code 0 |
+| **current WBS phase** | **P21 — دقة تصنيف commit في الرفع REST (جديد ➕ vs معدل ✏️)** 🎯 |
+| **current slice** | `TSK-3901` (DONE) ➔ إصلاح `_default_github_uploader`: الملف الموجود على الريموت بمحتوى مختلف يُصنّف `modified` (✏️ معدل) بدل دمجه مع `uploaded` (➕ جديد) — التصنيف عبر `remote_sha` المتاح أصلاً قبل الـ PUT + حارسان جديدان في test_p20 (اختبارات 09/10) + تحديث PARTS (+4 أسطر → 6390) وإعادة بناء bridge_refactor بتطابق بايت |
+| **current-task** | `P21 complete` — إحصائيات رسالة تليجرام (➕ جديد / ✏️ معدل / 🗑 محذوف / ⏸ مطابق) صارت دقيقة: `modified` تُملأ فعلياً من الـ uploader وتصل للعرض عبر `github_sync` — مع بقاء P18/P20 فعّالة بلا انحدار |
+| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
+| **current-blocker** | لا يوجد — البوابة مجتازة بالكامل (Push/PR اليدوي بانتظار تفويض GitHub من المالك) |
+| **completion** | 221/221 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 221/221 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
-| **release decision** | `READY` 🟢 (P22: شفافية LiveOpsReporter + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P19 نسخ الإعدادات — صفر انحدار) |
+| **release decision** | `READY` 🟢 (P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P19 نسخ الإعدادات + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
 
 ---
 

@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 5282..5609
-المحتوى: process_user_task_async (المشغل الكامل للمهمة | P22: ربط مراسل العمليات الحية attach/stage/finish)
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 5105..5409
+المحتوى: process_user_task_async (المشغل الكامل للمهمة)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def process_user_task_async(
@@ -50,8 +50,6 @@ def process_user_task_async(
             and getattr(send_telegram_message, "__module__", "") == __name__
         ):
             attach_account_selection_live_transport(cfg, chat_id=chat_id, project_key=project_key, project_name=project_name)
-            # 📡 [P22] تركيب مراسل العمليات الحية (ترمنال + رسالة تليجرام لايف)
-            attach_live_ops_reporter(cfg, chat_id=chat_id, project_name=project_name, project_key=project_key)
 
         def on_credit_handoff(handoff_meta: dict):
             context = summarize_project_context(
@@ -187,24 +185,10 @@ def process_user_task_async(
             except Exception as live_err:
                 log_event("warning", f"تعذر إرسال بطاقة المعاينة الفورية: {live_err}")
 
-        # 📡 [P22] مرحلة التوليد الرئيسية موقوتة في التيملاين الحي
-        live_reporter = get_live_ops_reporter(cfg)
-        close_generation_stage = None
-        if live_reporter is not None:
-            try:
-                close_generation_stage = live_reporter.stage("التوليد والمتابعة على Genspark")
-            except Exception as rep_err:
-                log_event("warning", f"📡 [P22] تعذر فتح مرحلة التوليد الحية: {rep_err}")
-                close_generation_stage = None
         pub_url, status, used_acc, ext_dir, last_resp_text = send_message_with_auto_account_failover(
             url=url, query=query, bridge_cfg=cfg, progress_callback=on_project_update,
             on_project_start_callback=handle_live_project_start,
         )
-        if close_generation_stage is not None:
-            try:
-                close_generation_stage(note=f"الحالة: {status}")
-            except Exception as rep_err:
-                log_event("warning", f"📡 [P22] تعذر إغلاق مرحلة التوليد الحية: {rep_err}")
 
         if status == "ALL_ACCOUNTS_IN_COOLDOWN":
             send_telegram_message(
@@ -320,13 +304,6 @@ def process_user_task_async(
         except Exception:
             pass
     finally:
-        # 📡 [P22] الختام الموحد: صندوق التيرمنال + «⏱️ اخد X ثانية» + آخر تحديث للرسالة الحية
-        try:
-            _final_reporter = get_live_ops_reporter(locals().get("cfg"))
-            if _final_reporter is not None and not _final_reporter.finished:
-                _final_reporter.finish(str(locals().get("status") or "انتهى"))
-        except Exception as fin_err:
-            log_event("warning", f"📡 [P22] تعذر إغلاق مراسل العمليات الحية: {fin_err}")
         if project_key and claimed_project_run:
             release_project_run(project_key, run_owner_token)
 

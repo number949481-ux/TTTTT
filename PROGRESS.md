@@ -5,53 +5,13 @@
 
 ---
 
-## 🟢 نقطة الاستئناف الحالية — 2026-08-20 (جلسة S42 — P22: LiveOpsReporter شفافية الباك-إند الكاملة)
+## 🟢 نقطة الاستئناف الحالية — 2026-08-20 (جلسة S40 — P21: دقة تصنيف commit جديد/معدل)
 
 ### الإصدار النشط
-- **الملف الأساسي**: `01.31_telegram_gen_bridge.py` (6590 سطراً — +200 بعد P22)
+- **الملف الأساسي**: `01.31_telegram_gen_bridge.py` (6390 سطراً — +4 بعد إصلاح P21)
 - **BUILD_VERSION**: `01.31`
 - **BUILD_PARENT_BASELINE**: `01.30` (`0130_p19_copy_settings_baseline`)
-- **الحالة**: ✅ كل الاختبارات ناجحة — **241 passed** (`python3 -m pytest tests/ -q`)
-  + بوابة `scripts/hadith_sijil.py` ➔ Exit Code 0 — OK 241/241 PASS (تأكدت في S42)
-
-### ✅ ما أُنجز في S42 (P22 — مراسل العمليات الحية LiveOpsReporter)
-1. **استئناف عمل مقطوع**: جلسة سابقة انقطعت أثناء إدراج كلاس `LiveOpsReporter` —
-   الحقل `live_ops_reporter` في `BridgeConfig` (سطر 639) كان قد وصل، والكلاس لم يصل.
-   تم التحقق من الحالة الفعلية أولاً ثم أُعيد الإدراج كاملاً.
-2. **P22 — طبقة الشفافية** (بعد `attach_account_selection_live_transport` — سطر ~1147):
-   - `format_elapsed_seconds`: تنسيق «X.X ثانية».
-   - `LiveOpsReporter`: timeline موحّد — `event`/`stage` (مراحل مرقمة موقوتة بدالة
-     إغلاق)/`heartbeat` (نبضات polling)/`render_telegram` (تهريب HTML + آخر 10 أحداث)/
-     `push_telegram` (رسالة حية واحدة: sendMessage أولاً ثم editMessageText مع
-     throttle 4s — force يتجاوزه)/`finish` (صندوق ختامي بالتيرمينال + سطر
-     «⏱️ اخد X ثانية» + دفعة أخيرة force — idempotent).
-   - `get_live_ops_reporter` (آمنة — isinstance check) + `attach_live_ops_reporter` (idempotent).
-3. **الربط في `process_user_task_async`** (p11): attach بعد transport (نفس حارس
-   monkeypatch للاختبارات) + stage «التوليد والمتابعة على Genspark» حول
-   `send_message_with_auto_account_failover` + finish في `finally` قبل
-   `release_project_run` — **كل نقاط الربط معزولة بـ try/except** (فشل الريبورتر
-   لا يكسر المهمة أبداً).
-4. **20 اختباراً جديداً** في `tests/test_p22_live_ops_reporter.py`
-   (حقل الإعدادات + التنسيق + timeline/stages + طبقة تليجرام/throttle +
-   finish/idempotency + accessors + فحص مصدر لربط الـ worker) — الإجمالي **241**.
-5. **PARTS boundaries** في `scripts/rebuild_refactor.py` مُحدَّثة
-   (p03→831، p04→1375 «+LiveOpsReporter»، p05→1620 … p11→5609، p12→6590)
-   + إعادة بناء `bridge_refactor/` — parity 11/11 ✅ byte-parity.
-6. **صيانة متكررة**: المزامنة التلقائية أعادت تتبع `.pytest_cache/` و
-   `bridge_bot.log` مجدداً ➔ أُخرجا من التتبع (`git rm --cached`) — حارسا P17 سليمان.
-
-### ✅ ما أُنجز في S41 (صيانة — لا كود جديد)
-1. **استعادة حارسَي P17**: المزامنة التلقائية أعادت تتبع `.pytest_cache/` و `bridge_bot.log`
-   في git (commits `3ba0ff4` و `5f69423`) ➔ كسرت اختباري
-   `test_p17_hardening.py::TestGeneratedFilesUntracked` (219/221).
-   أُخرجا من التتبع مجدداً (`git rm --cached`) — commit `e1a388b` — عادت 221/221.
-2. **تأكيد البوابة الكاملة**: pytest 221 passed + `hadith_sijil.py` Exit Code 0
-   (OK 221/221 PASS + فحص تكامل التوثيق P10: 33 ملفاً OK).
-3. **لا عمل تطويري جديد**: كل بنود "الخطوة التالية" المتبقية بانتظار قرار مالك
-   صريح (BLOCKED-ON-OWNER) — ممنوع التخمين وفق قواعد V3_RESUME_SESSION.
-4. ⚠️ **ملاحظة تشغيلية للجلسات القادمة**: المزامنة التلقائية للريموت تعيد إضافة
-   الملفات المولّدة للتتبع رغم `.gitignore` — أول فحص في أي جلسة يجب أن يكون
-   `git ls-files | grep -E "pytest_cache|bridge_bot.log"` وإخراجهما إن ظهرا.
+- **الحالة**: ✅ كل الاختبارات ناجحة — **221 passed** (`python3 -m pytest tests/ -q`)
 
 ### ✅ ما أُنجز في S40 (P21 — بلاغ المالك: الإحصائيات لا تفرّق جديد/معدل)
 1. **إصلاح `_default_github_uploader`** (سطر ~2978): الملف الموجود على الريموت
@@ -129,10 +89,6 @@
 - [x] إنشاء test_p20 + إعادة بناء refactor + تحديث كل التوثيق (S39 — 219 passed).
 - [x] (S40 / P21) إصلاح تصنيف commit جديد/معدل + حارسان — 221 passed + بوابة Exit 0.
 - [x] commit محلي — الدفع للريموت عبر المزامنة التلقائية (الدفع اليدوي يحتاج تفويض GitHub).
-- [x] (S41) استعادة حارسَي P17 (untrack `.pytest_cache/` + `bridge_bot.log`) — 221 passed + بوابة Exit 0.
-- [x] (S42 / P22) LiveOpsReporter (شفافية الباك-إند: timeline ترمنال + رسالة تليجرام حية + «⏱️ اخد X ثانية») + 20 حارساً — 241 passed + بوابة Exit 0.
-- [ ] **توسعة P22 اختيارية (يحتاج قرار مالك)**: بث نبضات `heartbeat` من داخل حلقة polling
-      نفسها (p06) — التركيب الحالي يغطي attach/stage/finish في الـ worker فقط.
 - [ ] **قرار مالك مقترح (لم يُنفذ)**: قص التاريخ المحقون في استئناف الجسر (مسار `elif history` في المحرك يحقن كامل التاريخ بلا حد — مسار Fetch & Forward الداخلي يقص لآخر 10). يحتاج قرار: كم رسالة سياق نُبقي؟
 - [ ] حذف الملف القديم `01.30_telegram_gen_bridge.py` من الريبو إن أراد المالك
       (سياسة النسخ السابقة: يُحتفظ به أم لا؟ — يحتاج قرار).

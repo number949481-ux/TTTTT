@@ -14,14 +14,13 @@ telegram_bot_token.txt
 telegram_offset.txt
 resume_state.json
 projects_tree.json
-project_registry/
 
 # Temporary & Output Folders
 extracted_webapp/
 downloads/
 cache/
 .tmp/
-bridge_bot.log
 
-# Generated (P17 guard)
+# Test cache
 .pytest_cache/
+bridge_bot.log
