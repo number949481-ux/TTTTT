@@ -293,3 +293,63 @@
 2026-08-21 17:01:09 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
 2026-08-21 17:01:09 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
 2026-08-21 17:01:09 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 17:08:20 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 17:08:20 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 17:08:20 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_a (index=True, aliases=1, tree=1, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_b (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_freed (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_orphan_disk (index=False, aliases=0, tree=0, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_two_pids (index=True, aliases=2, tree=0, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_tree (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_pid (index=True, aliases=0, tree=0, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_victim (index=True, aliases=1, tree=1, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_solo (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:20 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_twice (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:20 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-21 17:08:20 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 17:08:20 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-21 17:08:20 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 17:08:20 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 17:08:20 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-21 17:08:20 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 17:08:39 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 17:08:39 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 17:08:39 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_a (index=True, aliases=1, tree=1, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_b (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_freed (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_orphan_disk (index=False, aliases=0, tree=0, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_two_pids (index=True, aliases=2, tree=0, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_tree (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_pid (index=True, aliases=0, tree=0, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_victim (index=True, aliases=1, tree=1, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_solo (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:39 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_twice (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:08:39 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-21 17:08:39 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 17:08:39 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-21 17:08:39 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 17:08:39 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 17:08:39 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-21 17:08:39 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 17:10:38 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 17:10:38 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 17:10:38 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_a (index=True, aliases=1, tree=1, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_b (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_freed (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_orphan_disk (index=False, aliases=0, tree=0, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_two_pids (index=True, aliases=2, tree=0, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_tree (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_pid (index=True, aliases=0, tree=0, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_victim (index=True, aliases=1, tree=1, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_solo (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:10:38 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_twice (index=True, aliases=1, tree=0, disk=True)
+2026-08-21 17:10:38 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-21 17:10:38 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 17:10:38 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-21 17:10:38 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 17:10:38 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 17:10:38 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-21 17:10:38 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
