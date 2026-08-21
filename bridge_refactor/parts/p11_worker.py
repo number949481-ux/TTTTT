@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5627..5970
-المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5677..6023
+المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def process_user_task_async(
@@ -238,6 +238,9 @@ def process_user_task_async(
             return
 
         acc_email = html_escape(used_acc.get("email")) if used_acc else "غير محدد"
+        # 🧾 [P29] سطر مسار الحسابات — يظهر فقط عند تعدد الحسابات الفعلية أثناء المهمة
+        journey_line = format_account_journey_line(getattr(cfg, "account_journey", []))
+        journey_block = f"\n{journey_line}" if journey_line else ""
         is_finished = check_project_finished_flag(status, last_resp_text)
         final_pid = extract_stage_project_id(pub_url, ext_dir)
         runtime_identity = remember_registry_identity(
@@ -284,7 +287,7 @@ def process_user_task_async(
             f"📊 <b>الحالة:</b> <code>{html_escape(status)}</code>\n"
             f"📌 <b>اسم المشروع:</b> {html_escape(project_name)}\n"
             f"🔐 <b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
-            f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>\n"
+            f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>{journey_block}\n"
             f"🆔 <b>Project ID:</b> <code>{html_escape(pid)}</code>{root_line}{latest_line}{resume_line}{fork_line}\n"
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
         )
