@@ -19,22 +19,22 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S49 |
+| **last-updated** | 2026-08-21 — S50 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.33` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
 | **target bot script** | `01.33_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P28 — استقبال ملفات المهام .txt & .md (Document Ingestion)** 📩 ✅ مغلقة — تقرير INSPECT ثم موافقة المالك الصريحة «نفذ» ثم تنفيذ T-A→T-F كاملاً |
-| **current slice** | `TSK-4602` (DONE) ➔ S49 مكتملة: ميزة P28 كاملة داخل `01.33` (7120 سطراً) — الثابتان `ALLOWED_DOCUMENT_EXTENSIONS` (txt/md/markdown/text) + `MAX_DOCUMENT_SIZE_BYTES=5MB` + دالة `download_telegram_document_text` (أي فشل ➔ None بلا Crash) + كتلة حقن معزولة في `handle_telegram_update` (بعد `is_chat_allowed` وقبل `/start` بشرط `if document and not text:`) تحوّل محتوى الملف لمتغير `text` فيغذي كل حالات الـ Wizard تلقائياً (DRY) + 37 حارساً جديداً + إعادة بناء refactor (parity 11/11) + بوابة 406/406 Exit 0 |
-| **current-task** | `S49` — تنفيذ P28 (طلب المالك في `05_—.txt_&_.md-Document_Ingestion.md`): استقبال ملفات `.txt`/`.md`/`.markdown`/`.text` كبرومبت مباشر — فحص الامتداد ثم الحجم (5MB) **قبل** أي تنزيل، دمج الـ Caption كمقدمة، ورفض ودي للامتدادات الأخرى — حزمة حراسة `tests/test_p28_document_input.py` (37 اختباراً) — الإجمالي 406 |
-| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33 (إرسال ملف .txt/.md فعلي للبوت ➔ يُعامل كبرومبت P28 + زر 📁 مشاريعي P27 + تدفق الحذف 🗑️ P26) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
+| **current WBS phase** | **P29+P30+P31 — مراقبة الحسابات الحية (Account Journey) + المحاسبة الزمنية الجنائية (Forensic Time Accounting — Extension 08) + الاستدعاء الكسول لكوين (Lazy Qwen Prefix)** 🧾⏱️⏳ ✅ مغلقة — تنفيذ + 77 حارساً + توثيق DEC-025 + بوابة 483/483 Exit 0 |
+| **current slice** | `TSK-4603` (DONE) ➔ S50 مكتملة: الحزم الثلاث داخل `01.33` (**7337 سطراً**) — **P29:** `record_account_journey` لحظة الـ claim فقط + Snapshots ثابتة + Live Renderer + سطر «مسار الحسابات» بالرسالة النهائية (تعدد فقط) — **P30:** spans بـ monotonic (فتح عند claim / إغلاق حتمي idempotent في finally) + كتلة إحصائيات نهائية (إيميلات Unmasked + مدد عربية + المُنجِز + توتال + Resume ≠ Accounts−1) — **P31:** `_lazy_ai_prefix` memoized — job كله unchanged = صفر نداء لكوين (عقد DEC-019 محفوظ حرفياً) + **77 حارساً** جديداً (28+35+14) + parity 11/11 + بوابة 483/483 Exit 0 |
+| **current-task** | `S50` — إغلاق P29+P30+P31 (طلبا المالك `06_Account_Journey_Chain.md` و`08_EXTENSION.md` النقطة 8): مسار رحلة الحسابات الحي + توقيت كل حساب بإيميل كامل Unmasked في الرسالة النهائية + إلغاء نداء كوين المجاني عند sync بلا تغييرات — 3 حزم حراسة (77 اختباراً) — الإجمالي 483 |
+| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33: مهمة متعددة الحسابات لرؤية «مسار الحسابات» P29 + كتلة «📊 إحصائيات الحسابات وزمن التشغيل» P30 في الرسالة النهائية + sync بلا تغييرات للتأكد من صفر نداء لكوين P31 (+ P28 ملف .txt فعلي) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
 | **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (موافقة P27 صدرت ونُفذت في S48 ✅ — قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
-| **completion** | 406/406 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 406/406 PASS — Exit Code 0 |
+| **completion** | 483/483 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 483/483 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
-| **release decision** | `READY` 🟢 (P28: استقبال ملفات المهام .txt/.md كبرومبت مباشر + P27: تصفح المشاريع 20/صفحة In-Place + إصلاح الزر الميت 📁 + P26: حذف مشروع ذري آمن بخطوتي أمان + P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
+| **release decision** | `READY` 🟢 (P29: مسار رحلة الحسابات الحي + P30: توقيت كل حساب Unmasked في الرسالة النهائية + P31: صفر نداء لكوين عند sync بلا تغييرات + P28: استقبال ملفات المهام .txt/.md + P27: تصفح المشاريع 20/صفحة + P26: حذف ذري آمن + P25: إلغاء تفاعلي + P24: كوميت ذكي بكوين + P20/P21: REST-Only + DATA_RETENTION + P18: وقف فوري لمؤشر النشاط — صفر انحدار) |
 
 ---
 
