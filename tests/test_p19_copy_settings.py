@@ -24,7 +24,7 @@ webapp_dir = pathlib.Path(__file__).resolve().parent.parent
 if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
-BRIDGE_PATH = webapp_dir / "01.31_telegram_gen_bridge.py"
+BRIDGE_PATH = webapp_dir / "01.32_telegram_gen_bridge.py"
 BRIDGE_SRC = BRIDGE_PATH.read_text(encoding="utf-8")
 
 _spec = importlib.util.spec_from_file_location("bridge_mod_p19", BRIDGE_PATH)
@@ -229,16 +229,16 @@ class TestP19VersionBump(unittest.TestCase):
 
     def test_01_banner_and_version(self):
         head = BRIDGE_SRC[:1800]
-        self.assertIn("01.31_telegram_gen_bridge.py", head)
+        self.assertIn("01.32_telegram_gen_bridge.py", head)
         self.assertIn("P19", head)
-        self.assertIn('BUILD_VERSION = "01.31"', BRIDGE_SRC)
+        self.assertIn('BUILD_VERSION = "01.32"', BRIDGE_SRC)
         self.assertIn('BUILD_PARENT_BASELINE = "01.30"', BRIDGE_SRC)
         self.assertIn('BUILD_PARENT_BASELINE_SHA256 = "0130_p19_copy_settings_baseline"', BRIDGE_SRC)
 
     def test_02_scripts_reference_0130(self):
         for rel in ("scripts/hadith_sijil.py", "scripts/rebuild_refactor.py"):
             src = (webapp_dir / rel).read_text(encoding="utf-8")
-            self.assertIn("01.31_telegram_gen_bridge.py", src, rel)
+            self.assertIn("01.32_telegram_gen_bridge.py", src, rel)
             self.assertNotIn("01.30_telegram_gen_bridge.py", src, rel)
 
 
