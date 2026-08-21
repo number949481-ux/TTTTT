@@ -1,12 +1,12 @@
 """[VERBATIM SLICE] p01_bootstrap
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 1..154
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1..154
 المحتوى: Header + imports + logging + redact + html_escape + resolve_shared_path (P23) + load_bot_token
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════╗
-║          🌐 ⚡ 01.32_telegram_gen_bridge.py                 ║
+║          🌐 ⚡ 01.33_telegram_gen_bridge.py                 ║
 ║  إصدار REST-Only + Data Retention (P12..P19 + P20):       ║
 ║  • P20: 🔧 إلغاء Git Native Sync — الرفع عبر REST API فقط  ║
 ║  • P20: 🧬 خطأ AI Data Retention = بروتوكول نفاد الرصيد     ║
@@ -67,7 +67,7 @@ except ImportError:
     Fore = Style = _NC()
 
 SCRIPT_DIR = pathlib.Path(__file__).parent.resolve()
-BUILD_VERSION = "01.32"
+BUILD_VERSION = "01.33"
 BUILD_PARENT_BASELINE = "01.30"
 BUILD_PARENT_BASELINE_SHA256 = "0130_p19_copy_settings_baseline"
 
