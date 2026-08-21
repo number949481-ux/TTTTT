@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p05_project_tree
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 1215..1459
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 1215..1459
 المحتوى: projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + extract_project_id
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
