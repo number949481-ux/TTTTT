@@ -9,7 +9,7 @@ webapp_dir = pathlib.Path(__file__).resolve().parent.parent
 if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
-# SSOT: استيراد عقود الموديلات مباشرة من الملف الأساسي 01.31 (Single-File Doctrine)
+# SSOT: استيراد عقود الموديلات مباشرة من الملف الأساسي 01.32 (Single-File Doctrine)
 _bridge_spec = importlib.util.spec_from_file_location("bridge_mod", webapp_dir / "01.32_telegram_gen_bridge.py")
 _bridge = importlib.util.module_from_spec(_bridge_spec)
 _bridge_spec.loader.exec_module(_bridge)
