@@ -11,7 +11,7 @@
 2. **فحص سجل الجلسات:**
    * افتح `docs/engineering/SESSION_LOG.md` لمعرفة آخر جلسة وآخر مهمة نُفذت.
 3. **التحقق من سلامة الاختبارات الشاملة:**
-   * شغل الأمر: `python scripts/hadith_sijil.py` وتأكد من اجتياز 221/221 اختبار بـ Exit Code 0.
+   * شغل الأمر: `python scripts/hadith_sijil.py` وتأكد من اجتياز 238/238 اختبار بـ Exit Code 0.
 4. **معرفة الملفات النشطة المعتمدة:**
    * ملف البوت النشط: `01.31_telegram_gen_bridge.py`.
    * محرك كوين المستقل: `qwen_engine.py` (يستورده `04_upload_to_Fable_github.py`).
@@ -34,6 +34,7 @@
 * **Early Make-Public (S35/P16):** فور التقاط أول project id في أي مسار (بث SSE / استئناف carry_pid / fork بالـ URL) يُستدعى `make_public` بخيط daemon منفصل مع dedup لكل pid وتجاهل sentinels — زر المعاينة الحية يجب ألا يعطي 404 أبداً (محروس بـ 9 اختبارات في `tests/test_p16_early_public.py`).
 * **Operational Hardening (S36/P17):** جلسة منتهية أثناء الشات = تجديد فوري (لا حرق محاولة)؛ نفاد الرصيد يُكشف داخل حلقة polling أيضاً؛ الجروبات (chat ids سالبة) مدعومة في `is_chat_allowed`؛ `.pytest_cache/` و `bridge_bot.log` ممنوع تتبعهما في git (محروس بـ 27 اختباراً في `tests/test_p17_hardening.py`).
 * **Copy Project Settings (S38/P19):** زر «📋 نسخ إعدادات من مشروع آخر» في لوحة المشروع غير المحفوظ — `generate_sequential_project_name` (اسم تسلسلي تلقائي: «الحج 1» ➔ «الحج 2») + `copy_project_settings_to_new_project` (نسخ GitHub repo/branch/token من مخزن المشروع السري فقط `allow_env_fallback=False` + الموديل + برومبت الاستئناف) — التوكن ممنوع يتسرب من env fallback (محروس بـ 24 اختباراً في `tests/test_p19_copy_settings.py`).
+* **Shared Secrets Auto-Discovery (S42/P23):** الملفات المشتركة (`telegram_bot_token.txt` + `project_registry/` + `projects_tree.json` + `accounts_genspark.json`) تُلتقط حصرياً عبر `resolve_shared_path` — محلي أولاً ثم الفولدر الأب `W___webapp/` ثم المحلي للإنشاء؛ ممنوع الرجوع لمسار `SCRIPT_DIR /` مباشر لهذه الملفات أو hardcode أي توكن، واليافطة المركزية تعيش في `AGENTS.md`/`GEMINI.md` (محروس بـ 17 اختباراً في `tests/test_p23_shared_paths.py`).
 * **Activity-Stop (S37/P18 — حي في 01.30) — قاعدة المالك النصية:** أثناء حلقة polling يُراقب مؤشر Deep Thinking / Tasks Remaining كل دورة؛ **أي تغيّر** (زيادة أو نقصان المهام، تقلّب Deep Thinking، اختفاء المؤشر بعد نشاط) = **وقف فوري `break` بلا أي تكملة** — «لو غيرت مهام وقف مش تكمل». فشل جلب المؤشر (None) يُتجاهل ولا يوقف (محروس بـ 20 اختباراً في `tests/test_p18_activity_stop.py`).
 * **بروتوكول «حدث سجل»:** عند استلام كلمة السر «حدث سجل»، يتم فحص التعديلات ➔ تشغيل الاختبارات ➔ تحديث `docs/engineering/PROGRESS.md` و `docs/` ودفاتر الذاكرة.
 
