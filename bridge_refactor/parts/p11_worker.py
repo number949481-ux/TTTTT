@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5677..6023
-المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5821..6171
+المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def process_user_task_async(
@@ -241,6 +241,9 @@ def process_user_task_async(
         # 🧾 [P29] سطر مسار الحسابات — يظهر فقط عند تعدد الحسابات الفعلية أثناء المهمة
         journey_line = format_account_journey_line(getattr(cfg, "account_journey", []))
         journey_block = f"\n{journey_line}" if journey_line else ""
+        # ⏱️ [P30] كتلة المحاسبة الزمنية — تظهر دائماً عند وجود spans (حتى بحساب واحد)
+        timing_stats = format_account_timing_block(cfg, task_total_seconds=time.time() - task_started_at)
+        timing_block = f"\n\n{timing_stats}" if timing_stats else ""
         is_finished = check_project_finished_flag(status, last_resp_text)
         final_pid = extract_stage_project_id(pub_url, ext_dir)
         runtime_identity = remember_registry_identity(
@@ -290,6 +293,7 @@ def process_user_task_async(
             f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>{journey_block}\n"
             f"🆔 <b>Project ID:</b> <code>{html_escape(pid)}</code>{root_line}{latest_line}{resume_line}{fork_line}\n"
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
+            f"{timing_block}"
         )
 
         # إصلاح: بناء الكيبورد بدون أزرار فارغة (url=None كان يكسر الرسالة كلها بصمت)
