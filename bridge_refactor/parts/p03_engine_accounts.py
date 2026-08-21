@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 459..846
-المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig + accounts I/O + readiness + cooldown + refresh_cookies_on_401
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 459..850
+المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token) + accounts I/O + readiness + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 _ENGINE_CACHE = {"mod": None, "path": None}
@@ -199,6 +199,10 @@ class BridgeConfig:
     project_resume_prompt_runtime: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_runtime_binding_source: str = ""
     account_selection_observer: object | None = None
+    # 🛑 [P25] حدث الإلغاء التفاعلي — يُحقن من الـ worker ويُمرَّر لمحرك التوليد
+    # (cfg.cancel_event) لقطع بث ask_proxy فوراً + وقف حلقات المتابعة (polling).
+    cancel_event: object | None = None
+    cancel_token: str = ""
 
 
 # ══════════════════════════════════════════════════════════════
