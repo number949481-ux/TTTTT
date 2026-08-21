@@ -24,18 +24,18 @@ OUT = ROOT / "bridge_refactor"
 # ─── خريطة الأجزاء: (اسم الملف، أول سطر، آخر سطر، وصف) ───────
 # الحدود مُختارة عند بدايات def/class top-level للحفاظ على السلامة النحوية.
 PARTS = [
-    ("p01_bootstrap",     1,   138, "Header + imports + logging + redact + html_escape + load_bot_token"),
-    ("p02_config_contracts",   139,   442, "Global config + models + CONTRACTS + resume-prompt utils + project settings (P17: ALLOWED_GROUP_IDS + is_chat_allowed لدعم الجروبات)"),
-    ("p03_engine_accounts",   443,   830, "Engine loader + account locks/claims + fingerprint + BridgeConfig + accounts I/O + readiness + cooldown + refresh_cookies_on_401"),
-    ("p04_telegram_api",   831,  1198, "Telegram API core + send/edit + AccountSelection Live Renderer/Transport + send_document"),
-    ("p05_project_tree",  1199,  1443, "projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + extract_project_id"),
-    ("p06_engine_flow",  1444,  2393, "Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة)"),
-    ("p07_state_registry",  2394,  3342, "EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader)"),
-    ("p08_registry_index",  3343,  3651, "Project run locks + registry index I/O + identity + resume context + viewer URLs + live preview keyboard"),
-    ("p09_github_dashboard",  3652,  4823, "GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر"),
-    ("p10_progress_credit",  4824,  5104, "Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer"),
-    ("p11_worker",  5105,  5409, "process_user_task_async (المشغل الكامل للمهمة)"),
-    ("p12_handlers_main",  5410,  6390, "get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc:)"),
+    ("p01_bootstrap",     1,   154, "Header + imports + logging + redact + html_escape + resolve_shared_path (P23) + load_bot_token"),
+    ("p02_config_contracts",   155,   458, "Global config + models + CONTRACTS + resume-prompt utils + project settings (P17: ALLOWED_GROUP_IDS + is_chat_allowed لدعم الجروبات)"),
+    ("p03_engine_accounts",   459,   846, "Engine loader + account locks/claims + fingerprint + BridgeConfig + accounts I/O + readiness + cooldown + refresh_cookies_on_401"),
+    ("p04_telegram_api",   847,  1214, "Telegram API core + send/edit + AccountSelection Live Renderer/Transport + send_document"),
+    ("p05_project_tree",  1215,  1459, "projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + extract_project_id"),
+    ("p06_engine_flow",  1460,  2409, "Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة)"),
+    ("p07_state_registry",  2410,  3358, "EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader)"),
+    ("p08_registry_index",  3359,  3667, "Project run locks + registry index I/O + identity + resume context + viewer URLs + live preview keyboard"),
+    ("p09_github_dashboard",  3668,  4839, "GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر"),
+    ("p10_progress_credit",  4840,  5120, "Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer"),
+    ("p11_worker",  5121,  5425, "process_user_task_async (المشغل الكامل للمهمة)"),
+    ("p12_handlers_main",  5426,  6406, "get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc:)"),
 ]
 
 # ─── خريطة الواجهات: facade module → أجزاء تُجمع رموزها ─────
