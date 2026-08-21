@@ -21,7 +21,7 @@ webapp_dir = pathlib.Path(__file__).resolve().parent.parent
 if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
-_spec = importlib.util.spec_from_file_location("bridge_mod_p11", webapp_dir / "01.31_telegram_gen_bridge.py")
+_spec = importlib.util.spec_from_file_location("bridge_mod_p11", webapp_dir / "01.32_telegram_gen_bridge.py")
 _bridge = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_bridge)
 
@@ -103,7 +103,7 @@ class TestColoredKeyboardsIntegration(unittest.TestCase):
 
     def test_10_source_has_no_invalid_style_literals(self):
         """10. فحص شفرة المصدر: لا توجد أي قيمة style غير رسمية مكتوبة حرفياً"""
-        src = (webapp_dir / "01.31_telegram_gen_bridge.py").read_text(encoding="utf-8")
+        src = (webapp_dir / "01.32_telegram_gen_bridge.py").read_text(encoding="utf-8")
         import re
         for m in re.finditer(r'"style"\s*:\s*"([^"]+)"', src):
             val = m.group(1)
