@@ -6,9 +6,9 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 15:48:53 UTC`
+* **التاريخ والوقت:** `2026-08-21 15:57:55 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.634 ثانية`
+* **الزمن المقاس:** `0.643 ثانية`
 * **النتيجة العامة:** `Ran 297 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
@@ -414,7 +414,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 297 tests in 0.252s
+Ran 297 tests in 0.287s
 
 OK
 ```

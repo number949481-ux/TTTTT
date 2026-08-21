@@ -1,4 +1,4 @@
-# PROGRESS — Telegram Gen Bridge 01.32
+# PROGRESS — Telegram Gen Bridge 01.33
 
 > **عقد هذا الملف:** هذا هو المصدر الوحيد للحالة الحية للبرنامج: tasks والمراحل والحواجز والنسب وقرار الإصدار.
 > الملفات الأخرى تعرّف الأدلة والقرارات والمواصفات فقط، وتشير إلى IDs؛ لا تنسخ status تشغيلياً.
@@ -19,22 +19,22 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S45 |
+| **last-updated** | 2026-08-21 — S46 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
-| **target-version** | `01.32` |
+| **target-version** | `01.33` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
-| **target bot script** | `01.32_telegram_gen_bridge.py` 🚀 |
+| **target bot script** | `01.33_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
 | **current WBS phase** | **P25 — الإلغاء التفاعلي وإيقاف التوليد الفوري (Interactive Cancellation Flow)** 🎯 ✅ مغلقة |
-| **current slice** | `TSK-4205` (DONE) ➔ مواءمة P25 كاملة: PARTS boundaries الجديدة (p03 ➔ 850 … p12 ➔ 6702) + parity 11/11 + بوابة 295/295 Exit 0 + توثيق شامل |
-| **current-task** | `S45` — P25 مكتملة + ترقية 01.32: مسجل أحداث الإلغاء (7 دوال + Lock) + زر 🛑 أحمر بخطوتي أمان في بطاقة المعاينة + قطع بث SSE تعاوني في المحرك 01.03 (`__USER_CANCELLED__` بأولوية قبل تصنيف الرصيد + `r.close()`) + `Event.wait(5)` بدل sleep + `CANCELLED` بلا عقوبة حساب + تنظيف مضمون في `finally` + 40 حارساً جديداً (test_p25) |
-| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.32 (زر الإلغاء التفاعلي على تيليجرام حي + مسار DATA_RETENTION + الرفع REST) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
+| **current slice** | `TSK-4302` (DONE) ➔ S46 مكتملة: ترقية `01.33` + إصلاح لوحة ما بعد الإلغاء (بلاغ `Cancel_Flag_03.md`) + حارسان جديدان + بوابة 297/297 Exit 0 + توثيق شامل |
+| **current-task** | `S46` — ترقية الإصدار `01.32` ➔ `01.33` (الملف النشط `01.33_telegram_gen_bridge.py` — 6702 سطراً، و`01.32` مؤرشف في `docs/legacy/`) + إصلاح بلاغ المالك (`Cancel_Flag_03.md`): رسالة الإلغاء النهائية تعرض اللوحة الكاملة `build_dashboard_keyboard` بدل الزر اليتيم [🚀 مشروع جديد] + حارسان جديدان (test_17/test_18 في test_p25 — الملف الآن 42 اختباراً) — الإجمالي 297 |
+| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33 (زر الإلغاء التفاعلي + لوحة ما بعد الإلغاء الكاملة على تيليجرام حي + مسار DATA_RETENTION + الرفع REST) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
 | **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
-| **completion** | 295/295 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 295/295 PASS — Exit Code 0 |
+| **completion** | 297/297 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 297/297 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
-| **release decision** | `READY` 🟢 (P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
+| **release decision** | `READY` 🟢 (S46: لوحة كاملة بعد الإلغاء + P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
 
 ---
 
@@ -270,3 +270,13 @@
 - [x] **`[TSK-4204]`** T4 — حزمة الحراسة `tests/test_p25_interactive_cancel.py`: **40 اختباراً** (مسجل 12 + كيبورد 5 + عقود worker/failover 16 + عقد قطع بث المحرك 5 + محاكاة تدفق كامل 2 تشمل تسجيل ➔ زر ➔ تأكيد ➔ استيقاظ فوري ➔ تنظيف). — دليل: 40/40 PASS.
 - [x] **`[TSK-4205]`** المواءمة الكاملة + ترقية الإصدار: `BUILD_VERSION = "01.32"` والملف النشط `01.32_telegram_gen_bridge.py` (6702 سطراً) + PARTS boundaries الجديدة (p03 ➔ 850 … p12 ➔ 6702) + إعادة بناء `bridge_refactor/` بتطابق بايت (parity 11/11) + تصحيح ليبلات «01.31» النصية القديمة في `hadith_sijil.py`/`generate_docs.py` + بوابة `hadith_sijil.py` = **295/295 PASS Exit Code 0** + التوثيق (هذا الملف + PROGRESS الجذري + SESSION_LOG DEC-020 + TEST_SUITE_CATALOG + README + V3_RESUME). — دليل: Gate 295/295 + هذا الـ commit.
 - [x] **`[TSK-4206]`** نظافة git (المرة السابعة): إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع بعد أن أعادتهما المزامنة التلقائية وكسرا حارسي P17 (الموافقة الدائمة من S41). — دليل: `TestGeneratedFilesUntracked` 3/3 PASS.
+
+---
+
+## 🧭 S46 — إصلاح لوحة ما بعد الإلغاء + ترقية 01.33 (بلاغ `Cancel_Flag_03.md`)
+
+> **بلاغ المالك (`Cancel_Flag_03.md`):** بعد تأكيد الإلغاء الناجح كانت الرسالة النهائية تعرض زراً يتيماً واحداً فقط [🚀 مشروع جديد] — المطلوب عرض لوحة التحكم الكاملة (Dashboard) ليستأنف المستخدم عمله فوراً بدون أوامر يدوية.
+
+- [x] **`[TSK-4301]`** الإصلاح الجراحي: رسالة الإلغاء النهائية في الـ worker (سطر ~5563 في `01.33`) تستدعي `build_dashboard_keyboard(chat_id)` كاملةً بدل الكيبورد اليتيم — سلوك ما بعد الإلغاء الآن مطابق لسلوك ما بعد اكتمال البناء. — دليل: `test_17_cancel_terminal_shows_full_dashboard_keyboard` + `test_18_cancel_terminal_has_no_orphan_single_button` (حارسا S46 في `tests/test_p25_interactive_cancel.py` — الملف الآن **42 اختباراً**).
+- [x] **`[TSK-4302]`** ترقية الإصدار + المواءمة: `BUILD_VERSION = "01.33"` والملف النشط `01.33_telegram_gen_bridge.py` (6702 سطراً — نفس boundaries p03 ➔ 850 … p12 ➔ 6702)، `01.32` أُرشف في `docs/legacy/`، parity 11/11، بوابة `hadith_sijil.py` = **297/297 PASS Exit Code 0** + تحديث التوثيق الشامل (هذا الملف + PROGRESS الجذري + V3_RESUME + TEST_SUITE_CATALOG + README + SESSION_LOG DEC-021). — دليل: Gate 297/297 + هذا الـ commit.
+- [x] **`[TSK-4303]`** نظافة git (المرة الثامنة): إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع بعد أن أعادتهما المزامنة التلقائية مجدداً وكسرا حارسي P17 (الموافقة الدائمة من S41). — دليل: `TestGeneratedFilesUntracked` 3/3 PASS.

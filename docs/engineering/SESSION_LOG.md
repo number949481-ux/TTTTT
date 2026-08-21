@@ -156,3 +156,10 @@
 - **الحراسة:** `tests/test_p25_interactive_cancel.py` (40 اختباراً — 5 مجموعات: CancellationManager 12 + كيبورد البطاقة 5 + عقود worker/failover 16 + عقد قطع بث المحرك 5 + محاكاة التدفق الكامل 2).
 - **الأدلة:** pytest ➔ **295 passed** + `python scripts/hadith_sijil.py` ➔ Exit Code 0 + parity 11/11 بعد إعادة حساب PARTS بالمراسي (6702 سطراً: p03 ➔ 850 … p12 ➔ 6702). ملحق: إزالة `bridge_bot.log` و `.pytest_cache/` من التتبع (المرة السابعة) + تصحيح ليبلات «01.31» النصية في `hadith_sijil.py`/`generate_docs.py`.
 - **الحالة:** مُعتمد وفعال. **P22 (Heartbeat) تظل مجمدة ⏸️ — لم يُلمس أي ملف يخصها.**
+
+### [DEC-021] — S46 إصلاح لوحة ما بعد الإلغاء + ترقية 01.33 (بلاغ `Cancel_Flag_03.md`)
+- **القرار:** (1) ترقية الإصدار النشط `01.32` ➔ `01.33_telegram_gen_bridge.py` (`BUILD_VERSION = "01.33"`، baseline المجمّد ما زال `01.30`، و`01.32` أُرشف في `docs/legacy/`). (2) إصلاح جراحي واحد: رسالة الإلغاء النهائية في الـ worker (سطر ~5563) تستدعي `build_dashboard_keyboard(chat_id)` كاملةً بدل الكيبورد اليتيم ذي الزر الواحد [🚀 مشروع جديد] — سلوك ما بعد الإلغاء الآن مطابق حرفياً لسلوك ما بعد اكتمال البناء. (3) قاعدة دائمة جديدة: أي رسالة نهائية (terminal) بعد إلغاء يجب أن ترفق اللوحة الكاملة — ممنوع الزر اليتيم.
+- **السبب:** بلاغ المالك الصريح في `Cancel_Flag_03.md`: بعد الإلغاء الناجح كان المستخدم يُترك أمام زر وحيد ولا يستطيع استئناف عمله (معاينة/سجل/إعدادات) بدون أوامر يدوية.
+- **الحراسة:** حارسان جديدان في `tests/test_p25_interactive_cancel.py` (الملف الآن 42): `test_17_cancel_terminal_shows_full_dashboard_keyboard` + `test_18_cancel_terminal_has_no_orphan_single_button`.
+- **الأدلة:** pytest ➔ **297 passed** + `python scripts/hadith_sijil.py` ➔ Exit Code 0 + parity 11/11 (نفس boundaries — 6702 سطراً). ملحق: إزالة `bridge_bot.log` و `.pytest_cache/` من التتبع (المرة الثامنة — الموافقة الدائمة من S41).
+- **الحالة:** مُعتمد وفعال. **P22 (Heartbeat) تظل مجمدة ⏸️ — لم يُلمس أي ملف يخصها.**
