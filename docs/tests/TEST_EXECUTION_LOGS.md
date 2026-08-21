@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 22:33:14 UTC`
+* **التاريخ والوقت:** `2026-08-21 23:14:13 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.116 ثانية`
-* **النتيجة العامة:** `Ran 483 tests — OK`
+* **الزمن المقاس:** `1.259 ثانية`
+* **النتيجة العامة:** `Ran 561 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -600,6 +600,85 @@ test_01_qwen_failure_keeps_old_message_verbatim (test_p31_lazy_qwen_prefix.TestV
 فشل كوين (Exception) ← نفس رسالة الكوميت القديمة حرفياً — الرفع لا ينكسر ... ok
 test_02_failed_qwen_memoized_not_retried_per_file (test_p31_lazy_qwen_prefix.TestVerbatimFallbackPreserved.test_02_failed_qwen_memoized_not_retried_per_file)
 فشل كوين مرة ← يُحفظ "" ولا تتكرر المحاولة لكل ملف (memoized حتى في الفشل) ... ok
+test_01_click_email_button_shows_card (test_p32_account_password_lookup.TestAccountViewButton.test_01_click_email_button_shows_card) ... ok
+test_02_click_from_second_page_index (test_p32_account_password_lookup.TestAccountViewButton.test_02_click_from_second_page_index) ... ok
+test_03_card_offers_lookup_again_and_dashboard (test_p32_account_password_lookup.TestAccountViewButton.test_03_card_offers_lookup_again_and_dashboard) ... ok
+test_04_state_cleared_after_view (test_p32_account_password_lookup.TestAccountViewButton.test_04_state_cleared_after_view) ... ok
+test_05_out_of_range_index_is_graceful (test_p32_account_password_lookup.TestAccountViewButton.test_05_out_of_range_index_is_graceful) ... ok
+test_06_garbage_index_is_graceful (test_p32_account_password_lookup.TestAccountViewButton.test_06_garbage_index_is_graceful) ... ok
+test_07_negative_index_rejected (test_p32_account_password_lookup.TestAccountViewButton.test_07_negative_index_rejected) ... ok
+test_01_first_page_of_twelve (test_p32_account_password_lookup.TestAccountsPageBounds.test_01_first_page_of_twelve) ... ok
+test_02_middle_page (test_p32_account_password_lookup.TestAccountsPageBounds.test_02_middle_page) ... ok
+test_03_last_page (test_p32_account_password_lookup.TestAccountsPageBounds.test_03_last_page) ... ok
+test_04_page_beyond_last_clamps_down (test_p32_account_password_lookup.TestAccountsPageBounds.test_04_page_beyond_last_clamps_down) ... ok
+test_05_zero_and_negative_clamp_up (test_p32_account_password_lookup.TestAccountsPageBounds.test_05_zero_and_negative_clamp_up) ... ok
+test_06_garbage_page_defaults_to_first (test_p32_account_password_lookup.TestAccountsPageBounds.test_06_garbage_page_defaults_to_first) ... ok
+test_07_empty_total_still_one_page (test_p32_account_password_lookup.TestAccountsPageBounds.test_07_empty_total_still_one_page) ... ok
+test_08_exact_multiple_has_no_phantom_page (test_p32_account_password_lookup.TestAccountsPageBounds.test_08_exact_multiple_has_no_phantom_page) ... ok
+test_01_cancel_clears_state (test_p32_account_password_lookup.TestCancelPath.test_01_cancel_clears_state) ... ok
+test_02_cancel_returns_dashboard_keyboard (test_p32_account_password_lookup.TestCancelPath.test_02_cancel_returns_dashboard_keyboard) ... ok
+test_03_cancel_message_confirms_cancellation (test_p32_account_password_lookup.TestCancelPath.test_03_cancel_message_confirms_cancellation) ... ok
+test_04_text_after_cancel_is_normal_task_again (test_p32_account_password_lookup.TestCancelPath.test_04_text_after_cancel_is_normal_task_again) ... ok
+test_01_new_button_label_present (test_p32_account_password_lookup.TestDashboardButtonContract.test_01_new_button_label_present) ... ok
+test_02_new_callback_present (test_p32_account_password_lookup.TestDashboardButtonContract.test_02_new_callback_present) ... ok
+test_03_old_check_accs_callback_removed (test_p32_account_password_lookup.TestDashboardButtonContract.test_03_old_check_accs_callback_removed) ... ok
+test_04_old_button_label_removed (test_p32_account_password_lookup.TestDashboardButtonContract.test_04_old_button_label_removed) ... ok
+test_05_dashboard_keyboard_exposes_lookup (test_p32_account_password_lookup.TestDashboardButtonContract.test_05_dashboard_keyboard_exposes_lookup) ... ok
+test_06_state_constant_defined (test_p32_account_password_lookup.TestDashboardButtonContract.test_06_state_constant_defined) ... ok
+test_07_page_size_is_five (test_p32_account_password_lookup.TestDashboardButtonContract.test_07_page_size_is_five) ... ok
+test_01_deterministic_alphabetical_order (test_p32_account_password_lookup.TestLookupAccountListing.test_01_deterministic_alphabetical_order) ... ok
+test_02_skips_entries_without_email (test_p32_account_password_lookup.TestLookupAccountListing.test_02_skips_entries_without_email) ... ok
+test_03_empty_file_returns_empty_list (test_p32_account_password_lookup.TestLookupAccountListing.test_03_empty_file_returns_empty_list) ... ok
+test_04_read_only_never_mutates_file (test_p32_account_password_lookup.TestLookupAccountListing.test_04_read_only_never_mutates_file) ... ok
+test_01_first_page_shows_five_accounts (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_01_first_page_shows_five_accounts) ... ok
+test_02_second_page_uses_absolute_indices (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_02_second_page_uses_absolute_indices) ... ok
+test_03_first_page_has_next_but_no_prev (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_03_first_page_has_next_but_no_prev) ... ok
+test_04_last_page_has_prev_but_no_next (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_04_last_page_has_prev_but_no_next) ... ok
+test_05_middle_page_has_both_directions (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_05_middle_page_has_both_directions) ... ok
+test_06_counter_button_is_noop (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_06_counter_button_is_noop) ... ok
+test_07_single_page_hides_nav_row (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_07_single_page_hides_nav_row) ... ok
+test_08_cancel_button_always_present (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_08_cancel_button_always_present) ... ok
+test_09_callback_data_within_telegram_64_byte_limit (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_09_callback_data_within_telegram_64_byte_limit) ... ok
+test_10_empty_db_text_reports_no_accounts (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_10_empty_db_text_reports_no_accounts) ... ok
+test_11_text_shows_page_position_and_total (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_11_text_shows_page_position_and_total) ... ok
+test_12_text_invites_manual_typing (test_p32_account_password_lookup.TestLookupKeyboardPagination.test_12_text_invites_manual_typing) ... ok
+test_01_exact_match_returns_password (test_p32_account_password_lookup.TestManualEmailSearch.test_01_exact_match_returns_password) ... ok
+test_02_case_and_whitespace_insensitive (test_p32_account_password_lookup.TestManualEmailSearch.test_02_case_and_whitespace_insensitive) ... ok
+test_03_missing_email_returns_none (test_p32_account_password_lookup.TestManualEmailSearch.test_03_missing_email_returns_none) ... ok
+test_04_blank_input_returns_none (test_p32_account_password_lookup.TestManualEmailSearch.test_04_blank_input_returns_none) ... ok
+test_05_no_partial_substring_match (test_p32_account_password_lookup.TestManualEmailSearch.test_05_no_partial_substring_match) ... ok
+test_01_typed_email_returns_password_card (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_01_typed_email_returns_password_card) ... ok
+test_02_typed_email_is_case_insensitive (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_02_typed_email_is_case_insensitive) ... ok
+test_03_state_cleared_after_success (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_03_state_cleared_after_success) ... ok
+test_04_email_is_not_dispatched_as_task_prompt (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_04_email_is_not_dispatched_as_task_prompt) ... ok
+test_05_unknown_email_reports_error_and_keeps_state (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_05_unknown_email_reports_error_and_keeps_state) ... ok
+test_06_unknown_email_offers_retry_keyboard (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_06_unknown_email_offers_retry_keyboard) ... ok
+test_07_retry_after_failure_succeeds (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_07_retry_after_failure_succeeds) ... ok
+test_08_no_regression_plain_text_still_becomes_task (test_p32_account_password_lookup.TestManualPathThroughUpdate.test_08_no_regression_plain_text_still_becomes_task) ... ok
+test_01_sets_interactive_state_with_page_one (test_p32_account_password_lookup.TestOpenLookupScreen.test_01_sets_interactive_state_with_page_one) ... ok
+test_02_sends_hybrid_screen_with_keyboard (test_p32_account_password_lookup.TestOpenLookupScreen.test_02_sends_hybrid_screen_with_keyboard) ... ok
+test_01_next_page_edits_in_place (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_01_next_page_edits_in_place) ... ok
+test_02_next_page_shows_second_batch (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_02_next_page_shows_second_batch) ... ok
+test_03_prev_page_returns_to_first_batch (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_03_prev_page_returns_to_first_batch) ... ok
+test_04_page_persisted_in_state (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_04_page_persisted_in_state) ... ok
+test_05_manual_input_still_works_while_browsing (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_05_manual_input_still_works_while_browsing) ... ok
+test_06_out_of_range_page_clamps_without_crash (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_06_out_of_range_page_clamps_without_crash) ... ok
+test_07_garbage_page_token_clamps_to_first (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_07_garbage_page_token_clamps_to_first) ... ok
+test_08_noop_counter_does_nothing (test_p32_account_password_lookup.TestPaginationThroughUpdate.test_08_noop_counter_does_nothing) ... ok
+test_01_email_and_password_are_copyable_code (test_p32_account_password_lookup.TestPasswordCardRendering.test_01_email_and_password_are_copyable_code) ... ok
+test_02_missing_password_is_reported_explicitly (test_p32_account_password_lookup.TestPasswordCardRendering.test_02_missing_password_is_reported_explicitly) ... ok
+test_03_absent_password_key_does_not_crash (test_p32_account_password_lookup.TestPasswordCardRendering.test_03_absent_password_key_does_not_crash) ... ok
+test_04_html_special_chars_escaped (test_p32_account_password_lookup.TestPasswordCardRendering.test_04_html_special_chars_escaped) ... ok
+test_05_status_line_reflects_active (test_p32_account_password_lookup.TestPasswordCardRendering.test_05_status_line_reflects_active) ... ok
+test_06_banned_state_described (test_p32_account_password_lookup.TestPasswordCardRendering.test_06_banned_state_described) ... ok
+test_07_cooldown_state_described (test_p32_account_password_lookup.TestPasswordCardRendering.test_07_cooldown_state_described) ... ok
+test_08_card_keyboard_has_retry_and_back (test_p32_account_password_lookup.TestPasswordCardRendering.test_08_card_keyboard_has_retry_and_back) ... ok
+test_01_manual_path_precedes_other_states (test_p32_account_password_lookup.TestSourceStructureContracts.test_01_manual_path_precedes_other_states)
+المسار اليدوي يجب أن يكون أول فحص action وإلا التقطته حالة أخرى. ... ok
+test_02_all_four_callbacks_handled (test_p32_account_password_lookup.TestSourceStructureContracts.test_02_all_four_callbacks_handled) ... ok
+test_03_view_callback_uses_index_not_email (test_p32_account_password_lookup.TestSourceStructureContracts.test_03_view_callback_uses_index_not_email) ... ok
+test_04_lookup_uses_read_accounts_safe_only (test_p32_account_password_lookup.TestSourceStructureContracts.test_04_lookup_uses_read_accounts_safe_only) ... ok
+test_05_p29_p30_contracts_untouched (test_p32_account_password_lookup.TestSourceStructureContracts.test_05_p29_p30_contracts_untouched) ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -652,7 +731,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 483 tests in 0.630s
+Ran 561 tests in 0.806s
 
 OK
 ```
