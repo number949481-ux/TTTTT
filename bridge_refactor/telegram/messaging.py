@@ -9,6 +9,7 @@ __all__ = [
     "_call_telegram_api_json",
     "send_telegram_message_detailed",
     "edit_telegram_message_text",
+    "edit_telegram_message_reply_markup",
     "send_telegram_message",
     "_account_selection_event_title",
     "AccountSelectionLiveRenderer",
