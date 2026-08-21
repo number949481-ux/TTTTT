@@ -136,3 +136,9 @@
 * **الحراسة:** حارسان جديدان في `tests/test_p20_rest_only_data_retention.py` (test_09_p21_uploader_distinguishes_new_vs_modified + test_10_p21_github_sync_consumes_modified).
 * **الأدلة:** pytest ➔ 221 passed + `python scripts/hadith_sijil.py` ➔ Exit Code 0. PARTS محدثة (+4 أسطر ➔ 6390) و bridge_refactor بتطابق بايت.
 * **الحالة:** مُعتمد وفعال.
+
+### [DEC-018] — P23 البحث الهرمي للملفات المشتركة + يافطة AGENTS/GEMINI (S42)
+- **القرار:** اعتماد `resolve_shared_path` (محلي أولاً ➔ الفولدر الأب `W___webapp/` ➔ المحلي للإنشاء) كآلية موحدة لالتقاط الملفات المشتركة: `telegram_bot_token.txt` + `project_registry/` + `projects_tree.json` + `accounts_genspark.json` (كمرشح أول مع إبقاء fallback القديم) — Zero Breaking Changes بأولوية `local.exists()`.
+- **السبب:** توحيد الأسرار والسجلات بين نسخ الجسر المتعددة بدون نسخ يدوي ولا كسر النسخ القديمة (خطة المالك المعتمدة في `P23_Shared_Secrets_And_Project_Registry_Auto_Discovery.md`).
+- **الأدلة:** `tests/test_p23_shared_paths.py` 17/17 + بوابة 238/238 Exit 0 + parity 11/11 بعد إزاحة PARTS +16 (6406 سطراً).
+- **ملحق:** إنشاء `AGENTS.md` + `GEMINI.md` (القفل الثاني — يافطة القاعدة المركزية لأي AI/محرر).
