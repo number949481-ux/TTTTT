@@ -17,7 +17,7 @@ import unittest
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE_PATH = os.path.join(BASE_DIR, "qwen_engine.py")
 UPLOADER_PATH = os.path.join(BASE_DIR, "04_upload_to_Fable_github.py")
-BRIDGE_PATH = os.path.join(BASE_DIR, "01.31_telegram_gen_bridge.py")
+BRIDGE_PATH = os.path.join(BASE_DIR, "01.32_telegram_gen_bridge.py")
 
 
 def _load(name, path):
@@ -174,8 +174,8 @@ class TestP15VersionBump(unittest.TestCase):
     """ترقية 01.31: بانر + إصدار + مراجع."""
 
     def test_15_bridge_0128_banner_and_version(self):
-        self.assertIn("01.31_telegram_gen_bridge.py", BRIDGE_SRC[:1200])
-        self.assertIn('BUILD_VERSION = "01.31"', BRIDGE_SRC)
+        self.assertIn("01.32_telegram_gen_bridge.py", BRIDGE_SRC[:1200])
+        self.assertIn('BUILD_VERSION = "01.32"', BRIDGE_SRC)
         self.assertIn('BUILD_PARENT_BASELINE = "01.30"', BRIDGE_SRC)
         # البانر الجديد يعكس P12..P19 + P20
         self.assertIn("P12..P19 + P20", BRIDGE_SRC[:1500])
@@ -184,9 +184,9 @@ class TestP15VersionBump(unittest.TestCase):
     def test_16_scripts_reference_0128(self):
         gate = open(os.path.join(BASE_DIR, "scripts", "hadith_sijil.py"), encoding="utf-8").read()
         rebuild = open(os.path.join(BASE_DIR, "scripts", "rebuild_refactor.py"), encoding="utf-8").read()
-        self.assertIn("01.31_telegram_gen_bridge.py", gate)
+        self.assertIn("01.32_telegram_gen_bridge.py", gate)
         self.assertNotIn("01.27_telegram_gen_bridge.py", gate)
-        self.assertIn("01.31_telegram_gen_bridge.py", rebuild)
+        self.assertIn("01.32_telegram_gen_bridge.py", rebuild)
         self.assertNotIn("01.27_telegram_gen_bridge.py", rebuild)
 
 
