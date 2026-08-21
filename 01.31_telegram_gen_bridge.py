@@ -115,14 +115,30 @@ def html_escape(text: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════
+# 🔎 [P23] البحث الهرمي للملفات المشتركة: محلي أولاً ثم الفولدر الأب (W___webapp/)
+# ══════════════════════════════════════════════════════════════
+def resolve_shared_path(name: str) -> pathlib.Path:
+    """مسار مشترك ذكي: لو الملف/المجلد موجود جنب النسخة يستخدمه (أولوية محلية)،
+    وإلا يلقطه من الفولدر الأب المركزي — ولو غير موجود في الاثنين يرجع المحلي (للإنشاء).
+    Zero Breaking Changes: النسخ القديمة بملفاتها المحلية تشتغل كما هي تماماً."""
+    local = SCRIPT_DIR / name
+    if local.exists():
+        return local
+    parent = SCRIPT_DIR.parent / name
+    if parent.exists():
+        return parent
+    return local
+
+
+# ══════════════════════════════════════════════════════════════
 # 🔑 توكن البوت: من متغير البيئة أو ملف محلي (gitignored) — ممنوع الـ Hardcode
 # ══════════════════════════════════════════════════════════════
 def load_bot_token() -> str:
-    """قراءة توكن البوت بأمان: TELEGRAM_BOT_TOKEN ← telegram_bot_token.txt (محلي، خارج git)"""
+    """قراءة توكن البوت بأمان: TELEGRAM_BOT_TOKEN ← telegram_bot_token.txt (محلي ثم الأب، خارج git)"""
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     if token:
         return token
-    token_file = SCRIPT_DIR / "telegram_bot_token.txt"
+    token_file = resolve_shared_path("telegram_bot_token.txt")  # 🔎 [P23] محلي ثم الأب
     try:
         if token_file.exists():
             token = token_file.read_text(encoding="utf-8").strip()
@@ -198,8 +214,8 @@ def is_chat_allowed(chat_id, from_user_id=None) -> bool:
             return False
     return False
 
-PROJECTS_TREE_FILE = SCRIPT_DIR / "projects_tree.json"
-PROJECT_REGISTRY_HOME = SCRIPT_DIR / "project_registry"
+PROJECTS_TREE_FILE = resolve_shared_path("projects_tree.json")  # 🔎 [P23] شجرة مشتركة: محلي ثم الأب
+PROJECT_REGISTRY_HOME = resolve_shared_path("project_registry")  # 🔎 [P23] سجل مركزي: محلي ثم الأب
 PROJECT_REGISTRY_INDEX_FILE = PROJECT_REGISTRY_HOME / "registry.json"
 # ══════════════════════════════════════════════════════════════
 # 🧠 Model Contracts & Normalization Runtime (Self-Contained)
@@ -647,7 +663,7 @@ def get_accounts_file_path(json_path: str | None = None) -> pathlib.Path | None:
     if json_path:
         possible_paths.append(pathlib.Path(json_path))
     possible_paths.extend([
-        SCRIPT_DIR / "accounts_genspark.json",
+        resolve_shared_path("accounts_genspark.json"),  # 🔎 [P23] محلي ثم الأب (موحّد)
         SCRIPT_DIR.parent / "accounts_genspark.json",
         pathlib.Path("accounts_genspark.json"),
     ])
