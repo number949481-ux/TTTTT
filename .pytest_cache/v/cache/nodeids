@@ -281,6 +281,8 @@
   "tests/test_p25_interactive_cancel.py::TestWorkerIntegrationContracts::test_14_worker_handles_cancelled_terminal_message",
   "tests/test_p25_interactive_cancel.py::TestWorkerIntegrationContracts::test_15_live_preview_card_carries_cancel_button",
   "tests/test_p25_interactive_cancel.py::TestWorkerIntegrationContracts::test_16_bridge_config_declares_cancel_fields",
+  "tests/test_p25_interactive_cancel.py::TestWorkerIntegrationContracts::test_17_cancel_terminal_shows_full_dashboard_keyboard",
+  "tests/test_p25_interactive_cancel.py::TestWorkerIntegrationContracts::test_18_cancel_terminal_has_no_orphan_single_button",
   "tests/test_p2_model_routing.py::TestP2ModelRouting::test_fable_models_is_gpt41_hardcoded",
   "tests/test_p2_model_routing.py::TestP2ModelRouting::test_gpt56_sol_contract",
   "tests/test_p2_model_routing.py::TestP2ModelRouting::test_kimi_k3_contract",
