@@ -2,7 +2,7 @@
 """
 rebuild_refactor.py
 ===================
-إعادة بناء bridge_refactor/ من الملف المرجعي 01.31_telegram_gen_bridge.py
+إعادة بناء bridge_refactor/ من الملف المرجعي 01.32_telegram_gen_bridge.py
 بطريقة "التقسيم الأمين الحرفي" (Verbatim Faithful Split):
 
   - كل ملف جزء (part) هو قصّ نصي حرفي line-range من الأصل — بدون أي تعديل.
@@ -18,7 +18,7 @@ import shutil
 import sys
 
 ROOT = pathlib.Path(__file__).parent.parent.resolve()
-SRC = ROOT / "01.31_telegram_gen_bridge.py"
+SRC = ROOT / "01.32_telegram_gen_bridge.py"
 OUT = ROOT / "bridge_refactor"
 
 # ─── خريطة الأجزاء: (اسم الملف، أول سطر، آخر سطر، وصف) ───────
@@ -61,7 +61,7 @@ bridge_refactor.runtime
 =======================
 قلب النظام: يبني namespace تشغيلي موحّد بتنفيذ أجزاء الكود
 (parts/p01..p12) بالترتيب — وهي قصّ حرفي line-range من الملف
-المرجعي 01.31_telegram_gen_bridge.py بدون أي تعديل.
+المرجعي 01.32_telegram_gen_bridge.py بدون أي تعديل.
 
 بهذا التصميم:
   - الدلالات (semantics) مطابقة 100% للملف الأصلي الأحادي.
@@ -91,7 +91,7 @@ def _build_namespace() -> types.ModuleType:
     mod = types.ModuleType(_NS_NAME)
     # __file__ افتراضي داخل BRIDGE_HOME حتى يبقى SCRIPT_DIR في الأصل
     # (pathlib.Path(__file__).parent) مشيراً لمجلد العمل الصحيح.
-    mod.__file__ = str(BRIDGE_HOME / "01.31_telegram_gen_bridge.py")
+    mod.__file__ = str(BRIDGE_HOME / "01.32_telegram_gen_bridge.py")
     sys.modules[_NS_NAME] = mod
     part_files = sorted(_PARTS_DIR.glob("p*.py"))
     if not part_files:
@@ -146,13 +146,13 @@ PKG_INIT = '''"""
 bridge_refactor
 ===============
 إعادة بناء معيارية أمينة (Faithful Modular Rebuild) للملف المرجعي
-01.31_telegram_gen_bridge.py — راجع PARITY_REPORT.md للتفاصيل.
+01.32_telegram_gen_bridge.py — راجع PARITY_REPORT.md للتفاصيل.
 
 الاستخدام:
     from bridge_refactor import runtime      # الـ namespace الكامل
     from bridge_refactor.core import config   # واجهات الدومينات
 """
-BUILD_SOURCE = "01.31_telegram_gen_bridge.py"
+BUILD_SOURCE = "01.32_telegram_gen_bridge.py"
 '''
 
 
@@ -204,7 +204,7 @@ def main():
         chunk = "".join(lines[start - 1:end])
         header = (
             f'"""[VERBATIM SLICE] {name}\n'
-            f"المصدر: 01.31_telegram_gen_bridge.py — الأسطر {start}..{end}\n"
+            f"المصدر: 01.32_telegram_gen_bridge.py — الأسطر {start}..{end}\n"
             f"المحتوى: {desc}\n"
             f'⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py\n"""\n'
         )
