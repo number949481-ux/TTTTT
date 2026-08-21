@@ -23,7 +23,7 @@ if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
 ENGINE_SRC = (webapp_dir / "01.03Genspark_claude-opus-5-code.py").read_text(encoding="utf-8")
-BRIDGE_SRC = (webapp_dir / "01.32_telegram_gen_bridge.py").read_text(encoding="utf-8")
+BRIDGE_SRC = (webapp_dir / "01.33_telegram_gen_bridge.py").read_text(encoding="utf-8")
 
 # عزل جسم send_chat في المحرك
 _start = ENGINE_SRC.index("def send_chat(")
