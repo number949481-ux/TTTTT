@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 5285..5589
-المحتوى: process_user_task_async (المشغل الكامل للمهمة)
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 5333..5676
+المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def process_user_task_async(
@@ -15,6 +15,10 @@ def process_user_task_async(
     run_owner_token = uuid.uuid4().hex
     project_key = None
     claimed_project_run = False
+    # 🛑 [P25] تسجيل حدث الإلغاء التفاعلي لهذه المهمة قبل أي عمل —
+    # التوكن قصير (12 hex) ليعيش داخل callback_data ≤ 64 بايت.
+    cancel_token = new_cancel_token()
+    cancel_event = register_cancel_event(cancel_token, chat_id=chat_id)
     try:
         # إصلاح: تهريب HTML لكل مدخلات المستخدم قبل وضعها في رسالة
         safe_query = html_escape(query)[:80]
@@ -22,6 +26,9 @@ def process_user_task_async(
         cfg = BridgeConfig(model=model, cooldown_hours=29.0)
         cfg.run_started_at = task_started_at
         cfg.selection_owner_token = run_owner_token
+        # 🛑 [P25] حقن حدث الإلغاء في الـ config — يسري تلقائياً لمحرك SSE وحلقات المتابعة
+        cfg.cancel_event = cancel_event
+        cfg.cancel_token = cancel_token
         requested_pid = extract_project_id(url) if url else ""
         known_project_key = lookup_project_key_for_locator(url) if url else None
         hinted_project_key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key_hint or ""))[:80]
@@ -170,7 +177,9 @@ def process_user_task_async(
             if not live_pid or seen_live_preview_pid == live_pid:
                 return
             seen_live_preview_pid = live_pid
-            preview_kb = build_live_preview_keyboard(live_pid, status="running")
+            # 🛑 [P25] زر الإلغاء الأحمر يظهر أسفل زر المعاينة الأزرق من أول لحظة
+            preview_kb = build_live_preview_keyboard(live_pid, status="running", cancel_token=cancel_token)
+            update_cancel_entry(cancel_token, live_pid=live_pid, project_key=project_key)
             text = (
                 f"⚡ <b>بدأ بناء المشروع السحابي فوراً!</b>\n"
                 f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
@@ -202,6 +211,29 @@ def process_user_task_async(
                 chat_id,
                 "⏳ <b>كل الحسابات المؤهلة الحالية محجوزة لمهمات أخرى.</b>\n"
                 "لم يبدأ التنفيذ على حساب جديد لأننا ثبّتْنا attribution آمن لكل مهمة. أعد المحاولة بعد قليل."
+            )
+            return
+        # 🛑 [P25] المستخدم أكد الإلغاء — رسالة نهائية هادئة وتسجيل الحالة ثم خروج نظيف
+        if status == CANCELLED_STATUS:
+            cancelled_pid = seen_live_preview_pid or requested_pid or ""
+            try:
+                remember_registry_identity(
+                    registry,
+                    latest_pid=cancelled_pid or None,
+                    project_name=project_name,
+                    chat_id=chat_id,
+                    status=CANCELLED_STATUS,
+                )
+            except Exception:
+                pass
+            pid_line = f"\n🆔 <b>Project ID:</b> <code>{html_escape(cancelled_pid)}</code>" if cancelled_pid else ""
+            send_telegram_message(
+                chat_id,
+                "⛔ <b>تم إلغاء المهمة بالكامل بناءً على تأكيدك.</b>\n"
+                f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
+                f"🔐 <b>مفتاح المشروع:</b> <code>{project_key}</code>{pid_line}\n"
+                "🧹 تم قطع البث وتحرير الحساب والموارد فوراً — يمكنك بدء مهمة جديدة الآن.",
+                reply_markup=make_inline_keyboard([[{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}]]),
             )
             return
 
@@ -304,6 +336,13 @@ def process_user_task_async(
         except Exception:
             pass
     finally:
+        # 🛑 [P25] تنظيف مضمون لحدث الإلغاء من الذاكرة (Zero Leaks) —
+        # يشمل كل المخارج: نجاح/فشل/إلغاء/استثناء. الضغط على زر قديم بعد
+        # التنظيف يرد بهدوء "المهمة انتهت بالفعل" (get_cancel_entry ➔ None).
+        try:
+            unregister_cancel_event(cancel_token)
+        except Exception:
+            pass
         if project_key and claimed_project_run:
             release_project_run(project_key, run_owner_token)
 
