@@ -1994,8 +1994,17 @@ def send_chat(
         # 🔥 قراءة لحظية سطراً بسطر من البث الحي — ممنوع r.text نهائياً (يحجب حتى الاكتمال)
         # [P12] الاستهلاك اللحظي للـ callbacks وملف التذكرة فقط — الترمنال يطبع الرد كاملاً بعد الاكتمال.
         # [P12] أي انقطاع في البث (timeout/شبكة) لا يفقد project_id — نعيد الملتقط للاستئناف على نفس الشات.
+        # 🛑 [P25] إلغاء تعاوني قهري: لو المنادي حقن cfg.cancel_event (threading.Event)
+        # وضُبط أثناء البث → نقطع socket فوراً (r.close) — نفس تأثير زر ⏹️ في الواجهة:
+        # قطع اتصال ask_proxy يوقف التوليد على السيرفر (مثبت بتحليل HAR).
+        _cancel_event = getattr(cfg, "cancel_event", None)
+        user_cancelled = False
         try:
             for _raw_line in r.iter_lines():
+                if _cancel_event is not None and _cancel_event.is_set():
+                    user_cancelled = True
+                    p(Fore.YELLOW, "  🛑 [P25] إلغاء من المستخدم — قطع بث ask_proxy فوراً")
+                    break
                 if isinstance(_raw_line, (bytes, bytearray)):
                     line = _raw_line.decode("utf-8", errors="replace")
                 else:
@@ -2073,6 +2082,10 @@ def send_chat(
             r.close()
         except Exception:
             pass
+
+        # 🛑 [P25] إلغاء المستخدم — أولوية قصوى قبل أي تصنيف آخر
+        if user_cancelled:
+            return "__USER_CANCELLED__", proj_id_new, asst_msg_id
 
         # كريدت منتهية
         if full_text == "__CREDIT_EXHAUSTED__" or "insufficient for this request" in full_text.lower():
