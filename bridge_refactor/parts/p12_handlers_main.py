@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5853..6946
-المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5926..7039
+المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def get_main_keyboard(chat_id: int | None = None):
@@ -277,6 +277,26 @@ def handle_telegram_update(update: dict):
                 send_telegram_message(chat_id, "⭐ <b>لا يوجد مشروع حالي محفوظ بعد.</b>\nاستخدم زر <b>مشروع جديد</b> أو أرسل رابط مشروع معروف للاستكمال.", reply_markup=get_main_keyboard(chat_id))
             else:
                 send_telegram_message(chat_id, render_project_status_text(current["project_key"]), reply_markup=build_current_project_keyboard(current["project_key"]))
+        elif data == "cmd:list_projects":
+            # 📄 [P27] فتح شاشة تصفح المشاريع (الصفحة الأولى) — إصلاح الزر الميت + Pagination
+            send_telegram_message(
+                chat_id,
+                render_projects_page_text(chat_id, page=1),
+                reply_markup=build_projects_page_keyboard(chat_id, page=1),
+            )
+        elif data.startswith("plist:page:"):
+            # 📄 [P27] تقليب الصفحات In-Place: تعديل نفس الرسالة — صفر Spam في المحادثة
+            page_token = data.split("plist:page:", 1)[1]
+            list_msg_id = msg_info.get("message_id")
+            page_text = render_projects_page_text(chat_id, page=page_token)
+            page_keyboard = build_projects_page_keyboard(chat_id, page=page_token)
+            if list_msg_id:
+                edit_telegram_message_text(chat_id, list_msg_id, page_text, reply_markup=page_keyboard)
+            else:
+                send_telegram_message(chat_id, page_text, reply_markup=page_keyboard)
+        elif data == "plist:noop":
+            # 📄 [P27] زر العداد «📄 N / X» — عرض فقط، لا يفعل شيئاً عمداً
+            pass
         elif data.startswith("pview:"):
             project_key = data.split("pview:", 1)[1]
             send_telegram_message(chat_id, render_project_status_text(project_key), reply_markup=build_current_project_keyboard(project_key))
