@@ -569,6 +569,31 @@ def claim_eligible_account_for_owner(
     return None, ready_accounts, "busy"
 
 
+def record_account_journey(bridge_cfg, email: str) -> list:
+    """يسجل الحساب في مسار رحلة المهمة على bridge_cfg مع منع التكرار المتتالي (A→A تبقى A).
+
+    يُستدعى فقط لحظة الـ claim الفعلي (لا Email وهمي من الـ Pool)، ويُرجع القائمة الحية.
+    """
+    if bridge_cfg is None:
+        return []
+    email_clean = str(email or "").strip()
+    journey = getattr(bridge_cfg, "account_journey", None)
+    if not isinstance(journey, list):
+        journey = []
+        bridge_cfg.account_journey = journey
+    if email_clean and (not journey or journey[-1] != email_clean):
+        journey.append(email_clean)
+    return journey
+
+
+def format_account_journey_line(journey) -> str:
+    """يبني سطر «مسار الحسابات» للرسالة النهائية — يظهر فقط عند تعدد الحسابات الفعلية."""
+    emails = [str(item).strip() for item in (journey or []) if str(item or "").strip()]
+    if len(emails) < 2:
+        return ""
+    return "🧾 <b>مسار الحسابات:</b> " + " ← ".join(f"<code>{html_escape(item)}</code>" for item in emails)
+
+
 def notify_account_selection_observer(bridge_cfg, event_type: str, **payload) -> bool:
     observer = getattr(bridge_cfg, "account_selection_observer", None) if bridge_cfg is not None else None
     if not callable(observer):
@@ -583,6 +608,8 @@ def notify_account_selection_observer(bridge_cfg, event_type: str, **payload) ->
         "max_credit_continuations": get_credit_continuation_limit(bridge_cfg),
         "continuation_prompt_public": summarize_resume_prompt_for_display(get_bridge_cfg_public_resume_prompt(bridge_cfg)) if bridge_cfg is not None else DEFAULT_PROJECT_RESUME_PROMPT,
         "runtime_binding_source": str(getattr(bridge_cfg, "project_runtime_binding_source", "") or "") if bridge_cfg is not None else "",
+        # 📸 [P29] snapshot غير قابل للتغيير لمسار الحسابات لحظة إنشاء الحدث (Immutable Event Snapshot)
+        "account_journey": [str(item) for item in (getattr(bridge_cfg, "account_journey", []) or [])] if bridge_cfg is not None else [],
         **payload,
     }
     try:
@@ -648,6 +675,8 @@ class BridgeConfig:
     selection_attempt_number: int = 0
     selected_account_email: str = ""
     selected_account_claim_state: str = ""
+    # 🧾 [P29] مسار رحلة الحسابات الفعلية للمهمة (لحظة الـ claim فقط — لا Email وهمي)
+    account_journey: list = field(default_factory=list)
     project_resume_prompt_public: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_resume_prompt_runtime: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_runtime_binding_source: str = ""
@@ -1032,6 +1061,10 @@ class AccountSelectionLiveRenderer:
         self.entries: list[dict] = []
         self.refresh_total = 0
         self.continuation_line = "0/0"
+        # 🧾 [P29] مراقبة الحساب النشط وتبديل الحساب بعد handoff
+        self.active_email = ""
+        self.pending_handoff_from = ""
+        self.switch_line = ""
 
     def _upsert_entry(self, event: dict) -> dict:
         attempt_no = int(event.get("attempt_number") or 0)
@@ -1060,6 +1093,16 @@ class AccountSelectionLiveRenderer:
         self.latest_status = str(event.get("status") or self.latest_status or "")
         self.continuation_line = f"{int(event.get('credit_continuations') or 0)}/{int(event.get('max_credit_continuations') or 0)}"
         entry = self._upsert_entry(event)
+        # 🧾 [P29] تحديث الحساب النشط من snapshot الحدث فقط (لا Email وهمي)
+        event_email = str(event.get("selected_account_email") or "").strip()
+        if event_type == "account-claimed" and event_email:
+            if self.pending_handoff_from and event_email != self.pending_handoff_from:
+                # أول claim بعد handoff → سطر تبديل الحساب (الحساب الجديد لا يُعرف إلا الآن)
+                self.switch_line = f"من <code>{html_escape(self.pending_handoff_from)}</code> ← إلى <code>{html_escape(event_email)}</code>"
+            self.pending_handoff_from = ""
+            self.active_email = event_email
+        elif event_email:
+            self.active_email = event_email
 
         continuation_prompt_public = summarize_resume_prompt_for_display(event.get("continuation_prompt_public"))
         labels = {
@@ -1082,6 +1125,7 @@ class AccountSelectionLiveRenderer:
         if event_type == "session-refresh-required":
             self.refresh_total += 1
         if event_type == "continuation-handoff-ready":
+            self.pending_handoff_from = event_email or self.active_email  # 🧾 [P29] الحساب السابق لحظة الـ handoff
             self.latest_handoff_url = str(event.get("continuation_url") or "")
             self.latest_handoff_checkpoint = str(event.get("checkpoint_id") or "")
             self.final_note = "تم تجهيز handoff الآن؛ لم يتم إعلان اكتمال المهمة بعد."
@@ -1104,6 +1148,10 @@ class AccountSelectionLiveRenderer:
             lines.append(f"<b>المشروع:</b> {html_escape(self.project_name)}")
         if self.project_key:
             lines.append(f"<b>مفتاح المشروع:</b> <code>{html_escape(self.project_key)}</code>")
+        if self.active_email:
+            lines.append(f"📧 <b>الحساب النشط:</b> <code>{html_escape(self.active_email)}</code>")
+        if self.switch_line:
+            lines.append(f"🔁 <b>تبديل الحساب:</b> {self.switch_line}")
         lines.append(f"<b>إجمالي المحاولات المرصودة:</b> <code>{len([x for x in self.entries if x.get('attempt_number')])}</code>")
         lines.append(f"<b>عداد الاستئناف:</b> <code>{html_escape(self.continuation_line)}</code>")
         if self.refresh_total:
@@ -2227,6 +2275,7 @@ def send_message_with_auto_account_failover(
     bridge_cfg.last_credit_resume_project_id = ""
     bridge_cfg.selected_account_email = ""
     bridge_cfg.selected_account_claim_state = ""
+    bridge_cfg.account_journey = []  # 🧾 [P29] عزل مسار الحسابات لكل تشغيل جديد
     _set_credit_checkpoint_state(bridge_cfg, "", "")
     active_url = url
     active_query = query
@@ -2268,6 +2317,7 @@ def send_message_with_auto_account_failover(
         bridge_cfg.selection_attempt_number = attempt
         bridge_cfg.selected_account_email = str(curr_email or "")
         bridge_cfg.selected_account_claim_state = "claimed"
+        record_account_journey(bridge_cfg, curr_email)  # 🧾 [P29] لحظة الـ claim الفعلي فقط
 
         fp = get_account_fingerprint(curr_email)
         bridge_cfg.user_agent = fp["user_agent"]
@@ -5859,6 +5909,9 @@ def process_user_task_async(
             return
 
         acc_email = html_escape(used_acc.get("email")) if used_acc else "غير محدد"
+        # 🧾 [P29] سطر مسار الحسابات — يظهر فقط عند تعدد الحسابات الفعلية أثناء المهمة
+        journey_line = format_account_journey_line(getattr(cfg, "account_journey", []))
+        journey_block = f"\n{journey_line}" if journey_line else ""
         is_finished = check_project_finished_flag(status, last_resp_text)
         final_pid = extract_stage_project_id(pub_url, ext_dir)
         runtime_identity = remember_registry_identity(
@@ -5905,7 +5958,7 @@ def process_user_task_async(
             f"📊 <b>الحالة:</b> <code>{html_escape(status)}</code>\n"
             f"📌 <b>اسم المشروع:</b> {html_escape(project_name)}\n"
             f"🔐 <b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
-            f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>\n"
+            f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>{journey_block}\n"
             f"🆔 <b>Project ID:</b> <code>{html_escape(pid)}</code>{root_line}{latest_line}{resume_line}{fork_line}\n"
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
         )
