@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 443..830
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 459..846
 المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig + accounts I/O + readiness + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -210,7 +210,7 @@ def get_accounts_file_path(json_path: str | None = None) -> pathlib.Path | None:
     if json_path:
         possible_paths.append(pathlib.Path(json_path))
     possible_paths.extend([
-        SCRIPT_DIR / "accounts_genspark.json",
+        resolve_shared_path("accounts_genspark.json"),  # 🔎 [P23] محلي ثم الأب (موحّد)
         SCRIPT_DIR.parent / "accounts_genspark.json",
         pathlib.Path("accounts_genspark.json"),
     ])
