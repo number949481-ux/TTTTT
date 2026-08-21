@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 5450..6430
-المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc:)
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 5590..6615
+المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def get_main_keyboard(chat_id: int | None = None):
@@ -20,6 +20,51 @@ def handle_telegram_update(update: dict):
         # [P17] مسار callback: نحكم بالجروب أو بهوية الضاغط نفسه (cb.from)
         if not is_chat_allowed(chat_id, (cb.get("from") or {}).get("id")):
             send_telegram_message(chat_id, "⛔ غير مصرح لك باستخدام هذا البوت.")
+            return
+
+        # ══════════════════════════════════════════════════════
+        # 🛑 [P25] الإلغاء التفاعلي — خطوتا أمان قبل التنفيذ القهري
+        # (يعالج مبكراً وبمعزل تام عن سلسلة if/elif — صفر تعارض مع pctl:* وغيرها)
+        # ══════════════════════════════════════════════════════
+        if data.startswith(("cancel_prompt:", "cancel_exec:", "cancel_abort:")):
+            action, _, cancel_token = data.partition(":")
+            entry = get_cancel_entry(cancel_token)
+            card_msg_id = msg_info.get("message_id")
+            if entry is None:
+                # مهمة انتهت بالفعل أو توكن منتهي — ننظف الأزرار بهدوء
+                if card_msg_id:
+                    edit_telegram_message_reply_markup(chat_id, card_msg_id, None)
+                send_telegram_message(chat_id, "ℹ️ هذه المهمة انتهت بالفعل — لا يوجد بناء نشط لإلغائه.")
+                return
+            live_pid = str(entry.get("live_pid") or "")
+            if action == "cancel_prompt":
+                # الخطوة 1: عرض كيبورد التأكيد فقط — لا إلغاء بعد
+                if card_msg_id:
+                    edit_telegram_message_reply_markup(
+                        chat_id, card_msg_id,
+                        build_live_preview_keyboard(live_pid, status="confirm_cancel", cancel_token=cancel_token),
+                    )
+            elif action == "cancel_abort":
+                # تراجع: إعادة كيبورد التشغيل الأصلي والاستمرار كأن شيئاً لم يكن
+                if card_msg_id:
+                    edit_telegram_message_reply_markup(
+                        chat_id, card_msg_id,
+                        build_live_preview_keyboard(live_pid, status="running", cancel_token=cancel_token),
+                    )
+            elif action == "cancel_exec":
+                # الخطوة 2 (مؤكدة): تفعيل الإلغاء القهري الفوري
+                triggered = trigger_cancel(cancel_token)
+                if triggered:
+                    log_event("warning", f"🛑 [P25] المستخدم أكد إلغاء البناء (token={cancel_token}, pid={live_pid[:16]})")
+                    if card_msg_id:
+                        edit_telegram_message_text(
+                            chat_id, card_msg_id,
+                            "⛔ <b>تم إلغاء بناء المشروع فوراً بناءً على طلبك.</b>\n"
+                            "🧹 جاري قطع البث وتحرير الحساب والموارد المحجوزة...",
+                            reply_markup=None,
+                        )
+                else:
+                    send_telegram_message(chat_id, "ℹ️ تعذر تفعيل الإلغاء — المهمة غالباً انتهت بالفعل.")
             return
 
         if data == "cmd:show_dashboard":
