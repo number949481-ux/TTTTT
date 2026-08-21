@@ -3310,7 +3310,9 @@ class ProjectRegistry:
         return digest.hexdigest()
 
     def _qwen_commit_prefix_for_job(self, payload: dict) -> str:
-        """🧠 [DEC-019] طلب رسالة كوميت ذكية من محرك كوين مرة واحدة لكل job قبل حلقة الرفع.
+        """🧠 [DEC-019] طلب رسالة كوميت ذكية من محرك كوين مرة واحدة لكل job.
+        ⏳ [P31] يُستدعى Lazy عبر _lazy_ai_prefix داخل uploader — فقط عند أول
+        PUT/DELETE فعلي؛ job كله unchanged ← كوين لا يُستدعى إطلاقاً.
         معزول بالكامل: أي فشل (استيراد/شبكة/مهلة/رد فارغ) ← يرجع "" ويكمل الرفع
         بنفس رسالة الكوميت القديمة حرفياً — الرفع لا ينكسر أبداً بسبب كوين.
         المهلة: مهلة المحرك الداخلية نفسها (30ث/مرحلة) — بدون اختراع أرقام جديدة."""
@@ -3346,8 +3348,18 @@ class ProjectRegistry:
         # → 404 → uploaded) وملف معدل (له remote_sha مختلف → modified) — كان الاثنان
         # يُحسبان "➕ جديد" في الإحصائيات رغم أن remote_sha متاح أصلاً قبل الـ PUT.
         uploaded, modified, unchanged, deleted, skipped = [], [], [], [], list(payload.get("skipped", []))
-        # 🧠 [DEC-019] كوميت ذكي من كوين مرة واحدة لكل job (قبل حلقة الـ PUT) — فشله لا يكسر الرفع.
-        ai_prefix = self._qwen_commit_prefix_for_job(payload)
+        # 🧠 [DEC-019] كوميت ذكي من كوين مرة واحدة لكل job — فشله لا يكسر الرفع.
+        # ⏳ [P31] Lazy Call: كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي — job كله
+        # unchanged (كل الملفات مطابقة للريموت بايت-بايت) ← صفر نداء لكوين
+        # (توفير باقة API + إلغاء تأخير حتى 30ث مجاني في كل sync cycle بلا تغيير).
+        # memoized: None = لم يُستدعَ بعد | "" = استُدعي وفشل/فارغ (fallback حرفي).
+        ai_prefix = None
+
+        def _lazy_ai_prefix() -> str:
+            nonlocal ai_prefix
+            if ai_prefix is None:
+                ai_prefix = self._qwen_commit_prefix_for_job(payload)
+            return ai_prefix
         for file_info in payload.get("upload_files", []):
             rel = self._normalize_remote_relative_path(file_info["path"])
             if _should_skip_archive_member(rel):
@@ -3368,6 +3380,8 @@ class ProjectRegistry:
             with open(file_info["local_path"], "rb") as fh:
                 content_b64 = base64.b64encode(fh.read()).decode("ascii")
             # [DEC-019] رسالة كوين كبادئة عند النجاح — وإلا نفس الرسالة القديمة حرفياً.
+            # [P31] أول ملف متغير فعلياً هو الذي يوقظ كوين (بعد فحص unchanged) — مرة واحدة لكل job.
+            _lazy_ai_prefix()
             commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}: {rel}"
             body = {"message": commit_message, "content": content_b64, "branch": branch}
             if remote_sha:
@@ -3388,6 +3402,8 @@ class ProjectRegistry:
             if got.status_code != 200:
                 raise RuntimeError(f"HTTP_{got.status_code}")
             sha = got.json().get("sha")
+            # [P31] الحذف الفعلي (الملف موجود على الريموت 200) يوقظ كوين إن لم يستيقظ بعد.
+            _lazy_ai_prefix()
             delete_message = f"{ai_prefix} [{self.key}] delete {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] delete {payload['job_id']}: {rel}"
             body = {"message": delete_message, "sha": sha, "branch": branch}
             delete_resp = requests.delete(api, headers=headers, json=body, timeout=120)
