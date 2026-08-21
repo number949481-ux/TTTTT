@@ -48,8 +48,8 @@ def run_step():
     env["PYTHONIOENCODING"] = "utf-8"
 
     # الخطوة 1: فحص الـ Syntax
-    step(1, "فحص الـ Syntax لملف البوت النشط 01.32")
-    bot_file = os.path.join(ROOT_DIR, "01.32_telegram_gen_bridge.py")
+    step(1, "فحص الـ Syntax لملف البوت النشط 01.33")
+    bot_file = os.path.join(ROOT_DIR, "01.33_telegram_gen_bridge.py")
     res_compile = subprocess.run([sys.executable, "-m", "py_compile", bot_file], capture_output=True, env=env)
     if res_compile.returncode != 0:
         err_msg = (res_compile.stderr or b"").decode("utf-8", errors="replace")
@@ -129,7 +129,7 @@ def run_step():
     print(f"| {'فحص تكامل التوثيق (P10)':<30} | {f'OK ({total_files} files)':<30} |")
     print(f"| {'الزمن المقاس':<30} | {f'{elapsed:.3f}s':<30} |")
     print(f"| {'رمز الخروج (Exit Code)':<30} | {'0 (نجاح كامل)':<30} |")
-    print(f"| {'الإصدار المعتمد':<30} | {'01.32_telegram_gen_bridge.py':<30} |")
+    print(f"| {'الإصدار المعتمد':<30} | {'01.33_telegram_gen_bridge.py':<30} |")
     print(f"| {'جناحي التوثيق':<30} | {'docs/engineering + docs/tests':<30} |")
     print("-" * 70)
 
