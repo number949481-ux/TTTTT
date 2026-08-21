@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p09_github_dashboard
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 3880..5051
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3880..5051
 المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
