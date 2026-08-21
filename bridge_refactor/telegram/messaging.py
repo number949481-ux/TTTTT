@@ -17,6 +17,9 @@ __all__ = [
     "render_account_selection_handoff_text",
     "AccountSelectionLiveTransport",
     "attach_account_selection_live_transport",
+    "ALLOWED_DOCUMENT_EXTENSIONS",
+    "MAX_DOCUMENT_SIZE_BYTES",
+    "download_telegram_document_text",
     "send_telegram_document",
 ]
 
