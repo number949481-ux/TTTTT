@@ -19,7 +19,7 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-20 — S40 |
+| **last-updated** | 2026-08-21 — S41 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.31` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
@@ -28,9 +28,9 @@
 | **program-stage** | Stage 3 — Execution |
 | **current WBS phase** | **P21 — دقة تصنيف commit في الرفع REST (جديد ➕ vs معدل ✏️)** 🎯 |
 | **current slice** | `TSK-3901` (DONE) ➔ إصلاح `_default_github_uploader`: الملف الموجود على الريموت بمحتوى مختلف يُصنّف `modified` (✏️ معدل) بدل دمجه مع `uploaded` (➕ جديد) — التصنيف عبر `remote_sha` المتاح أصلاً قبل الـ PUT + حارسان جديدان في test_p20 (اختبارات 09/10) + تحديث PARTS (+4 أسطر → 6390) وإعادة بناء bridge_refactor بتطابق بايت |
-| **current-task** | `P21 complete` — إحصائيات رسالة تليجرام (➕ جديد / ✏️ معدل / 🗑 محذوف / ⏸ مطابق) صارت دقيقة: `modified` تُملأ فعلياً من الـ uploader وتصل للعرض عبر `github_sync` — مع بقاء P18/P20 فعّالة بلا انحدار |
+| **current-task** | `S41` — استرجاع المالك لتعديلات P22 غير المصرّح بها (الكود عاد إلى 01.31 نظيف) + إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع مجدداً بموافقة المالك الصريحة |
 | **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
-| **current-blocker** | لا يوجد — البوابة مجتازة بالكامل (Push/PR اليدوي بانتظار تفويض GitHub من المالك) |
+| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ملف `tests/test_p22_live_ops_reporter.py` يتيم بعد الاسترجاع ➔ pytest collection error وبوابة Exit 1؛ حذفه ينتظر موافقة المالك الصريحة. (ب) قرار `AI_RACE_ACCOUNTS` (0 الحالي أم 2 عشوائي). (ج) ميزة P22 معلّقة كلياً — لا تنفيذ إلا بخطة معتمدة Approve أولاً |
 | **completion** | 221/221 Tests Verified (100%) 🧪 |
 | **quality-gate** | `python scripts/hadith_sijil.py` ➔ 221/221 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
