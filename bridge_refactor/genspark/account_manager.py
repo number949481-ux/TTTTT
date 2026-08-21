@@ -15,6 +15,8 @@ __all__ = [
     "claim_account_selection",
     "release_account_selection",
     "claim_eligible_account_for_owner",
+    "record_account_journey",
+    "format_account_journey_line",
     "notify_account_selection_observer",
     "is_valid_email",
     "get_account_fingerprint",
