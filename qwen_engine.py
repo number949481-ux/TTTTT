@@ -176,8 +176,24 @@ AI_RACE_ACCOUNTS = 0            # 0 = كل الحسابات النشطة تتس�
 AI_FALLBACK_COMMIT_MSG = "كوميت"  # 📝 رسالة الكوميت لو كل الموديلات فشلت
 
 
-# 🔐 إدارة حسابات Qwen.ai (التعافي الذاتي والتبديل العشوائي)
-QWEN_ACCOUNTS_FILE = os.path.join(SCRIPT_DIR, "accounts_qwen.json")
+# ══════════════════════════════════════════════════════════════
+# 🔎 [P23/DEC-019] البحث الهرمي للملفات المشتركة: محلي أولاً ثم الفولدر الأب (W___webapp/)
+# ══════════════════════════════════════════════════════════════
+def resolve_shared_path(name: str) -> str:
+    """مسار مشترك ذكي: لو الملف موجود جنب النسخة يستخدمه (أولوية محلية)،
+    وإلا يلقطه من الفولدر الأب المركزي — ولو غير موجود في الاثنين يرجع المحلي (للإنشاء).
+    Zero Breaking Changes: النسخ القديمة بملفاتها المحلية تشتغل كما هي تماماً."""
+    local = os.path.join(SCRIPT_DIR, name)
+    if os.path.exists(local):
+        return local
+    parent = os.path.join(os.path.dirname(SCRIPT_DIR), name)
+    if os.path.exists(parent):
+        return parent
+    return local
+
+
+# 🔐 إدارة حسابات Qwen.ai (التعافي الذاتي والتبديل العشوائي) — [DEC-019] عبر المسار المشترك
+QWEN_ACCOUNTS_FILE = resolve_shared_path(QWEN_ACCOUNTS_BASENAME)
 DEFAULT_QWEN_ACCOUNTS = [
     {
         "email": "ybvh1k@arg.edu.pl",
