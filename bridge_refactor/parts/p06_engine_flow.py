@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1588..2583
-المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1729..2727
+المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -694,6 +694,7 @@ def send_message_with_auto_account_failover(
     bridge_cfg.selected_account_email = ""
     bridge_cfg.selected_account_claim_state = ""
     bridge_cfg.account_journey = []  # 🧾 [P29] عزل مسار الحسابات لكل تشغيل جديد
+    bridge_cfg.account_journey_spans = []  # ⏱️ [P30] عزل spans التوقيت لكل تشغيل جديد
     _set_credit_checkpoint_state(bridge_cfg, "", "")
     active_url = url
     active_query = query
@@ -736,6 +737,7 @@ def send_message_with_auto_account_failover(
         bridge_cfg.selected_account_email = str(curr_email or "")
         bridge_cfg.selected_account_claim_state = "claimed"
         record_account_journey(bridge_cfg, curr_email)  # 🧾 [P29] لحظة الـ claim الفعلي فقط
+        open_account_timing_span(bridge_cfg, curr_email, attempt_number=attempt)  # ⏱️ [P30] فتح span لحظة الـ claim
 
         fp = get_account_fingerprint(curr_email)
         bridge_cfg.user_agent = fp["user_agent"]
@@ -994,6 +996,7 @@ def send_message_with_auto_account_failover(
             update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
             continue
         finally:
+            close_account_timing_span(bridge_cfg, curr_email)  # ⏱️ [P30] إغلاق حتمي للـ span في كل المسارات
             release_account_selection(curr_email, owner_token)
             bridge_cfg.selected_account_claim_state = "released"
     return None, "MAX_ATTEMPTS_EXHAUSTED", None, None, None
