@@ -3,7 +3,7 @@ bridge_refactor.runtime
 =======================
 قلب النظام: يبني namespace تشغيلي موحّد بتنفيذ أجزاء الكود
 (parts/p01..p12) بالترتيب — وهي قصّ حرفي line-range من الملف
-المرجعي 01.31_telegram_gen_bridge.py بدون أي تعديل.
+المرجعي 01.32_telegram_gen_bridge.py بدون أي تعديل.
 
 بهذا التصميم:
   - الدلالات (semantics) مطابقة 100% للملف الأصلي الأحادي.
@@ -33,7 +33,7 @@ def _build_namespace() -> types.ModuleType:
     mod = types.ModuleType(_NS_NAME)
     # __file__ افتراضي داخل BRIDGE_HOME حتى يبقى SCRIPT_DIR في الأصل
     # (pathlib.Path(__file__).parent) مشيراً لمجلد العمل الصحيح.
-    mod.__file__ = str(BRIDGE_HOME / "01.31_telegram_gen_bridge.py")
+    mod.__file__ = str(BRIDGE_HOME / "01.32_telegram_gen_bridge.py")
     sys.modules[_NS_NAME] = mod
     part_files = sorted(_PARTS_DIR.glob("p*.py"))
     if not part_files:
