@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 09:35:02 UTC`
+* **التاريخ والوقت:** `2026-08-21 13:39:12 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.775 ثانية`
-* **النتيجة العامة:** `Ran 255 tests — OK`
+* **الزمن المقاس:** `0.663 ثانية`
+* **النتيجة العامة:** `Ran 295 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -70,7 +70,7 @@ test_10_low_balance_skips_silently_with_continue (test_p13_preflight_balance.Tes
 test_11_low_balance_skip_precedes_credit_exhausted_handling (test_p13_preflight_balance.TestFailoverSilentSkip.test_11_low_balance_skip_precedes_credit_exhausted_handling) ... ok
 test_12_no_user_notification_in_skip_block (test_p13_preflight_balance.TestFailoverSilentSkip.test_12_no_user_notification_in_skip_block) ... ok
 test_13_no_wrong_30min_auth_ban_for_low_balance (test_p13_preflight_balance.TestFailoverSilentSkip.test_13_no_wrong_30min_auth_ban_for_low_balance) ... ok
-/home/user/webapp/01.31_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
+/home/user/webapp/01.32_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
   logging.basicConfig(
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 test_01_min_preflight_balance_default_100 (test_p13_preflight_balance.TestPreflightBalanceConfig.test_01_min_preflight_balance_default_100) ... ok
@@ -156,7 +156,7 @@ test_02_old_vulnerable_condition_gone (test_p17_hardening.TestExpiredSessionGate
 test_01_pytest_cache_untracked (test_p17_hardening.TestGeneratedFilesUntracked.test_01_pytest_cache_untracked) ... ok
 test_02_bridge_log_untracked (test_p17_hardening.TestGeneratedFilesUntracked.test_02_bridge_log_untracked) ... ok
 test_03_gitignore_covers_both (test_p17_hardening.TestGeneratedFilesUntracked.test_03_gitignore_covers_both) ... ok
-/home/user/webapp/01.31_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
+/home/user/webapp/01.32_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
   logging.basicConfig(
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 test_01_allowed_private_user (test_p17_hardening.TestGroupChatSupport.test_01_allowed_private_user) ... ok
@@ -310,10 +310,50 @@ test_02_sync_message_ai_prefix_with_verbatim_fallback (test_p24_qwen_commit_brid
 test_03_delete_message_ai_prefix_with_verbatim_fallback (test_p24_qwen_commit_bridge.TestUploaderMessageContract.test_03_delete_message_ai_prefix_with_verbatim_fallback) ... ok
 test_04_helper_is_fully_isolated (test_p24_qwen_commit_bridge.TestUploaderMessageContract.test_04_helper_is_fully_isolated)
 الـ helper كله داخل try/except Exception — كوين لا يكسر الرفع ... ok
+test_01_token_short_enough_for_callback_data (test_p25_interactive_cancel.TestCancellationManager.test_01_token_short_enough_for_callback_data) ... ok
+test_02_register_returns_event (test_p25_interactive_cancel.TestCancellationManager.test_02_register_returns_event) ... ok
+test_03_register_idempotent_same_event (test_p25_interactive_cancel.TestCancellationManager.test_03_register_idempotent_same_event) ... ok
+test_04_register_empty_token_returns_none (test_p25_interactive_cancel.TestCancellationManager.test_04_register_empty_token_returns_none) ... ok
+test_05_get_entry_metadata (test_p25_interactive_cancel.TestCancellationManager.test_05_get_entry_metadata) ... ok
+test_06_get_entry_unknown_token_returns_none (test_p25_interactive_cancel.TestCancellationManager.test_06_get_entry_unknown_token_returns_none) ... ok
+test_07_update_entry_live_pid (test_p25_interactive_cancel.TestCancellationManager.test_07_update_entry_live_pid) ... ok
+test_08_update_unknown_token_returns_false (test_p25_interactive_cancel.TestCancellationManager.test_08_update_unknown_token_returns_false) ... ok
+test_09_trigger_sets_event (test_p25_interactive_cancel.TestCancellationManager.test_09_trigger_sets_event) ... ok
+test_10_trigger_unknown_token_returns_false (test_p25_interactive_cancel.TestCancellationManager.test_10_trigger_unknown_token_returns_false) ... ok
+test_11_unregister_zero_leaks (test_p25_interactive_cancel.TestCancellationManager.test_11_unregister_zero_leaks) ... ok
+test_12_cancelled_status_constant (test_p25_interactive_cancel.TestCancellationManager.test_12_cancelled_status_constant) ... ok
+test_01_engine_reads_cancel_event_from_cfg (test_p25_interactive_cancel.TestEngineStreamAbortContract.test_01_engine_reads_cancel_event_from_cfg) ... ok
+test_02_engine_checks_event_inside_iter_lines (test_p25_interactive_cancel.TestEngineStreamAbortContract.test_02_engine_checks_event_inside_iter_lines) ... ok
+test_03_engine_returns_user_cancelled_marker (test_p25_interactive_cancel.TestEngineStreamAbortContract.test_03_engine_returns_user_cancelled_marker) ... ok
+test_04_marker_priority_before_credit_classification (test_p25_interactive_cancel.TestEngineStreamAbortContract.test_04_marker_priority_before_credit_classification) ... ok
+test_05_socket_closed_after_break (test_p25_interactive_cancel.TestEngineStreamAbortContract.test_05_socket_closed_after_break) ... ok
+test_01_end_to_end_cancel_wakes_waiter_instantly (test_p25_interactive_cancel.TestFullCancelFlowSimulation.test_01_end_to_end_cancel_wakes_waiter_instantly) ... ok
+test_02_abort_leaves_event_unset_and_task_continues (test_p25_interactive_cancel.TestFullCancelFlowSimulation.test_02_abort_leaves_event_unset_and_task_continues) ... ok
+test_01_backward_compat_no_token_single_row (test_p25_interactive_cancel.TestLivePreviewKeyboard.test_01_backward_compat_no_token_single_row) ... ok
+test_02_running_with_token_adds_danger_cancel_row (test_p25_interactive_cancel.TestLivePreviewKeyboard.test_02_running_with_token_adds_danger_cancel_row) ... ok
+test_03_confirm_cancel_keyboard_two_step_safety (test_p25_interactive_cancel.TestLivePreviewKeyboard.test_03_confirm_cancel_keyboard_two_step_safety) ... ok
+test_04_completed_keyboard_unchanged (test_p25_interactive_cancel.TestLivePreviewKeyboard.test_04_completed_keyboard_unchanged) ... ok
+test_05_callback_data_within_telegram_64_bytes (test_p25_interactive_cancel.TestLivePreviewKeyboard.test_05_callback_data_within_telegram_64_bytes) ... ok
+test_01_worker_registers_token_before_work (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_01_worker_registers_token_before_work) ... ok
+test_02_worker_injects_event_into_cfg (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_02_worker_injects_event_into_cfg) ... ok
+test_03_worker_finally_unregisters_zero_leaks (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_03_worker_finally_unregisters_zero_leaks) ... ok
+test_04_failover_returns_cancelled_without_penalty (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_04_failover_returns_cancelled_without_penalty) ... ok
+test_05_cancelled_check_before_low_balance (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_05_cancelled_check_before_low_balance) ... ok
+test_06_precheck_before_attempt_starts (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_06_precheck_before_attempt_starts) ... ok
+test_07_engine_marker_ends_task_without_retry (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_07_engine_marker_ends_task_without_retry) ... ok
+test_08_polling_loop_checks_cancel_first (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_08_polling_loop_checks_cancel_first) ... ok
+test_09_polling_sleep_is_interruptible_wait (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_09_polling_sleep_is_interruptible_wait) ... ok
+test_10_callback_handler_three_actions_isolated (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_10_callback_handler_three_actions_isolated) ... ok
+test_11_callback_exec_triggers_and_edits_message (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_11_callback_exec_triggers_and_edits_message) ... ok
+test_12_callback_abort_restores_running_keyboard (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_12_callback_abort_restores_running_keyboard) ... ok
+test_13_expired_token_cleans_buttons_quietly (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_13_expired_token_cleans_buttons_quietly) ... ok
+test_14_worker_handles_cancelled_terminal_message (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_14_worker_handles_cancelled_terminal_message) ... ok
+test_15_live_preview_card_carries_cancel_button (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_15_live_preview_card_carries_cancel_button) ... ok
+test_16_bridge_config_declares_cancel_fields (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_16_bridge_config_declares_cancel_fields) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
-test_normalize_always_returns_str (test_p2_model_routing.TestP2ModelRouting.test_normalize_always_returns_str) ... /home/user/webapp/01.31_telegram_gen_bridge.py:109: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+test_normalize_always_returns_str (test_p2_model_routing.TestP2ModelRouting.test_normalize_always_returns_str) ... /home/user/webapp/01.32_telegram_gen_bridge.py:109: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
   log_func(log_msg)
 ok
 test_opus5_has_no_ai_chat_model (test_p2_model_routing.TestP2ModelRouting.test_opus5_has_no_ai_chat_model) ... ok
@@ -372,7 +412,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 255 tests in 0.337s
+Ran 295 tests in 0.312s
 
 OK
 ```
