@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 17:10:38 UTC`
+* **التاريخ والوقت:** `2026-08-21 17:44:40 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.677 ثانية`
-* **النتيجة العامة:** `Ran 330 tests — OK`
+* **الزمن المقاس:** `1.162 ثانية`
+* **النتيجة العامة:** `Ran 369 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -385,6 +385,76 @@ test_05_abort_restores_details_screen (test_p26_project_deletion.TestSourceContr
 test_06_index_cleanup_under_registry_lock (test_p26_project_deletion.TestSourceContracts.test_06_index_cleanup_under_registry_lock) ... ok
 test_07_project_key_sanitized_in_handler (test_p26_project_deletion.TestSourceContracts.test_07_project_key_sanitized_in_handler) ... ok
 test_08_danger_style_is_allowed_value (test_p26_project_deletion.TestSourceContracts.test_08_danger_style_is_allowed_value) ... ok
+test_100_projects_five_pages (test_p27_projects_pagination.TestComputePageBounds.test_100_projects_five_pages) ... ok
+test_21_projects_two_pages (test_p27_projects_pagination.TestComputePageBounds.test_21_projects_two_pages)
+21 مشروعاً = صفحتان، الثانية تبدأ من index 20 ... ok
+test_47_projects_three_pages (test_p27_projects_pagination.TestComputePageBounds.test_47_projects_three_pages) ... ok
+test_exactly_one_page_boundary (test_p27_projects_pagination.TestComputePageBounds.test_exactly_one_page_boundary)
+20 مشروعاً = صفحة واحدة بالضبط ... ok
+test_non_numeric_page_falls_back_to_first (test_p27_projects_pagination.TestComputePageBounds.test_non_numeric_page_falls_back_to_first)
+توكن تالف (نص/None) ➔ الصفحة 1 بلا استثناء ... ok
+test_numeric_string_page_accepted (test_p27_projects_pagination.TestComputePageBounds.test_numeric_string_page_accepted)
+التوكن يصل من الـ callback كنص رقمي — يُقبل ... ok
+test_page_below_one_clamped (test_p27_projects_pagination.TestComputePageBounds.test_page_below_one_clamped)
+صفحة 0 أو سالبة ➔ قصّ للصفحة 1 ... ok
+test_page_beyond_last_clamped (test_p27_projects_pagination.TestComputePageBounds.test_page_beyond_last_clamped)
+صفحة أكبر من الأخيرة ➔ قصّ للصفحة الأخيرة (صفر Crash) ... ok
+test_zero_projects_single_page (test_p27_projects_pagination.TestComputePageBounds.test_zero_projects_single_page) ... ok
+test_dashboard_has_no_pagination_buttons (test_p27_projects_pagination.TestDashboardRegression.test_dashboard_has_no_pagination_buttons)
+اللوحة الرئيسية لا تحمل أي أزرار تقليب — التصفح شاشة مستقلة ... ok
+test_dashboard_keeps_list_projects_button (test_p27_projects_pagination.TestDashboardRegression.test_dashboard_keeps_list_projects_button)
+زر «📁 مشاريعي» ما زال في اللوحة الرئيسية ويشير لـ cmd:list_projects ... ok
+test_dashboard_still_previews_latest_3_only (test_p27_projects_pagination.TestDashboardRegression.test_dashboard_still_previews_latest_3_only)
+قرار المالك: اللوحة الرئيسية تبقى معاينة سريعة بأحدث 3 مشاريع ... ok
+test_constant_defined_once_in_source (test_p27_projects_pagination.TestPaginationConstant.test_constant_defined_once_in_source)
+الثابت المركزي يُعرَّف مرة واحدة فقط (تغييره لاحقاً = سطر واحد) ... ok
+test_projects_per_page_is_20 (test_p27_projects_pagination.TestPaginationConstant.test_projects_per_page_is_20)
+قرار المالك الصريح: 20 مشروعاً في الصفحة ... ok
+test_counter_button_shows_position (test_p27_projects_pagination.TestProjectsPageKeyboard.test_counter_button_shows_position)
+زر العداد يعرض «📄 2 / 3» ويحمل plist:noop ... ok
+test_empty_registry_shows_actions_only (test_p27_projects_pagination.TestProjectsPageKeyboard.test_empty_registry_shows_actions_only)
+0 مشاريع: لا صفوف مشاريع ولا تنقل — فقط [مشروع جديد][رجوع] ... ok
+test_first_page_has_next_but_no_prev (test_p27_projects_pagination.TestProjectsPageKeyboard.test_first_page_has_next_but_no_prev)
+الصفحة الأولى: زر التالية موجود، زر السابقة محذوف ... ok
+test_full_page_of_20_projects (test_p27_projects_pagination.TestProjectsPageKeyboard.test_full_page_of_20_projects)
+20 مشروعاً بالضبط = 20 صفاً بلا تنقل ... ok
+test_last_page_has_prev_but_no_next (test_p27_projects_pagination.TestProjectsPageKeyboard.test_last_page_has_prev_but_no_next)
+الصفحة الأخيرة: زر السابقة موجود، زر التالية محذوف ... ok
+test_middle_page_has_both_nav_buttons (test_p27_projects_pagination.TestProjectsPageKeyboard.test_middle_page_has_both_nav_buttons)
+صفحة وسطى (47 مشروعاً ➔ صفحة 2 من 3): سابقة وتالية معاً + عداد ... ok
+test_new_project_button_always_present (test_p27_projects_pagination.TestProjectsPageKeyboard.test_new_project_button_always_present)
+صف الإجراءات [🚀 مشروع جديد][🏠 رجوع] حاضر في كل الحالات ... ok
+test_other_chat_projects_excluded (test_p27_projects_pagination.TestProjectsPageKeyboard.test_other_chat_projects_excluded)
+مشاريع محادثة أخرى لا تظهر أبداً (عزل chat_id) ... ok
+test_out_of_bounds_page_renders_last_page (test_p27_projects_pagination.TestProjectsPageKeyboard.test_out_of_bounds_page_renders_last_page)
+صفحة 999 على 21 مشروعاً ➔ تُعرض الصفحة الأخيرة بلا Crash ... ok
+test_project_rows_reuse_existing_contracts (test_p27_projects_pagination.TestProjectsPageKeyboard.test_project_rows_reuse_existing_contracts)
+صفوف المشاريع تستخدم نفس عقود proj:/pview: القائمة (صفر تغيير على تدفق الاختيار) ... ok
+test_projects_ordered_newest_first (test_p27_projects_pagination.TestProjectsPageKeyboard.test_projects_ordered_newest_first)
+أحدث مشروع (آخر upsert) يظهر أولاً في الصفحة الأولى ... ok
+test_single_page_has_no_nav_row (test_p27_projects_pagination.TestProjectsPageKeyboard.test_single_page_has_no_nav_row)
+≤20 مشروعاً = صفحة واحدة بلا أي أزرار تقليب ... ok
+test_empty_registry_message (test_p27_projects_pagination.TestProjectsPageText.test_empty_registry_message) ... ok
+test_last_partial_page_range (test_p27_projects_pagination.TestProjectsPageText.test_last_partial_page_range)
+الصفحة الأخيرة الجزئية: 47 مشروعاً ➔ صفحة 3 تعرض 41–47 ... ok
+test_out_of_bounds_page_text_clamped (test_p27_projects_pagination.TestProjectsPageText.test_out_of_bounds_page_text_clamped) ... ok
+test_text_shows_total_and_position (test_p27_projects_pagination.TestProjectsPageText.test_text_shows_total_and_position) ... ok
+test_dashboard_preview_limit_still_3 (test_p27_projects_pagination.TestSourceContracts.test_dashboard_preview_limit_still_3)
+المعاينة السريعة في اللوحة تحتفظ حرفياً بـ limit=3 ... ok
+test_dead_button_fixed_handler_exists (test_p27_projects_pagination.TestSourceContracts.test_dead_button_fixed_handler_exists)
+🔴 إصلاح الزر الميت: فرع cmd:list_projects موجود الآن في الموزّع ... ok
+test_existing_proj_handler_untouched (test_p27_projects_pagination.TestSourceContracts.test_existing_proj_handler_untouched)
+معالج proj: القائم (الاستئناف المباشر) لم يُمس ... ok
+test_list_projects_handler_uses_pagination_screen (test_p27_projects_pagination.TestSourceContracts.test_list_projects_handler_uses_pagination_screen)
+معالج cmd:list_projects يفتح شاشة التصفح (النص + الكيبورد الجديدان) ... ok
+test_noop_handler_exists (test_p27_projects_pagination.TestSourceContracts.test_noop_handler_exists) ... ok
+test_page_flip_edits_same_message_in_place (test_p27_projects_pagination.TestSourceContracts.test_page_flip_edits_same_message_in_place)
+التقليب يعدّل نفس الرسالة (edit_telegram_message_text) — صفر Spam ... ok
+test_page_flip_handler_exists (test_p27_projects_pagination.TestSourceContracts.test_page_flip_handler_exists) ... ok
+test_page_flip_has_send_fallback (test_p27_projects_pagination.TestSourceContracts.test_page_flip_has_send_fallback)
+لو غاب message_id (حالة نادرة) ➔ fallback بإرسال رسالة جديدة بلا Crash ... ok
+test_pagination_keyboard_defined_before_dispatcher (test_p27_projects_pagination.TestSourceContracts.test_pagination_keyboard_defined_before_dispatcher)
+الدوال تُعرَّف قبل الموزّع (سلامة ترتيب single-file) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
@@ -447,7 +517,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 330 tests in 0.316s
+Ran 369 tests in 0.679s
 
 OK
 ```
