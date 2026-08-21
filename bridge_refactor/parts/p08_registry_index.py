@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p08_registry_index
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 3462..3879
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3462..3879
 المحتوى: Project run locks + P25: Interactive Cancellation Manager (register/trigger/unregister cancel events) + registry index I/O + identity + resume context + viewer URLs + live preview keyboard (P25: cancel_token + confirm_cancel)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
