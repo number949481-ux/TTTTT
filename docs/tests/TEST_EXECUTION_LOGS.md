@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 08:51:06 UTC`
+* **التاريخ والوقت:** `2026-08-21 09:26:25 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.690 ثانية`
-* **النتيجة العامة:** `Ran 238 tests — OK`
+* **الزمن المقاس:** `0.636 ثانية`
+* **النتيجة العامة:** `Ran 255 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -285,6 +285,31 @@ test_05_registry_index_derived_from_home (test_p23_shared_paths.TestSharedPathWi
 registry.json يظل مشتقاً من PROJECT_REGISTRY_HOME (فيرث المركزية) ... ok
 test_06_resolver_defined_before_first_use (test_p23_shared_paths.TestSharedPathWiring.test_06_resolver_defined_before_first_use)
 الدالة معرفة قبل أول استخدام (load_bot_token) ... ok
+test_01_resolve_shared_path_exists (test_p24_qwen_commit_bridge.TestEngineSharedPath.test_01_resolve_shared_path_exists) ... ok
+test_02_accounts_file_uses_resolver (test_p24_qwen_commit_bridge.TestEngineSharedPath.test_02_accounts_file_uses_resolver) ... ok
+test_03_local_priority (test_p24_qwen_commit_bridge.TestEngineSharedPath.test_03_local_priority)
+الملف المحلي موجود ➔ يفوز حتى لو الأب فيه نسخة (Zero Breaking) ... ok
+test_04_parent_fallback (test_p24_qwen_commit_bridge.TestEngineSharedPath.test_04_parent_fallback)
+لا محلي ➔ يلتقط من الفولدر الأب المركزي ... ok
+test_05_local_for_creation (test_p24_qwen_commit_bridge.TestEngineSharedPath.test_05_local_for_creation)
+غير موجود في الاثنين ➔ يرجع المحلي (للإنشاء) ... ok
+test_01_all_accounts_race (test_p24_qwen_commit_bridge.TestOwnerDecisions.test_01_all_accounts_race)
+قرار (A): 0 = كل الحسابات النشطة تتسابق ... ok
+test_02_engine_timeout_unchanged (test_p24_qwen_commit_bridge.TestOwnerDecisions.test_02_engine_timeout_unchanged)
+مهلة المحرك الأصلية 30ث/مرحلة كما هي — بدون اختراع أرقام ... ok
+test_03_fallback_msg_constant (test_p24_qwen_commit_bridge.TestOwnerDecisions.test_03_fallback_msg_constant) ... ok
+test_01_success_returns_commit (test_p24_qwen_commit_bridge.TestQwenCommitPrefix.test_01_success_returns_commit) ... ok
+test_02_none_result_falls_back_empty (test_p24_qwen_commit_bridge.TestQwenCommitPrefix.test_02_none_result_falls_back_empty) ... ok
+test_03_exception_is_isolated (test_p24_qwen_commit_bridge.TestQwenCommitPrefix.test_03_exception_is_isolated)
+أي Exception من كوين ➔ prefix فارغ — الرفع لا ينكسر أبداً ... ok
+test_04_empty_job_skips_engine (test_p24_qwen_commit_bridge.TestQwenCommitPrefix.test_04_empty_job_skips_engine)
+job بلا ملفات ➔ كوين لا يُستدعى إطلاقاً (توفير الوقت والحسابات) ... ok
+test_05_prefix_capped_150 (test_p24_qwen_commit_bridge.TestQwenCommitPrefix.test_05_prefix_capped_150) ... ok
+test_01_prefix_computed_once_before_put_loop (test_p24_qwen_commit_bridge.TestUploaderMessageContract.test_01_prefix_computed_once_before_put_loop) ... ok
+test_02_sync_message_ai_prefix_with_verbatim_fallback (test_p24_qwen_commit_bridge.TestUploaderMessageContract.test_02_sync_message_ai_prefix_with_verbatim_fallback) ... ok
+test_03_delete_message_ai_prefix_with_verbatim_fallback (test_p24_qwen_commit_bridge.TestUploaderMessageContract.test_03_delete_message_ai_prefix_with_verbatim_fallback) ... ok
+test_04_helper_is_fully_isolated (test_p24_qwen_commit_bridge.TestUploaderMessageContract.test_04_helper_is_fully_isolated)
+الـ helper كله داخل try/except Exception — كوين لا يكسر الرفع ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
@@ -347,7 +372,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 238 tests in 0.299s
+Ran 255 tests in 0.276s
 
 OK
 ```
