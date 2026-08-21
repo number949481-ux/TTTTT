@@ -3803,6 +3803,146 @@ def remember_registry_identity(registry, **kwargs):
     return registry.remember_identity(**kwargs)
 
 
+# ══════════════════════════════════════════════════════════════
+# 🗑️ [P26] Interactive Project Deletion & Atomic Cleanup
+# ══════════════════════════════════════════════════════════════
+# حذف مشروع محفوظ نهائياً بترتيب آمن (Fail-Safe Ordering):
+#   1. حماية: منع الحذف لو المشروع له بناء نشط الآن (_ACTIVE_CANCEL_EVENTS).
+#   2. الفهرس أولاً تحت REGISTRY_INDEX_LOCK (قيد المشروع + كل pid aliases).
+#   3. شجرة التفريع projects_tree.json (مفتاحها root_pid وليس project_key).
+#   4. أخيراً مجلد المشروع على القرص project_registry/<key>/ عبر rmtree.
+# السبب: لو فشل rmtree بعد تنظيف الفهارس يبقى مجرد مجلد يتيم غير مرئي
+# للنظام — أهون بكثير من قيد فهرس يشير لمجلد محذوف.
+
+
+def is_project_build_active(project_key: str) -> bool:
+    """فحص الحماية [P26]: هل للمشروع بناء نشط الآن (Event مسجل وغير مُلغى)؟"""
+    key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key or ""))[:80]
+    if not key:
+        return False
+    with _CANCEL_EVENTS_GUARD:
+        for entry in _ACTIVE_CANCEL_EVENTS.values():
+            if not isinstance(entry, dict):
+                continue
+            if str(entry.get("project_key") or "") == key and not entry["event"].is_set():
+                return True
+    return False
+
+
+def _remove_project_from_tree_file(pids: list[str]) -> int:
+    """إزالة قيود شجرة التفريع لمشروع محذوف — الشجرة مفتاحها root_pid.
+
+    يُرجع عدد الجذور المحذوفة. كتابة ذرية (tmp ثم replace) كنمط save_project_tree.
+    """
+    clean_pids = [p for p in pids if p and is_probable_project_id(p)]
+    if not clean_pids or not PROJECTS_TREE_FILE.exists():
+        return 0
+    try:
+        with open(PROJECTS_TREE_FILE, "r", encoding="utf-8", errors="ignore") as f:
+            tree_data = json.load(f)
+    except Exception:
+        return 0
+    if not isinstance(tree_data, dict):
+        return 0
+    removed = 0
+    for pid in clean_pids:
+        if pid in tree_data:
+            tree_data.pop(pid, None)
+            removed += 1
+    if not removed:
+        return 0
+    try:
+        tmp_file = PROJECTS_TREE_FILE.with_suffix(".tmp")
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(tree_data, f, ensure_ascii=False, indent=2)
+        tmp_file.replace(PROJECTS_TREE_FILE)
+    except Exception as err:
+        log_event("warning", f"🗑️ [P26] تنبيه أثناء تنظيف شجرة التفريع: {err}")
+        return 0
+    return removed
+
+
+def delete_project_atomically(project_key: str) -> dict:
+    """الحذف الذري الشامل [P26] — يُرجع dict بالنتيجة دون رفع استثناءات.
+
+    الترتيب الآمن: حماية التشغيل ➔ الفهرس (تحت القفل) ➔ الشجرة ➔ القرص.
+    """
+    key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key or ""))[:80]
+    result = {
+        "ok": False,
+        "project_key": key,
+        "project_name": "",
+        "reason": "",
+        "index_removed": False,
+        "aliases_removed": 0,
+        "tree_removed": 0,
+        "disk_removed": False,
+    }
+    if not key:
+        result["reason"] = "PROJECT_KEY_MISSING"
+        return result
+
+    # 1️⃣ فحص الحماية: ممنوع حذف مشروع له بناء شغال الآن
+    if is_project_build_active(key):
+        result["reason"] = "PROJECT_BUILD_ACTIVE"
+        return result
+
+    # 2️⃣ تنظيف الفهرس المركزي registry.json تحت القفل (القيد + كل aliases)
+    project_pids: list[str] = []
+    with REGISTRY_INDEX_LOCK:
+        data = _read_registry_index()
+        record = data["projects"].pop(key, None)
+        if isinstance(record, dict):
+            result["index_removed"] = True
+            result["project_name"] = str(record.get("project_name") or "")
+            for pid_field in ("root_genspark_pid", "latest_genspark_pid"):
+                pid_value = str(record.get(pid_field) or "")
+                if is_probable_project_id(pid_value) and pid_value not in project_pids:
+                    project_pids.append(pid_value)
+        stale_aliases = [pid for pid, mapped in data["pid_to_key"].items() if mapped == key]
+        for pid in stale_aliases:
+            data["pid_to_key"].pop(pid, None)
+            if pid not in project_pids:
+                project_pids.append(pid)
+        result["aliases_removed"] = len(stale_aliases)
+        if result["index_removed"] or stale_aliases:
+            try:
+                _write_registry_index(data)
+            except Exception as err:
+                log_event("error", f"🗑️ [P26] فشل كتابة registry index أثناء الحذف: {err}")
+                result["reason"] = "INDEX_WRITE_FAILED"
+                return result
+
+    # 3️⃣ تنظيف شجرة التفريع (مفاتيحها root_pid — تُتخطى بأمان لو لا يوجد pid)
+    result["tree_removed"] = _remove_project_from_tree_file(project_pids)
+
+    # 4️⃣ حذف مجلد المشروع كاملاً من القرص project_registry/<key>/
+    project_dir = PROJECT_REGISTRY_HOME / key
+    if project_dir.exists() and project_dir.is_dir():
+        try:
+            shutil.rmtree(project_dir)
+            result["disk_removed"] = True
+        except Exception as err:
+            log_event("error", f"🗑️ [P26] فشل حذف مجلد المشروع من القرص: {err}")
+            result["reason"] = "DISK_REMOVE_FAILED"
+            # الفهارس نظيفة بالفعل — الحذف منطقياً ناجح مع مجلد يتيم
+            result["ok"] = bool(result["index_removed"])
+            return result
+
+    if not result["index_removed"] and not result["disk_removed"]:
+        result["reason"] = "PROJECT_NOT_FOUND"
+        return result
+
+    result["ok"] = True
+    log_event(
+        "info",
+        f"🗑️ [P26] تم حذف المشروع نهائياً: key={key} "
+        f"(index={result['index_removed']}, aliases={result['aliases_removed']}, "
+        f"tree={result['tree_removed']}, disk={result['disk_removed']})",
+    )
+    return result
+
+
 def build_genspark_viewer_url(project_id: str | None) -> str:
     pid = extract_project_id(project_id) if project_id else ""
     if not is_probable_project_id(pid):
@@ -4563,8 +4703,44 @@ def build_current_project_keyboard(project_key: str) -> dict:
     ])
     if snap.get("resume_pid"):
         rows.append([{"text": "🌳 نقاط الاستئناف", "callback_data": f"tree:{snap['resume_pid']}"}])
+    # 🗑️ [P26] صف مستقل لحذف المشروع — إضافة وليس استبدالاً لزر إلغاء البناء (P25)
+    rows.append([{"text": "🗑️ حذف المشروع", "callback_data": f"pdel_prompt:{project_key}", "style": "danger"}])
     rows.append([{"text": "📁 مشاريعي", "callback_data": "cmd:list_projects"}, {"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:show_dashboard"}])
     return make_inline_keyboard(rows)
+
+
+def build_project_delete_confirm_keyboard(project_key: str) -> dict:
+    """🗑️ [P26] كيبورد تأكيد الحذف بخطوتي أمان — نعم أحمر / تراجع أخضر"""
+    return make_inline_keyboard([
+        [{"text": "🚨 نعم، احذف نهائياً", "callback_data": f"pdel_exec:{project_key}", "style": "danger"}],
+        [{"text": "↩️ لا، إلغاء ورجوع", "callback_data": f"pdel_abort:{project_key}", "style": "success"}],
+    ])
+
+
+def build_project_deleted_keyboard() -> dict:
+    """🗑️ [P26] كيبورد شاشة نجاح الحذف — مشاريعي + مشروع جديد"""
+    return make_inline_keyboard([
+        [
+            {"text": "📁 مشاريعي", "callback_data": "cmd:list_projects"},
+            {"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj", "style": "primary"},
+        ],
+    ])
+
+
+def render_project_delete_confirm_text(project_key: str) -> str:
+    """🗑️ [P26] نص التحذير قبل الحذف النهائي — بالاسم والمفتاح"""
+    identity = get_project_identity_record(project_key) or {}
+    project_name = str(identity.get("project_name") or project_key)
+    return (
+        "🗑️ <b>تأكيد حذف المشروع نهائياً</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"📛 <b>الاسم:</b> {html_escape(project_name)}\n"
+        f"🔑 <b>المفتاح:</b> <code>{html_escape(project_key)}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "⚠️ سيتم حذف مجلد المشروع كاملاً (manifest + checkpoints)\n"
+        "وإزالته من الفهرس المركزي وشجرة نقاط الاستئناف.\n"
+        "🚫 <b>هذا الإجراء لا يمكن التراجع عنه بعد التأكيد!</b>"
+    )
 
 
 def build_dashboard_keyboard(chat_id: int) -> dict:
@@ -5736,6 +5912,74 @@ def handle_telegram_update(update: dict):
                         )
                 else:
                     send_telegram_message(chat_id, "ℹ️ تعذر تفعيل الإلغاء — المهمة غالباً انتهت بالفعل.")
+            return
+
+        # ══════════════════════════════════════════════════════
+        # 🗑️ [P26] حذف المشروع التفاعلي — تأكيد In-Place بخطوتي أمان
+        # (كتلة معزولة مبكرة بنمط P25 — صفر تعارض مع pctl:/pset:/pview:)
+        # ══════════════════════════════════════════════════════
+        if data.startswith(("pdel_prompt:", "pdel_abort:", "pdel_exec:")):
+            action, _, raw_key = data.partition(":")
+            project_key = re.sub(r"[^A-Za-z0-9_-]", "_", str(raw_key or ""))[:80]
+            card_msg_id = msg_info.get("message_id")
+            if not project_key:
+                send_telegram_message(chat_id, "⚠️ مفتاح المشروع غير صالح — لا يمكن المتابعة.")
+                return
+            if action == "pdel_prompt":
+                # الخطوة 1: تحديث نفس الرسالة فوراً لشاشة التحذير — بدون Spam
+                if card_msg_id:
+                    edit_telegram_message_text(
+                        chat_id, card_msg_id,
+                        render_project_delete_confirm_text(project_key),
+                        reply_markup=build_project_delete_confirm_keyboard(project_key),
+                    )
+                else:
+                    send_telegram_message(chat_id, render_project_delete_confirm_text(project_key), reply_markup=build_project_delete_confirm_keyboard(project_key))
+            elif action == "pdel_abort":
+                # التراجع الفوري: عودة نفس الرسالة لشاشة التفاصيل — صفر تعديل ملفات
+                if card_msg_id:
+                    edit_telegram_message_text(
+                        chat_id, card_msg_id,
+                        render_project_status_text(project_key),
+                        reply_markup=build_current_project_keyboard(project_key),
+                    )
+                else:
+                    send_telegram_message(chat_id, render_project_status_text(project_key), reply_markup=build_current_project_keyboard(project_key))
+            elif action == "pdel_exec":
+                # الخطوة 2 (مؤكدة): الحذف الذري الشامل — الحماية تُفحص داخل الدالة
+                outcome = delete_project_atomically(project_key)
+                if outcome.get("ok"):
+                    display_name = str(outcome.get("project_name") or project_key)
+                    success_text = (
+                        "✅ <b>تم حذف المشروع بنجاح.</b>\n"
+                        f"📛 <b>الاسم:</b> {html_escape(display_name)}\n"
+                        f"🔑 <b>المفتاح:</b> <code>{html_escape(project_key)}</code>\n"
+                        "🧹 تم تنظيف الفهرس المركزي وشجرة الاستئناف ومجلد القرص بالكامل."
+                    )
+                    if card_msg_id:
+                        edit_telegram_message_text(chat_id, card_msg_id, success_text, reply_markup=build_project_deleted_keyboard())
+                    else:
+                        send_telegram_message(chat_id, success_text, reply_markup=build_project_deleted_keyboard())
+                elif outcome.get("reason") == "PROJECT_BUILD_ACTIVE":
+                    warn_text = (
+                        "🛡️ <b>لا يمكن حذف المشروع الآن — يوجد بناء نشط قيد التنفيذ.</b>\n"
+                        "🛑 أوقف/ألغِ البناء الجاري أولاً (زر إلغاء البناء) ثم أعد المحاولة."
+                    )
+                    if card_msg_id:
+                        edit_telegram_message_text(
+                            chat_id, card_msg_id,
+                            render_project_status_text(project_key),
+                            reply_markup=build_current_project_keyboard(project_key),
+                        )
+                    send_telegram_message(chat_id, warn_text)
+                elif outcome.get("reason") == "PROJECT_NOT_FOUND":
+                    nf_text = "ℹ️ هذا المشروع محذوف بالفعل أو غير موجود في السجل."
+                    if card_msg_id:
+                        edit_telegram_message_text(chat_id, card_msg_id, nf_text, reply_markup=build_project_deleted_keyboard())
+                    else:
+                        send_telegram_message(chat_id, nf_text, reply_markup=build_project_deleted_keyboard())
+                else:
+                    send_telegram_message(chat_id, f"⚠️ تعذر إتمام الحذف: <code>{html_escape(str(outcome.get('reason') or 'UNKNOWN'))}</code> — راجع السجل.")
             return
 
         if data == "cmd:show_dashboard":
