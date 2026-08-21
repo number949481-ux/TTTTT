@@ -32,7 +32,7 @@ webapp_dir = pathlib.Path(__file__).resolve().parent.parent
 if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
-BRIDGE_PATH = webapp_dir / "01.31_telegram_gen_bridge.py"
+BRIDGE_PATH = webapp_dir / "01.32_telegram_gen_bridge.py"
 BRIDGE_SRC = BRIDGE_PATH.read_text(encoding="utf-8")
 
 _spec = importlib.util.spec_from_file_location("bridge_mod_p20", BRIDGE_PATH)
