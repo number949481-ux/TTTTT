@@ -5560,7 +5560,7 @@ def process_user_task_async(
                 f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
                 f"🔐 <b>مفتاح المشروع:</b> <code>{project_key}</code>{pid_line}\n"
                 "🧹 تم قطع البث وتحرير الحساب والموارد فوراً — يمكنك بدء مهمة جديدة الآن.",
-                reply_markup=make_inline_keyboard([[{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}]]),
+                reply_markup=build_dashboard_keyboard(chat_id),  # 🛑 [P25] اللوحة الكاملة بعد الإلغاء بدل الزر اليتيم
             )
             return
 
