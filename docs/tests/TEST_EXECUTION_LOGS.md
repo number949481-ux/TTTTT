@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 15:14:37 UTC`
+* **التاريخ والوقت:** `2026-08-21 15:48:53 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.741 ثانية`
-* **النتيجة العامة:** `Ran 295 tests — OK`
+* **الزمن المقاس:** `0.634 ثانية`
+* **النتيجة العامة:** `Ran 297 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -70,7 +70,7 @@ test_10_low_balance_skips_silently_with_continue (test_p13_preflight_balance.Tes
 test_11_low_balance_skip_precedes_credit_exhausted_handling (test_p13_preflight_balance.TestFailoverSilentSkip.test_11_low_balance_skip_precedes_credit_exhausted_handling) ... ok
 test_12_no_user_notification_in_skip_block (test_p13_preflight_balance.TestFailoverSilentSkip.test_12_no_user_notification_in_skip_block) ... ok
 test_13_no_wrong_30min_auth_ban_for_low_balance (test_p13_preflight_balance.TestFailoverSilentSkip.test_13_no_wrong_30min_auth_ban_for_low_balance) ... ok
-/home/user/webapp/01.32_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
+/home/user/webapp/01.33_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
   logging.basicConfig(
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 test_01_min_preflight_balance_default_100 (test_p13_preflight_balance.TestPreflightBalanceConfig.test_01_min_preflight_balance_default_100) ... ok
@@ -156,7 +156,7 @@ test_02_old_vulnerable_condition_gone (test_p17_hardening.TestExpiredSessionGate
 test_01_pytest_cache_untracked (test_p17_hardening.TestGeneratedFilesUntracked.test_01_pytest_cache_untracked) ... ok
 test_02_bridge_log_untracked (test_p17_hardening.TestGeneratedFilesUntracked.test_02_bridge_log_untracked) ... ok
 test_03_gitignore_covers_both (test_p17_hardening.TestGeneratedFilesUntracked.test_03_gitignore_covers_both) ... ok
-/home/user/webapp/01.32_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
+/home/user/webapp/01.33_telegram_gen_bridge.py:71: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/webapp/bridge_bot.log' mode='a' encoding='utf-8'>
   logging.basicConfig(
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 test_01_allowed_private_user (test_p17_hardening.TestGroupChatSupport.test_01_allowed_private_user) ... ok
@@ -350,10 +350,12 @@ test_13_expired_token_cleans_buttons_quietly (test_p25_interactive_cancel.TestWo
 test_14_worker_handles_cancelled_terminal_message (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_14_worker_handles_cancelled_terminal_message) ... ok
 test_15_live_preview_card_carries_cancel_button (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_15_live_preview_card_carries_cancel_button) ... ok
 test_16_bridge_config_declares_cancel_fields (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_16_bridge_config_declares_cancel_fields) ... ok
+test_17_cancel_terminal_shows_full_dashboard_keyboard (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_17_cancel_terminal_shows_full_dashboard_keyboard) ... ok
+test_18_cancel_terminal_has_no_orphan_single_button (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_18_cancel_terminal_has_no_orphan_single_button) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
-test_normalize_always_returns_str (test_p2_model_routing.TestP2ModelRouting.test_normalize_always_returns_str) ... /home/user/webapp/01.32_telegram_gen_bridge.py:109: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+test_normalize_always_returns_str (test_p2_model_routing.TestP2ModelRouting.test_normalize_always_returns_str) ... /home/user/webapp/01.33_telegram_gen_bridge.py:109: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
   log_func(log_msg)
 ok
 test_opus5_has_no_ai_chat_model (test_p2_model_routing.TestP2ModelRouting.test_opus5_has_no_ai_chat_model) ... ok
@@ -412,7 +414,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 295 tests in 0.263s
+Ran 297 tests in 0.252s
 
 OK
 ```
