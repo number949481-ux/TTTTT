@@ -81,3 +81,17 @@
 2026-08-20 23:23:23 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
 2026-08-20 23:23:23 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
 2026-08-20 23:23:23 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 07:45:01 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-21 07:45:01 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 07:45:01 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-21 07:45:01 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 07:45:01 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 07:45:01 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-21 07:45:01 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 07:45:29 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-21 07:45:29 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 07:45:29 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-21 07:45:29 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 07:45:29 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 07:45:29 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-21 07:45:29 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
