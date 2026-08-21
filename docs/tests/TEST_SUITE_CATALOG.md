@@ -1,9 +1,9 @@
 # 🧪 كتالوج حالات واختبارات الوحدة (TEST_SUITE_CATALOG.md)
 
-> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **295 فحصاً النشطة محلياً** لإصدار `01.32`  
-> **حالة الاختبارات النشطة:** 295/295 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
+> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **297 فحصاً النشطة محلياً** لإصدار `01.33`  
+> **حالة الاختبارات النشطة:** 297/297 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
 
-## 📊 0. المصفوفة النشطة الحالية — 01.32 (295 فحصاً / 19 ملفاً)
+## 📊 0. المصفوفة النشطة الحالية — 01.33 (297 فحصاً / 19 ملفاً)
 
 | الحزمة | الملف | العدد | النطاق |
 |---|---|:---:|---|
@@ -24,9 +24,9 @@
 | **P20/P21 REST-Only + DATA_RETENTION + تصنيف commit** | `test_p20_rest_only_data_retention.py` | **29** | **إلغاء Git Native Sync (رفع REST حصرياً) + كشف AI Data Retention ومعاملته كنفاد رصيد (تبريد 29h + نفس آخر رسالة) + P21: تمييز جديد ➕ / معدل ✏️ عبر remote_sha (الحارسان test_09/test_10)** |
 | **P23 المسارات المشتركة** | `test_p23_shared_paths.py` | **17** | **`resolve_shared_path` (محلي ➔ الأب `W___webapp/` ➔ المحلي) للتوكن/السجل/الشجرة/الحسابات + يافطة AGENTS/GEMINI + صفر hardcode** |
 | **P24 الكوميت الذكي** | `test_p24_qwen_commit_bridge.py` | **17** | **حقن `qwen_engine.generate_ai_summary` كبادئة لرسائل sync/delete (مرة/job) + fallback حرفي للرسالة القديمة + مركزية `accounts_qwen.json` + `AI_RACE_ACCOUNTS=0`** |
-| **P25 الإلغاء التفاعلي** | `test_p25_interactive_cancel.py` | **40** | **مسجل أحداث الإلغاء (توكن 12-hex + Lock) + زر 🛑 بخطوتي أمان + قطع بث SSE تعاوني (`__USER_CANCELLED__` قبل تصنيف الرصيد + `r.close()`) + `Event.wait(5)` + `CANCELLED` بلا عقوبة + Zero Leaks في `finally`** |
-| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.32 |
-| **الإجمالي** | **19 ملفاً** | **295** | ✅ 295/295 PASS |
+| **P25 الإلغاء التفاعلي** | `test_p25_interactive_cancel.py` | **42** | **مسجل أحداث الإلغاء (توكن 12-hex + Lock) + زر 🛑 بخطوتي أمان + قطع بث SSE تعاوني (`__USER_CANCELLED__` قبل تصنيف الرصيد + `r.close()`) + `Event.wait(5)` + `CANCELLED` بلا عقوبة + Zero Leaks في `finally` + حارسا S46: اللوحة الكاملة `build_dashboard_keyboard` بعد الإلغاء وممنوع الزر اليتيم** |
+| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.33 |
+| **الإجمالي** | **19 ملفاً** | **297** | ✅ 297/297 PASS |
 
 
 ---
