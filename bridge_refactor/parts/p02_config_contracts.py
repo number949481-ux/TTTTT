@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p02_config_contracts
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 139..442
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 155..458
 المحتوى: Global config + models + CONTRACTS + resume-prompt utils + project settings (P17: ALLOWED_GROUP_IDS + is_chat_allowed لدعم الجروبات)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -65,8 +65,8 @@ def is_chat_allowed(chat_id, from_user_id=None) -> bool:
             return False
     return False
 
-PROJECTS_TREE_FILE = SCRIPT_DIR / "projects_tree.json"
-PROJECT_REGISTRY_HOME = SCRIPT_DIR / "project_registry"
+PROJECTS_TREE_FILE = resolve_shared_path("projects_tree.json")  # 🔎 [P23] شجرة مشتركة: محلي ثم الأب
+PROJECT_REGISTRY_HOME = resolve_shared_path("project_registry")  # 🔎 [P23] سجل مركزي: محلي ثم الأب
 PROJECT_REGISTRY_INDEX_FILE = PROJECT_REGISTRY_HOME / "registry.json"
 # ══════════════════════════════════════════════════════════════
 # 🧠 Model Contracts & Normalization Runtime (Self-Contained)
