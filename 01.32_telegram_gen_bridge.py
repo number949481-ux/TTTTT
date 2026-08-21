@@ -5540,6 +5540,29 @@ def process_user_task_async(
                 "لم يبدأ التنفيذ على حساب جديد لأننا ثبّتْنا attribution آمن لكل مهمة. أعد المحاولة بعد قليل."
             )
             return
+        # 🛑 [P25] المستخدم أكد الإلغاء — رسالة نهائية هادئة وتسجيل الحالة ثم خروج نظيف
+        if status == CANCELLED_STATUS:
+            cancelled_pid = seen_live_preview_pid or requested_pid or ""
+            try:
+                remember_registry_identity(
+                    registry,
+                    latest_pid=cancelled_pid or None,
+                    project_name=project_name,
+                    chat_id=chat_id,
+                    status=CANCELLED_STATUS,
+                )
+            except Exception:
+                pass
+            pid_line = f"\n🆔 <b>Project ID:</b> <code>{html_escape(cancelled_pid)}</code>" if cancelled_pid else ""
+            send_telegram_message(
+                chat_id,
+                "⛔ <b>تم إلغاء المهمة بالكامل بناءً على تأكيدك.</b>\n"
+                f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
+                f"🔐 <b>مفتاح المشروع:</b> <code>{project_key}</code>{pid_line}\n"
+                "🧹 تم قطع البث وتحرير الحساب والموارد فوراً — يمكنك بدء مهمة جديدة الآن.",
+                reply_markup=make_inline_keyboard([[{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}]]),
+            )
+            return
 
         acc_email = html_escape(used_acc.get("email")) if used_acc else "غير محدد"
         is_finished = check_project_finished_flag(status, last_resp_text)
@@ -5640,6 +5663,13 @@ def process_user_task_async(
         except Exception:
             pass
     finally:
+        # 🛑 [P25] تنظيف مضمون لحدث الإلغاء من الذاكرة (Zero Leaks) —
+        # يشمل كل المخارج: نجاح/فشل/إلغاء/استثناء. الضغط على زر قديم بعد
+        # التنظيف يرد بهدوء "المهمة انتهت بالفعل" (get_cancel_entry ➔ None).
+        try:
+            unregister_cancel_event(cancel_token)
+        except Exception:
+            pass
         if project_key and claimed_project_run:
             release_project_run(project_key, run_owner_token)
 
