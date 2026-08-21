@@ -8,7 +8,7 @@
 `accounts_qwen.json`, `.env`, `project_registry/`, `projects_tree.json`)
 مكانها الرئيسي الموحد في **الفولدر الأب الكبير** (`W___webapp/` — أب مجلد النسخة)،
 وكل نسخ الجسر تقرأ منها **تلقائياً** عبر الدالة `resolve_shared_path(name)`
-في `01.31_telegram_gen_bridge.py`:
+في `01.32_telegram_gen_bridge.py`:
 
 1. لو الملف موجود **جنب النسخة** (محلياً) ➔ يُستخدم المحلي (أولوية محلية).
 2. لو غير موجود محلياً ➔ يُلقط من **الفولدر الأب** تلقائياً.
@@ -19,13 +19,13 @@
 
 ## 🛡️ القواعد المعمارية الإلزامية (ملخص — التفصيل في `docs/engineering/V3_RESUME_SESSION.md`)
 
-- **الملف المعتمد الوحيد للتعديل:** `01.31_telegram_gen_bridge.py`
+- **الملف المعتمد الوحيد للتعديل:** `01.32_telegram_gen_bridge.py`
   (النسخ الأقدم `01.30` وما قبلها = Golden Baselines مرجعية — ممنوع تعديلها).
 - **Test-Before-Talk:** لا إبلاغ بنجاح أي تعديل قبل `py_compile` + كامل pytest
   + بوابة `python3 scripts/hadith_sijil.py` بـ Exit Code 0.
 - **Approve-Before-Execute:** أي ميزة جديدة تحتاج خطة معتمدة من المالك أولاً.
 - **P18 عقد المالك:** أي تغيّر في Deep Thinking / Tasks Remaining = وقف فوري.
-- بعد أي تعديل في `01.31`: حدّث حدود `PARTS` في `scripts/rebuild_refactor.py`
+- بعد أي تعديل في `01.32`: حدّث حدود `PARTS` في `scripts/rebuild_refactor.py`
   وأعد توليد `bridge_refactor/` بتطابق بايت (يحرسه `tests/test_refactor_parity.py`).
 
 ## 📖 نقطة الاستئناف
