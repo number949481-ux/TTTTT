@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 459..846
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 459..846
 المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig + accounts I/O + readiness + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
