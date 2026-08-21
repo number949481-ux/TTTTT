@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5677..6702
-المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5853..6946
+المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def get_main_keyboard(chat_id: int | None = None):
@@ -65,6 +65,74 @@ def handle_telegram_update(update: dict):
                         )
                 else:
                     send_telegram_message(chat_id, "ℹ️ تعذر تفعيل الإلغاء — المهمة غالباً انتهت بالفعل.")
+            return
+
+        # ══════════════════════════════════════════════════════
+        # 🗑️ [P26] حذف المشروع التفاعلي — تأكيد In-Place بخطوتي أمان
+        # (كتلة معزولة مبكرة بنمط P25 — صفر تعارض مع pctl:/pset:/pview:)
+        # ══════════════════════════════════════════════════════
+        if data.startswith(("pdel_prompt:", "pdel_abort:", "pdel_exec:")):
+            action, _, raw_key = data.partition(":")
+            project_key = re.sub(r"[^A-Za-z0-9_-]", "_", str(raw_key or ""))[:80]
+            card_msg_id = msg_info.get("message_id")
+            if not project_key:
+                send_telegram_message(chat_id, "⚠️ مفتاح المشروع غير صالح — لا يمكن المتابعة.")
+                return
+            if action == "pdel_prompt":
+                # الخطوة 1: تحديث نفس الرسالة فوراً لشاشة التحذير — بدون Spam
+                if card_msg_id:
+                    edit_telegram_message_text(
+                        chat_id, card_msg_id,
+                        render_project_delete_confirm_text(project_key),
+                        reply_markup=build_project_delete_confirm_keyboard(project_key),
+                    )
+                else:
+                    send_telegram_message(chat_id, render_project_delete_confirm_text(project_key), reply_markup=build_project_delete_confirm_keyboard(project_key))
+            elif action == "pdel_abort":
+                # التراجع الفوري: عودة نفس الرسالة لشاشة التفاصيل — صفر تعديل ملفات
+                if card_msg_id:
+                    edit_telegram_message_text(
+                        chat_id, card_msg_id,
+                        render_project_status_text(project_key),
+                        reply_markup=build_current_project_keyboard(project_key),
+                    )
+                else:
+                    send_telegram_message(chat_id, render_project_status_text(project_key), reply_markup=build_current_project_keyboard(project_key))
+            elif action == "pdel_exec":
+                # الخطوة 2 (مؤكدة): الحذف الذري الشامل — الحماية تُفحص داخل الدالة
+                outcome = delete_project_atomically(project_key)
+                if outcome.get("ok"):
+                    display_name = str(outcome.get("project_name") or project_key)
+                    success_text = (
+                        "✅ <b>تم حذف المشروع بنجاح.</b>\n"
+                        f"📛 <b>الاسم:</b> {html_escape(display_name)}\n"
+                        f"🔑 <b>المفتاح:</b> <code>{html_escape(project_key)}</code>\n"
+                        "🧹 تم تنظيف الفهرس المركزي وشجرة الاستئناف ومجلد القرص بالكامل."
+                    )
+                    if card_msg_id:
+                        edit_telegram_message_text(chat_id, card_msg_id, success_text, reply_markup=build_project_deleted_keyboard())
+                    else:
+                        send_telegram_message(chat_id, success_text, reply_markup=build_project_deleted_keyboard())
+                elif outcome.get("reason") == "PROJECT_BUILD_ACTIVE":
+                    warn_text = (
+                        "🛡️ <b>لا يمكن حذف المشروع الآن — يوجد بناء نشط قيد التنفيذ.</b>\n"
+                        "🛑 أوقف/ألغِ البناء الجاري أولاً (زر إلغاء البناء) ثم أعد المحاولة."
+                    )
+                    if card_msg_id:
+                        edit_telegram_message_text(
+                            chat_id, card_msg_id,
+                            render_project_status_text(project_key),
+                            reply_markup=build_current_project_keyboard(project_key),
+                        )
+                    send_telegram_message(chat_id, warn_text)
+                elif outcome.get("reason") == "PROJECT_NOT_FOUND":
+                    nf_text = "ℹ️ هذا المشروع محذوف بالفعل أو غير موجود في السجل."
+                    if card_msg_id:
+                        edit_telegram_message_text(chat_id, card_msg_id, nf_text, reply_markup=build_project_deleted_keyboard())
+                    else:
+                        send_telegram_message(chat_id, nf_text, reply_markup=build_project_deleted_keyboard())
+                else:
+                    send_telegram_message(chat_id, f"⚠️ تعذر إتمام الحذف: <code>{html_escape(str(outcome.get('reason') or 'UNKNOWN'))}</code> — راجع السجل.")
             return
 
         if data == "cmd:show_dashboard":
