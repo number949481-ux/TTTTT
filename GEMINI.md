@@ -11,7 +11,7 @@
 
 ## 🛡️ إلزامي
 
-- الملف المعتمد الوحيد: `01.31_telegram_gen_bridge.py` — النسخ الأقدم مرجعية فقط.
+- الملف المعتمد الوحيد: `01.32_telegram_gen_bridge.py` — النسخ الأقدم مرجعية فقط.
 - بوابة الجودة قبل أي إغلاق: pytest كامل 100% + `scripts/hadith_sijil.py` Exit 0.
 - نقطة الاستئناف الوحيدة المعتمدة: `PROGRESS.md` الجذري.
 - التفاصيل الكاملة: `AGENTS.md` + `docs/engineering/V3_RESUME_SESSION.md`.
