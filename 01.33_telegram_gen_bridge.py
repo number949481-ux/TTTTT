@@ -594,6 +594,145 @@ def format_account_journey_line(journey) -> str:
     return "🧾 <b>مسار الحسابات:</b> " + " ← ".join(f"<code>{html_escape(item)}</code>" for item in emails)
 
 
+# ══════════════════════════════════════════════════════════════
+# ⏱️ [P30] المحاسبة الزمنية الجنائية للحسابات (Forensic Time Accounting)
+# spans حية على bridge_cfg — تُفتح لحظة الـ claim الفعلي وتُغلق حتماً
+# في finally (نجاح/فشل/إلغاء/استثناء). monotonic للمدة + wall للعرض.
+# ══════════════════════════════════════════════════════════════
+def open_account_timing_span(bridge_cfg, email: str, attempt_number: int = 0) -> dict | None:
+    """يفتح span زمني لحساب لحظة الـ claim الفعلي فقط (لا Email وهمي من الـ Pool).
+
+    المدة تُقاس بـ time.monotonic() (محصّنة ضد قفزات ساعة النظام داخل نفس البروسيس)،
+    و time.time() يُسجَّل للعرض/التدقيق فقط. يُرجع الـ span الحي أو None.
+    """
+    if bridge_cfg is None:
+        return None
+    email_clean = str(email or "").strip()
+    if not email_clean:
+        return None
+    spans = getattr(bridge_cfg, "account_journey_spans", None)
+    if not isinstance(spans, list):
+        spans = []
+        bridge_cfg.account_journey_spans = spans
+    span = {
+        "email": email_clean,
+        "attempt_number": int(attempt_number or 0),
+        "started_monotonic": time.monotonic(),
+        "started_wall": time.time(),
+        "ended_monotonic": None,
+        "ended_wall": None,
+        "duration_seconds": None,
+        "closed": False,
+    }
+    spans.append(span)
+    return span
+
+
+def close_account_timing_span(bridge_cfg, email: str | None = None) -> dict | None:
+    """يغلق آخر span مفتوح (idempotent — الإغلاق المزدوج لا يغيّر المدة المسجلة).
+
+    يُستدعى من finally حصراً فيُنفَّذ حتماً في كل المسارات. لو مرّر email
+    يُغلق آخر span مفتوح لنفس الحساب؛ وإلا آخر span مفتوح أياً كان.
+    """
+    if bridge_cfg is None:
+        return None
+    spans = getattr(bridge_cfg, "account_journey_spans", None)
+    if not isinstance(spans, list) or not spans:
+        return None
+    email_clean = str(email or "").strip()
+    for span in reversed(spans):
+        if not isinstance(span, dict) or span.get("closed"):
+            continue
+        if email_clean and str(span.get("email") or "") != email_clean:
+            continue
+        span["ended_monotonic"] = time.monotonic()
+        span["ended_wall"] = time.time()
+        span["duration_seconds"] = max(0.0, float(span["ended_monotonic"]) - float(span.get("started_monotonic") or 0.0))
+        span["closed"] = True
+        return span
+    return None
+
+
+def format_arabic_duration(seconds) -> str:
+    """صياغة مدة زمنية بالعربية: «45 ثانية» / «3 دقائق و12 ثانية» / «1 ساعة و5 دقائق».
+
+    القيم السالبة/غير الصالحة تُعامل كصفر (لا Crash أبداً في مسار الرسالة النهائية).
+    """
+    try:
+        total = int(max(0.0, float(seconds or 0)))
+    except (TypeError, ValueError):
+        total = 0
+    hours, rem = divmod(total, 3600)
+    minutes, secs = divmod(rem, 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours} ساعة")
+    if minutes:
+        parts.append(f"{minutes} دقيقة" if hours else f"{minutes} دقائق" if minutes > 2 else f"{minutes} دقيقة")
+    if secs or not parts:
+        parts.append(f"{secs} ثانية")
+    return " و".join(parts)
+
+
+def aggregate_journey_spans_per_email(spans) -> list[dict]:
+    """يجمع الـ spans لكل حساب بترتيب أول ظهور: [{email, total_seconds, spans_count}].
+
+    A→B→A تُنتج مدخلاً واحداً لـ A بمجموع فترتيه — بدون فقدان أي فترة.
+    الـ spans المفتوحة (لم تُغلق بعد) تُحتسب حتى اللحظة الحالية (best-effort).
+    """
+    order: list[str] = []
+    totals: dict[str, dict] = {}
+    now_mono = time.monotonic()
+    for span in (spans or []):
+        if not isinstance(span, dict):
+            continue
+        email = str(span.get("email") or "").strip()
+        if not email:
+            continue
+        dur = span.get("duration_seconds")
+        if dur is None:
+            start = span.get("started_monotonic")
+            dur = max(0.0, now_mono - float(start)) if start is not None else 0.0
+        if email not in totals:
+            order.append(email)
+            totals[email] = {"email": email, "total_seconds": 0.0, "spans_count": 0}
+        totals[email]["total_seconds"] += max(0.0, float(dur or 0.0))
+        totals[email]["spans_count"] += 1
+    return [totals[e] for e in order]
+
+
+def format_account_timing_block(bridge_cfg, task_total_seconds=None) -> str:
+    """يبني كتلة «📊 إحصائيات الحسابات وزمن التشغيل» للرسالة النهائية.
+
+    تظهر دائماً (حتى بحساب واحد). إيميلات كاملة بلا masking (نمط P29).
+    آخر حساب في الرحلة يُعلَّم «(المُنجِز)». تُرجع "" فقط لو لا توجد spans إطلاقاً.
+    """
+    spans = getattr(bridge_cfg, "account_journey_spans", None) if bridge_cfg is not None else None
+    aggregated = aggregate_journey_spans_per_email(spans)
+    if not aggregated:
+        return ""
+    accounts_total = sum(item["total_seconds"] for item in aggregated)
+    continuations = int(getattr(bridge_cfg, "last_credit_continuations", 0) or 0)
+    continuation_limit = get_credit_continuation_limit(bridge_cfg)
+    last_email = ""
+    raw_spans = [s for s in (spans or []) if isinstance(s, dict) and str(s.get("email") or "").strip()]
+    if raw_spans:
+        last_email = str(raw_spans[-1].get("email") or "").strip()
+    lines = ["📊 <b>إحصائيات الحسابات وزمن التشغيل:</b>"]
+    for idx, item in enumerate(aggregated, start=1):
+        finisher = " <b>(المُنجِز)</b>" if item["email"] == last_email else ""
+        multi = f" ×{item['spans_count']}" if item["spans_count"] > 1 else ""
+        lines.append(
+            f"  {idx}. <code>{html_escape(item['email'])}</code>{finisher} — "
+            f"⏱ {format_arabic_duration(item['total_seconds'])}{multi}"
+        )
+    lines.append(f"⏱ <b>زمن تشغيل الحسابات:</b> {format_arabic_duration(accounts_total)}")
+    if task_total_seconds is not None:
+        lines.append(f"🕒 <b>الزمن الكلي للمهمة:</b> {format_arabic_duration(task_total_seconds)}")
+    lines.append(f"🔁 <b>استئنافات نفاد الرصيد:</b> {continuations} / {continuation_limit}")
+    return "\n".join(lines)
+
+
 def notify_account_selection_observer(bridge_cfg, event_type: str, **payload) -> bool:
     observer = getattr(bridge_cfg, "account_selection_observer", None) if bridge_cfg is not None else None
     if not callable(observer):
@@ -677,6 +816,8 @@ class BridgeConfig:
     selected_account_claim_state: str = ""
     # 🧾 [P29] مسار رحلة الحسابات الفعلية للمهمة (لحظة الـ claim فقط — لا Email وهمي)
     account_journey: list = field(default_factory=list)
+    # ⏱️ [P30] spans المحاسبة الزمنية لكل claim: فتح عند الـ claim، إغلاق حتمي في finally
+    account_journey_spans: list = field(default_factory=list)
     project_resume_prompt_public: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_resume_prompt_runtime: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_runtime_binding_source: str = ""
@@ -2276,6 +2417,7 @@ def send_message_with_auto_account_failover(
     bridge_cfg.selected_account_email = ""
     bridge_cfg.selected_account_claim_state = ""
     bridge_cfg.account_journey = []  # 🧾 [P29] عزل مسار الحسابات لكل تشغيل جديد
+    bridge_cfg.account_journey_spans = []  # ⏱️ [P30] عزل spans التوقيت لكل تشغيل جديد
     _set_credit_checkpoint_state(bridge_cfg, "", "")
     active_url = url
     active_query = query
@@ -2318,6 +2460,7 @@ def send_message_with_auto_account_failover(
         bridge_cfg.selected_account_email = str(curr_email or "")
         bridge_cfg.selected_account_claim_state = "claimed"
         record_account_journey(bridge_cfg, curr_email)  # 🧾 [P29] لحظة الـ claim الفعلي فقط
+        open_account_timing_span(bridge_cfg, curr_email, attempt_number=attempt)  # ⏱️ [P30] فتح span لحظة الـ claim
 
         fp = get_account_fingerprint(curr_email)
         bridge_cfg.user_agent = fp["user_agent"]
@@ -2576,6 +2719,7 @@ def send_message_with_auto_account_failover(
             update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
             continue
         finally:
+            close_account_timing_span(bridge_cfg, curr_email)  # ⏱️ [P30] إغلاق حتمي للـ span في كل المسارات
             release_account_selection(curr_email, owner_token)
             bridge_cfg.selected_account_claim_state = "released"
     return None, "MAX_ATTEMPTS_EXHAUSTED", None, None, None
@@ -5912,6 +6056,9 @@ def process_user_task_async(
         # 🧾 [P29] سطر مسار الحسابات — يظهر فقط عند تعدد الحسابات الفعلية أثناء المهمة
         journey_line = format_account_journey_line(getattr(cfg, "account_journey", []))
         journey_block = f"\n{journey_line}" if journey_line else ""
+        # ⏱️ [P30] كتلة المحاسبة الزمنية — تظهر دائماً عند وجود spans (حتى بحساب واحد)
+        timing_stats = format_account_timing_block(cfg, task_total_seconds=time.time() - task_started_at)
+        timing_block = f"\n\n{timing_stats}" if timing_stats else ""
         is_finished = check_project_finished_flag(status, last_resp_text)
         final_pid = extract_stage_project_id(pub_url, ext_dir)
         runtime_identity = remember_registry_identity(
@@ -5961,6 +6108,7 @@ def process_user_task_async(
             f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>{journey_block}\n"
             f"🆔 <b>Project ID:</b> <code>{html_escape(pid)}</code>{root_line}{latest_line}{resume_line}{fork_line}\n"
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
+            f"{timing_block}"
         )
 
         # إصلاح: بناء الكيبورد بدون أزرار فارغة (url=None كان يكسر الرسالة كلها بصمت)
