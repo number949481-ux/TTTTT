@@ -19,22 +19,22 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S46 |
+| **last-updated** | 2026-08-21 — S47 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.33` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
 | **target bot script** | `01.33_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P25 — الإلغاء التفاعلي وإيقاف التوليد الفوري (Interactive Cancellation Flow)** 🎯 ✅ مغلقة |
-| **current slice** | `TSK-4302` (DONE) ➔ S46 مكتملة: ترقية `01.33` + إصلاح لوحة ما بعد الإلغاء (بلاغ `Cancel_Flag_03.md`) + حارسان جديدان + بوابة 297/297 Exit 0 + توثيق شامل |
-| **current-task** | `S46` — ترقية الإصدار `01.32` ➔ `01.33` (الملف النشط `01.33_telegram_gen_bridge.py` — 6702 سطراً، و`01.32` مؤرشف في `docs/legacy/`) + إصلاح بلاغ المالك (`Cancel_Flag_03.md`): رسالة الإلغاء النهائية تعرض اللوحة الكاملة `build_dashboard_keyboard` بدل الزر اليتيم [🚀 مشروع جديد] + حارسان جديدان (test_17/test_18 في test_p25 — الملف الآن 42 اختباراً) — الإجمالي 297 |
-| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33 (زر الإلغاء التفاعلي + لوحة ما بعد الإلغاء الكاملة على تيليجرام حي + مسار DATA_RETENTION + الرفع REST) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
+| **current WBS phase** | **P26 — حذف المشروع التفاعلي والتنظيف الذري (Interactive Project Deletion & Atomic Cleanup)** 🗑️ ✅ مغلقة |
+| **current slice** | `TSK-4403` (DONE) ➔ S47 مكتملة: ميزة P26 كاملة داخل `01.33` (6946 سطراً) + 33 حارساً جديداً + إعادة بناء refactor (parity 11/11) + بوابة 330/330 Exit 0 + توثيق شامل |
+| **current-task** | `S47` — تنفيذ P26 (طلب المالك في `Atomic_Cleanup_02.MD`): زر 🗑️ حذف المشروع (danger — صف مستقل في لوحة تفاصيل المشروع) + تأكيد In-Place بخطوتي أمان (`pdel_prompt:` ➔ `pdel_exec:` / `pdel_abort:` للتراجع) + حماية `is_project_build_active` (ممنوع حذف مشروع له بناء نشط عبر `_ACTIVE_CANCEL_EVENTS`) + الحذف الذري `delete_project_atomically` (الفهرس + كل pid aliases تحت القفل ➔ `projects_tree.json` ➔ مجلد القرص) — حزمة حراسة `tests/test_p26_project_deletion.py` (33 اختباراً) — الإجمالي 330 |
+| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33 (تدفق الحذف 🗑️ بخطوتي الأمان + حماية البناء النشط + زر الإلغاء التفاعلي على تيليجرام حي) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
 | **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
-| **completion** | 297/297 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 297/297 PASS — Exit Code 0 |
+| **completion** | 330/330 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 330/330 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
-| **release decision** | `READY` 🟢 (S46: لوحة كاملة بعد الإلغاء + P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
+| **release decision** | `READY` 🟢 (P26: حذف مشروع ذري آمن بخطوتي أمان + S46: لوحة كاملة بعد الإلغاء + P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
 
 ---
 
@@ -280,3 +280,14 @@
 - [x] **`[TSK-4301]`** الإصلاح الجراحي: رسالة الإلغاء النهائية في الـ worker (سطر ~5563 في `01.33`) تستدعي `build_dashboard_keyboard(chat_id)` كاملةً بدل الكيبورد اليتيم — سلوك ما بعد الإلغاء الآن مطابق لسلوك ما بعد اكتمال البناء. — دليل: `test_17_cancel_terminal_shows_full_dashboard_keyboard` + `test_18_cancel_terminal_has_no_orphan_single_button` (حارسا S46 في `tests/test_p25_interactive_cancel.py` — الملف الآن **42 اختباراً**).
 - [x] **`[TSK-4302]`** ترقية الإصدار + المواءمة: `BUILD_VERSION = "01.33"` والملف النشط `01.33_telegram_gen_bridge.py` (6702 سطراً — نفس boundaries p03 ➔ 850 … p12 ➔ 6702)، `01.32` أُرشف في `docs/legacy/`، parity 11/11، بوابة `hadith_sijil.py` = **297/297 PASS Exit Code 0** + تحديث التوثيق الشامل (هذا الملف + PROGRESS الجذري + V3_RESUME + TEST_SUITE_CATALOG + README + SESSION_LOG DEC-021). — دليل: Gate 297/297 + هذا الـ commit.
 - [x] **`[TSK-4303]`** نظافة git (المرة الثامنة): إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع بعد أن أعادتهما المزامنة التلقائية مجدداً وكسرا حارسي P17 (الموافقة الدائمة من S41). — دليل: `TestGeneratedFilesUntracked` 3/3 PASS.
+
+---
+
+## 🗑️ P26 / S47 — حذف المشروع التفاعلي والتنظيف الذري Interactive Project Deletion & Atomic Cleanup
+
+> **طلب المالك (`Atomic_Cleanup_02.MD` + `Deep_Thinking_Tasks_Remaining.TXT`):** تمكين حذف أي مشروع من شاشة تفاصيل المشروع — لكن ليس مباشرة: زر 🗑️ أحمر ➔ شاشة تأكيد In-Place بخطوتي أمان (نعم/تراجع) ➔ منع الحذف لو المشروع له بناء نشط ➔ حذف ذري شامل (فهرس + شجرة + قرص) بلا مساس بالجيران.
+
+- [x] **`[TSK-4401]`** واجهة المستخدم: زر «🗑️ حذف المشروع» (style=danger) كصف مستقل في لوحة تفاصيل المشروع (سطر ~4707 — إضافة وليس استبدالاً لزر إلغاء البناء P25) + `build_project_delete_confirm_keyboard` (نعم أحمر / تراجع أخضر) + `render_project_delete_confirm_text` + `build_project_deleted_keyboard` لشاشة النجاح (سطور ~4712-4740). — دليل: `TestDeleteKeyboards` 7/7.
+- [x] **`[TSK-4402]`** المنطق الذري: `is_project_build_active` (سطر ~3818 — فحص `_ACTIVE_CANCEL_EVENTS` لمنع حذف مشروع له بناء نشط) + `delete_project_atomically` (سطر ~3865 — الترتيب الآمن: حماية التشغيل ➔ الفهرس + كل pid aliases تحت القفل ➔ `projects_tree.json` ➔ مجلد القرص `project_registry/<key>/` — يُرجع dict نتيجة دون استثناءات) + معالجات `pdel_prompt:`/`pdel_abort:`/`pdel_exec:` ككتلة معزولة مبكرة في handler الـ callbacks (سطر ~5921) مع تأكيد In-Place عبر `edit_telegram_message_text`. — دليل: `TestRunningProtection` 5/5 + `TestAtomicDeletion` 10/10 + `TestNeighborSafety` 3/3 + `TestSourceContracts` 8/8.
+- [x] **`[TSK-4403]`** الحراسة والمواءمة: حزمة `tests/test_p26_project_deletion.py` (**33 اختباراً** — عزل كامل بمجلد مؤقت لكل اختبار) + إعادة حساب PARTS boundaries (الملف الآن **6946 سطراً**: p08 ➔ 4019 / p09 ➔ 5227 / p12 ➔ 6946) + إعادة بناء `bridge_refactor/` (parity 11/11 ✅) + بوابة `hadith_sijil.py` = **330/330 PASS Exit Code 0** + تحديث التوثيق الشامل (هذا الملف + PROGRESS الجذري + V3_RESUME + TEST_SUITE_CATALOG + README + SESSION_LOG DEC-022). — دليل: Gate 330/330 + هذا الـ commit.
+- [x] **`[TSK-4404]`** نظافة git (المرة التاسعة): إخراج `.pytest_cache/` و `bridge_bot.log` من التتبع بعد أن أعادتهما المزامنة التلقائية مجدداً (الموافقة الدائمة من S41). — دليل: `TestGeneratedFilesUntracked` 3/3 PASS.
