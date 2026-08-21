@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p08_registry_index
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 3383..3691
-المحتوى: Project run locks + registry index I/O + identity + resume context + viewer URLs + live preview keyboard
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 3414..3831
+المحتوى: Project run locks + P25: Interactive Cancellation Manager (register/trigger/unregister cancel events) + registry index I/O + identity + resume context + viewer URLs + live preview keyboard (P25: cancel_token + confirm_cancel)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def get_project_lock(key):
@@ -29,6 +29,99 @@ def release_project_run(project_key: str, owner_token: str) -> bool:
             return False
         PROJECT_RUN_OWNERS.pop(key, None)
         return True
+
+
+# ══════════════════════════════════════════════════════════════
+# 🛑 [P25] Interactive Cancellation Manager — إلغاء تفاعلي فوري
+# ══════════════════════════════════════════════════════════════
+# مسجل مركزي Thread-Safe لأحداث الإلغاء النشطة:
+#   token قصير (uuid hex 12) ← threading.Event + metadata
+# السبب: callback_data في تيليجرام محدود بـ 64 بايت بينما
+# project_key قد يبلغ 80 حرفاً — لذا نستخدم توكن قصيراً كمفتاح.
+_ACTIVE_CANCEL_EVENTS: dict[str, dict] = {}
+_CANCEL_EVENTS_GUARD = threading.Lock()
+CANCELLED_STATUS = "CANCELLED"
+USER_CANCELLED_MARKER = "__USER_CANCELLED__"
+
+
+def new_cancel_token() -> str:
+    """توليد توكن إلغاء قصير آمن للاستخدام داخل callback_data (≤ 64 بايت)"""
+    return uuid.uuid4().hex[:12]
+
+
+def register_cancel_event(token: str, project_key: str = "", chat_id=None) -> threading.Event | None:
+    """تسجيل حدث إلغاء جديد لمهمة نشطة — يُرجع الـ Event للحقن في cfg.cancel_event"""
+    key = str(token or "").strip()
+    if not key:
+        return None
+    with _CANCEL_EVENTS_GUARD:
+        entry = _ACTIVE_CANCEL_EVENTS.get(key)
+        if entry is not None:
+            return entry["event"]
+        ev = threading.Event()
+        _ACTIVE_CANCEL_EVENTS[key] = {
+            "event": ev,
+            "project_key": str(project_key or ""),
+            "chat_id": chat_id,
+            "created_at": time.time(),
+        }
+        return ev
+
+
+def get_cancel_entry(token: str) -> dict | None:
+    """قراءة metadata حدث الإلغاء (نسخة آمنة) — None لو التوكن غير مسجل/منتهي"""
+    key = str(token or "").strip()
+    if not key:
+        return None
+    with _CANCEL_EVENTS_GUARD:
+        entry = _ACTIVE_CANCEL_EVENTS.get(key)
+        return dict(entry) if isinstance(entry, dict) else None
+
+
+def update_cancel_entry(token: str, **fields) -> bool:
+    """تحديث metadata حدث إلغاء نشط (مثل live_pid و message_id لبطاقة المعاينة)"""
+    key = str(token or "").strip()
+    if not key:
+        return False
+    with _CANCEL_EVENTS_GUARD:
+        entry = _ACTIVE_CANCEL_EVENTS.get(key)
+        if not isinstance(entry, dict):
+            return False
+        entry.update(fields)
+        return True
+
+
+def trigger_cancel(token: str) -> bool:
+    """تفعيل الإلغاء القهري — يضبط الـ Event فيلتقطه المحرك وحلقات المتابعة فوراً"""
+    key = str(token or "").strip()
+    if not key:
+        return False
+    with _CANCEL_EVENTS_GUARD:
+        entry = _ACTIVE_CANCEL_EVENTS.get(key)
+        if not isinstance(entry, dict):
+            return False
+        entry["event"].set()
+        entry["cancelled_at"] = time.time()
+        return True
+
+
+def is_cancel_requested(token: str) -> bool:
+    """فحص سريع: هل طُلب إلغاء هذه المهمة؟"""
+    key = str(token or "").strip()
+    if not key:
+        return False
+    with _CANCEL_EVENTS_GUARD:
+        entry = _ACTIVE_CANCEL_EVENTS.get(key)
+        return bool(entry and entry["event"].is_set())
+
+
+def unregister_cancel_event(token: str) -> bool:
+    """تنظيف مضمون بعد انتهاء المهمة (نجاحاً/فشلاً/إلغاءً) — Zero Leaks"""
+    key = str(token or "").strip()
+    if not key:
+        return False
+    with _CANCEL_EVENTS_GUARD:
+        return _ACTIVE_CANCEL_EVENTS.pop(key, None) is not None
 
 
 def _utc(): return datetime.now(timezone.utc).isoformat()
@@ -267,14 +360,30 @@ def build_viewer_url(project_id: str | None) -> str:
     return f"https://www.genspark.ai/autopilotagent_viewer?id={clean_id}"
 
 
-def build_live_preview_keyboard(project_id: str, status: str = "running") -> dict:
-    """بناء Inline URL Button نظيف ومتوافق 100% مع جميع إصدارات تيليجرام"""
+def build_live_preview_keyboard(project_id: str, status: str = "running", cancel_token: str | None = None) -> dict:
+    """بناء Inline URL Button نظيف ومتوافق 100% مع جميع إصدارات تيليجرام.
+
+    🛑 [P25] cancel_token اختياري (توافق خلفي كامل):
+      - بدونه: نفس الكيبورد القديم حرفياً.
+      - معه + status=running: صف ثانٍ بزر إلغاء أحمر (danger).
+      - status=confirm_cancel: كيبورد تأكيد بخطوتي أمان (نعم أحمر / تراجع أزرق).
+    """
     viewer_url = build_viewer_url(project_id)
+    if status == "confirm_cancel" and cancel_token:
+        # 🚨 خطوة التأكيد — منع الإلغاء الخاطئ بضغطة عفوية
+        return make_inline_keyboard([
+            [{"text": "🚨 نعم، إلغاء فوري", "callback_data": f"cancel_exec:{cancel_token}", "style": "danger"}],
+            [{"text": "↩️ لا، تراجع واستمرار", "callback_data": f"cancel_abort:{cancel_token}", "style": "primary"}],
+        ])
     if status == "running":
         # 🎨 أزرق (primary) أثناء البناء — Bot API 9.4 Button Styles
-        return make_inline_keyboard([[
+        rows = [[
             {"text": "🌐 ⚡ فتح المعاينة ومتابعة البناء لايف ↗️", "url": viewer_url, "style": "primary"}
-        ]])
+        ]]
+        if cancel_token:
+            # 🛑 أحمر (danger) — الضغطة الأولى تفتح كيبورد التأكيد فقط (لا تلغي)
+            rows.append([{"text": "🛑 إلغاء البناء الحالي", "callback_data": f"cancel_prompt:{cancel_token}", "style": "danger"}])
+        return make_inline_keyboard(rows)
     else:
         # 🎨 أخضر (success) عند الاكتمال
         return make_inline_keyboard([[
