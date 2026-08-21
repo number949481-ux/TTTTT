@@ -11,7 +11,7 @@
 2. **فحص سجل الجلسات:**
    * افتح `docs/engineering/SESSION_LOG.md` لمعرفة آخر جلسة وآخر مهمة نُفذت.
 3. **التحقق من سلامة الاختبارات الشاملة:**
-   * شغل الأمر: `python scripts/hadith_sijil.py` وتأكد من اجتياز 406/406 اختبار بـ Exit Code 0.
+   * شغل الأمر: `python scripts/hadith_sijil.py` وتأكد من اجتياز 483/483 اختبار بـ Exit Code 0.
 4. **معرفة الملفات النشطة المعتمدة:**
    * ملف البوت النشط: `01.33_telegram_gen_bridge.py`.
    * محرك كوين المستقل: `qwen_engine.py` (يستورده `04_upload_to_Fable_github.py` + `01.33` للكوميت الذكي P24).
@@ -22,7 +22,10 @@
 
 ## 🛡️ 2. القواعد المعمارية الإلزامية غير القابلة للكسر (Non-Negotiable Rules)
 * **Single-File Doctrine:** ممنوع تشتيت الاعتماديات؛ التعديل يتم داخل الملفات المعتمدة فقط.
-* **Test-Before-Talk:** ممنوع إبلاغ المستخدم بنجاح أي تعديل دون تشغيل `py_compile` واختبارات الوحدة الـ 406 والتأكد من خروج Exit Code 0.
+* **Test-Before-Talk:** ممنوع إبلاغ المستخدم بنجاح أي تعديل دون تشغيل `py_compile` واختبارات الوحدة الـ 483 والتأكد من خروج Exit Code 0.
+* **Account Observability (S50/P29):** مسار رحلة الحسابات `account_journey` يُسجّل حصرياً لحظة الـ claim الفعلي عبر `record_account_journey` (منع تكرار A→A المتتالي + السماح بالعودة A→B→A + reset لكل تشغيل جديد) — كل event يحمل snapshot مستقلاً من الـ journey لا يتغير لاحقاً، وسطر «الحساب النشط» في الـ Live Renderer من snapshot الحدث فقط (ممنوع Email وهمي من الـ Pool)، وسطر «مسار الحسابات» بالرسالة النهائية يظهر فقط عند تعدد الحسابات الفعلية (backward compatible — محروس بـ 28 اختباراً في `tests/test_p29_account_observability.py`).
+* **Forensic Time Accounting (S50/P30 — Extension 08):** كل حساب يُقاس زمنه بـ span يُفتح لحظة الـ claim (`open_account_timing_span`) ويُغلق حتمياً في `finally` (`close_account_timing_span` — idempotent، الإغلاق المزدوج لا يغيّر المدة). المدة من `time.monotonic()` حصرياً (wall clock للعرض فقط). الرسالة النهائية تحمل كتلة `format_account_timing_block`: إيميلات كاملة **Unmasked** + مدة كل حساب بالعربي (`format_arabic_duration`) + تجميع عودة الحساب في مدخل واحد ×N + «(المُنجِز)» للحساب الأخير + التوتال + عدد الحسابات والاستئنافات — مع الفصل الصارم عداد الاستئناف ≠ عدد الحسابات−1 (محروس بـ 35 اختباراً في `tests/test_p30_account_timing.py`).
+* **Lazy Qwen Prefix (S50/P31):** داخل `_default_github_uploader` ممنوع استدعاء كوين قبل معرفة وجود تغيير فعلي — `ai_prefix = None` + الدالة المتداخلة `_lazy_ai_prefix` (memoized) تُستدعى فقط عند أول PUT/DELETE فعلي بعد فحص unchanged — job كله مطابق للريموت = صفر نداء لكوين (توفير الباقة + إلغاء تأخير حتى 30ث مجاني كل sync). عقد DEC-019 باقٍ حرفياً: نداء واحد/كل job + fallback للرسالة القديمة حرفياً عند أي فشل (محروس بـ 14 اختباراً في `tests/test_p31_lazy_qwen_prefix.py`).
 * **REST-Only Upload (S39/P20):** الرفع لـ GitHub يتم حصرياً عبر Contents REST API داخل `_default_github_uploader` — ممنوع إعادة أي مسار git native (clone/push/init) أو إرجاع `_git_native_sync_uploader`/`_generate_ai_commit_message` (محروس بـ 8 اختبارات في `tests/test_p20_rest_only_data_retention.py`).
 * **DATA_RETENTION Failover (S39/P20):** خطأ "requires AI Data Retention" يُكشف أولاً في `detect_response_status` ويُعامل كنفاد رصيد: تبريد 29h + حساب تالٍ + إعادة إرسال **نفس آخر رسالة** (ممنوع التحويل لبرومبت الاستئناف) + تنبيه مميز `data-retention-blocked` (محروس بـ 16 اختباراً في `tests/test_p20_rest_only_data_retention.py`).
 * **True SSE Streaming (S29):** طلب `ask_proxy` يجب أن يبقى `stream=True` والقراءة عبر `iter_lines()` — الرجوع لـ `r.text` يؤخر زر المعاينة الحية حتى اكتمال التوليد (محروس باختبارات 8–10).
