@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 5677..6702
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5677..6702
 المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
