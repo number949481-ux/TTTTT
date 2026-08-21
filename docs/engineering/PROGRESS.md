@@ -19,7 +19,7 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S42 |
+| **last-updated** | 2026-08-21 — S43 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.31` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
@@ -28,7 +28,7 @@
 | **program-stage** | Stage 3 — Execution |
 | **current WBS phase** | **P23 — البحث الهرمي للملفات المشتركة (Shared Secrets Auto-Discovery)** 🎯 |
 | **current slice** | `TSK-3901` (DONE) ➔ إصلاح `_default_github_uploader`: الملف الموجود على الريموت بمحتوى مختلف يُصنّف `modified` (✏️ معدل) بدل دمجه مع `uploaded` (➕ جديد) — التصنيف عبر `remote_sha` المتاح أصلاً قبل الـ PUT + حارسان جديدان في test_p20 (اختبارات 09/10) + تحديث PARTS (+4 أسطر → 6390) وإعادة بناء bridge_refactor بتطابق بايت |
-| **current-task** | `S42` — إغلاق P23 (T1–T4 + AGENTS.md/GEMINI.md + 17 اختبار حراسة + PARTS +16 + parity) — 238/238 PASS + Gate Exit 0 |
+| **current-task** | `S43` — جلسة نظافة فقط: إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع (المرة الخامسة) بعد أن كسرت اختبارَي P17 — عاد 238/238 + Gate Exit 0. لا عمل هندسي جديد (كله BLOCKED-ON-OWNER) |
 | **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.31 (مسار DATA_RETENTION + الرفع REST مع التحقق من عدّاد ✏️ معدل) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
 | **current-blocker** | `BLOCKED-ON-OWNER` — (أ) قرار `AI_RACE_ACCOUNTS` (0 الحالي أم 2 عشوائي). (ب) ميزة P22 معلّقة كلياً — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (حاجز test_p22 اليتيم زال — المالك حذف الملف) |
 | **completion** | 238/238 Tests Verified (100%) 🧪 |
