@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 1491..2440
-المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة)
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 1495..2488
+المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -392,6 +392,17 @@ def send_message_and_make_public(
         cfg.use_ultra = False
         cfg.agent_type = bridge_cfg.agent_type
         cfg.request_web_knowledge = needs_web_search(query)
+        # 🛑 [P25] حقن حدث الإلغاء في cfg المحرك — send_chat يفحصه كل سطر SSE
+        # ويقطع البث فوراً (r.close) بنفس تأثير زر ⏹️ Stop في واجهة جينسبارك.
+        _cancel_event = getattr(bridge_cfg, "cancel_event", None)
+        try:
+            cfg.cancel_event = _cancel_event
+        except Exception:
+            pass
+        # 🛑 [P25] إلغاء طُلب قبل بدء المحاولة أصلاً → خروج فوري بدون أي إرسال
+        if _cancel_event is not None and _cancel_event.is_set():
+            log_event("warning", "🛑 [P25] إلغاء المستخدم قبل بدء المحاولة — خروج فوري بدون إرسال", email=email)
+            return None, CANCELLED_STATUS, None, None, None
         project_id, history = None, []
 
         accounts = read_accounts_safe(json_path)
@@ -531,6 +542,14 @@ def send_message_and_make_public(
                 continue
             return None, "CHAT_ERROR", None, None, last_chat_err
 
+        # 🛑 [P25] المحرك قطع البث بناءً على طلب المستخدم → إنهاء فوري بلا retry
+        # (الحساب يُحرَّر في finally داخل failover — Zero Resources Leak)
+        if answer == USER_CANCELLED_MARKER or (
+            _cancel_event is not None and _cancel_event.is_set()
+        ):
+            log_event("warning", f"🛑 [P25] تم إلغاء البث بواسطة المستخدم — إنهاء المهمة فوراً (pid={str(pid or '')[:16]})", email=email)
+            return None, CANCELLED_STATUS, None, None, None
+
         if not pid or pid == "__INVALID_PROJECT__":
             if attempt < max_retries:
                 continue
@@ -554,11 +573,22 @@ def send_message_and_make_public(
         prev_activity = fetch_project_activity_signature(pid, cookies)
 
         while final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
+            # 🛑 [P25] فحص الإلغاء أول كل دورة متابعة — استجابة شبه فورية للزر
+            if _cancel_event is not None and _cancel_event.is_set():
+                log_event("warning", f"🛑 [P25] إلغاء المستخدم أثناء متابعة المشروع {str(pid)[:16]} — وقف فوري", email=email)
+                return None, CANCELLED_STATUS, None, None, None
             elapsed = time.time() - start_time
             if elapsed > session_timeout:
                 is_timeout = True
                 break
-            time.sleep(5)
+            # 🛑 [P25] النوم متقطع على حدث الإلغاء نفسه بدل sleep أصم —
+            # الضغط على «نعم، إلغاء فوري» يوقظنا خلال < 0.1s بدل انتظار 5s كاملة.
+            if _cancel_event is not None:
+                if _cancel_event.wait(timeout=5):
+                    log_event("warning", f"🛑 [P25] إلغاء المستخدم أثناء الانتظار — وقف فوري (pid={str(pid)[:16]})", email=email)
+                    return None, CANCELLED_STATUS, None, None, None
+            else:
+                time.sleep(5)
 
             # ⛳ [P18] أهم فحص: لو مؤشر Deep Thinking / Tasks Remaining اتغيّر
             # (اختفى أو دخل مهام جديدة) → وقف فوري — مفيش أي تكملة على مهام اتغيرت.
@@ -729,6 +759,20 @@ def send_message_with_auto_account_failover(
                 bridge_cfg=bridge_cfg, json_path=json_path,
                 on_project_start_callback=on_project_start_callback,
             )
+
+            # 🛑 [P25] إلغاء المستخدم التفاعلي → إنهاء فوري للمهمة كلها:
+            # لا محاولة بحساب آخر، لا عقوبة/تبريد للحساب الحالي (يُحرَّر في finally)،
+            # ولا progress_callback — المستخدم طلب الوقف القهري بنفسه.
+            if status == CANCELLED_STATUS:
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "user-cancelled",
+                    status=CANCELLED_STATUS,
+                    max_attempts=max_attempts,
+                )
+                log_event("warning", "🛑 [P25] أُلغيت المهمة بواسطة المستخدم — تحرير الحساب فوراً وإنهاء الـ failover", email=curr_email)
+                update_account_data(curr_email, {"last_used": time.time(), "status": "active"}, json_path=json_path)
+                return pub_url, CANCELLED_STATUS, curr_acc, ext_dir, last_text
 
             # 💰 [P13] رصيد منخفض مكتشف قبل الإرسال → الحساب مُبرَّد 29h بالفعل داخل
             # send_message_and_make_public — تخطٍ صامت فوري للحساب التالي:
