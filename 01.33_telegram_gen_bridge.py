@@ -4758,6 +4758,79 @@ def build_dashboard_keyboard(chat_id: int) -> dict:
     return make_inline_keyboard(rows)
 
 
+# ══════════════════════════════════════════════════════════════
+# 📄 [P27] تصفح المشاريع بنظام الصفحات (Projects List Pagination)
+# لوحة التحكم الرئيسية تبقى معاينة سريعة (أحدث 3) — وزر «📁 مشاريعي»
+# يفتح شاشة تصفح مستقلة بكل المشاريع مقسمة صفحات مع أزرار تقليب.
+# ══════════════════════════════════════════════════════════════
+PROJECTS_PER_PAGE = 20  # 📄 [P27] عدد المشاريع في الصفحة — الثابت المركزي الوحيد (تغييره لاحقاً = سطر واحد)
+
+
+def compute_projects_page_bounds(total: int, page) -> tuple[int, int, int]:
+    """📄 [P27] حساب حدود الصفحة بأمان تام (Out-of-Bounds Safe — صفر Crash).
+    يعيد (safe_page, total_pages, start_index) — ترقيم الصفحات يبدأ من 1.
+    أي قيمة page غير صالحة (نص/سالب/أكبر من الأخيرة) تُقَصّ لأقرب صفحة صالحة."""
+    per_page = max(1, int(PROJECTS_PER_PAGE))
+    total = max(0, int(total))
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    try:
+        page_num = int(page)
+    except (TypeError, ValueError):
+        page_num = 1
+    safe_page = min(max(1, page_num), total_pages)
+    start_index = (safe_page - 1) * per_page
+    return safe_page, total_pages, start_index
+
+
+def render_projects_page_text(chat_id: int, page=1) -> str:
+    """📄 [P27] نص شاشة تصفح المشاريع — عداد إجمالي + موضع الصفحة الحالي."""
+    total = len(list_known_projects(chat_id=chat_id))
+    if total == 0:
+        return (
+            "📁 <b>مشاريعي</b>\n"
+            "لا توجد مشاريع محفوظة بعد لهذه المحادثة.\n"
+            "ابدأ الآن بزر <b>🚀 مشروع جديد</b>."
+        )
+    safe_page, total_pages, start_index = compute_projects_page_bounds(total, page)
+    end_index = min(start_index + PROJECTS_PER_PAGE, total)
+    return (
+        "📁 <b>مشاريعي</b>\n"
+        f"إجمالي المشاريع: <b>{total}</b> — صفحة <b>{safe_page}</b> من <b>{total_pages}</b>\n"
+        f"يعرض المشاريع <b>{start_index + 1}–{end_index}</b> (الأحدث أولاً).\n"
+        "اختر 📌 للاستئناف المباشر أو ⭐ لعرض التفاصيل:"
+    )
+
+
+def build_projects_page_keyboard(chat_id: int, page=1) -> dict:
+    """📄 [P27] كيبورد صفحة المشاريع: صفوف المشاريع (نفس عقود proj:/pview: القائمة —
+    صفر تغيير على تدفق الاختيار) + صف تنقل [⬅️ السابقة][📄 N/X][التالية ➡️]
+    (أزرار الحواف تُحذف تلقائياً) + صف [🚀 مشروع جديد][🏠 رجوع للوحة التحكم]."""
+    projects = list_known_projects(chat_id=chat_id)
+    total = len(projects)
+    rows: list[list[dict]] = []
+    if total:
+        safe_page, total_pages, start_index = compute_projects_page_bounds(total, page)
+        for record in projects[start_index:start_index + PROJECTS_PER_PAGE]:
+            label = str(record.get("project_name") or record.get("project_key") or "مشروع")[:24]
+            rows.append([
+                {"text": f"📌 {label}", "callback_data": f"proj:{record['project_key']}"},
+                {"text": "⭐ التفاصيل", "callback_data": f"pview:{record['project_key']}"},
+            ])
+        if total_pages > 1:
+            nav_row = []
+            if safe_page > 1:
+                nav_row.append({"text": "⬅️ السابقة", "callback_data": f"plist:page:{safe_page - 1}"})
+            nav_row.append({"text": f"📄 {safe_page} / {total_pages}", "callback_data": "plist:noop"})
+            if safe_page < total_pages:
+                nav_row.append({"text": "التالية ➡️", "callback_data": f"plist:page:{safe_page + 1}"})
+            rows.append(nav_row)
+    rows.append([
+        {"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj", "style": "primary"},
+        {"text": "🏠 رجوع للوحة التحكم", "callback_data": "cmd:show_dashboard"},
+    ])
+    return make_inline_keyboard(rows)
+
+
 def build_project_model_keyboard(*, back_callback: str = "cmd:show_dashboard", back_label: str = "⬅️ رجوع للوحة التحكم") -> dict:
     rows = []
     for model_name in AVAILABLE_MODELS:
@@ -6124,6 +6197,26 @@ def handle_telegram_update(update: dict):
                 send_telegram_message(chat_id, "⭐ <b>لا يوجد مشروع حالي محفوظ بعد.</b>\nاستخدم زر <b>مشروع جديد</b> أو أرسل رابط مشروع معروف للاستكمال.", reply_markup=get_main_keyboard(chat_id))
             else:
                 send_telegram_message(chat_id, render_project_status_text(current["project_key"]), reply_markup=build_current_project_keyboard(current["project_key"]))
+        elif data == "cmd:list_projects":
+            # 📄 [P27] فتح شاشة تصفح المشاريع (الصفحة الأولى) — إصلاح الزر الميت + Pagination
+            send_telegram_message(
+                chat_id,
+                render_projects_page_text(chat_id, page=1),
+                reply_markup=build_projects_page_keyboard(chat_id, page=1),
+            )
+        elif data.startswith("plist:page:"):
+            # 📄 [P27] تقليب الصفحات In-Place: تعديل نفس الرسالة — صفر Spam في المحادثة
+            page_token = data.split("plist:page:", 1)[1]
+            list_msg_id = msg_info.get("message_id")
+            page_text = render_projects_page_text(chat_id, page=page_token)
+            page_keyboard = build_projects_page_keyboard(chat_id, page=page_token)
+            if list_msg_id:
+                edit_telegram_message_text(chat_id, list_msg_id, page_text, reply_markup=page_keyboard)
+            else:
+                send_telegram_message(chat_id, page_text, reply_markup=page_keyboard)
+        elif data == "plist:noop":
+            # 📄 [P27] زر العداد «📄 N / X» — عرض فقط، لا يفعل شيئاً عمداً
+            pass
         elif data.startswith("pview:"):
             project_key = data.split("pview:", 1)[1]
             send_telegram_message(chat_id, render_project_status_text(project_key), reply_markup=build_current_project_keyboard(project_key))
