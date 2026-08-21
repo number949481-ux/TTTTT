@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5346..5626
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5396..5676
 المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
