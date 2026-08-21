@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p08_registry_index
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3462..3879
-المحتوى: Project run locks + P25: Interactive Cancellation Manager (register/trigger/unregister cancel events) + registry index I/O + identity + resume context + viewer URLs + live preview keyboard (P25: cancel_token + confirm_cancel)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3462..4019
+المحتوى: Project run locks + P25: Interactive Cancellation Manager (register/trigger/unregister cancel events) + registry index I/O + identity + resume context + P26: is_project_build_active + delete_project_atomically (الحذف الذري الشامل: فهرس + شجرة + قرص) + viewer URLs + live preview keyboard (P25: cancel_token + confirm_cancel)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def get_project_lock(key):
@@ -345,6 +345,146 @@ def remember_registry_identity(registry, **kwargs):
     if registry is None or not hasattr(registry, "remember_identity"):
         return None
     return registry.remember_identity(**kwargs)
+
+
+# ══════════════════════════════════════════════════════════════
+# 🗑️ [P26] Interactive Project Deletion & Atomic Cleanup
+# ══════════════════════════════════════════════════════════════
+# حذف مشروع محفوظ نهائياً بترتيب آمن (Fail-Safe Ordering):
+#   1. حماية: منع الحذف لو المشروع له بناء نشط الآن (_ACTIVE_CANCEL_EVENTS).
+#   2. الفهرس أولاً تحت REGISTRY_INDEX_LOCK (قيد المشروع + كل pid aliases).
+#   3. شجرة التفريع projects_tree.json (مفتاحها root_pid وليس project_key).
+#   4. أخيراً مجلد المشروع على القرص project_registry/<key>/ عبر rmtree.
+# السبب: لو فشل rmtree بعد تنظيف الفهارس يبقى مجرد مجلد يتيم غير مرئي
+# للنظام — أهون بكثير من قيد فهرس يشير لمجلد محذوف.
+
+
+def is_project_build_active(project_key: str) -> bool:
+    """فحص الحماية [P26]: هل للمشروع بناء نشط الآن (Event مسجل وغير مُلغى)؟"""
+    key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key or ""))[:80]
+    if not key:
+        return False
+    with _CANCEL_EVENTS_GUARD:
+        for entry in _ACTIVE_CANCEL_EVENTS.values():
+            if not isinstance(entry, dict):
+                continue
+            if str(entry.get("project_key") or "") == key and not entry["event"].is_set():
+                return True
+    return False
+
+
+def _remove_project_from_tree_file(pids: list[str]) -> int:
+    """إزالة قيود شجرة التفريع لمشروع محذوف — الشجرة مفتاحها root_pid.
+
+    يُرجع عدد الجذور المحذوفة. كتابة ذرية (tmp ثم replace) كنمط save_project_tree.
+    """
+    clean_pids = [p for p in pids if p and is_probable_project_id(p)]
+    if not clean_pids or not PROJECTS_TREE_FILE.exists():
+        return 0
+    try:
+        with open(PROJECTS_TREE_FILE, "r", encoding="utf-8", errors="ignore") as f:
+            tree_data = json.load(f)
+    except Exception:
+        return 0
+    if not isinstance(tree_data, dict):
+        return 0
+    removed = 0
+    for pid in clean_pids:
+        if pid in tree_data:
+            tree_data.pop(pid, None)
+            removed += 1
+    if not removed:
+        return 0
+    try:
+        tmp_file = PROJECTS_TREE_FILE.with_suffix(".tmp")
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(tree_data, f, ensure_ascii=False, indent=2)
+        tmp_file.replace(PROJECTS_TREE_FILE)
+    except Exception as err:
+        log_event("warning", f"🗑️ [P26] تنبيه أثناء تنظيف شجرة التفريع: {err}")
+        return 0
+    return removed
+
+
+def delete_project_atomically(project_key: str) -> dict:
+    """الحذف الذري الشامل [P26] — يُرجع dict بالنتيجة دون رفع استثناءات.
+
+    الترتيب الآمن: حماية التشغيل ➔ الفهرس (تحت القفل) ➔ الشجرة ➔ القرص.
+    """
+    key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key or ""))[:80]
+    result = {
+        "ok": False,
+        "project_key": key,
+        "project_name": "",
+        "reason": "",
+        "index_removed": False,
+        "aliases_removed": 0,
+        "tree_removed": 0,
+        "disk_removed": False,
+    }
+    if not key:
+        result["reason"] = "PROJECT_KEY_MISSING"
+        return result
+
+    # 1️⃣ فحص الحماية: ممنوع حذف مشروع له بناء شغال الآن
+    if is_project_build_active(key):
+        result["reason"] = "PROJECT_BUILD_ACTIVE"
+        return result
+
+    # 2️⃣ تنظيف الفهرس المركزي registry.json تحت القفل (القيد + كل aliases)
+    project_pids: list[str] = []
+    with REGISTRY_INDEX_LOCK:
+        data = _read_registry_index()
+        record = data["projects"].pop(key, None)
+        if isinstance(record, dict):
+            result["index_removed"] = True
+            result["project_name"] = str(record.get("project_name") or "")
+            for pid_field in ("root_genspark_pid", "latest_genspark_pid"):
+                pid_value = str(record.get(pid_field) or "")
+                if is_probable_project_id(pid_value) and pid_value not in project_pids:
+                    project_pids.append(pid_value)
+        stale_aliases = [pid for pid, mapped in data["pid_to_key"].items() if mapped == key]
+        for pid in stale_aliases:
+            data["pid_to_key"].pop(pid, None)
+            if pid not in project_pids:
+                project_pids.append(pid)
+        result["aliases_removed"] = len(stale_aliases)
+        if result["index_removed"] or stale_aliases:
+            try:
+                _write_registry_index(data)
+            except Exception as err:
+                log_event("error", f"🗑️ [P26] فشل كتابة registry index أثناء الحذف: {err}")
+                result["reason"] = "INDEX_WRITE_FAILED"
+                return result
+
+    # 3️⃣ تنظيف شجرة التفريع (مفاتيحها root_pid — تُتخطى بأمان لو لا يوجد pid)
+    result["tree_removed"] = _remove_project_from_tree_file(project_pids)
+
+    # 4️⃣ حذف مجلد المشروع كاملاً من القرص project_registry/<key>/
+    project_dir = PROJECT_REGISTRY_HOME / key
+    if project_dir.exists() and project_dir.is_dir():
+        try:
+            shutil.rmtree(project_dir)
+            result["disk_removed"] = True
+        except Exception as err:
+            log_event("error", f"🗑️ [P26] فشل حذف مجلد المشروع من القرص: {err}")
+            result["reason"] = "DISK_REMOVE_FAILED"
+            # الفهارس نظيفة بالفعل — الحذف منطقياً ناجح مع مجلد يتيم
+            result["ok"] = bool(result["index_removed"])
+            return result
+
+    if not result["index_removed"] and not result["disk_removed"]:
+        result["reason"] = "PROJECT_NOT_FOUND"
+        return result
+
+    result["ok"] = True
+    log_event(
+        "info",
+        f"🗑️ [P26] تم حذف المشروع نهائياً: key={key} "
+        f"(index={result['index_removed']}, aliases={result['aliases_removed']}, "
+        f"tree={result['tree_removed']}, disk={result['disk_removed']})",
+    )
+    return result
 
 
 def build_genspark_viewer_url(project_id: str | None) -> str:
