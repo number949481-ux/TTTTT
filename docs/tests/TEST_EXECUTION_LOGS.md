@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 21:24:54 UTC`
+* **التاريخ والوقت:** `2026-08-21 22:33:14 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.147 ثانية`
-* **النتيجة العامة:** `Ran 469 tests — OK`
+* **الزمن المقاس:** `1.116 ثانية`
+* **النتيجة العامة:** `Ran 483 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -574,6 +574,32 @@ test_double_close_is_idempotent (test_p30_account_timing.TestSpanLifecycle.test_
 SCENARIO D: الإغلاق المزدوج لا يغيّر المدة المسجلة. ... ok
 test_open_creates_span_with_monotonic_and_wall (test_p30_account_timing.TestSpanLifecycle.test_open_creates_span_with_monotonic_and_wall) ... ok
 test_open_rejects_empty_email_and_none_cfg (test_p30_account_timing.TestSpanLifecycle.test_open_rejects_empty_email_and_none_cfg) ... ok
+test_01_all_unchanged_files_never_call_qwen (test_p31_lazy_qwen_prefix.TestLazySkipsQwenWhenNothingChanged.test_01_all_unchanged_files_never_call_qwen)
+كل الملفات مطابقة للريموت (نفس blob sha) ← كوين لا يُستدعى إطلاقاً ... ok
+test_02_delete_of_missing_remote_file_never_calls_qwen (test_p31_lazy_qwen_prefix.TestLazySkipsQwenWhenNothingChanged.test_02_delete_of_missing_remote_file_never_calls_qwen)
+delete_files كلها 404 على الريموت (لا حذف فعلي) ← كوين لا يُستدعى ... ok
+test_03_unchanged_plus_missing_delete_combined_zero_calls (test_p31_lazy_qwen_prefix.TestLazySkipsQwenWhenNothingChanged.test_03_unchanged_plus_missing_delete_combined_zero_calls)
+المزيج الكامل: unchanged + delete 404 ← صفر نداء (سيناريو sync cycle الدوري) ... ok
+test_01_changed_file_calls_qwen_exactly_once (test_p31_lazy_qwen_prefix.TestLazyWakesQwenOnceOnRealChange.test_01_changed_file_calls_qwen_exactly_once)
+ملف جديد (404 على الريموت) ← كوين مرة واحدة + البادئة في الرسالة ... ok
+test_02_multiple_changed_files_still_one_qwen_call (test_p31_lazy_qwen_prefix.TestLazyWakesQwenOnceOnRealChange.test_02_multiple_changed_files_still_one_qwen_call)
+3 ملفات متغيرة ← كوين مرة واحدة فقط (memoization — عقد DEC-019 محفوظ) ... ok
+test_03_unchanged_then_changed_wakes_qwen_after_skip (test_p31_lazy_qwen_prefix.TestLazyWakesQwenOnceOnRealChange.test_03_unchanged_then_changed_wakes_qwen_after_skip)
+ملف unchanged أولاً ثم ملف متغير ← كوين يستيقظ عند الثاني فقط — مرة واحدة ... ok
+test_04_real_delete_wakes_qwen (test_p31_lazy_qwen_prefix.TestLazyWakesQwenOnceOnRealChange.test_04_real_delete_wakes_qwen)
+delete فعلي (الملف موجود 200 على الريموت) ← كوين يُستدعى مرة واحدة ... ok
+test_01_ai_prefix_starts_none_in_both (test_p31_lazy_qwen_prefix.TestSourceContracts.test_01_ai_prefix_starts_none_in_both) ... ok
+test_02_lazy_helper_defined_in_both (test_p31_lazy_qwen_prefix.TestSourceContracts.test_02_lazy_helper_defined_in_both) ... ok
+test_03_lazy_call_after_unchanged_check (test_p31_lazy_qwen_prefix.TestSourceContracts.test_03_lazy_call_after_unchanged_check)
+النداء الكسول داخل حلقة الرفع يقع بعد فحص unchanged (وليس قبل الحلقة) ... ok
+test_04_no_eager_call_before_put_loop (test_p31_lazy_qwen_prefix.TestSourceContracts.test_04_no_eager_call_before_put_loop)
+لا يوجد استدعاء مباشر eager لـ _qwen_commit_prefix_for_job قبل الحلقة — ... ok
+test_05_commit_messages_unchanged_verbatim (test_p31_lazy_qwen_prefix.TestSourceContracts.test_05_commit_messages_unchanged_verbatim)
+صياغة رسائل sync/delete كما هي حرفياً (لم يمسها P31) ... ok
+test_01_qwen_failure_keeps_old_message_verbatim (test_p31_lazy_qwen_prefix.TestVerbatimFallbackPreserved.test_01_qwen_failure_keeps_old_message_verbatim)
+فشل كوين (Exception) ← نفس رسالة الكوميت القديمة حرفياً — الرفع لا ينكسر ... ok
+test_02_failed_qwen_memoized_not_retried_per_file (test_p31_lazy_qwen_prefix.TestVerbatimFallbackPreserved.test_02_failed_qwen_memoized_not_retried_per_file)
+فشل كوين مرة ← يُحفظ "" ولا تتكرر المحاولة لكل ملف (memoized حتى في الفشل) ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -626,7 +652,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 469 tests in 0.623s
+Ran 483 tests in 0.630s
 
 OK
 ```
