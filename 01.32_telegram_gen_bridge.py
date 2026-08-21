@@ -652,6 +652,10 @@ class BridgeConfig:
     project_resume_prompt_runtime: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_runtime_binding_source: str = ""
     account_selection_observer: object | None = None
+    # 🛑 [P25] حدث الإلغاء التفاعلي — يُحقن من الـ worker ويُمرَّر لمحرك التوليد
+    # (cfg.cancel_event) لقطع بث ask_proxy فوراً + وقف حلقات المتابعة (polling).
+    cancel_event: object | None = None
+    cancel_token: str = ""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1877,6 +1881,17 @@ def send_message_and_make_public(
         cfg.use_ultra = False
         cfg.agent_type = bridge_cfg.agent_type
         cfg.request_web_knowledge = needs_web_search(query)
+        # 🛑 [P25] حقن حدث الإلغاء في cfg المحرك — send_chat يفحصه كل سطر SSE
+        # ويقطع البث فوراً (r.close) بنفس تأثير زر ⏹️ Stop في واجهة جينسبارك.
+        _cancel_event = getattr(bridge_cfg, "cancel_event", None)
+        try:
+            cfg.cancel_event = _cancel_event
+        except Exception:
+            pass
+        # 🛑 [P25] إلغاء طُلب قبل بدء المحاولة أصلاً → خروج فوري بدون أي إرسال
+        if _cancel_event is not None and _cancel_event.is_set():
+            log_event("warning", "🛑 [P25] إلغاء المستخدم قبل بدء المحاولة — خروج فوري بدون إرسال", email=email)
+            return None, CANCELLED_STATUS, None, None, None
         project_id, history = None, []
 
         accounts = read_accounts_safe(json_path)
@@ -2016,6 +2031,14 @@ def send_message_and_make_public(
                 continue
             return None, "CHAT_ERROR", None, None, last_chat_err
 
+        # 🛑 [P25] المحرك قطع البث بناءً على طلب المستخدم → إنهاء فوري بلا retry
+        # (الحساب يُحرَّر في finally داخل failover — Zero Resources Leak)
+        if answer == USER_CANCELLED_MARKER or (
+            _cancel_event is not None and _cancel_event.is_set()
+        ):
+            log_event("warning", f"🛑 [P25] تم إلغاء البث بواسطة المستخدم — إنهاء المهمة فوراً (pid={str(pid or '')[:16]})", email=email)
+            return None, CANCELLED_STATUS, None, None, None
+
         if not pid or pid == "__INVALID_PROJECT__":
             if attempt < max_retries:
                 continue
@@ -2039,11 +2062,22 @@ def send_message_and_make_public(
         prev_activity = fetch_project_activity_signature(pid, cookies)
 
         while final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
+            # 🛑 [P25] فحص الإلغاء أول كل دورة متابعة — استجابة شبه فورية للزر
+            if _cancel_event is not None and _cancel_event.is_set():
+                log_event("warning", f"🛑 [P25] إلغاء المستخدم أثناء متابعة المشروع {str(pid)[:16]} — وقف فوري", email=email)
+                return None, CANCELLED_STATUS, None, None, None
             elapsed = time.time() - start_time
             if elapsed > session_timeout:
                 is_timeout = True
                 break
-            time.sleep(5)
+            # 🛑 [P25] النوم متقطع على حدث الإلغاء نفسه بدل sleep أصم —
+            # الضغط على «نعم، إلغاء فوري» يوقظنا خلال < 0.1s بدل انتظار 5s كاملة.
+            if _cancel_event is not None:
+                if _cancel_event.wait(timeout=5):
+                    log_event("warning", f"🛑 [P25] إلغاء المستخدم أثناء الانتظار — وقف فوري (pid={str(pid)[:16]})", email=email)
+                    return None, CANCELLED_STATUS, None, None, None
+            else:
+                time.sleep(5)
 
             # ⛳ [P18] أهم فحص: لو مؤشر Deep Thinking / Tasks Remaining اتغيّر
             # (اختفى أو دخل مهام جديدة) → وقف فوري — مفيش أي تكملة على مهام اتغيرت.
@@ -2214,6 +2248,20 @@ def send_message_with_auto_account_failover(
                 bridge_cfg=bridge_cfg, json_path=json_path,
                 on_project_start_callback=on_project_start_callback,
             )
+
+            # 🛑 [P25] إلغاء المستخدم التفاعلي → إنهاء فوري للمهمة كلها:
+            # لا محاولة بحساب آخر، لا عقوبة/تبريد للحساب الحالي (يُحرَّر في finally)،
+            # ولا progress_callback — المستخدم طلب الوقف القهري بنفسه.
+            if status == CANCELLED_STATUS:
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "user-cancelled",
+                    status=CANCELLED_STATUS,
+                    max_attempts=max_attempts,
+                )
+                log_event("warning", "🛑 [P25] أُلغيت المهمة بواسطة المستخدم — تحرير الحساب فوراً وإنهاء الـ failover", email=curr_email)
+                update_account_data(curr_email, {"last_used": time.time(), "status": "active"}, json_path=json_path)
+                return pub_url, CANCELLED_STATUS, curr_acc, ext_dir, last_text
 
             # 💰 [P13] رصيد منخفض مكتشف قبل الإرسال → الحساب مُبرَّد 29h بالفعل داخل
             # send_message_and_make_public — تخطٍ صامت فوري للحساب التالي:
@@ -5294,6 +5342,10 @@ def process_user_task_async(
     run_owner_token = uuid.uuid4().hex
     project_key = None
     claimed_project_run = False
+    # 🛑 [P25] تسجيل حدث الإلغاء التفاعلي لهذه المهمة قبل أي عمل —
+    # التوكن قصير (12 hex) ليعيش داخل callback_data ≤ 64 بايت.
+    cancel_token = new_cancel_token()
+    cancel_event = register_cancel_event(cancel_token, chat_id=chat_id)
     try:
         # إصلاح: تهريب HTML لكل مدخلات المستخدم قبل وضعها في رسالة
         safe_query = html_escape(query)[:80]
@@ -5301,6 +5353,9 @@ def process_user_task_async(
         cfg = BridgeConfig(model=model, cooldown_hours=29.0)
         cfg.run_started_at = task_started_at
         cfg.selection_owner_token = run_owner_token
+        # 🛑 [P25] حقن حدث الإلغاء في الـ config — يسري تلقائياً لمحرك SSE وحلقات المتابعة
+        cfg.cancel_event = cancel_event
+        cfg.cancel_token = cancel_token
         requested_pid = extract_project_id(url) if url else ""
         known_project_key = lookup_project_key_for_locator(url) if url else None
         hinted_project_key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key_hint or ""))[:80]
@@ -5449,7 +5504,9 @@ def process_user_task_async(
             if not live_pid or seen_live_preview_pid == live_pid:
                 return
             seen_live_preview_pid = live_pid
-            preview_kb = build_live_preview_keyboard(live_pid, status="running")
+            # 🛑 [P25] زر الإلغاء الأحمر يظهر أسفل زر المعاينة الأزرق من أول لحظة
+            preview_kb = build_live_preview_keyboard(live_pid, status="running", cancel_token=cancel_token)
+            update_cancel_entry(cancel_token, live_pid=live_pid, project_key=project_key)
             text = (
                 f"⚡ <b>بدأ بناء المشروع السحابي فوراً!</b>\n"
                 f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
