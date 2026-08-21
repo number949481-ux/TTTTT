@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6188..7337
-المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place | P28: كتلة Document Ingestion المعزولة — .txt/.md → text بعد بوابة الصلاحيات وقبل /start مع دمج Caption ورفض ودي للامتداد/الحجم)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6346..7571
+المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place | P28: كتلة Document Ingestion المعزولة — .txt/.md → text بعد بوابة الصلاحيات وقبل /start مع دمج Caption ورفض ودي للامتداد/الحجم | P32: معالجات cmd:account_pwd_lookup/acc_page:/acc_view:/acc_cancel + المسار اليدوي AWAITING_ACCOUNT_PASSWORD_LOOKUP كأول فحص في سلسلة الحالات)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def get_main_keyboard(chat_id: int | None = None):
@@ -670,12 +670,64 @@ def handle_telegram_update(update: dict):
                         b_title = html_escape(b.get("title", "فرع"))[:20]
                         b_buttons.append([{"text": f"📍 {b_title} ({str(b_pid)[:6]}...)", "callback_data": f"cont:{b_pid}"}])
                     send_telegram_message(chat_id, f"🌳 <b>نقاط الاستئناف المتاحة للمشروع <code>{html_escape(pid[:8])}...</code>:</b>", reply_markup=make_inline_keyboard(b_buttons))
-        elif data == "cmd:check_accs":
-            acc = get_random_email_from_accounts_genspark()
-            if acc:
-                send_telegram_message(chat_id, f"📊 <b>فحص الحسابات:</b>\n📧 الحساب المختار: <code>{html_escape(acc.get('email'))}</code>\n💰 الرصيد: <b>{acc.get('balance', 0)}</b>")
+        elif data == "cmd:account_pwd_lookup":
+            # 🔐 [P32] فتح الشاشة الهجينة: تعيين الحالة التفاعلية (يفتح المسار اليدوي)
+            # وعرض الصفحة الأولى من قائمة الحسابات في نفس اللحظة.
+            set_user_state(chat_id, {"action": AWAITING_ACCOUNT_PASSWORD_LOOKUP, "page": 1})
+            send_telegram_message(
+                chat_id,
+                render_account_lookup_text(page=1),
+                reply_markup=build_account_lookup_keyboard(page=1),
+            )
+        elif data.startswith("acc_page:"):
+            page_token = data.split("acc_page:", 1)[1]
+            if page_token == "noop":
+                # 🔐 [P32] زر العداد «📄 N / X» — عرض فقط، لا يفعل شيئاً عمداً
+                pass
             else:
-                send_telegram_message(chat_id, "❌ لا توجد حسابات نشطة متاحة حالياً.")
+                # 🔐 [P32] تقليب الصفحات In-Place (نفس نمط P27) — صفر Spam في المحادثة.
+                # الحالة التفاعلية تبقى قائمة ليظل المسار اليدوي متاحاً أثناء التصفح.
+                safe_page, _total_pages, _start = compute_accounts_page_bounds(
+                    len(list_lookup_accounts()), page_token
+                )
+                set_user_state(chat_id, {"action": AWAITING_ACCOUNT_PASSWORD_LOOKUP, "page": safe_page})
+                page_text = render_account_lookup_text(page=safe_page)
+                page_keyboard = build_account_lookup_keyboard(page=safe_page)
+                lookup_msg_id = msg_info.get("message_id")
+                if lookup_msg_id:
+                    edit_telegram_message_text(chat_id, lookup_msg_id, page_text, reply_markup=page_keyboard)
+                else:
+                    send_telegram_message(chat_id, page_text, reply_markup=page_keyboard)
+        elif data.startswith("acc_view:"):
+            # 🔐 [P32] ضغط زر إيميل من القائمة: الفهرس المطلق داخل القائمة المرتبة.
+            # أي فهرس تالف/خارج المدى يُرفض بهدوء بلا Crash.
+            index_token = data.split("acc_view:", 1)[1]
+            accounts = list_lookup_accounts()
+            try:
+                acc_index = int(index_token)
+            except (TypeError, ValueError):
+                acc_index = -1
+            if 0 <= acc_index < len(accounts):
+                set_user_state(chat_id, {})
+                send_telegram_message(
+                    chat_id,
+                    render_account_password_card(accounts[acc_index]),
+                    reply_markup=build_account_password_card_keyboard(),
+                )
+            else:
+                send_telegram_message(
+                    chat_id,
+                    "⚠️ <b>تعذر عرض هذا الحساب</b> — تغيّرت قائمة الحسابات. افتح الشاشة من جديد.",
+                    reply_markup=build_account_lookup_retry_keyboard(),
+                )
+        elif data == "acc_cancel":
+            # 🔐 [P32] إلغاء حتمي: تصفير الحالة التفاعلية والعودة للوحة التحكم
+            set_user_state(chat_id, {})
+            send_telegram_message(
+                chat_id,
+                "↩️ <b>تم إلغاء استخراج الباسورد.</b>\n" + render_dashboard_text(chat_id),
+                reply_markup=get_main_keyboard(chat_id),
+            )
         return
 
     if "message" in update:
@@ -728,6 +780,30 @@ def handle_telegram_update(update: dict):
 
         state = get_user_state(chat_id)
         action = state.get("action")
+
+        # 🔐 [P32] المسار اليدوي لاستخراج الباسورد — أول فحص في سلسلة الحالات:
+        # الإيميل نص عادي، ولو تُرك للمسار الافتراضي لأسفل لكان أُرسل كبرومبت مهمة.
+        # كتلة مستقلة تماماً ← صفر تأثير على أي حالة Wizard أخرى.
+        if action == AWAITING_ACCOUNT_PASSWORD_LOOKUP:
+            requested_email = str(text or "").strip().lower()
+            matched = find_account_by_email(requested_email)
+            if matched:
+                set_user_state(chat_id, {})
+                send_telegram_message(
+                    chat_id,
+                    render_account_password_card(matched),
+                    reply_markup=build_account_password_card_keyboard(),
+                )
+            else:
+                # الحالة تبقى قائمة: المالك يعيد الكتابة فوراً بلا إعادة فتح الشاشة
+                send_telegram_message(
+                    chat_id,
+                    "❌ <b>الحساب غير مسجل في قاعدة الحسابات.</b>\n"
+                    f"البريد المطلوب: <code>{html_escape(requested_email or 'بلا إيميل')}</code>\n"
+                    "تأكد من كتابته بشكل صحيح وأعد الإرسال، أو ارجع للوحة التحكم.",
+                    reply_markup=build_account_lookup_retry_keyboard(),
+                )
+            return
 
         if action == "AWAITING_NEW_PROJECT_NAME":
             project_name = re.sub(r"\s+", " ", text).strip()[:60] or "مشروع بدون اسم"
