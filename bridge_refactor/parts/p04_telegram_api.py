@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p04_telegram_api
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 851..1294
-المحتوى: Telegram API core + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport + send_document + P28: ALLOWED_DOCUMENT_EXTENSIONS/MAX_DOCUMENT_SIZE_BYTES + download_telegram_document_text (getFile → تنزيل UTF-8 آمن بلا Crash)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 880..1342
+المحتوى: Telegram API core + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport (P29: سطر الحساب النشط + سطر تبديل الحساب بعد handoff) + send_document + P28: ALLOWED_DOCUMENT_EXTENSIONS/MAX_DOCUMENT_SIZE_BYTES + download_telegram_document_text (getFile → تنزيل UTF-8 آمن بلا Crash)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -187,6 +187,10 @@ class AccountSelectionLiveRenderer:
         self.entries: list[dict] = []
         self.refresh_total = 0
         self.continuation_line = "0/0"
+        # 🧾 [P29] مراقبة الحساب النشط وتبديل الحساب بعد handoff
+        self.active_email = ""
+        self.pending_handoff_from = ""
+        self.switch_line = ""
 
     def _upsert_entry(self, event: dict) -> dict:
         attempt_no = int(event.get("attempt_number") or 0)
@@ -215,6 +219,16 @@ class AccountSelectionLiveRenderer:
         self.latest_status = str(event.get("status") or self.latest_status or "")
         self.continuation_line = f"{int(event.get('credit_continuations') or 0)}/{int(event.get('max_credit_continuations') or 0)}"
         entry = self._upsert_entry(event)
+        # 🧾 [P29] تحديث الحساب النشط من snapshot الحدث فقط (لا Email وهمي)
+        event_email = str(event.get("selected_account_email") or "").strip()
+        if event_type == "account-claimed" and event_email:
+            if self.pending_handoff_from and event_email != self.pending_handoff_from:
+                # أول claim بعد handoff → سطر تبديل الحساب (الحساب الجديد لا يُعرف إلا الآن)
+                self.switch_line = f"من <code>{html_escape(self.pending_handoff_from)}</code> ← إلى <code>{html_escape(event_email)}</code>"
+            self.pending_handoff_from = ""
+            self.active_email = event_email
+        elif event_email:
+            self.active_email = event_email
 
         continuation_prompt_public = summarize_resume_prompt_for_display(event.get("continuation_prompt_public"))
         labels = {
@@ -237,6 +251,7 @@ class AccountSelectionLiveRenderer:
         if event_type == "session-refresh-required":
             self.refresh_total += 1
         if event_type == "continuation-handoff-ready":
+            self.pending_handoff_from = event_email or self.active_email  # 🧾 [P29] الحساب السابق لحظة الـ handoff
             self.latest_handoff_url = str(event.get("continuation_url") or "")
             self.latest_handoff_checkpoint = str(event.get("checkpoint_id") or "")
             self.final_note = "تم تجهيز handoff الآن؛ لم يتم إعلان اكتمال المهمة بعد."
@@ -259,6 +274,10 @@ class AccountSelectionLiveRenderer:
             lines.append(f"<b>المشروع:</b> {html_escape(self.project_name)}")
         if self.project_key:
             lines.append(f"<b>مفتاح المشروع:</b> <code>{html_escape(self.project_key)}</code>")
+        if self.active_email:
+            lines.append(f"📧 <b>الحساب النشط:</b> <code>{html_escape(self.active_email)}</code>")
+        if self.switch_line:
+            lines.append(f"🔁 <b>تبديل الحساب:</b> {self.switch_line}")
         lines.append(f"<b>إجمالي المحاولات المرصودة:</b> <code>{len([x for x in self.entries if x.get('attempt_number')])}</code>")
         lines.append(f"<b>عداد الاستئناف:</b> <code>{html_escape(self.continuation_line)}</code>")
         if self.refresh_total:
