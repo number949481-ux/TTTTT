@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 19:52:07 UTC`
+* **التاريخ والوقت:** `2026-08-21 21:24:54 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.293 ثانية`
-* **النتيجة العامة:** `Ran 406 tests — OK`
+* **الزمن المقاس:** `1.147 ثانية`
+* **النتيجة العامة:** `Ran 469 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -492,6 +492,34 @@ test_document_from_disallowed_chat_blocked_before_download (test_p28_document_in
 test_message_with_both_text_and_document_treated_as_text (test_p28_document_input.TestP28ZeroRegression.test_message_with_both_text_and_document_treated_as_text) ... ok
 test_plain_text_message_never_touches_document_path (test_p28_document_input.TestP28ZeroRegression.test_plain_text_message_never_touches_document_path) ... ok
 test_start_command_still_shows_dashboard (test_p28_document_input.TestP28ZeroRegression.test_start_command_still_shows_dashboard) ... ok
+test_bridgeconfig_instances_are_isolated (test_p29_account_observability.TestAccountJourneyRecording.test_bridgeconfig_instances_are_isolated) ... ok
+test_consecutive_duplicates_collapse (test_p29_account_observability.TestAccountJourneyRecording.test_consecutive_duplicates_collapse) ... ok
+test_empty_or_blank_email_never_recorded (test_p29_account_observability.TestAccountJourneyRecording.test_empty_or_blank_email_never_recorded) ... ok
+test_missing_attribute_initialized_as_list (test_p29_account_observability.TestAccountJourneyRecording.test_missing_attribute_initialized_as_list) ... ok
+test_none_cfg_is_safe (test_p29_account_observability.TestAccountJourneyRecording.test_none_cfg_is_safe) ... ok
+test_records_in_claim_order (test_p29_account_observability.TestAccountJourneyRecording.test_records_in_claim_order) ... ok
+test_return_to_previous_account_is_kept (test_p29_account_observability.TestAccountJourneyRecording.test_return_to_previous_account_is_kept) ... ok
+test_blank_entries_filtered_before_count (test_p29_account_observability.TestFinalJourneyLine.test_blank_entries_filtered_before_count) ... ok
+test_empty_journey_gives_empty_line (test_p29_account_observability.TestFinalJourneyLine.test_empty_journey_gives_empty_line) ... ok
+test_journey_emails_html_escaped (test_p29_account_observability.TestFinalJourneyLine.test_journey_emails_html_escaped) ... ok
+test_multi_account_journey_rendered_with_arrows (test_p29_account_observability.TestFinalJourneyLine.test_multi_account_journey_rendered_with_arrows) ... ok
+test_single_account_gives_empty_line (test_p29_account_observability.TestFinalJourneyLine.test_single_account_gives_empty_line) ... ok
+test_event_carries_journey_snapshot (test_p29_account_observability.TestImmutableEventSnapshots.test_event_carries_journey_snapshot) ... ok
+test_event_without_cfg_has_empty_journey (test_p29_account_observability.TestImmutableEventSnapshots.test_event_without_cfg_has_empty_journey) ... ok
+test_old_event_snapshot_never_mutates (test_p29_account_observability.TestImmutableEventSnapshots.test_old_event_snapshot_never_mutates) ... ok
+test_active_account_line_appears_after_claim (test_p29_account_observability.TestLiveRendererActiveAccount.test_active_account_line_appears_after_claim) ... ok
+test_active_account_updates_on_new_claim (test_p29_account_observability.TestLiveRendererActiveAccount.test_active_account_updates_on_new_claim) ... ok
+test_handoff_then_claim_produces_switch_line (test_p29_account_observability.TestLiveRendererActiveAccount.test_handoff_then_claim_produces_switch_line) ... ok
+test_handoff_then_same_account_no_switch_line (test_p29_account_observability.TestLiveRendererActiveAccount.test_handoff_then_same_account_no_switch_line) ... ok
+test_no_active_line_before_any_claim (test_p29_account_observability.TestLiveRendererActiveAccount.test_no_active_line_before_any_claim) ... ok
+test_no_switch_line_without_handoff (test_p29_account_observability.TestLiveRendererActiveAccount.test_no_switch_line_without_handoff) ... ok
+test_renderer_email_html_escaped (test_p29_account_observability.TestLiveRendererActiveAccount.test_renderer_email_html_escaped) ... ok
+test_bridgeconfig_declares_journey_with_default_factory (test_p29_account_observability.TestSourceContracts.test_bridgeconfig_declares_journey_with_default_factory) ... ok
+test_event_snapshot_contract_in_notify (test_p29_account_observability.TestSourceContracts.test_event_snapshot_contract_in_notify) ... ok
+test_final_message_uses_journey_block (test_p29_account_observability.TestSourceContracts.test_final_message_uses_journey_block) ... ok
+test_journey_recorded_at_claim_moment (test_p29_account_observability.TestSourceContracts.test_journey_recorded_at_claim_moment) ... ok
+test_journey_reset_at_failover_start (test_p29_account_observability.TestSourceContracts.test_journey_reset_at_failover_start) ... ok
+test_start_message_has_no_email_line (test_p29_account_observability.TestSourceContracts.test_start_message_has_no_email_line) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
@@ -502,6 +530,50 @@ test_opus5_has_no_ai_chat_model (test_p2_model_routing.TestP2ModelRouting.test_o
 test_protected_is_noop_and_logs_warning (test_p2_model_routing.TestP2ModelRouting.test_protected_is_noop_and_logs_warning) ... ok
 test_sonnet5_has_both_use_and_ai_chat (test_p2_model_routing.TestP2ModelRouting.test_sonnet5_has_both_use_and_ai_chat) ... ok
 test_unknown_gets_models_key_only (test_p2_model_routing.TestP2ModelRouting.test_unknown_gets_models_key_only) ... ok
+test_empty_input (test_p30_account_timing.TestAggregation.test_empty_input) ... ok
+test_garbage_entries_ignored (test_p30_account_timing.TestAggregation.test_garbage_entries_ignored) ... ok
+test_multi_account_order_preserved (test_p30_account_timing.TestAggregation.test_multi_account_order_preserved) ... ok
+test_open_span_counted_best_effort (test_p30_account_timing.TestAggregation.test_open_span_counted_best_effort) ... ok
+test_returning_account_sums_both_spans (test_p30_account_timing.TestAggregation.test_returning_account_sums_both_spans)
+SCENARIO C: A→B→A — مدخل واحد لـ A بمجموع فترتيه. ... ok
+test_float_seconds_truncated (test_p30_account_timing.TestArabicDurationFormatter.test_float_seconds_truncated) ... ok
+test_hours_and_minutes (test_p30_account_timing.TestArabicDurationFormatter.test_hours_and_minutes) ... ok
+test_minutes_and_seconds (test_p30_account_timing.TestArabicDurationFormatter.test_minutes_and_seconds) ... ok
+test_seconds_only (test_p30_account_timing.TestArabicDurationFormatter.test_seconds_only) ... ok
+test_zero_and_invalid_inputs_no_crash (test_p30_account_timing.TestArabicDurationFormatter.test_zero_and_invalid_inputs_no_crash) ... ok
+test_accounts_total_is_sum_of_spans (test_p30_account_timing.TestFinalMessageBlock.test_accounts_total_is_sum_of_spans) ... ok
+test_empty_spans_returns_empty_string (test_p30_account_timing.TestFinalMessageBlock.test_empty_spans_returns_empty_string) ... ok
+test_finisher_is_last_span_account (test_p30_account_timing.TestFinalMessageBlock.test_finisher_is_last_span_account)
+SCENARIO B: «(المُنجِز)» لآخر حساب في الرحلة فقط. ... ok
+test_full_email_no_masking (test_p30_account_timing.TestFinalMessageBlock.test_full_email_no_masking) ... ok
+test_html_escaping_of_email (test_p30_account_timing.TestFinalMessageBlock.test_html_escaping_of_email) ... ok
+test_resume_counter_independent_of_accounts_count (test_p30_account_timing.TestFinalMessageBlock.test_resume_counter_independent_of_accounts_count)
+SCENARIO H: Resume ≠ Accounts−1 — 3 حسابات مع استئناف واحد فقط. ... ok
+test_returning_account_finisher_and_multiplier (test_p30_account_timing.TestFinalMessageBlock.test_returning_account_finisher_and_multiplier)
+SCENARIO C: A→B→A — A هو المُنجِز ويحمل ×2. ... ok
+test_single_account_block_always_shown (test_p30_account_timing.TestFinalMessageBlock.test_single_account_block_always_shown)
+SCENARIO A: الكتلة تظهر حتى بحساب واحد (عكس سطر P29 الشرطي). ... ok
+test_bridgeconfig_default_spans_isolated_per_instance (test_p30_account_timing.TestIsolation.test_bridgeconfig_default_spans_isolated_per_instance) ... ok
+test_open_initializes_missing_spans_list (test_p30_account_timing.TestIsolation.test_open_initializes_missing_spans_list) ... ok
+test_duration_uses_monotonic_not_wall (test_p30_account_timing.TestMonotonicSource.test_duration_uses_monotonic_not_wall) ... ok
+test_negative_monotonic_clamped (test_p30_account_timing.TestMonotonicSource.test_negative_monotonic_clamped) ... ok
+test_bridgeconfig_declares_spans_field (test_p30_account_timing.TestSourceContracts.test_bridgeconfig_declares_spans_field) ... ok
+test_failover_resets_spans_per_run (test_p30_account_timing.TestSourceContracts.test_failover_resets_spans_per_run) ... ok
+test_final_message_includes_timing_block (test_p30_account_timing.TestSourceContracts.test_final_message_includes_timing_block) ... ok
+test_monotonic_used_for_duration (test_p30_account_timing.TestSourceContracts.test_monotonic_used_for_duration) ... ok
+test_no_rotation_or_resume_semantics_touched (test_p30_account_timing.TestSourceContracts.test_no_rotation_or_resume_semantics_touched)
+الحارس السلبي: عداد الاستئناف يزداد فقط عند CREDIT_EXHAUSTED — سطر واحد كما كان. ... ok
+test_span_closed_inside_finally_before_release (test_p30_account_timing.TestSourceContracts.test_span_closed_inside_finally_before_release)
+الإغلاق داخل finally وقبل release_account_selection — حتمي في كل المسارات. ... ok
+test_span_opened_at_claim_moment (test_p30_account_timing.TestSourceContracts.test_span_opened_at_claim_moment)
+open يأتي مباشرة بعد record_account_journey (لحظة الـ claim الفعلي). ... ok
+test_close_sets_duration_and_closed (test_p30_account_timing.TestSpanLifecycle.test_close_sets_duration_and_closed) ... ok
+test_close_targets_matching_email_only (test_p30_account_timing.TestSpanLifecycle.test_close_targets_matching_email_only) ... ok
+test_close_without_open_is_safe (test_p30_account_timing.TestSpanLifecycle.test_close_without_open_is_safe) ... ok
+test_double_close_is_idempotent (test_p30_account_timing.TestSpanLifecycle.test_double_close_is_idempotent)
+SCENARIO D: الإغلاق المزدوج لا يغيّر المدة المسجلة. ... ok
+test_open_creates_span_with_monotonic_and_wall (test_p30_account_timing.TestSpanLifecycle.test_open_creates_span_with_monotonic_and_wall) ... ok
+test_open_rejects_empty_email_and_none_cfg (test_p30_account_timing.TestSpanLifecycle.test_open_rejects_empty_email_and_none_cfg) ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -554,7 +626,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 406 tests in 0.838s
+Ran 469 tests in 0.623s
 
 OK
 ```
