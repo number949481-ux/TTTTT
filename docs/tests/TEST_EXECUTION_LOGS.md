@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 15:57:55 UTC`
+* **التاريخ والوقت:** `2026-08-21 16:49:32 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `0.643 ثانية`
-* **النتيجة العامة:** `Ran 297 tests — OK`
+* **الزمن المقاس:** `0.772 ثانية`
+* **النتيجة العامة:** `Ran 330 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -352,6 +352,39 @@ test_15_live_preview_card_carries_cancel_button (test_p25_interactive_cancel.Tes
 test_16_bridge_config_declares_cancel_fields (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_16_bridge_config_declares_cancel_fields) ... ok
 test_17_cancel_terminal_shows_full_dashboard_keyboard (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_17_cancel_terminal_shows_full_dashboard_keyboard) ... ok
 test_18_cancel_terminal_has_no_orphan_single_button (test_p25_interactive_cancel.TestWorkerIntegrationContracts.test_18_cancel_terminal_has_no_orphan_single_button) ... ok
+test_01_full_deletion_happy_path (test_p26_project_deletion.TestAtomicDeletion.test_01_full_deletion_happy_path) ... ok
+test_02_identity_record_gone_after_delete (test_p26_project_deletion.TestAtomicDeletion.test_02_identity_record_gone_after_delete) ... ok
+test_03_active_build_blocks_deletion (test_p26_project_deletion.TestAtomicDeletion.test_03_active_build_blocks_deletion) ... ok
+test_04_deletion_allowed_after_build_finishes (test_p26_project_deletion.TestAtomicDeletion.test_04_deletion_allowed_after_build_finishes) ... ok
+test_05_missing_project_reports_not_found (test_p26_project_deletion.TestAtomicDeletion.test_05_missing_project_reports_not_found) ... ok
+test_06_empty_key_rejected (test_p26_project_deletion.TestAtomicDeletion.test_06_empty_key_rejected) ... ok
+test_07_disk_only_project_still_deleted (test_p26_project_deletion.TestAtomicDeletion.test_07_disk_only_project_still_deleted) ... ok
+test_08_all_pid_aliases_purged (test_p26_project_deletion.TestAtomicDeletion.test_08_all_pid_aliases_purged) ... ok
+test_09_no_tree_file_is_safe (test_p26_project_deletion.TestAtomicDeletion.test_09_no_tree_file_is_safe) ... ok
+test_10_project_without_pid_skips_tree_safely (test_p26_project_deletion.TestAtomicDeletion.test_10_project_without_pid_skips_tree_safely) ... ok
+test_01_details_keyboard_has_delete_button (test_p26_project_deletion.TestDeleteKeyboards.test_01_details_keyboard_has_delete_button) ... ok
+test_02_delete_button_is_danger_and_own_row (test_p26_project_deletion.TestDeleteKeyboards.test_02_delete_button_is_danger_and_own_row) ... ok
+test_03_p25_cancel_button_still_present (test_p26_project_deletion.TestDeleteKeyboards.test_03_p25_cancel_button_still_present) ... ok
+test_04_confirm_keyboard_two_step_safety (test_p26_project_deletion.TestDeleteKeyboards.test_04_confirm_keyboard_two_step_safety) ... ok
+test_05_callback_data_within_telegram_limit (test_p26_project_deletion.TestDeleteKeyboards.test_05_callback_data_within_telegram_limit) ... ok
+test_06_deleted_keyboard_has_next_actions (test_p26_project_deletion.TestDeleteKeyboards.test_06_deleted_keyboard_has_next_actions) ... ok
+test_07_confirm_text_shows_name_and_key (test_p26_project_deletion.TestDeleteKeyboards.test_07_confirm_text_shows_name_and_key) ... ok
+test_01_sibling_untouched_everywhere (test_p26_project_deletion.TestNeighborSafety.test_01_sibling_untouched_everywhere) ... ok
+test_02_registry_index_file_survives_deletion (test_p26_project_deletion.TestNeighborSafety.test_02_registry_index_file_survives_deletion) ... ok
+test_03_delete_is_idempotent (test_p26_project_deletion.TestNeighborSafety.test_03_delete_is_idempotent) ... ok
+test_01_inactive_project_not_flagged (test_p26_project_deletion.TestRunningProtection.test_01_inactive_project_not_flagged) ... ok
+test_02_active_build_is_flagged (test_p26_project_deletion.TestRunningProtection.test_02_active_build_is_flagged) ... ok
+test_03_cancelled_build_not_flagged (test_p26_project_deletion.TestRunningProtection.test_03_cancelled_build_not_flagged) ... ok
+test_04_unregistered_build_not_flagged (test_p26_project_deletion.TestRunningProtection.test_04_unregistered_build_not_flagged) ... ok
+test_05_empty_key_never_flagged (test_p26_project_deletion.TestRunningProtection.test_05_empty_key_never_flagged) ... ok
+test_01_pdel_block_isolated_and_early (test_p26_project_deletion.TestSourceContracts.test_01_pdel_block_isolated_and_early) ... ok
+test_02_pdel_block_before_main_chain (test_p26_project_deletion.TestSourceContracts.test_02_pdel_block_before_main_chain) ... ok
+test_03_confirmation_is_in_place_edit (test_p26_project_deletion.TestSourceContracts.test_03_confirmation_is_in_place_edit) ... ok
+test_04_exec_calls_atomic_deletion (test_p26_project_deletion.TestSourceContracts.test_04_exec_calls_atomic_deletion) ... ok
+test_05_abort_restores_details_screen (test_p26_project_deletion.TestSourceContracts.test_05_abort_restores_details_screen) ... ok
+test_06_index_cleanup_under_registry_lock (test_p26_project_deletion.TestSourceContracts.test_06_index_cleanup_under_registry_lock) ... ok
+test_07_project_key_sanitized_in_handler (test_p26_project_deletion.TestSourceContracts.test_07_project_key_sanitized_in_handler) ... ok
+test_08_danger_style_is_allowed_value (test_p26_project_deletion.TestSourceContracts.test_08_danger_style_is_allowed_value) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
@@ -414,7 +447,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 297 tests in 0.287s
+Ran 330 tests in 0.324s
 
 OK
 ```
