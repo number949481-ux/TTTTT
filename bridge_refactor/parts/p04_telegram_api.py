@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p04_telegram_api
-المصدر: 01.32_telegram_gen_bridge.py — الأسطر 847..1214
-المحتوى: Telegram API core + send/edit + AccountSelection Live Renderer/Transport + send_document
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 847..1245
+المحتوى: Telegram API core + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport + send_document
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -105,6 +105,37 @@ def edit_telegram_message_text(
     if not result.get("ok"):
         detail = result.get("error") or result.get("description") or "UNKNOWN_TELEGRAM_EDIT_ERROR"
         log_event("warning", f"فشل تعديل رسالة تليجرام live: HTTP {result.get('status_code', 0)} - {detail}")
+    return {
+        "ok": bool(result.get("ok")),
+        "message_id": message_id,
+        "status_code": result.get("status_code", 0),
+        "error": result.get("error", ""),
+        "description": result.get("description", ""),
+    }
+
+
+def edit_telegram_message_reply_markup(
+    chat_id: int | str,
+    message_id: int | str,
+    reply_markup: dict | None,
+) -> dict:
+    """🛑 [P25] تعديل أزرار رسالة قائمة فقط (editMessageReplyMarkup) بدون لمس النص —
+    يستخدم لتبديل كيبورد الإلغاء ⇄ كيبورد التأكيد على بطاقة المعاينة الحية."""
+    if not TELEGRAM_BOT_TOKEN:
+        log_event("error", "توكن البوت غير مضبوط — لا يمكن تعديل أزرار رسائل تليجرام")
+        return {"ok": False, "message_id": None, "error": "BOT_TOKEN_MISSING"}
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "reply_markup": json.dumps(reply_markup or {"inline_keyboard": []}, ensure_ascii=False),
+    }
+    result = _call_telegram_api_json("editMessageReplyMarkup", payload, timeout=15)
+    description = str(result.get("description") or "")
+    if not result.get("ok") and "message is not modified" in description.lower():
+        return {"ok": True, "message_id": message_id, "status_code": result.get("status_code", 0), "error": "", "description": description}
+    if not result.get("ok"):
+        detail = result.get("error") or result.get("description") or "UNKNOWN_TELEGRAM_MARKUP_ERROR"
+        log_event("warning", f"فشل تعديل أزرار رسالة تليجرام: HTTP {result.get('status_code', 0)} - {detail}")
     return {
         "ok": bool(result.get("ok")),
         "message_id": message_id,
