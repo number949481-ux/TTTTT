@@ -21,7 +21,7 @@ webapp_dir = pathlib.Path(__file__).resolve().parent.parent
 if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
-BRIDGE_PATH = webapp_dir / "01.31_telegram_gen_bridge.py"
+BRIDGE_PATH = webapp_dir / "01.32_telegram_gen_bridge.py"
 BRIDGE_SRC = BRIDGE_PATH.read_text(encoding="utf-8")
 
 _spec = importlib.util.spec_from_file_location("bridge_mod_p18", BRIDGE_PATH)
@@ -160,7 +160,7 @@ class TestPollingLoopIntegration(unittest.TestCase):
         self.assertIn("if curr_activity is not None:", BRIDGE_SRC)
 
     def test_04_build_version_bumped(self):
-        self.assertEqual(_bridge.BUILD_VERSION, "01.31")
+        self.assertEqual(_bridge.BUILD_VERSION, "01.32")
 
 
 if __name__ == "__main__":
