@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p09_github_dashboard
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3880..5051
-المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4020..5227
+المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def parse_github_repository_ref(text: str | None) -> str:
@@ -689,8 +689,44 @@ def build_current_project_keyboard(project_key: str) -> dict:
     ])
     if snap.get("resume_pid"):
         rows.append([{"text": "🌳 نقاط الاستئناف", "callback_data": f"tree:{snap['resume_pid']}"}])
+    # 🗑️ [P26] صف مستقل لحذف المشروع — إضافة وليس استبدالاً لزر إلغاء البناء (P25)
+    rows.append([{"text": "🗑️ حذف المشروع", "callback_data": f"pdel_prompt:{project_key}", "style": "danger"}])
     rows.append([{"text": "📁 مشاريعي", "callback_data": "cmd:list_projects"}, {"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:show_dashboard"}])
     return make_inline_keyboard(rows)
+
+
+def build_project_delete_confirm_keyboard(project_key: str) -> dict:
+    """🗑️ [P26] كيبورد تأكيد الحذف بخطوتي أمان — نعم أحمر / تراجع أخضر"""
+    return make_inline_keyboard([
+        [{"text": "🚨 نعم، احذف نهائياً", "callback_data": f"pdel_exec:{project_key}", "style": "danger"}],
+        [{"text": "↩️ لا، إلغاء ورجوع", "callback_data": f"pdel_abort:{project_key}", "style": "success"}],
+    ])
+
+
+def build_project_deleted_keyboard() -> dict:
+    """🗑️ [P26] كيبورد شاشة نجاح الحذف — مشاريعي + مشروع جديد"""
+    return make_inline_keyboard([
+        [
+            {"text": "📁 مشاريعي", "callback_data": "cmd:list_projects"},
+            {"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj", "style": "primary"},
+        ],
+    ])
+
+
+def render_project_delete_confirm_text(project_key: str) -> str:
+    """🗑️ [P26] نص التحذير قبل الحذف النهائي — بالاسم والمفتاح"""
+    identity = get_project_identity_record(project_key) or {}
+    project_name = str(identity.get("project_name") or project_key)
+    return (
+        "🗑️ <b>تأكيد حذف المشروع نهائياً</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"📛 <b>الاسم:</b> {html_escape(project_name)}\n"
+        f"🔑 <b>المفتاح:</b> <code>{html_escape(project_key)}</code>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "⚠️ سيتم حذف مجلد المشروع كاملاً (manifest + checkpoints)\n"
+        "وإزالته من الفهرس المركزي وشجرة نقاط الاستئناف.\n"
+        "🚫 <b>هذا الإجراء لا يمكن التراجع عنه بعد التأكيد!</b>"
+    )
 
 
 def build_dashboard_keyboard(chat_id: int) -> dict:
