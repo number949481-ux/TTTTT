@@ -30,12 +30,12 @@ PARTS = [
     ("p04_telegram_api",   847,  1214, "Telegram API core + send/edit + AccountSelection Live Renderer/Transport + send_document"),
     ("p05_project_tree",  1215,  1459, "projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + extract_project_id"),
     ("p06_engine_flow",  1460,  2409, "Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة)"),
-    ("p07_state_registry",  2410,  3358, "EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader)"),
-    ("p08_registry_index",  3359,  3667, "Project run locks + registry index I/O + identity + resume context + viewer URLs + live preview keyboard"),
-    ("p09_github_dashboard",  3668,  4839, "GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر"),
-    ("p10_progress_credit",  4840,  5120, "Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer"),
-    ("p11_worker",  5121,  5425, "process_user_task_async (المشغل الكامل للمهمة)"),
-    ("p12_handlers_main",  5426,  6406, "get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc:)"),
+    ("p07_state_registry",  2410,  3382, "EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي)"),
+    ("p08_registry_index",  3383,  3691, "Project run locks + registry index I/O + identity + resume context + viewer URLs + live preview keyboard"),
+    ("p09_github_dashboard",  3692,  4863, "GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر"),
+    ("p10_progress_credit",  4864,  5144, "Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer"),
+    ("p11_worker",  5145,  5449, "process_user_task_async (المشغل الكامل للمهمة)"),
+    ("p12_handlers_main",  5450,  6430, "get_main_keyboard + handle_telegram_update + offset + polling + main (P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc:)"),
 ]
 
 # ─── خريطة الواجهات: facade module → أجزاء تُجمع رموزها ─────
