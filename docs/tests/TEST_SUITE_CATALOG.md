@@ -1,9 +1,9 @@
 # 🧪 كتالوج حالات واختبارات الوحدة (TEST_SUITE_CATALOG.md)
 
-> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **406 فحصاً النشطة محلياً** لإصدار `01.33`  
-> **حالة الاختبارات النشطة:** 406/406 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
+> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **483 فحصاً النشطة محلياً** لإصدار `01.33`  
+> **حالة الاختبارات النشطة:** 483/483 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
 
-## 📊 0. المصفوفة النشطة الحالية — 01.33 (406 فحصاً / 22 ملفاً)
+## 📊 0. المصفوفة النشطة الحالية — 01.33 (483 فحصاً / 25 ملفاً)
 
 | الحزمة | الملف | العدد | النطاق |
 |---|---|:---:|---|
@@ -28,8 +28,11 @@
 | **P26 حذف المشروع الذري** | `test_p26_project_deletion.py` | **33** | **زر 🗑️ أحمر (danger) كصف مستقل + تأكيد بخطوتي أمان In-Place (`pdel_prompt/abort/exec`) + حماية البناء النشط `is_project_build_active` + الحذف الذري `delete_project_atomically` (فهرس + aliases تحت القفل ➔ شجرة ➔ قرص) + سلامة الجيران (5 مجموعات: Keyboards 7 + RunningProtection 5 + AtomicDeletion 10 + NeighborSafety 3 + SourceContracts 8)** |
 | **P27 تصفح المشاريع بالصفحات** | `test_p27_projects_pagination.py` | **39** | **الثابت `PROJECTS_PER_PAGE=20` (تعريف وحيد) + `compute_projects_page_bounds` (قصّ آمن لأي مدخل تالف/سالب/متجاوز) + كيبورد التصفح (حواف أولى/أخيرة/وسطى + عداد `plist:noop` + عزل chat_id + إعادة استخدام عقود `proj:`/`pview:`) + الفروع الثلاثة (`cmd:list_projects` إصلاح الزر الميت + `plist:page:` In-Place + `plist:noop`) + عدم انحدار اللوحة (limit=3)** |
 | **P28 استقبال ملفات المهام (.txt & .md)** | `test_p28_document_input.py` | **37** | **الثابتان `ALLOWED_DOCUMENT_EXTENSIONS` (frozenset رباعي) + `MAX_DOCUMENT_SIZE_BYTES=5MB` + دالة `download_telegram_document_text` (getFile ➔ تنزيل UTF-8 بـ `errors="replace"` — أي فشل ➔ None بلا Crash، 9 حراس بموديول requests وهمي) + الـ Dispatcher (قبول txt/md/markdown/.TXT + دمج Caption + تغذية Wizard + رفض pdf/zip/بلا اسم/تجاوز 5MB قبل أي تنزيل) + Zero Regression (النص العادي/`/start`/text+document معاً/الشات غير المعتمد) + عقود المصدر (الموقع بعد البوابة وقبل /start + شرط `document and not text`)** |
-| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.33 (7120 سطراً) |
-| **الإجمالي** | **22 ملفاً** | **406** | ✅ 406/406 PASS |
+| **P29 مراقبة الحسابات الحية** | `test_p29_account_observability.py` | **28** | **`record_account_journey` (لحظة الـ claim الفعلي فقط + منع تكرار A→A + السماح بالعودة A→B→A + reset لكل تشغيل) + Snapshots ثابتة لكل event (نسخة مستقلة لا تتغير لاحقاً) + Live Renderer (سطر «الحساب النشط» من snapshot الحدث فقط — لا Email وهمي + سطر «تبديل الحساب من X ← إلى Y») + سطر «مسار الحسابات» بالرسالة النهائية يظهر فقط عند تعدد الحسابات الفعلية (backward compatible) + عقود المصدر** |
+| **P30 المحاسبة الزمنية الجنائية** | `test_p30_account_timing.py` | **35** | **`open_account_timing_span` لحظة الـ claim + `close_account_timing_span` حتمي idempotent في `finally` + `aggregate_journey_spans_per_email` (تجميع عودة الحساب A→B→A في مدخل واحد ×2) + `format_arabic_duration` (ثوانٍ/دقائق/ساعات + سالب/None بلا Crash) + `format_account_timing_block` (إيميلات كاملة Unmasked + توتال + «(المُنجِز)» لآخر حساب) + monotonic مصدر المدة (محصّن ضد قفزات wall clock) + عزل التشغيلات والـ configs المتوازية + الفصل الصارم Resume ≠ Accounts−1** |
+| **P31 الاستدعاء الكسول لكوين** | `test_p31_lazy_qwen_prefix.py` | **14** | **`ai_prefix = None` + `_lazy_ai_prefix` memoized داخل `_default_github_uploader` — job كله unchanged (وكل delete على ريموت 404) = صفر نداء لكوين (توفير الباقة + إلغاء تأخير حتى 30ث/sync) + أول PUT/DELETE فعلي يوقظه مرة واحدة فقط (عقد DEC-019) + رسائل الكوميت حرفياً بلا تغيير (بادئة عند النجاح / القديمة عند الفشل) + عقود مصدرية (النداء بعد فحص unchanged داخل الحلقة)** |
+| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.33 (7337 سطراً) |
+| **الإجمالي** | **25 ملفاً** | **483** | ✅ 483/483 PASS |
 
 
 ---
