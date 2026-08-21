@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 459..850
-المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token) + accounts I/O + readiness + cooldown + refresh_cookies_on_401
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 459..879
+المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots) + accounts I/O + readiness + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 _ENGINE_CACHE = {"mod": None, "path": None}
@@ -116,6 +116,31 @@ def claim_eligible_account_for_owner(
     return None, ready_accounts, "busy"
 
 
+def record_account_journey(bridge_cfg, email: str) -> list:
+    """يسجل الحساب في مسار رحلة المهمة على bridge_cfg مع منع التكرار المتتالي (A→A تبقى A).
+
+    يُستدعى فقط لحظة الـ claim الفعلي (لا Email وهمي من الـ Pool)، ويُرجع القائمة الحية.
+    """
+    if bridge_cfg is None:
+        return []
+    email_clean = str(email or "").strip()
+    journey = getattr(bridge_cfg, "account_journey", None)
+    if not isinstance(journey, list):
+        journey = []
+        bridge_cfg.account_journey = journey
+    if email_clean and (not journey or journey[-1] != email_clean):
+        journey.append(email_clean)
+    return journey
+
+
+def format_account_journey_line(journey) -> str:
+    """يبني سطر «مسار الحسابات» للرسالة النهائية — يظهر فقط عند تعدد الحسابات الفعلية."""
+    emails = [str(item).strip() for item in (journey or []) if str(item or "").strip()]
+    if len(emails) < 2:
+        return ""
+    return "🧾 <b>مسار الحسابات:</b> " + " ← ".join(f"<code>{html_escape(item)}</code>" for item in emails)
+
+
 def notify_account_selection_observer(bridge_cfg, event_type: str, **payload) -> bool:
     observer = getattr(bridge_cfg, "account_selection_observer", None) if bridge_cfg is not None else None
     if not callable(observer):
@@ -130,6 +155,8 @@ def notify_account_selection_observer(bridge_cfg, event_type: str, **payload) ->
         "max_credit_continuations": get_credit_continuation_limit(bridge_cfg),
         "continuation_prompt_public": summarize_resume_prompt_for_display(get_bridge_cfg_public_resume_prompt(bridge_cfg)) if bridge_cfg is not None else DEFAULT_PROJECT_RESUME_PROMPT,
         "runtime_binding_source": str(getattr(bridge_cfg, "project_runtime_binding_source", "") or "") if bridge_cfg is not None else "",
+        # 📸 [P29] snapshot غير قابل للتغيير لمسار الحسابات لحظة إنشاء الحدث (Immutable Event Snapshot)
+        "account_journey": [str(item) for item in (getattr(bridge_cfg, "account_journey", []) or [])] if bridge_cfg is not None else [],
         **payload,
     }
     try:
@@ -195,6 +222,8 @@ class BridgeConfig:
     selection_attempt_number: int = 0
     selected_account_email: str = ""
     selected_account_claim_state: str = ""
+    # 🧾 [P29] مسار رحلة الحسابات الفعلية للمهمة (لحظة الـ claim فقط — لا Email وهمي)
+    account_journey: list = field(default_factory=list)
     project_resume_prompt_public: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_resume_prompt_runtime: str = DEFAULT_PROJECT_RESUME_PROMPT
     project_runtime_binding_source: str = ""
