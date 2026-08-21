@@ -26,15 +26,15 @@
 | **target bot script** | `01.33_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P27 — تصفح المشاريع بنظام الصفحات (Projects List Pagination)** 📄 🔍 INSPECT مكتمل — ⛔ بانتظار موافقة المالك (P26 ✅ مغلقة) |
-| **current slice** | `TSK-4501` (INSPECT DONE) ➔ S48: فحص ميداني T1–T7 لميزة P27 على السورس الفعلي `01.33` — صفر تعديل كود. الاكتشافات: (1) القيد `limit=3` حرفي في `build_dashboard_keyboard` سطر 4752. (2) 🔴 زر «📁 مشاريعي» `cmd:list_projects` **ميت بلا handler** في الموزّع (موجود في 5 كيبوردات: 4561/4574/4708/4724/4748 — لا فرع له في 5985–6506). (3) `list_known_projects` (سطر 4222) جاهزة كمصدر بيانات مرتّب. الخطة الكاملة (T6/T7) موثقة في `PROGRESS.md` الجذري |
+| **current WBS phase** | **P27 — تصفح المشاريع بنظام الصفحات (Projects List Pagination)** 📄 ✅ مغلقة — موافقة المالك الصريحة ثم تنفيذ T-A→T-F كاملاً |
+| **current slice** | `TSK-4502` (DONE) ➔ S48 مكتملة: ميزة P27 كاملة داخل `01.33` (7039 سطراً) — الثابت `PROJECTS_PER_PAGE=20` + `compute_projects_page_bounds` (Out-of-Bounds Safe) + `render_projects_page_text` + `build_projects_page_keyboard` + 3 معالجات (`cmd:list_projects` إصلاح الزر الميت + `plist:page:` تقليب In-Place بتعديل نفس الرسالة + `plist:noop`) + 39 حارساً جديداً + إعادة بناء refactor (parity 11/11) + بوابة 369/369 Exit 0 |
 | **current-task** | `S47` — تنفيذ P26 (طلب المالك في `Atomic_Cleanup_02.MD`): زر 🗑️ حذف المشروع (danger — صف مستقل في لوحة تفاصيل المشروع) + تأكيد In-Place بخطوتي أمان (`pdel_prompt:` ➔ `pdel_exec:` / `pdel_abort:` للتراجع) + حماية `is_project_build_active` (ممنوع حذف مشروع له بناء نشط عبر `_ACTIVE_CANCEL_EVENTS`) + الحذف الذري `delete_project_atomically` (الفهرس + كل pid aliases تحت القفل ➔ `projects_tree.json` ➔ مجلد القرص) — حزمة حراسة `tests/test_p26_project_deletion.py` (33 اختباراً) — الإجمالي 330 |
-| **next-action** | **موافقة المالك الصريحة على خطة P27** (T-A ثابت `PROJECTS_PER_PAGE=20` + `build_projects_page_keyboard` ➔ T-B handlers `cmd:list_projects`/`plist:page:`/`plist:noop` بتعديل نفس الرسالة ➔ T-C حزمة `test_p27_projects_pagination.py` ➔ T-D PARTS+rebuild ➔ T-E بوابة ➔ T-F توثيق) — **ممنوع البدء قبل الموافقة**. ويظل معلقاً: E2E حي على 01.33 + تفويض GitHub لدفع PR يدوياً |
-| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) **موافقة تنفيذ P27** (شرط المالك الصريح في `تصفح_المشاريع_بنظام_الصفحات.MD`: «لا تنفذ أي تعديل قبل أن أعطيك موافقة صريحة»). (ب) ميزة P22 معلّقة كلياً ⏸️. (قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
-| **completion** | 330/330 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 330/330 PASS — Exit Code 0 |
+| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33 (زر 📁 مشاريعي ➔ شاشة التصفح 20/صفحة ➔ التقليب ⬅️➡️ In-Place ➔ الاختيار 📌/⭐ + تدفق الحذف 🗑️ P26) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
+| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (موافقة P27 صدرت ونُفذت في S48 ✅ — قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
+| **completion** | 369/369 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 369/369 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
-| **release decision** | `READY` 🟢 (P26: حذف مشروع ذري آمن بخطوتي أمان + S46: لوحة كاملة بعد الإلغاء + P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
+| **release decision** | `READY` 🟢 (P27: تصفح المشاريع 20/صفحة In-Place + إصلاح الزر الميت 📁 + P26: حذف مشروع ذري آمن بخطوتي أمان + P25: إلغاء تفاعلي قهري آمن + P24: كوميت ذكي بكوين + P21: تصنيف commit دقيق + P20: REST-Only + DATA_RETENTION failover + P18 وقف فوري لمؤشر النشاط — صفر انحدار) |
 
 ---
 
