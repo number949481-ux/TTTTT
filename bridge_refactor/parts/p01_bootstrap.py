@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p01_bootstrap
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 1..138
-المحتوى: Header + imports + logging + redact + html_escape + load_bot_token
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 1..154
+المحتوى: Header + imports + logging + redact + html_escape + resolve_shared_path (P23) + load_bot_token
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 #!/usr/bin/env python3
@@ -120,14 +120,30 @@ def html_escape(text: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════
+# 🔎 [P23] البحث الهرمي للملفات المشتركة: محلي أولاً ثم الفولدر الأب (W___webapp/)
+# ══════════════════════════════════════════════════════════════
+def resolve_shared_path(name: str) -> pathlib.Path:
+    """مسار مشترك ذكي: لو الملف/المجلد موجود جنب النسخة يستخدمه (أولوية محلية)،
+    وإلا يلقطه من الفولدر الأب المركزي — ولو غير موجود في الاثنين يرجع المحلي (للإنشاء).
+    Zero Breaking Changes: النسخ القديمة بملفاتها المحلية تشتغل كما هي تماماً."""
+    local = SCRIPT_DIR / name
+    if local.exists():
+        return local
+    parent = SCRIPT_DIR.parent / name
+    if parent.exists():
+        return parent
+    return local
+
+
+# ══════════════════════════════════════════════════════════════
 # 🔑 توكن البوت: من متغير البيئة أو ملف محلي (gitignored) — ممنوع الـ Hardcode
 # ══════════════════════════════════════════════════════════════
 def load_bot_token() -> str:
-    """قراءة توكن البوت بأمان: TELEGRAM_BOT_TOKEN ← telegram_bot_token.txt (محلي، خارج git)"""
+    """قراءة توكن البوت بأمان: TELEGRAM_BOT_TOKEN ← telegram_bot_token.txt (محلي ثم الأب، خارج git)"""
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     if token:
         return token
-    token_file = SCRIPT_DIR / "telegram_bot_token.txt"
+    token_file = resolve_shared_path("telegram_bot_token.txt")  # 🔎 [P23] محلي ثم الأب
     try:
         if token_file.exists():
             token = token_file.read_text(encoding="utf-8").strip()
