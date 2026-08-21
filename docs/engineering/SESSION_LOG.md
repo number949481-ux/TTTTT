@@ -188,3 +188,15 @@
 - **T-E (البوابة):** pytest ➔ **369 passed** (330 + 39 جديداً) + `hadith_sijil.py` ➔ **Exit Code 0** ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة الحادية عشرة، موافقة S41 الدائمة).
 - **الحجم:** `01.33` أصبح **7039 سطراً** (+93: T-A 73 + T-B 20).
 - **القرار:** ✅ P27 مغلقة — الحالة `READY` 🟢 بانتظار E2E حي من المالك.
+
+### [DEC-024] — P28 استقبال ملفات المهام النصية (.txt & .md) — Document Ingestion (S49 — طلب `05_—.txt_&_.md-Document_Ingestion.md`، 2026-08-21)
+- **الاعتماد:** تقرير INSPECT (T1–T7) قُدِّم أولاً وصدرت موافقة المالك الصريحة («نفذ») قبل أي تعديل.
+- **المبدأ المعماري (DRY):** حقن واحد مبكر في مسار `message` يحوّل محتوى الملف إلى متغير `text` القائم — فيغذي تلقائياً **كل** حالات الـ Wizard (`AWAITING_NEW_PROMPT`, `AWAITING_CONT_PROMPT`, ...) والمسار الافتراضي بلا لمس أي handler.
+- **T-A (البنية — p04 بجوار `send_telegram_document`):** الثابتان `ALLOWED_DOCUMENT_EXTENSIONS = frozenset({".txt", ".md", ".markdown", ".text"})` و `MAX_DOCUMENT_SIZE_BYTES = 5MB` + دالة `download_telegram_document_text(file_id)` (getFile ➔ استخراج `file_path` ➔ تنزيل ➔ `decode("utf-8", errors="replace")`؛ أي فشل شبكة/HTTP≠200/ok=false/file_path مفقود ➔ `None` بدون استثناء يتسرب لخيط الـ Polling).
+- **T-B (الحقن — p12 داخل `handle_telegram_update`):** كتلة معزولة **بعد بوابة `is_chat_allowed`** (لا تنزيل من غرباء) و**قبل فحص `/start`** بشرط الحراسة `if document and not text:` (رسائل الـ Document لا تحمل `text` أصلاً ➔ Zero Regression حرفي للنصوص العادية) — فحص الامتداد بـ `suffix.lower()` (يقبل `.TXT`) ➔ رفض ودي، فحص الحجم قبل أي تنزيل ➔ رفض ودي، فشل التنزيل/محتوى فارغ ➔ تنبيه «تعذر قراءة»، دمج الـ Caption: `f"{caption}\n\n{content}"` وإلا المحتوى وحده.
+- **T-C (الحراسة):** حزمة `tests/test_p28_document_input.py` — **37 حارساً** في 4 محاور: الثوابت (4) / دالة التنزيل بموديول `requests` وهمي محقون في `sys.modules` (9: نجاح UTF-8 + بايتات تالفة ➔ `\ufffd` بلا Crash + HTTP 500/404 + ok=false + file_path مفقود + استثناء شبكة + توكن فارغ بلا نداء شبكة) / الـ Dispatcher (15: قبول txt/md/markdown/.TXT + دمج Caption + تغذية Wizard `AWAITING_NEW_PROMPT` مع `project_key_hint` + رفض pdf/zip/بلا اسم/تجاوز 5MB **قبل** أي تنزيل + حد 5MB بالضبط مقبول + تنبيه تعذر القراءة) / Zero Regression (4: النص العادي لا يلمس مسار الملفات + `/start` سليم + text+document معاً = نص + الشات غير المعتمد محجوب قبل التنزيل) + عقود المصدر (6).
+- **T-D (المرايا):** تحديث خريطة PARTS (p04 ➔ 851–1294 «+45»، إزاحة p05–p12 حتى 7120) + إعادة توليد `bridge_refactor/` ➔ parity **11/11** (بايت-بايت).
+- **T-E (البوابة):** pytest ➔ **406 passed** (369 + 37 جديداً) + `hadith_sijil.py` ➔ **Exit Code 0** ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة الثانية عشرة، موافقة S41 الدائمة).
+- **الحجم:** `01.33` أصبح **7120 سطراً** (+81: T-A 46 + T-B 35).
+- **مخاطر موثقة بشفافية:** التنزيل متزامن داخل خيط الـ Polling (مقبول لحد 5MB مع timeouts صارمة (10,30)/(10,60)) + الوثائق المعاد توجيهها بلا `file_name` تُرفض ودياً كامتداد غير مدعوم.
+- **القرار:** ✅ P28 مغلقة — الحالة `READY` 🟢 بانتظار E2E حي من المالك (إرسال ملف .txt فعلي للبوت).
