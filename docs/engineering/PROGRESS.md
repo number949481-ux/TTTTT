@@ -19,18 +19,18 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-21 — S47 |
+| **last-updated** | 2026-08-21 — S48 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.33` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
 | **target bot script** | `01.33_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P26 — حذف المشروع التفاعلي والتنظيف الذري (Interactive Project Deletion & Atomic Cleanup)** 🗑️ ✅ مغلقة |
-| **current slice** | `TSK-4403` (DONE) ➔ S47 مكتملة: ميزة P26 كاملة داخل `01.33` (6946 سطراً) + 33 حارساً جديداً + إعادة بناء refactor (parity 11/11) + بوابة 330/330 Exit 0 + توثيق شامل |
+| **current WBS phase** | **P27 — تصفح المشاريع بنظام الصفحات (Projects List Pagination)** 📄 🔍 INSPECT مكتمل — ⛔ بانتظار موافقة المالك (P26 ✅ مغلقة) |
+| **current slice** | `TSK-4501` (INSPECT DONE) ➔ S48: فحص ميداني T1–T7 لميزة P27 على السورس الفعلي `01.33` — صفر تعديل كود. الاكتشافات: (1) القيد `limit=3` حرفي في `build_dashboard_keyboard` سطر 4752. (2) 🔴 زر «📁 مشاريعي» `cmd:list_projects` **ميت بلا handler** في الموزّع (موجود في 5 كيبوردات: 4561/4574/4708/4724/4748 — لا فرع له في 5985–6506). (3) `list_known_projects` (سطر 4222) جاهزة كمصدر بيانات مرتّب. الخطة الكاملة (T6/T7) موثقة في `PROGRESS.md` الجذري |
 | **current-task** | `S47` — تنفيذ P26 (طلب المالك في `Atomic_Cleanup_02.MD`): زر 🗑️ حذف المشروع (danger — صف مستقل في لوحة تفاصيل المشروع) + تأكيد In-Place بخطوتي أمان (`pdel_prompt:` ➔ `pdel_exec:` / `pdel_abort:` للتراجع) + حماية `is_project_build_active` (ممنوع حذف مشروع له بناء نشط عبر `_ACTIVE_CANCEL_EVENTS`) + الحذف الذري `delete_project_atomically` (الفهرس + كل pid aliases تحت القفل ➔ `projects_tree.json` ➔ مجلد القرص) — حزمة حراسة `tests/test_p26_project_deletion.py` (33 اختباراً) — الإجمالي 330 |
-| **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33 (تدفق الحذف 🗑️ بخطوتي الأمان + حماية البناء النشط + زر الإلغاء التفاعلي على تيليجرام حي) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
-| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
+| **next-action** | **موافقة المالك الصريحة على خطة P27** (T-A ثابت `PROJECTS_PER_PAGE=20` + `build_projects_page_keyboard` ➔ T-B handlers `cmd:list_projects`/`plist:page:`/`plist:noop` بتعديل نفس الرسالة ➔ T-C حزمة `test_p27_projects_pagination.py` ➔ T-D PARTS+rebuild ➔ T-E بوابة ➔ T-F توثيق) — **ممنوع البدء قبل الموافقة**. ويظل معلقاً: E2E حي على 01.33 + تفويض GitHub لدفع PR يدوياً |
+| **current-blocker** | `BLOCKED-ON-OWNER` — (أ) **موافقة تنفيذ P27** (شرط المالك الصريح في `تصفح_المشاريع_بنظام_الصفحات.MD`: «لا تنفذ أي تعديل قبل أن أعطيك موافقة صريحة»). (ب) ميزة P22 معلّقة كلياً ⏸️. (قرار `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
 | **completion** | 330/330 Tests Verified (100%) 🧪 |
 | **quality-gate** | `python scripts/hadith_sijil.py` ➔ 330/330 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
