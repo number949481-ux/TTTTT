@@ -5,7 +5,76 @@
 
 ---
 
-## 🟢 نقطة الاستئناف الحالية — 2026-08-21 (جلسة S44 — P24: الكوميت الذكي بكوين ✅ مكتملة)
+## 🟢 نقطة الاستئناف الحالية — 2026-08-21 (جلسة S45 — P25: الإلغاء التفاعلي وإيقاف التوليد الفوري ✅ مكتملة + ترقية 01.32)
+
+### ✅ ما أُنجز في S45 (P25 — Interactive Cancellation Flow، مصدر الطلب: `Cancel_Flag.md`)
+1. **ترقية الإصدار 01.31 ➔ 01.32**: الملف النشط الآن `01.32_telegram_gen_bridge.py`
+   (6702 سطراً) مع `BUILD_VERSION = "01.32"` — والـ baseline المجمّد ما زال `01.30`.
+2. **T1 — مسجل أحداث الإلغاء (CancellationManager)** — سطر ~3495-3582:
+   `_ACTIVE_CANCEL_EVENTS` + `_CANCEL_EVENTS_GUARD` (Lock) + `CANCELLED_STATUS` +
+   `USER_CANCELLED_MARKER` + 7 دوال: `new_cancel_token` (12 hex — لأن callback_data
+   محدود بـ 64 بايت)، `register_cancel_event`، `get_cancel_entry`، `update_cancel_entry`،
+   `trigger_cancel`، `is_cancel_requested`، `unregister_cancel_event`.
+3. **T2 — كيبورد البطاقة بخطوتي أمان** — `build_live_preview_keyboard` (سطر ~3819):
+   `cancel_token` معامل اختياري (توافق خلفي كامل — بدونه الكيبورد القديم حرفياً).
+   أثناء `running`: زر [🛑 إلغاء البناء الحالي] أحمر `danger` تحت زر المعاينة الأزرق.
+   الضغطة الأولى (`cancel_prompt:`) تفتح كيبورد تأكيد فقط:
+   [🚨 نعم، إلغاء فوري] `danger` / [↩️ لا، تراجع واستمرار] `primary`.
+4. **T2 — معالجات الـ Callbacks** — `handle_callback_query` (سطر ~5700-5741):
+   بلوك مبكر معزول لـ `cancel_prompt:/cancel_exec:/cancel_abort:` قبل سلسلة if/elif
+   (صفر تعارض مع `pctl:*` وباقي الأزرار). توكن منتهي = تنظيف أزرار بهدوء +
+   «المهمة انتهت بالفعل». دالتان جديدتان في p04: `edit_telegram_message_text` (~925)
+   و `edit_telegram_message_reply_markup` (~962).
+5. **T3 — الإيقاف القهري التعاوني (Cooperative Stream Abort)**:
+   - `BridgeConfig` (سطر ~656): حقلا `cancel_event` + `cancel_token`.
+   - **المحرك `01.03`** (سطر ~1997-2087): يقرأ `getattr(cfg, "cancel_event", None)`،
+     يفحصه **كأول سطر داخل `r.iter_lines()`** ➔ `break` ➔ `r.close()` (قطع اتصال
+     ask_proxy — مطابق لزر ⏹️ Stop) ➔ يرجع `__USER_CANCELLED__` **بأولوية قصوى
+     قبل** تصنيف `__CREDIT_EXHAUSTED__`.
+   - **الجسر p06** (`send_message_with_auto_account_failover` ~1886-2264): فحص قبل
+     الإرسال وداخل حلقة المتابعة + النوم المتقطع `Event.wait(timeout=5)` بدل sleep
+     (استيقاظ فوري لحظة الإلغاء) + حالة `CANCELLED` تخرج من الـ failover **بلا أي
+     عقوبة/تبريد للحساب** (الإلغاء قرار مستخدم وليس فشل حساب).
+6. **T3 — تكامل الـ worker** (`process_user_task_async` ~5345-5676): توليد وتسجيل
+   التوكن قبل أي عمل + حقن `cfg.cancel_event` + `update_cancel_entry(live_pid=...)`
+   عند التقاط pid (~5509) + رسالة نهائية هادئة لحالة `CANCELLED` مع تسجيل الحالة في
+   الريجستري (~5544) + **تنظيف مضمون `unregister_cancel_event` في `finally`** يغطي
+   كل المخارج (نجاح/فشل/إلغاء/استثناء) = Zero Memory Leaks، وتحرير قفل المشروع
+   `release_project_run` كما هو.
+7. **T4 — حزمة حراسة**: `tests/test_p25_interactive_cancel.py` — **40 اختباراً**
+   (5 مجموعات: CancellationManager 12 + كيبورد البطاقة 5 + عقود تكامل الـ worker
+   والـ failover 16 + عقد قطع بث المحرك 5 + محاكاة التدفق الكامل 2).
+8. **PARTS boundaries** مُزاحة (p03 ➔ 850 … p12 ➔ 6702) + إعادة بناء
+   `bridge_refactor/` بتطابق بايت (parity 11/11 ✅).
+9. **نظافة git (المرة السابعة)**: المزامنة التلقائية أعادت `.pytest_cache/` و
+   `bridge_bot.log` للتتبع ➔ أُخرجا بـ `git rm --cached` (الموافقة الدائمة من S41).
+10. **تصحيح ليبلات قديمة**: `hadith_sijil.py` (ليبل الخطوة 1) و `generate_docs.py`
+    (تعليق SSOT) كانا يقولان «01.31» نصياً بينما المسار الفعلي 01.32 — صُحّحا.
+11. **التوثيق**: DEC-020 في SESSION_LOG + TEST_SUITE_CATALOG (295/19 ملفاً) +
+    README (01.32/295) + PROGRESS ×2 + V3_RESUME (قاعدة P25 الدائمة).
+
+### 🟢 بوابة الجودة (S45)
+- pytest: **295 passed** ✅ (255 سابقة + 40 جديدة P25)
+- `scripts/hadith_sijil.py`: **Exit Code 0** ✅
+- parity: `test_refactor_parity.py` 11/11 ✅
+
+### 🔴 ما زال معلقاً على المالك (BLOCKED-ON-OWNER)
+- (أ) ميزة P22 (LiveOpsReporter/heartbeat) معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة.
+- (ب) اختبار تشغيلي حي E2E على 01.32 (خصوصاً زر الإلغاء التفاعلي على تيليجرام حي +
+  مسار DATA_RETENTION) — يحتاج بيئة المالك.
+- (ج) سياسة النسخ القديمة: حذف `01.31_telegram_gen_bridge.py` غير وارد (الملف غير
+  موجود أصلاً بالريبو — الترقية كانت rename مباشراً عبر المزامنة).
+
+### نقطة الاستئناف التالية
+P25 مغلقة بالكامل والإصدار النشط `01.32`. لا عمل هندسي متاح — الخطوط معلقة على
+قرارات المالك أعلاه أو مهمة جديدة يعتمدها (راقب `Deep_Thinking_Tasks_Remaining.TXT`
+و `Cancel_Flag.md` لأي طلبات جديدة).
+⚠️ ملاحظة للمزامنة: لو أعادت المزامنة `.pytest_cache/`/`bridge_bot.log` للتتبع مجدداً،
+أخرجهما فوراً بـ `git rm --cached` (موافقة دائمة من S41 — لا حاجة لسؤال).
+
+---
+
+## 📜 جلسة S44 — P24: الكوميت الذكي بكوين ✅ مكتملة (2026-08-21)
 
 ### ✅ ما أُنجز في S44 (P24 — حقن محرك كوين في رفع GitHub)
 1. **M1 — المسار المشترك لحسابات كوين**: `qwen_engine.py` يطبق الآن `resolve_shared_path`
