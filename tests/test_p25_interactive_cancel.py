@@ -236,6 +236,27 @@ class TestWorkerIntegrationContracts(unittest.TestCase):
         self.assertTrue(hasattr(cfg, "cancel_token"))
         self.assertIsNone(cfg.cancel_event)
 
+    def test_17_cancel_terminal_shows_full_dashboard_keyboard(self):
+        # 🛑 [S46] بلاغ المالك (Cancel_Flag_03.md): رسالة الإلغاء النهائية يجب أن تعرض
+        # لوحة التحكم الكاملة (build_dashboard_keyboard) وليس زراً يتيماً واحداً.
+        m = re.search(
+            r"if status == CANCELLED_STATUS:.{0,1500}?reply_markup=build_dashboard_keyboard\(chat_id\)",
+            BRIDGE_SRC, re.DOTALL,
+        )
+        self.assertIsNotNone(m, "رسالة الإلغاء النهائية يجب أن ترفق اللوحة الكاملة build_dashboard_keyboard")
+
+    def test_18_cancel_terminal_has_no_orphan_single_button(self):
+        # الحارس العكسي: ممنوع رجوع الزر اليتيم [🚀 مشروع جديد] وحده في بلوك الإلغاء النهائي.
+        block = re.search(
+            r"if status == CANCELLED_STATUS:.{0,1500}?return", BRIDGE_SRC, re.DOTALL
+        )
+        self.assertIsNotNone(block)
+        self.assertNotIn(
+            'make_inline_keyboard([[{"text": "🚀 مشروع جديد"',
+            block.group(0),
+            "ممنوع الكيبورد اليتيم بزر واحد في شاشة الإلغاء — اللوحة الكاملة إلزامية",
+        )
+
 
 class TestEngineStreamAbortContract(unittest.TestCase):
     """4. عقد المحرك 01.03 — قطع بث SSE تعاونياً + أولوية الماركر"""
