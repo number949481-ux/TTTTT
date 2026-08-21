@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 5145..5449
+المصدر: 01.32_telegram_gen_bridge.py — الأسطر 5145..5449
 المحتوى: process_user_task_async (المشغل الكامل للمهمة)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
