@@ -152,3 +152,14 @@
 2026-08-21 08:51:06 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
 2026-08-21 08:51:06 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
 2026-08-21 08:51:06 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 09:24:23 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-21 09:26:25 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 09:26:25 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-21 09:26:25 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-21 09:26:25 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-21 09:26:25 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 09:26:25 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-21 09:26:25 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-21 09:26:25 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-21 09:26:25 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-21 09:26:25 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
