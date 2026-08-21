@@ -5002,7 +5002,8 @@ def build_dashboard_keyboard(chat_id: int) -> dict:
     rows = [
         [{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj", "style": "primary"}, {"text": "📁 مشاريعي", "callback_data": "cmd:list_projects"}],
         [{"text": "🔄 استئناف مشروع", "callback_data": "cmd:cont_proj"}, {"text": "⭐ المشروع الحالي", "callback_data": "cmd:current_project"}],
-        [{"text": "🌳 نقاط الاستئناف", "callback_data": "cmd:list_tree"}, {"text": "📊 فحص الحسابات والكريدت", "callback_data": "cmd:check_accs"}],
+        # 🔐 [P32] زر الحسابات القديم (فحص الرصيد العشوائي) استُبدل بشاشة الباسورد الهجينة
+        [{"text": "🌳 نقاط الاستئناف", "callback_data": "cmd:list_tree"}, {"text": "🔐 استخراج باسورد الحساب", "callback_data": "cmd:account_pwd_lookup"}],
     ]
     for record in list_known_projects(chat_id=chat_id, limit=3):
         label = str(record.get("project_name") or record.get("project_key") or "مشروع")[:24]
@@ -5084,6 +5085,163 @@ def build_projects_page_keyboard(chat_id: int, page=1) -> dict:
         {"text": "🏠 رجوع للوحة التحكم", "callback_data": "cmd:show_dashboard"},
     ])
     return make_inline_keyboard(rows)
+
+
+# ══════════════════════════════════════════════════════════════
+# 🔐 [P32] استخراج باسورد الحساب — بحث هجين (يدوي + تصفح بالصفحات)
+# ══════════════════════════════════════════════════════════════
+# العقد المعماري (مستخلص من الفحص الميداني T0–T7):
+#  • مصدر البيانات الوحيد: read_accounts_safe() — نفس عقد P23 (محلي ثم الأب).
+#    قراءة فقط (Read-Only) بلا أي كتابة على القرص ← صفر تأثير على P29/P30.
+#  • callback_data بالفهرس (acc_view:{index}) وليس بالإيميل: حد تيليجرام 64 بايت
+#    والإيميلات الطويلة تكسره ← الفهرس يضمن ثباتاً وأماناً مطلقاً.
+#  • الترتيب مثبّت (sorted بالإيميل) حتى يبقى الفهرس مستقراً بين الصفحات والضغطات.
+ACCOUNTS_PER_PAGE = 5  # 📄 [P32] عدد الحسابات في الصفحة — الثابت المركزي الوحيد
+AWAITING_ACCOUNT_PASSWORD_LOOKUP = "AWAITING_ACCOUNT_PASSWORD_LOOKUP"
+
+
+def list_lookup_accounts(json_path: str | None = None) -> list[dict]:
+    """🔐 [P32] قائمة الحسابات القابلة للاستعلام بترتيب ثابت (Deterministic Order).
+
+    الترتيب الأبجدي بالإيميل يضمن أن الفهرس المستخدم في acc_view:{index}
+    يشير لنفس الحساب دائماً — شرط سلامة التصفح بالصفحات.
+    قراءة خالصة: لا تكتب ولا تُعدّل أي حساب (بخلاف get_random_email_...).
+    """
+    accounts = read_accounts_safe(json_path)
+    valid = [
+        acc for acc in accounts
+        if isinstance(acc, dict) and str(acc.get("email") or "").strip()
+    ]
+    return sorted(valid, key=lambda a: str(a.get("email") or "").strip().lower())
+
+
+def compute_accounts_page_bounds(total: int, page) -> tuple[int, int, int]:
+    """📄 [P32] حدود صفحة الحسابات بأمان تام (Out-of-Bounds Safe — صفر Crash).
+    يعيد (safe_page, total_pages, start_index) — الترقيم يبدأ من 1.
+    أي page غير صالحة (نص/سالب/أكبر من الأخيرة) تُقَصّ لأقرب صفحة صالحة."""
+    per_page = max(1, int(ACCOUNTS_PER_PAGE))
+    total = max(0, int(total))
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    try:
+        page_num = int(page)
+    except (TypeError, ValueError):
+        page_num = 1
+    safe_page = min(max(1, page_num), total_pages)
+    start_index = (safe_page - 1) * per_page
+    return safe_page, total_pages, start_index
+
+
+def find_account_by_email(email: str, json_path: str | None = None) -> dict | None:
+    """🔐 [P32] بحث يدوي عن حساب بالإيميل — تطبيع كامل (strip + lower).
+    يعيد None عند عدم الوجود أو المدخل الفارغ (لا استثناءات أبداً)."""
+    needle = str(email or "").strip().lower()
+    if not needle:
+        return None
+    for acc in list_lookup_accounts(json_path):
+        if str(acc.get("email") or "").strip().lower() == needle:
+            return acc
+    return None
+
+
+def describe_account_state(acc: dict) -> str:
+    """🔐 [P32] وصف عربي مقروء لحالة الحساب مبني على عقد is_account_ready القائم."""
+    if not isinstance(acc, dict):
+        return "غير معروفة"
+    status = str(acc.get("status") or "active").lower().strip()
+    if status in ("banned", "blocked"):
+        return "محظور نهائياً (BANNED)"
+    if is_account_ready(acc):
+        return "نشط (ACTIVE)"
+    if status == "cooldown":
+        return "قيد التبريد (COOLDOWN)"
+    if status in ("auth_failed", "disabled"):
+        return f"معطّل مؤقتاً ({status.upper()})"
+    return "غير جاهز (INACTIVE)"
+
+
+def render_account_lookup_text(page=1, json_path: str | None = None) -> str:
+    """🔐 [P32] نص شاشة الاستخراج الهجينة: تعليمة الكتابة اليدوية + موضع الصفحة."""
+    accounts = list_lookup_accounts(json_path)
+    total = len(accounts)
+    if total == 0:
+        return (
+            "🔐 <b>استخراج باسورد وبيانات الحساب</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "❌ لا توجد حسابات مسجلة في قاعدة الحسابات حالياً."
+        )
+    safe_page, total_pages, start_index = compute_accounts_page_bounds(total, page)
+    end_index = min(start_index + ACCOUNTS_PER_PAGE, total)
+    return (
+        "🔐 <b>استخراج باسورد وبيانات الحساب</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "✍️ اكتب الإيميل المطلوب في الشات مباشرة،\n"
+        "أو اختر الإيميل بضغطة زر من القائمة:\n"
+        f"📄 <b>قائمة الحسابات</b> (صفحة <b>{safe_page}</b> من <b>{total_pages}</b>)\n"
+        f"يعرض الحسابات <b>{start_index + 1}–{end_index}</b> من إجمالي <b>{total}</b>."
+    )
+
+
+def build_account_lookup_keyboard(page=1, json_path: str | None = None) -> dict:
+    """🔐 [P32] كيبورد الشاشة الهجينة: زر لكل حساب (acc_view:{index}) +
+    صف تنقل [⬅️ السابق][📄 N/X][التالي ➡️] (أزرار الحواف تُحذف تلقائياً) +
+    زر الإلغاء الحتمي. الفهرس مطلق داخل القائمة المرتبة — لا يتأثر بالصفحة."""
+    accounts = list_lookup_accounts(json_path)
+    total = len(accounts)
+    rows: list[list[dict]] = []
+    if total:
+        safe_page, total_pages, start_index = compute_accounts_page_bounds(total, page)
+        for offset, acc in enumerate(accounts[start_index:start_index + ACCOUNTS_PER_PAGE]):
+            email = str(acc.get("email") or "").strip()
+            rows.append([{
+                "text": f"📧 {email[:40]}",
+                "callback_data": f"acc_view:{start_index + offset}",
+            }])
+        if total_pages > 1:
+            nav_row = []
+            if safe_page > 1:
+                nav_row.append({"text": "⬅️ السابق", "callback_data": f"acc_page:{safe_page - 1}"})
+            nav_row.append({"text": f"📄 {safe_page} / {total_pages}", "callback_data": "acc_page:noop"})
+            if safe_page < total_pages:
+                nav_row.append({"text": "التالي ➡️", "callback_data": f"acc_page:{safe_page + 1}"})
+            rows.append(nav_row)
+    rows.append([{"text": "↩️ إلغاء ورجوع للوحة التحكم", "callback_data": "acc_cancel"}])
+    return make_inline_keyboard(rows)
+
+
+def render_account_password_card(acc: dict) -> str:
+    """🔐 [P32] كارت بيانات الحساب — الإيميل والباسورد بنمط <code> للنسخ بلمسة.
+    حساب بلا باسورد يُبلَّغ صراحةً بدلاً من عرض قيمة فارغة مضللة."""
+    email = str(acc.get("email") or "").strip()
+    password = str(acc.get("password") or "").strip()
+    password_line = (
+        f"🔑 <b>الباسورد (المس للنسخ):</b> <code>{html_escape(password)}</code>"
+        if password else
+        "🔑 <b>الباسورد:</b> ⚠️ لا يوجد باسورد مسجل لهذا الحساب"
+    )
+    return (
+        "✅ <b>بيانات الحساب المطلوبة:</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"📧 <b>الإيميل:</b> <code>{html_escape(email)}</code>\n"
+        f"{password_line}\n"
+        f"📊 <b>الحالة:</b> {html_escape(describe_account_state(acc))}\n"
+        "━━━━━━━━━━━━━━━━━━━━"
+    )
+
+
+def build_account_password_card_keyboard() -> dict:
+    """🔐 [P32] كيبورد كارت النتيجة: [🔄 فحص حساب آخر][⬅️ رجوع للوحة التحكم]."""
+    return make_inline_keyboard([[
+        {"text": "🔄 فحص حساب آخر", "callback_data": "cmd:account_pwd_lookup"},
+        {"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:show_dashboard"},
+    ]])
+
+
+def build_account_lookup_retry_keyboard() -> dict:
+    """🔐 [P32] كيبورد حالة الإيميل غير الموجود: إعادة المحاولة أو الرجوع."""
+    return make_inline_keyboard([[
+        {"text": "🔄 حاول مرة أخرى", "callback_data": "cmd:account_pwd_lookup"},
+        {"text": "↩️ إلغاء ورجوع للوحة التحكم", "callback_data": "acc_cancel"},
+    ]])
 
 
 def build_project_model_keyboard(*, back_callback: str = "cmd:show_dashboard", back_label: str = "⬅️ رجوع للوحة التحكم") -> dict:
@@ -6852,12 +7010,64 @@ def handle_telegram_update(update: dict):
                         b_title = html_escape(b.get("title", "فرع"))[:20]
                         b_buttons.append([{"text": f"📍 {b_title} ({str(b_pid)[:6]}...)", "callback_data": f"cont:{b_pid}"}])
                     send_telegram_message(chat_id, f"🌳 <b>نقاط الاستئناف المتاحة للمشروع <code>{html_escape(pid[:8])}...</code>:</b>", reply_markup=make_inline_keyboard(b_buttons))
-        elif data == "cmd:check_accs":
-            acc = get_random_email_from_accounts_genspark()
-            if acc:
-                send_telegram_message(chat_id, f"📊 <b>فحص الحسابات:</b>\n📧 الحساب المختار: <code>{html_escape(acc.get('email'))}</code>\n💰 الرصيد: <b>{acc.get('balance', 0)}</b>")
+        elif data == "cmd:account_pwd_lookup":
+            # 🔐 [P32] فتح الشاشة الهجينة: تعيين الحالة التفاعلية (يفتح المسار اليدوي)
+            # وعرض الصفحة الأولى من قائمة الحسابات في نفس اللحظة.
+            set_user_state(chat_id, {"action": AWAITING_ACCOUNT_PASSWORD_LOOKUP, "page": 1})
+            send_telegram_message(
+                chat_id,
+                render_account_lookup_text(page=1),
+                reply_markup=build_account_lookup_keyboard(page=1),
+            )
+        elif data.startswith("acc_page:"):
+            page_token = data.split("acc_page:", 1)[1]
+            if page_token == "noop":
+                # 🔐 [P32] زر العداد «📄 N / X» — عرض فقط، لا يفعل شيئاً عمداً
+                pass
             else:
-                send_telegram_message(chat_id, "❌ لا توجد حسابات نشطة متاحة حالياً.")
+                # 🔐 [P32] تقليب الصفحات In-Place (نفس نمط P27) — صفر Spam في المحادثة.
+                # الحالة التفاعلية تبقى قائمة ليظل المسار اليدوي متاحاً أثناء التصفح.
+                safe_page, _total_pages, _start = compute_accounts_page_bounds(
+                    len(list_lookup_accounts()), page_token
+                )
+                set_user_state(chat_id, {"action": AWAITING_ACCOUNT_PASSWORD_LOOKUP, "page": safe_page})
+                page_text = render_account_lookup_text(page=safe_page)
+                page_keyboard = build_account_lookup_keyboard(page=safe_page)
+                lookup_msg_id = msg_info.get("message_id")
+                if lookup_msg_id:
+                    edit_telegram_message_text(chat_id, lookup_msg_id, page_text, reply_markup=page_keyboard)
+                else:
+                    send_telegram_message(chat_id, page_text, reply_markup=page_keyboard)
+        elif data.startswith("acc_view:"):
+            # 🔐 [P32] ضغط زر إيميل من القائمة: الفهرس المطلق داخل القائمة المرتبة.
+            # أي فهرس تالف/خارج المدى يُرفض بهدوء بلا Crash.
+            index_token = data.split("acc_view:", 1)[1]
+            accounts = list_lookup_accounts()
+            try:
+                acc_index = int(index_token)
+            except (TypeError, ValueError):
+                acc_index = -1
+            if 0 <= acc_index < len(accounts):
+                set_user_state(chat_id, {})
+                send_telegram_message(
+                    chat_id,
+                    render_account_password_card(accounts[acc_index]),
+                    reply_markup=build_account_password_card_keyboard(),
+                )
+            else:
+                send_telegram_message(
+                    chat_id,
+                    "⚠️ <b>تعذر عرض هذا الحساب</b> — تغيّرت قائمة الحسابات. افتح الشاشة من جديد.",
+                    reply_markup=build_account_lookup_retry_keyboard(),
+                )
+        elif data == "acc_cancel":
+            # 🔐 [P32] إلغاء حتمي: تصفير الحالة التفاعلية والعودة للوحة التحكم
+            set_user_state(chat_id, {})
+            send_telegram_message(
+                chat_id,
+                "↩️ <b>تم إلغاء استخراج الباسورد.</b>\n" + render_dashboard_text(chat_id),
+                reply_markup=get_main_keyboard(chat_id),
+            )
         return
 
     if "message" in update:
@@ -6910,6 +7120,30 @@ def handle_telegram_update(update: dict):
 
         state = get_user_state(chat_id)
         action = state.get("action")
+
+        # 🔐 [P32] المسار اليدوي لاستخراج الباسورد — أول فحص في سلسلة الحالات:
+        # الإيميل نص عادي، ولو تُرك للمسار الافتراضي لأسفل لكان أُرسل كبرومبت مهمة.
+        # كتلة مستقلة تماماً ← صفر تأثير على أي حالة Wizard أخرى.
+        if action == AWAITING_ACCOUNT_PASSWORD_LOOKUP:
+            requested_email = str(text or "").strip().lower()
+            matched = find_account_by_email(requested_email)
+            if matched:
+                set_user_state(chat_id, {})
+                send_telegram_message(
+                    chat_id,
+                    render_account_password_card(matched),
+                    reply_markup=build_account_password_card_keyboard(),
+                )
+            else:
+                # الحالة تبقى قائمة: المالك يعيد الكتابة فوراً بلا إعادة فتح الشاشة
+                send_telegram_message(
+                    chat_id,
+                    "❌ <b>الحساب غير مسجل في قاعدة الحسابات.</b>\n"
+                    f"البريد المطلوب: <code>{html_escape(requested_email or 'بلا إيميل')}</code>\n"
+                    "تأكد من كتابته بشكل صحيح وأعد الإرسال، أو ارجع للوحة التحكم.",
+                    reply_markup=build_account_lookup_retry_keyboard(),
+                )
+            return
 
         if action == "AWAITING_NEW_PROJECT_NAME":
             project_name = re.sub(r"\s+", " ", text).strip()[:60] or "مشروع بدون اسم"
