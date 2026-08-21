@@ -7,7 +7,7 @@ if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
 import importlib.util
-spec = importlib.util.spec_from_file_location("bridge_mod", webapp_dir / "01.32_telegram_gen_bridge.py")
+spec = importlib.util.spec_from_file_location("bridge_mod", webapp_dir / "01.33_telegram_gen_bridge.py")
 bridge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
 
