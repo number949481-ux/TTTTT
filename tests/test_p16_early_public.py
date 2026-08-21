@@ -16,7 +16,7 @@ import re
 import unittest
 
 ROOT = pathlib.Path(__file__).parent.parent.resolve()
-BRIDGE = ROOT / "01.31_telegram_gen_bridge.py"
+BRIDGE = ROOT / "01.32_telegram_gen_bridge.py"
 BRIDGE_SRC = BRIDGE.read_text(encoding="utf-8")
 
 
@@ -91,7 +91,7 @@ class TestP16EarlyMakePublic(unittest.TestCase):
         head = BRIDGE_SRC[:1800]
         self.assertIn("P12..P19 + P20", head)
         self.assertIn("نشر عام مبكر P16", head)
-        self.assertIn('BUILD_VERSION = "01.31"', BRIDGE_SRC)
+        self.assertIn('BUILD_VERSION = "01.32"', BRIDGE_SRC)
         self.assertIn('BUILD_PARENT_BASELINE = "01.30"', BRIDGE_SRC)
 
 
