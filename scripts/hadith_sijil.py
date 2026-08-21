@@ -48,7 +48,7 @@ def run_step():
     env["PYTHONIOENCODING"] = "utf-8"
 
     # الخطوة 1: فحص الـ Syntax
-    step(1, "فحص الـ Syntax لملف البوت النشط 01.31")
+    step(1, "فحص الـ Syntax لملف البوت النشط 01.32")
     bot_file = os.path.join(ROOT_DIR, "01.32_telegram_gen_bridge.py")
     res_compile = subprocess.run([sys.executable, "-m", "py_compile", bot_file], capture_output=True, env=env)
     if res_compile.returncode != 0:
