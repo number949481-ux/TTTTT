@@ -1,9 +1,9 @@
 # 🧪 كتالوج حالات واختبارات الوحدة (TEST_SUITE_CATALOG.md)
 
-> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **369 فحصاً النشطة محلياً** لإصدار `01.33`  
-> **حالة الاختبارات النشطة:** 369/369 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
+> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **406 فحصاً النشطة محلياً** لإصدار `01.33`  
+> **حالة الاختبارات النشطة:** 406/406 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
 
-## 📊 0. المصفوفة النشطة الحالية — 01.33 (369 فحصاً / 21 ملفاً)
+## 📊 0. المصفوفة النشطة الحالية — 01.33 (406 فحصاً / 22 ملفاً)
 
 | الحزمة | الملف | العدد | النطاق |
 |---|---|:---:|---|
@@ -27,8 +27,9 @@
 | **P25 الإلغاء التفاعلي** | `test_p25_interactive_cancel.py` | **42** | **مسجل أحداث الإلغاء (توكن 12-hex + Lock) + زر 🛑 بخطوتي أمان + قطع بث SSE تعاوني (`__USER_CANCELLED__` قبل تصنيف الرصيد + `r.close()`) + `Event.wait(5)` + `CANCELLED` بلا عقوبة + Zero Leaks في `finally` + حارسا S46: اللوحة الكاملة `build_dashboard_keyboard` بعد الإلغاء وممنوع الزر اليتيم** |
 | **P26 حذف المشروع الذري** | `test_p26_project_deletion.py` | **33** | **زر 🗑️ أحمر (danger) كصف مستقل + تأكيد بخطوتي أمان In-Place (`pdel_prompt/abort/exec`) + حماية البناء النشط `is_project_build_active` + الحذف الذري `delete_project_atomically` (فهرس + aliases تحت القفل ➔ شجرة ➔ قرص) + سلامة الجيران (5 مجموعات: Keyboards 7 + RunningProtection 5 + AtomicDeletion 10 + NeighborSafety 3 + SourceContracts 8)** |
 | **P27 تصفح المشاريع بالصفحات** | `test_p27_projects_pagination.py` | **39** | **الثابت `PROJECTS_PER_PAGE=20` (تعريف وحيد) + `compute_projects_page_bounds` (قصّ آمن لأي مدخل تالف/سالب/متجاوز) + كيبورد التصفح (حواف أولى/أخيرة/وسطى + عداد `plist:noop` + عزل chat_id + إعادة استخدام عقود `proj:`/`pview:`) + الفروع الثلاثة (`cmd:list_projects` إصلاح الزر الميت + `plist:page:` In-Place + `plist:noop`) + عدم انحدار اللوحة (limit=3)** |
-| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.33 (7039 سطراً) |
-| **الإجمالي** | **21 ملفاً** | **369** | ✅ 369/369 PASS |
+| **P28 استقبال ملفات المهام (.txt & .md)** | `test_p28_document_input.py` | **37** | **الثابتان `ALLOWED_DOCUMENT_EXTENSIONS` (frozenset رباعي) + `MAX_DOCUMENT_SIZE_BYTES=5MB` + دالة `download_telegram_document_text` (getFile ➔ تنزيل UTF-8 بـ `errors="replace"` — أي فشل ➔ None بلا Crash، 9 حراس بموديول requests وهمي) + الـ Dispatcher (قبول txt/md/markdown/.TXT + دمج Caption + تغذية Wizard + رفض pdf/zip/بلا اسم/تجاوز 5MB قبل أي تنزيل) + Zero Regression (النص العادي/`/start`/text+document معاً/الشات غير المعتمد) + عقود المصدر (الموقع بعد البوابة وقبل /start + شرط `document and not text`)** |
+| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.33 (7120 سطراً) |
+| **الإجمالي** | **22 ملفاً** | **406** | ✅ 406/406 PASS |
 
 
 ---
