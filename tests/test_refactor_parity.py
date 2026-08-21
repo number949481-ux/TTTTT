@@ -2,7 +2,7 @@
 test_refactor_parity.py
 =======================
 اختبار التكافؤ الكامل (Feature Parity) بين حزمة bridge_refactor/
-والملف المرجعي 01.31_telegram_gen_bridge.py:
+والملف المرجعي 01.32_telegram_gen_bridge.py:
 
   1. byte-parity: إعادة تجميع الأجزاء parts/p*.py تطابق الأصل حرفياً.
   2. symbol-parity: كل def/class top-level في الأصل موجودة في الـ runtime.
@@ -19,7 +19,7 @@ webapp_dir = pathlib.Path(__file__).resolve().parent.parent
 if str(webapp_dir) not in sys.path:
     sys.path.insert(0, str(webapp_dir))
 
-SRC = webapp_dir / "01.31_telegram_gen_bridge.py"
+SRC = webapp_dir / "01.32_telegram_gen_bridge.py"
 PARTS_DIR = webapp_dir / "bridge_refactor" / "parts"
 
 from bridge_refactor import runtime  # noqa: E402
