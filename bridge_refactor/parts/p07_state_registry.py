@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 2410..3358
-المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader)
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 2410..3382
+المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -587,6 +587,25 @@ class ProjectRegistry:
                 digest.update(chunk)
         return digest.hexdigest()
 
+    def _qwen_commit_prefix_for_job(self, payload: dict) -> str:
+        """🧠 [DEC-019] طلب رسالة كوميت ذكية من محرك كوين مرة واحدة لكل job قبل حلقة الرفع.
+        معزول بالكامل: أي فشل (استيراد/شبكة/مهلة/رد فارغ) ← يرجع "" ويكمل الرفع
+        بنفس رسالة الكوميت القديمة حرفياً — الرفع لا ينكسر أبداً بسبب كوين.
+        المهلة: مهلة المحرك الداخلية نفسها (30ث/مرحلة) — بدون اختراع أرقام جديدة."""
+        try:
+            changed_names = [str(f.get("path") or "") for f in payload.get("upload_files", [])]
+            changed_names += [f"(حذف) {rel}" for rel in payload.get("delete_files", [])]
+            changed_lines = "\n".join(name for name in changed_names if name)
+            if not changed_lines:
+                return ""
+            import qwen_engine
+            commit_msg, _summary, _model = qwen_engine.generate_ai_summary(changed_lines, "", [])
+            if commit_msg and str(commit_msg).strip():
+                return str(commit_msg).strip()[:150]
+        except Exception as exc:
+            log_event("warning", f"⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): {exc}")
+        return ""
+
     def _default_github_uploader(self, payload: dict) -> dict:
         repository = payload["repository"]
         branch = payload["branch"]
@@ -605,6 +624,8 @@ class ProjectRegistry:
         # → 404 → uploaded) وملف معدل (له remote_sha مختلف → modified) — كان الاثنان
         # يُحسبان "➕ جديد" في الإحصائيات رغم أن remote_sha متاح أصلاً قبل الـ PUT.
         uploaded, modified, unchanged, deleted, skipped = [], [], [], [], list(payload.get("skipped", []))
+        # 🧠 [DEC-019] كوميت ذكي من كوين مرة واحدة لكل job (قبل حلقة الـ PUT) — فشله لا يكسر الرفع.
+        ai_prefix = self._qwen_commit_prefix_for_job(payload)
         for file_info in payload.get("upload_files", []):
             rel = self._normalize_remote_relative_path(file_info["path"])
             if _should_skip_archive_member(rel):
@@ -624,7 +645,9 @@ class ProjectRegistry:
                 continue
             with open(file_info["local_path"], "rb") as fh:
                 content_b64 = base64.b64encode(fh.read()).decode("ascii")
-            body = {"message": f"[{self.key}] sync {payload['job_id']}: {rel}", "content": content_b64, "branch": branch}
+            # [DEC-019] رسالة كوين كبادئة عند النجاح — وإلا نفس الرسالة القديمة حرفياً.
+            commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}: {rel}"
+            body = {"message": commit_message, "content": content_b64, "branch": branch}
             if remote_sha:
                 body["sha"] = remote_sha
             put = requests.put(api, headers=headers, json=body, timeout=120)
@@ -643,7 +666,8 @@ class ProjectRegistry:
             if got.status_code != 200:
                 raise RuntimeError(f"HTTP_{got.status_code}")
             sha = got.json().get("sha")
-            body = {"message": f"[{self.key}] delete {payload['job_id']}: {rel}", "sha": sha, "branch": branch}
+            delete_message = f"{ai_prefix} [{self.key}] delete {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] delete {payload['job_id']}: {rel}"
+            body = {"message": delete_message, "sha": sha, "branch": branch}
             delete_resp = requests.delete(api, headers=headers, json=body, timeout=120)
             if delete_resp.status_code in (200, 204):
                 deleted.append(rel)
