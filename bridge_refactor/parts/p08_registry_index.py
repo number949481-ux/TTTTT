@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p08_registry_index
-المصدر: 01.31_telegram_gen_bridge.py — الأسطر 3359..3667
+المصدر: 01.31_telegram_gen_bridge.py — الأسطر 3383..3691
 المحتوى: Project run locks + registry index I/O + identity + resume context + viewer URLs + live preview keyboard
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
