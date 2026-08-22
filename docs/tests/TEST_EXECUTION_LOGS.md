@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-21 23:14:13 UTC`
+* **التاريخ والوقت:** `2026-08-22 06:19:37 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.259 ثانية`
-* **النتيجة العامة:** `Ran 561 tests — OK`
+* **الزمن المقاس:** `1.281 ثانية`
+* **النتيجة العامة:** `Ran 592 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -679,6 +679,44 @@ test_02_all_four_callbacks_handled (test_p32_account_password_lookup.TestSourceS
 test_03_view_callback_uses_index_not_email (test_p32_account_password_lookup.TestSourceStructureContracts.test_03_view_callback_uses_index_not_email) ... ok
 test_04_lookup_uses_read_accounts_safe_only (test_p32_account_password_lookup.TestSourceStructureContracts.test_04_lookup_uses_read_accounts_safe_only) ... ok
 test_05_p29_p30_contracts_untouched (test_p32_account_password_lookup.TestSourceStructureContracts.test_05_p29_p30_contracts_untouched) ... ok
+test_01_always_last_row_full_composition (test_p33_completed_quick_actions.TestBackToDashboardButton.test_01_always_last_row_full_composition) ... ok
+test_02_always_last_even_minimal_composition (test_p33_completed_quick_actions.TestBackToDashboardButton.test_02_always_last_even_minimal_composition) ... ok
+test_03_present_in_all_8_input_combinations (test_p33_completed_quick_actions.TestBackToDashboardButton.test_03_present_in_all_8_input_combinations) ... ok
+test_04_new_project_row_stays_above_back_row (test_p33_completed_quick_actions.TestBackToDashboardButton.test_04_new_project_row_stays_above_back_row) ... ok
+test_01_no_dead_url_button_when_pub_url_missing (test_p33_completed_quick_actions.TestConditionalRowsPreserved.test_01_no_dead_url_button_when_pub_url_missing)
+url=None كان يكسر الرسالة كلها بصمت — العقد التاريخي محفوظ. ... ok
+test_02_no_resume_rows_without_pid (test_p33_completed_quick_actions.TestConditionalRowsPreserved.test_02_no_resume_rows_without_pid) ... ok
+test_03_no_details_button_without_project_key (test_p33_completed_quick_actions.TestConditionalRowsPreserved.test_03_no_details_button_without_project_key) ... ok
+test_04_minimal_keyboard_still_has_two_rows (test_p33_completed_quick_actions.TestConditionalRowsPreserved.test_04_minimal_keyboard_still_has_two_rows) ... ok
+test_05_resume_and_tree_share_same_row_as_before (test_p33_completed_quick_actions.TestConditionalRowsPreserved.test_05_resume_and_tree_share_same_row_as_before) ... ok
+test_01_dedicated_row_alone (test_p33_completed_quick_actions.TestContinueNowButton.test_01_dedicated_row_alone) ... ok
+test_02_callback_is_cont_resume_pid (test_p33_completed_quick_actions.TestContinueNowButton.test_02_callback_is_cont_resume_pid) ... ok
+test_03_reuses_existing_cont_handler_prefix (test_p33_completed_quick_actions.TestContinueNowButton.test_03_reuses_existing_cont_handler_prefix)
+يعيد استعمال معالج cont: القائم — نفس بادئة زر الاستئناف القديم حرفياً. ... ok
+test_04_hidden_without_resume_pid (test_p33_completed_quick_actions.TestContinueNowButton.test_04_hidden_without_resume_pid) ... ok
+test_05_hidden_with_empty_resume_pid (test_p33_completed_quick_actions.TestContinueNowButton.test_05_hidden_with_empty_resume_pid) ... ok
+test_06_callback_data_within_telegram_64_byte_limit (test_p33_completed_quick_actions.TestContinueNowButton.test_06_callback_data_within_telegram_64_byte_limit)
+عقد P25/P32: حد callback_data في تيليجرام 64 بايت — قياس فعلي بالبايتات. ... ok
+test_01_cmd_dashboard_sends_full_dashboard (test_p33_completed_quick_actions.TestDashboardCallbackHandler.test_01_cmd_dashboard_sends_full_dashboard) ... ok
+test_02_behavior_identical_to_show_dashboard (test_p33_completed_quick_actions.TestDashboardCallbackHandler.test_02_behavior_identical_to_show_dashboard) ... ok
+test_03_unauthorized_chat_blocked (test_p33_completed_quick_actions.TestDashboardCallbackHandler.test_03_unauthorized_chat_blocked) ... ok
+test_01_returns_inline_keyboard_dict (test_p33_completed_quick_actions.TestFullKeyboardComposition.test_01_returns_inline_keyboard_dict) ... ok
+test_02_six_rows_in_exact_order (test_p33_completed_quick_actions.TestFullKeyboardComposition.test_02_six_rows_in_exact_order) ... ok
+test_03_all_five_legacy_buttons_intact (test_p33_completed_quick_actions.TestFullKeyboardComposition.test_03_all_five_legacy_buttons_intact) ... ok
+test_04_legacy_callbacks_unchanged (test_p33_completed_quick_actions.TestFullKeyboardComposition.test_04_legacy_callbacks_unchanged) ... ok
+test_05_preview_button_is_url_not_callback (test_p33_completed_quick_actions.TestFullKeyboardComposition.test_05_preview_button_is_url_not_callback) ... ok
+test_01_worker_calls_central_builder (test_p33_completed_quick_actions.TestSourceContracts.test_01_worker_calls_central_builder)
+process_user_task_async يستدعي البنّاء المركزي بدل kb_rows المحلي. ... ok
+test_02_builder_defined_exactly_once (test_p33_completed_quick_actions.TestSourceContracts.test_02_builder_defined_exactly_once) ... ok
+test_03_dashboard_branch_exists_in_dispatcher (test_p33_completed_quick_actions.TestSourceContracts.test_03_dashboard_branch_exists_in_dispatcher) ... ok
+test_04_legacy_show_dashboard_branch_untouched (test_p33_completed_quick_actions.TestSourceContracts.test_04_legacy_show_dashboard_branch_untouched)
+مرساة حراس P26: حرفية الفرع القديم if data == "cmd:show_dashboard" باقية. ... ok
+test_05_dashboard_branch_comes_after_show_dashboard (test_p33_completed_quick_actions.TestSourceContracts.test_05_dashboard_branch_comes_after_show_dashboard)
+الفرع الجديد elif يلي الفرع القديم if في نفس السلسلة. ... ok
+test_06_continue_now_button_text_in_source (test_p33_completed_quick_actions.TestSourceContracts.test_06_continue_now_button_text_in_source) ... ok
+test_07_back_button_text_in_source (test_p33_completed_quick_actions.TestSourceContracts.test_07_back_button_text_in_source) ... ok
+test_08_no_local_kb_rows_left_in_worker (test_p33_completed_quick_actions.TestSourceContracts.test_08_no_local_kb_rows_left_in_worker)
+صفر بناء محلي متبقٍ للكيبورد داخل الـ worker (منع الازدواجية). ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -731,7 +769,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 561 tests in 0.806s
+Ran 592 tests in 0.823s
 
 OK
 ```
