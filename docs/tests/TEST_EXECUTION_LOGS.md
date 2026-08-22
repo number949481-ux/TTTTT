@@ -6,9 +6,9 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-22 09:24:54 UTC`
+* **التاريخ والوقت:** `2026-08-22 17:42:16 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.476 ثانية`
+* **الزمن المقاس:** `1.449 ثانية`
 * **النتيجة العامة:** `Ran 678 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
@@ -523,9 +523,7 @@ test_start_message_has_no_email_line (test_p29_account_observability.TestSourceC
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
-test_normalize_always_returns_str (test_p2_model_routing.TestP2ModelRouting.test_normalize_always_returns_str) ... /home/user/webapp/01.33_telegram_gen_bridge.py:109: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
-  log_func(log_msg)
-ok
+test_normalize_always_returns_str (test_p2_model_routing.TestP2ModelRouting.test_normalize_always_returns_str) ... ok
 test_opus5_has_no_ai_chat_model (test_p2_model_routing.TestP2ModelRouting.test_opus5_has_no_ai_chat_model) ... ok
 test_protected_is_noop_and_logs_warning (test_p2_model_routing.TestP2ModelRouting.test_protected_is_noop_and_logs_warning) ... ok
 test_sonnet5_has_both_use_and_ai_chat (test_p2_model_routing.TestP2ModelRouting.test_sonnet5_has_both_use_and_ai_chat) ... ok
@@ -858,7 +856,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 678 tests in 0.842s
+Ran 678 tests in 0.905s
 
 OK
 ```
