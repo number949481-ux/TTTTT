@@ -1460,7 +1460,7 @@ def build_completed_message_keyboard(pub_url: str | None, resume_pid: str | None
     if pub_url:
         kb_rows.append([{"text": "🌐 فتح المعاين المباشر", "url": pub_url}])
     if resume_pid:
-        kb_rows.append([{"text": "▶️ كمل الآن", "callback_data": f"cont:{resume_pid}"}])
+        kb_rows.append([{"text": "▶️ كمل الآن", "callback_data": f"cont:{resume_pid}", "style": "success"}])
         kb_rows.append([
             {"text": "🔄 استئناف هذا المشروع", "callback_data": f"cont:{resume_pid}"},
             {"text": "🌳 نقاط الاستئناف", "callback_data": f"tree:{resume_pid}"},
