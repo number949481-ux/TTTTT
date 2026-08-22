@@ -19,7 +19,7 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-22 — S55 |
+| **last-updated** | 2026-08-22 — S56 (صيانة فقط — نظافة git المرة 21، صفر تعديل كود) |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.33` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
@@ -29,7 +29,7 @@
 | **current WBS phase** | **P35 — كشف رفض الموديل والتعافي منه (Model Decline Recovery)** 🚫 ✅ مغلقة — بوابة 678/678 Exit 0 |
 | **previous slice** | `TSK-5003` (DONE) ➔ S54 مكتملة: Button Style Update — زر [▶️ كمل الآن] أخضر `"style": "success"` في `build_completed_message_keyboard` + 3 حراس (حزمة P33 ➔ 34) + بوابة 636/636 Exit 0 |
 | **current slice** | `TSK-5103` (DONE) ➔ S55 مكتملة: **P35** داخل `01.33` (**7765 سطراً**) — Model Decline Recovery (طلب مالك مباشر): الرد القصير "The model declined to answer this request..." كان يُحتسب COMPLETED فيتقدم مؤشر الاستئناف لنقطة الرفض رغم غياب أي ناتج ➔ الفلسفة: «الرفض كأن الطلب لم يُرسل» — كشف مركزي `is_model_decline_response` (≤300 حرف — حارس False Positive للردود الطويلة المقتبسة) + إعادة تصنيف بالـ worker فوق COMPLETED حصرياً ➔ MODEL_DECLINED + تصفير `final_pid` (المؤشر لا يتقدم) + فرع 🚫 في `describe_terminal_outcome` (allow_preview=True) + `build_model_decline_keyboard` (✍️ أعد صياغة primary + ⬅️ رجوع danger فوق أزرار الاكتمال المركزية) + معالجا cmd:decline_retry/cmd:decline_dashboard + **42 حارساً** + parity 11/11 + بوابة 678/678 Exit 0 |
-| **current-task** | `S55` (DONE) — P35 Model Decline Recovery (طلب مالك مباشر): كشف رفض الموديل + فلسفة «كأن الطلب لم يُرسل» (تصفير final_pid) + رسالة 🚫 مميزة بزرين ملونين في `01.33` (7765 سطراً) + مرايا p05/p09/p10/p11/p12 + إعادة توليد bridge_refactor (parity 11/11) + **42 حارساً جدد** في `test_p35_model_decline.py` — الإجمالي **678** |
+| **current-task** | `S56` (DONE — صيانة) — نظافة git المرة 21: المزامنة أعادت `.pytest_cache/` و `bridge_bot.log` للتتبع ➔ أُخرجا بـ `git rm --cached` (موافقة S41 الدائمة) — صفر تعديل كود، البوابة 678/678 Exit 0. المرجع السابق: `S55` (DONE) — P35 Model Decline Recovery (طلب مالك مباشر): كشف رفض الموديل + فلسفة «كأن الطلب لم يُرسل» (تصفير final_pid) + رسالة 🚫 مميزة بزرين ملونين في `01.33` (7765 سطراً) + مرايا p05/p09/p10/p11/p12 + إعادة توليد bridge_refactor (parity 11/11) + **42 حارساً جدد** في `test_p35_model_decline.py` — الإجمالي **678** |
 | **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33: **P35** (برومبت يُتوقع رفضه ➔ رسالة 🚫 بالزرين الملونين + استئناف بعدها يكمل من النقطة الصالحة قبل الرفض) + **P34** (مهمة برد طويل >2500 حرف ومتعددة الحسابات ➔ الرسالة الختامية تنزل كاملة بكل أزرارها) + **P33** (بناء مهمة للاكتمال ➔ ضغط ▶️ كمل الآن = استئناف فوري + ضغط ⬅️ رجوع = لوحة كاملة) + P32 (زر 🔐 ➔ بحث هجين) + P29/P30 (مهمة متعددة الحسابات) + P28 (ملف .txt فعلي) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
 | **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (ب) **تنبيه وظيفي S51:** فحص الرصيد السريع الذي كان بالزر القديم `cmd:check_accs` زال بالاستبدال (قرار الطلب الصريح — الخيار B) — لو أراده المالك يُعاد كزر مستقل بجواره (الخيار C). (موافقة P27 صدرت ونُفذت في S48 ✅ — `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
 | **completion** | 678/678 Tests Verified (100%) 🧪 |
