@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p05_project_tree
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1545..1827
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1546..1828
 المحتوى: projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P35: MODEL_DECLINE_MARKERS/MODEL_DECLINE_MAX_RESPONSE_CHARS/MODEL_DECLINED_STATUS + is_model_decline_response (كشف رفض الموديل — ردود قصيرة ≤300 حرف فقط منعاً للـ False Positive) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + extract_project_id
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
