@@ -79,6 +79,7 @@ __all__ = [
     "format_copied_settings_summary",
     "start_project_resume_from_key",
     "build_completed_message_keyboard",
+    "build_model_decline_keyboard",
 ]
 
 def __getattr__(name):
