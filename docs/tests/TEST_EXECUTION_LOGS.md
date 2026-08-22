@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-22 19:42:18 UTC`
+* **التاريخ والوقت:** `2026-08-22 20:03:32 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.455 ثانية`
-* **النتيجة العامة:** `Ran 678 tests — OK`
+* **الزمن المقاس:** `1.628 ثانية`
+* **النتيجة العامة:** `Ran 707 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -804,6 +804,46 @@ test_06_reclassification_after_failover_before_identity_write (test_p35_model_de
 test_01_completed_keyboard_has_no_decline_buttons (test_p35_model_decline.TestP35ZeroBreaking.test_01_completed_keyboard_has_no_decline_buttons) ... ok
 test_02_completed_keyboard_contracts_intact (test_p35_model_decline.TestP35ZeroBreaking.test_02_completed_keyboard_contracts_intact) ... ok
 test_03_credit_exhausted_flow_not_reclassified (test_p35_model_decline.TestP35ZeroBreaking.test_03_credit_exhausted_flow_not_reclassified) ... ok
+test_01_declined_computed_before_share (test_p36_engine_fast_decline.TestCliChatRegion.test_01_declined_computed_before_share) ... ok
+test_02_auto_share_guarded (test_p36_engine_fast_decline.TestCliChatRegion.test_02_auto_share_guarded) ... ok
+test_03_conversation_still_saved_on_decline (test_p36_engine_fast_decline.TestCliChatRegion.test_03_conversation_still_saved_on_decline)
+Zero Breaking: حفظ المحادثة غير محروس — الرفض يُسجَّل في السجل. ... ok
+test_01_detects_canonical_decline (test_p36_engine_fast_decline.TestDeclineDetector.test_01_detects_canonical_decline) ... ok
+test_02_empty_and_none_are_not_decline (test_p36_engine_fast_decline.TestDeclineDetector.test_02_empty_and_none_are_not_decline) ... ok
+test_03_case_insensitive (test_p36_engine_fast_decline.TestDeclineDetector.test_03_case_insensitive) ... ok
+test_04_false_positive_guard_long_quote (test_p36_engine_fast_decline.TestDeclineDetector.test_04_false_positive_guard_long_quote)
+رد طويل شرعي يقتبس جملة الرفض داخله — ليس رفضاً أبداً. ... ok
+test_05_normal_short_answer_not_decline (test_p36_engine_fast_decline.TestDeclineDetector.test_05_normal_short_answer_not_decline) ... ok
+test_06_boundary_at_300_chars (test_p36_engine_fast_decline.TestDeclineDetector.test_06_boundary_at_300_chars)
+رد رفض بطول ≤300 بعد strip يُكشف — وما يتجاوزها لا. ... ok
+test_01_exactly_three_decline_computations (test_p36_engine_fast_decline.TestFullCoverage.test_01_exactly_three_decline_computations)
+كل موقع من المواقع الثلاثة يحسب _declined بنفسه — لا أكثر ولا أقل. ... ok
+test_02_every_usage_region_has_own_assignment (test_p36_engine_fast_decline.TestFullCoverage.test_02_every_usage_region_has_own_assignment)
+كل منطقة تستخدم _declined تعرّفه محلياً أولاً — صفر NameError. ... ok
+test_03_engine_compiles (test_p36_engine_fast_decline.TestFullCoverage.test_03_engine_compiles) ... ok
+test_04_p36_comment_marker_present (test_p36_engine_fast_decline.TestFullCoverage.test_04_p36_comment_marker_present)
+توثيق P36 داخل السورس نفسه — يافطة الفلسفة فوق الكاشف. ... ok
+test_01_declined_computed_first (test_p36_engine_fast_decline.TestMainRegion.test_01_declined_computed_first) ... ok
+test_02_ensure_public_guarded (test_p36_engine_fast_decline.TestMainRegion.test_02_ensure_public_guarded) ... ok
+test_03_direct_url_fallback_still_built (test_p36_engine_fast_decline.TestMainRegion.test_03_direct_url_fallback_still_built)
+عند الرفض يُبنى الرابط المباشر بلا شبكة — لا يضيع الرابط. ... ok
+test_04_auto_share_guarded (test_p36_engine_fast_decline.TestMainRegion.test_04_auto_share_guarded) ... ok
+test_05_manual_share_flag_guarded (test_p36_engine_fast_decline.TestMainRegion.test_05_manual_share_flag_guarded) ... ok
+test_06_balance_and_tickets_untouched (test_p36_engine_fast_decline.TestMainRegion.test_06_balance_and_tickets_untouched)
+Zero Breaking: الرصيد والتذاكر تُحدَّث كالمعتاد حتى مع الرفض. ... ok
+test_01_markers_list_exists_and_lowercase (test_p36_engine_fast_decline.TestP36Constants.test_01_markers_list_exists_and_lowercase) ... ok
+test_02_threshold_is_300 (test_p36_engine_fast_decline.TestP36Constants.test_02_threshold_is_300) ... ok
+test_03_core_decline_phrase_present (test_p36_engine_fast_decline.TestP36Constants.test_03_core_decline_phrase_present) ... ok
+test_04_semantic_parity_with_bridge_p35 (test_p36_engine_fast_decline.TestP36Constants.test_04_semantic_parity_with_bridge_p35)
+كاشف المحرك مطابق دلالياً لكاشف P35 في الجسر 01.33 (نفس العبارات والعتبة). ... ok
+test_05_single_definition_in_engine (test_p36_engine_fast_decline.TestP36Constants.test_05_single_definition_in_engine)
+تعريف وحيد للكاشف داخل المحرك — ممنوع التكرار. ... ok
+test_01_declined_computed_after_balance_before_paths (test_p36_engine_fast_decline.TestParallelRegion.test_01_declined_computed_after_balance_before_paths) ... ok
+test_02_auto_share_guarded (test_p36_engine_fast_decline.TestParallelRegion.test_02_auto_share_guarded) ... ok
+test_03_auto_download_guarded (test_p36_engine_fast_decline.TestParallelRegion.test_03_auto_download_guarded) ... ok
+test_04_ensure_public_guarded_with_direct_fallback (test_p36_engine_fast_decline.TestParallelRegion.test_04_ensure_public_guarded_with_direct_fallback) ... ok
+test_05_url_entry_still_saved (test_p36_engine_fast_decline.TestParallelRegion.test_05_url_entry_still_saved)
+Zero Breaking: save_url_entry يعمل كالمعتاد (بالرابط المباشر عند الرفض). ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -856,7 +896,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 678 tests in 0.909s
+Ran 707 tests in 1.004s
 
 OK
 ```
