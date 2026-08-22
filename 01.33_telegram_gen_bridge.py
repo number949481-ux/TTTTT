@@ -5711,6 +5711,36 @@ def start_project_resume_from_key(chat_id: int, project_key: str) -> bool:
     return present_resume_summary(chat_id, project_key=key, target_url=target_url, target_pid=target_pid)
 
 
+def build_completed_message_keyboard(pub_url: str | None, resume_pid: str | None, project_key: str | None) -> dict:
+    """🎛️ [P33] كيبورد رسالة الاكتمال النهائية — بناء مركزي قابل للاختبار.
+
+    الترتيب المعتمد (الأزرار الخمسة القديمة كلها محفوظة حرفياً بلا حذف أو تعديل):
+      1. 🌐 فتح المعاين المباشر (url — فقط عند وجود رابط عام: url=None كان يكسر الرسالة كلها بصمت)
+      2. ▶️ كمل الآن (cont:{resume_pid}) — صف مستقل [P33 جديد]
+      3. 🔄 استئناف هذا المشروع + 🌳 نقاط الاستئناف (نفس الصف القديم)
+      4. ⭐ تفاصيل المشروع (pview:{project_key})
+      5. 🚀 مشروع جديد
+      6. ⬅️ رجوع للوحة التحكم (cmd:dashboard) — أسفل الكيبورد دائماً [P33 جديد]
+    الزران الجديدان يعيدان استعمال معالجات قائمة: cont: (سطر السلسلة) + فرع
+    cmd:dashboard المكافئ حرفياً لـ cmd:show_dashboard (بلا لمس الفرع القديم —
+    حراس P26 يستخدمون حرفيته كمرساة index).
+    """
+    kb_rows = []
+    if pub_url:
+        kb_rows.append([{"text": "🌐 فتح المعاين المباشر", "url": pub_url}])
+    if resume_pid:
+        kb_rows.append([{"text": "▶️ كمل الآن", "callback_data": f"cont:{resume_pid}"}])
+        kb_rows.append([
+            {"text": "🔄 استئناف هذا المشروع", "callback_data": f"cont:{resume_pid}"},
+            {"text": "🌳 نقاط الاستئناف", "callback_data": f"tree:{resume_pid}"},
+        ])
+    if project_key:
+        kb_rows.append([{"text": "⭐ تفاصيل المشروع", "callback_data": f"pview:{project_key}"}])
+    kb_rows.append([{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}])
+    kb_rows.append([{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:dashboard"}])
+    return make_inline_keyboard(kb_rows)
+
+
 def _is_fresh_artifact(path: pathlib.Path, min_mtime: float | None) -> bool:
     if min_mtime is None:
         return True
@@ -6285,19 +6315,8 @@ def process_user_task_async(
             f"{timing_block}"
         )
 
-        # إصلاح: بناء الكيبورد بدون أزرار فارغة (url=None كان يكسر الرسالة كلها بصمت)
-        kb_rows = []
-        if pub_url:
-            kb_rows.append([{"text": "🌐 فتح المعاين المباشر", "url": pub_url}])
-        if resume_pid:
-            kb_rows.append([
-                {"text": "🔄 استئناف هذا المشروع", "callback_data": f"cont:{resume_pid}"},
-                {"text": "🌳 نقاط الاستئناف", "callback_data": f"tree:{resume_pid}"},
-            ])
-        if project_key:
-            kb_rows.append([{"text": "⭐ تفاصيل المشروع", "callback_data": f"pview:{project_key}"}])
-        kb_rows.append([{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}])
-        reply_markup = make_inline_keyboard(kb_rows)
+        # 🎛️ [P33] الكيبورد المركزي للاكتمال — الأزرار الخمسة القديمة + ▶️ كمل الآن + ⬅️ رجوع للوحة التحكم
+        reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
 
         send_telegram_message(chat_id, res_msg, reply_markup=reply_markup)
 
@@ -6476,6 +6495,10 @@ def handle_telegram_update(update: dict):
             return
 
         if data == "cmd:show_dashboard":
+            send_telegram_message(chat_id, render_dashboard_text(chat_id), reply_markup=get_main_keyboard(chat_id))
+        elif data == "cmd:dashboard":
+            # ⬅️ [P33] زر «رجوع للوحة التحكم» من رسالة الاكتمال — سلوك مطابق حرفياً
+            # لـ cmd:show_dashboard (فرع منفصل عمداً: حراس P26 يرسون على حرفية الفرع القديم)
             send_telegram_message(chat_id, render_dashboard_text(chat_id), reply_markup=get_main_keyboard(chat_id))
         elif data == "cmd:new_proj":
             set_user_state(chat_id, {"action": "AWAITING_NEW_PROJECT_NAME"})
