@@ -2486,6 +2486,11 @@ def cli_mode(cfg: Config):
         if answer:
             user_msg_id = str(uuid.uuid4())
             project_id = pid or project_id
+            # ── 🚫 [P36] Fast Decline Path: رد الرفض بلا ناتج — تخطّي فوري
+            #    للشير العام (لا معنى لمشاركة رفض علناً — استجابة لحظية) ──
+            _declined = is_model_decline_response(answer)
+            if _declined:
+                p(Fore.YELLOW, "  🚫 [P36] رفض من الموديل — تخطّي الشير العام (استجابة لحظية)")
             # ── Fix: safe_asst_id واحد بس مش اتنين مختلفين ──
             safe_asst_id = asst_id or str(uuid.uuid4())
             update_conversation(
@@ -2501,8 +2506,9 @@ def cli_mode(cfg: Config):
             if cfg.show_url_after_send and project_id:
                 # HAR: /autopilotagent_viewer?id= هو الـ public URL الصح (بدون auth)
                 p(Fore.GREEN, f"  🔗 {GENSPARK}/autopilotagent_viewer?id={project_id}")
-            # ── Auto-Share ذكي (مرة واحدة بس) ──
-            _do_auto_share(cfg, conv_name, project_id or "", cookies)
+            # ── Auto-Share ذكي (مرة واحدة بس) — [P36] ممنوع على رد الرفض ──
+            if not _declined:
+                _do_auto_share(cfg, conv_name, project_id or "", cookies)
             # ── Ticket — حفظ السؤال + الرد بعد النجاح فقط (Lazy Ticket) ──
             if cfg.save_tickets:
                 _save_ticket_question(cfg, q, ticket_num)
@@ -3364,6 +3370,11 @@ def main():
 
         if answer:
             final_pid = pid or project_id or ""
+            # ── 🚫 [P36] Fast Decline Path: رفض الموديل = صفر ناتج — تخطّي فوري
+            #    لـ ensure_public (كان يهدر حتى ~60s timeout) + _do_auto_share ──
+            _declined = is_model_decline_response(answer)
+            if _declined:
+                p(Fore.YELLOW, "  🚫 [P36] رفض من الموديل — تخطّي الشير/التحقق العام (استجابة لحظية)")
             safe_asst_id = asst_id or str(uuid.uuid4())
             # ── last_sent_chat_sent إجباري ── عشان طريقة الـ 29 ساعة تشتغل صح
             _now_ts = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -3383,7 +3394,8 @@ def main():
                 p(Fore.GREEN, f"\n  🔗 الرابط: {final_pid[:16]}...")
             # ── 🔗 URL Mode: تحقق من العمومية واحفظ الرابط في JSON ────────────────
             if final_pid:
-                if VERIFY_PUBLIC_AFTER:
+                # [P36] رد مرفوض = ممنوع تشغيل ensure_public (تحقق عام مكلف بلا معنى)
+                if VERIFY_PUBLIC_AFTER and not _declined:
                     _public_url = ensure_public(final_pid, cookies, cfg, label="بعد الإرسال")
                 else:
                     _public_url = f"{GENSPARK}/autopilotagent_viewer?id={final_pid}"
@@ -3408,7 +3420,8 @@ def main():
                 if conv_name in _clr_convs and "public_url" in _clr_convs[conv_name]:
                     del _clr_convs[conv_name]["public_url"]
                     save_convs(_clr_convs, cfg)
-            _do_auto_share(cfg, conv_name, final_pid, cookies)
+            if not _declined:
+                _do_auto_share(cfg, conv_name, final_pid, cookies)
             # fresh_start auto-reset: احفظ العلامة + الـ project الجديد
             if _do_fresh and cfg.persistent and final_pid:  # guard: مش نحفظ إلا لو final_pid موجود
                 _fresh_convs = load_convs(cfg)
@@ -3426,8 +3439,8 @@ def main():
             _cleanup_old_tickets(cfg)
             _update_balance(accounts, acc.get("email", ""), cookies, cfg)
 
-            # Share
-            if args.share and final_pid:
+            # Share — [P36] ممنوع على رد الرفض (لا ناتج يستحق المشاركة)
+            if args.share and final_pid and not _declined:
                 p(Fore.YELLOW, "  🌐 بيعمل رابط عام...")
                 url = share_project(final_pid, cookies, show_debug=cfg.show_debug)
                 if url:
@@ -3631,12 +3644,18 @@ def _do_ask_parallel_worker(model_dict: dict, email: str, cookies: dict, query: 
             # ── ✅ إصلاح: حدّث الرصيد + وقت الاستخدام بعد كل رد ناجح ──────────────
             _update_balance(accounts, email, cookies, cfg)
 
+            # ── 🚫 [P36] Fast Decline Path: رفض الموديل = صفر ناتج — تخطّي فوري
+            #    للشير العام + التنزيل التلقائي + ensure_public (استجابة لحظية) ──
+            _declined = is_model_decline_response(answer)
+            if _declined:
+                p(Fore.YELLOW, "  🚫 [P36] رفض من الموديل — تخطّي الشير/التنزيل/التحقق العام (استجابة لحظية)")
+
             # 🌸 الشير العام التلقائي + طباعة الرابط بلون بينك فاقع في الترمنال 🌸
-            if pid:
+            if pid and not _declined:
                 _do_auto_share(cfg, "default", pid, cookies)
 
-            # ── 📦 Auto-Download Sandbox Hook ────────────────────────────────────
-            if cfg.auto_download_sandbox and pid:
+            # ── 📦 Auto-Download Sandbox Hook — [P36] ممنوع على رد الرفض ────────
+            if cfg.auto_download_sandbox and pid and not _declined:
                 try:
                     downloader = SandboxDownloader(cfg)
                     downloader.auto_download_project(cookies=cookies, project_id=pid, owner_email=email, prompt_title=query)
@@ -3646,7 +3665,8 @@ def _do_ask_parallel_worker(model_dict: dict, email: str, cookies: dict, query: 
 
             # ── 🔗 URL Mode: احفظ الرابط بعد النجاح ──────────────────────────────
             if USE_URL_MODE and pid:
-                _pub = ensure_public(pid, cookies, cfg, label="parallel") if VERIFY_PUBLIC_AFTER else f"{GENSPARK}/autopilotagent_viewer?id={pid}"
+                # [P36] رد مرفوض = ممنوع ensure_public (يهدر حتى ~60s) — رابط مباشر فقط
+                _pub = ensure_public(pid, cookies, cfg, label="parallel") if (VERIFY_PUBLIC_AFTER and not _declined) else f"{GENSPARK}/autopilotagent_viewer?id={pid}"
                 save_url_entry(project_id=pid, public_url=_pub, question=query, email=email, cfg=cfg)
                 if getattr(cfg, "save_to_json", False):
                     p(Fore.GREEN, f"  💾 تم حفظ الرابط: {pid[:16]}...")
