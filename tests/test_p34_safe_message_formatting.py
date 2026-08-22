@@ -322,7 +322,7 @@ class TestP34SourceContracts(unittest.TestCase):
             "PREVIEW_MAX_CHARS",
             "RES_MSG_MAX_CHARS",
         ):
-            self.assertIn(name, runtime.ns, f"{name} مفقود من مرآة bridge_refactor")
+            self.assertTrue(hasattr(runtime.ns, name), f"{name} مفقود من مرآة bridge_refactor")
 
 
 if __name__ == "__main__":
