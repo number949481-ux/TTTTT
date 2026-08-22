@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p09_github_dashboard
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4374..5862
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4375..5863
 المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات) + P33: build_completed_message_keyboard (كيبورد الاكتمال المركزي: الأزرار الخمسة القديمة + ▶️ كمل الآن cont:{pid} بصف مستقل + ⬅️ رجوع للوحة التحكم cmd:dashboard أسفل الكيبورد) + P35: build_model_decline_keyboard (كيبورد رسالة الرفض: ✒️ أعد صياغة البرومبت primary + ⬅️ رجوع danger فوق أزرار الاكتمال المعتادة عبر build_completed_message_keyboard بلا نسخ)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
