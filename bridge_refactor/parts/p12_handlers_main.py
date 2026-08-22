@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6533..7792
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6548..7807
 المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P37: معالج cmd:decline_retry:{key} — فتح بطاقة ملخص الاستئناف فوراً عبر start_project_resume_from_key + AWAITING_PROJECT_RESUME_DECISION بسياق نظيف + fallback مهذب عند الفشل | P35: معالجا cmd:decline_retry (إرشاد إعادة الصياغة — fallback بلا مفتاح) + cmd:decline_dashboard (لوحة التحكم — مكافئ حرفياً لـ cmd:dashboard بفرع منفصل) | P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place | P28: كتلة Document Ingestion المعزولة — .txt/.md → text بعد بوابة الصلاحيات وقبل /start مع دمج Caption ورفض ودي للامتداد/الحجم | P32: معالجات cmd:account_pwd_lookup/acc_page:/acc_view:/acc_cancel + المسار اليدوي AWAITING_ACCOUNT_PASSWORD_LOOKUP كأول فحص في سلسلة الحالات | P33: فرع cmd:dashboard المكافئ حرفياً لـ cmd:show_dashboard)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
