@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p09_github_dashboard
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4375..5863
-المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات) + P33: build_completed_message_keyboard (كيبورد الاكتمال المركزي: الأزرار الخمسة القديمة + ▶️ كمل الآن cont:{pid} بصف مستقل + ⬅️ رجوع للوحة التحكم cmd:dashboard أسفل الكيبورد) + P35: build_model_decline_keyboard (كيبورد رسالة الرفض: ✒️ أعد صياغة البرومبت primary + ⬅️ رجوع danger فوق أزرار الاكتمال المعتادة عبر build_completed_message_keyboard بلا نسخ)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4375..5874
+المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات) + P33: build_completed_message_keyboard (كيبورد الاكتمال المركزي: الأزرار الخمسة القديمة + ▶️ كمل الآن cont:{pid} بصف مستقل + ⬅️ رجوع للوحة التحكم cmd:dashboard أسفل الكيبورد) + P35: build_model_decline_keyboard (كيبورد رسالة الرفض: ✒️ أعد صياغة البرومبت primary + ⬅️ رجوع danger فوق أزرار الاكتمال المعتادة عبر build_completed_message_keyboard بلا نسخ | P37: الزر الأزرق يحمل مفتاح المشروع cmd:decline_retry:{project_key} مع تعقيم وحد 64 بايت وfallback للحرفية القديمة)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def parse_github_repository_ref(text: str | None) -> str:
@@ -1477,14 +1477,25 @@ def build_model_decline_keyboard(pub_url: str | None, resume_pid: str | None, pr
 
     الفرق البصري المعتمد: رسالة اكتمال عادية = زر أخضر واحد (▶️ كمل الآن) /
     رسالة رفض = زران ملونان بارزان أعلى الكيبورد:
-      1. 🔵 [✍️ أعد صياغة البرومبت] (cmd:decline_retry) — style: primary (أزرق)
+      1. 🔵 [✍️ أعد صياغة البرومبت] — style: primary (أزرق)
+         🔄 [P37] يحمل مفتاح المشروع: cmd:decline_retry:{project_key} ⟹ ضغطه يفتح
+         بطاقة «🔄 ملخص الاستئناف» الكاملة فوراً (▶️ كمل الآن / ⚙️ عدّل الإعدادات).
+         Fallback آمن: بلا مفتاح (أو لو تجاوز الـcallback حد تليجرام 64 بايت)
+         يعود للحرفية القديمة cmd:decline_retry (إرشاد نصي فقط — عقد P35).
       2. 🔴 [⬅️ رجوع للوحة التحكم] (cmd:decline_dashboard) — style: danger (أحمر)
     ثم كل أزرار الاكتمال المعتادة تحتهما حرفياً عبر build_completed_message_keyboard
     (بلا أي نسخ يدوي — أي تطور مستقبلي في كيبورد الاكتمال يسري هنا تلقائياً).
     كلا النمطين ضمن ALLOWED_BUTTON_STYLES الرسمية (primary/success/danger).
     """
+    # 🔄 [P37] الزر الأزرق يمرر مفتاح المشروع لفتح بطاقة ملخص الاستئناف مباشرة
+    retry_cb = "cmd:decline_retry"
+    clean_key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key or ""))[:80]
+    if clean_key:
+        candidate = f"cmd:decline_retry:{clean_key}"
+        if len(candidate.encode("utf-8")) <= 64:
+            retry_cb = candidate
     kb_rows = [
-        [{"text": "✍️ أعد صياغة البرومبت", "callback_data": "cmd:decline_retry", "style": "primary"}],
+        [{"text": "✍️ أعد صياغة البرومبت", "callback_data": retry_cb, "style": "primary"}],
         [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:decline_dashboard", "style": "danger"}],
     ]
     base = build_completed_message_keyboard(pub_url, resume_pid, project_key)
