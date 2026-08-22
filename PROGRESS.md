@@ -37,8 +37,8 @@ Guard** — قياس الرسالة المجمعة بالكامل.
    + parity **11/11** بايت-بايت مع `01.33` (**7659 سطراً** — +65).
 5. **التوثيق:** DEC-028 في SESSION_LOG + TEST_SUITE_CATALOG (633/28 ملفاً) + README (633)
    + V3_RESUME (قاعدة P34 الدائمة) + نسختا PROGRESS.
-6. **نظافة git (المرة السادسة عشرة):** المزامنة أعادت `.pytest_cache/` و `bridge_bot.log`
-   للتتبع ➔ أُخرجا بـ `git rm --cached` (موافقة S41 الدائمة).
+6. **نظافة git (المرتان 16 و17):** المزامنة أعادت `.pytest_cache/` و `bridge_bot.log`
+   للتتبع مرتين خلال الجلسة ➔ أُخرجا في كل مرة بـ `git rm --cached` (موافقة S41 الدائمة).
 
 ### 🟢 بوابة الجودة (S53 — النهائية)
 - pytest: **633 passed** ✅ | `scripts/hadith_sijil.py`: **Exit Code 0** ✅ | parity 11/11 ✅
