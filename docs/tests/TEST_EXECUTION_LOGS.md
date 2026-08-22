@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-22 06:19:37 UTC`
+* **التاريخ والوقت:** `2026-08-22 07:21:08 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.281 ثانية`
-* **النتيجة العامة:** `Ran 592 tests — OK`
+* **الزمن المقاس:** `1.663 ثانية`
+* **النتيجة العامة:** `Ran 633 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -717,6 +717,47 @@ test_06_continue_now_button_text_in_source (test_p33_completed_quick_actions.Tes
 test_07_back_button_text_in_source (test_p33_completed_quick_actions.TestSourceContracts.test_07_back_button_text_in_source) ... ok
 test_08_no_local_kb_rows_left_in_worker (test_p33_completed_quick_actions.TestSourceContracts.test_08_no_local_kb_rows_left_in_worker)
 صفر بناء محلي متبقٍ للكيبورد داخل الـ worker (منع الازدواجية). ... ok
+test_01_short_text_passes_verbatim (test_p34_safe_message_formatting.TestClampOutgoingText.test_01_short_text_passes_verbatim) ... ok
+test_02_exactly_3900_passes_verbatim (test_p34_safe_message_formatting.TestClampOutgoingText.test_02_exactly_3900_passes_verbatim) ... ok
+test_03_over_3900_trimmed_to_3800_or_less (test_p34_safe_message_formatting.TestClampOutgoingText.test_03_over_3900_trimmed_to_3800_or_less) ... ok
+test_04_huge_text_trimmed (test_p34_safe_message_formatting.TestClampOutgoingText.test_04_huge_text_trimmed) ... ok
+test_05_none_and_empty_safe (test_p34_safe_message_formatting.TestClampOutgoingText.test_05_none_and_empty_safe) ... ok
+test_06_no_partial_html_tag_at_trim_point (test_p34_safe_message_formatting.TestClampOutgoingText.test_06_no_partial_html_tag_at_trim_point) ... ok
+test_07_between_3801_and_3900_untouched (test_p34_safe_message_formatting.TestClampOutgoingText.test_07_between_3801_and_3900_untouched) ... ok
+test_01_short_text_passes_verbatim (test_p34_safe_message_formatting.TestClampPreviewText.test_01_short_text_passes_verbatim) ... ok
+test_02_exactly_1000_passes_verbatim_no_suffix (test_p34_safe_message_formatting.TestClampPreviewText.test_02_exactly_1000_passes_verbatim_no_suffix) ... ok
+test_03_over_1000_truncated_with_suffix (test_p34_safe_message_formatting.TestClampPreviewText.test_03_over_1000_truncated_with_suffix) ... ok
+test_04_body_never_exceeds_1000_plus_suffix (test_p34_safe_message_formatting.TestClampPreviewText.test_04_body_never_exceeds_1000_plus_suffix) ... ok
+test_05_none_and_empty_safe (test_p34_safe_message_formatting.TestClampPreviewText.test_05_none_and_empty_safe) ... ok
+test_06_no_partial_html_entity_at_cut (test_p34_safe_message_formatting.TestClampPreviewText.test_06_no_partial_html_entity_at_cut) ... ok
+test_07_no_partial_html_tag_at_cut (test_p34_safe_message_formatting.TestClampPreviewText.test_07_no_partial_html_tag_at_cut) ... ok
+test_08_old_2500_truncation_gone_from_source (test_p34_safe_message_formatting.TestClampPreviewText.test_08_old_2500_truncation_gone_from_source) ... ok
+test_01_small_message_untouched (test_p34_safe_message_formatting.TestCompletionBudget.test_01_small_message_untouched) ... ok
+test_02_oversized_message_capped_at_3500 (test_p34_safe_message_formatting.TestCompletionBudget.test_02_oversized_message_capped_at_3500) ... ok
+test_03_shrink_hits_preview_first_metadata_preserved (test_p34_safe_message_formatting.TestCompletionBudget.test_03_shrink_hits_preview_first_metadata_preserved) ... ok
+test_04_shrunk_preview_keeps_suffix (test_p34_safe_message_formatting.TestCompletionBudget.test_04_shrunk_preview_keeps_suffix) ... ok
+test_05_no_preview_fallback_tail_trim (test_p34_safe_message_formatting.TestCompletionBudget.test_05_no_preview_fallback_tail_trim) ... ok
+test_06_none_and_empty_safe (test_p34_safe_message_formatting.TestCompletionBudget.test_06_none_and_empty_safe) ... ok
+test_07_extreme_overflow_always_capped (test_p34_safe_message_formatting.TestCompletionBudget.test_07_extreme_overflow_always_capped) ... ok
+test_08_result_is_idempotent (test_p34_safe_message_formatting.TestCompletionBudget.test_08_result_is_idempotent) ... ok
+test_01_preview_max_chars_is_1000 (test_p34_safe_message_formatting.TestP34Constants.test_01_preview_max_chars_is_1000) ... ok
+test_02_truncation_suffix_exact_text (test_p34_safe_message_formatting.TestP34Constants.test_02_truncation_suffix_exact_text) ... ok
+test_03_res_msg_max_chars_is_3500 (test_p34_safe_message_formatting.TestP34Constants.test_03_res_msg_max_chars_is_3500) ... ok
+test_04_outgoing_hard_limit_is_3900 (test_p34_safe_message_formatting.TestP34Constants.test_04_outgoing_hard_limit_is_3900) ... ok
+test_05_outgoing_safe_limit_is_3800 (test_p34_safe_message_formatting.TestP34Constants.test_05_outgoing_safe_limit_is_3800) ... ok
+test_06_constants_defined_once_in_source (test_p34_safe_message_formatting.TestP34Constants.test_06_constants_defined_once_in_source) ... ok
+test_07_safe_below_hard_below_telegram_4096 (test_p34_safe_message_formatting.TestP34Constants.test_07_safe_below_hard_below_telegram_4096) ... ok
+test_01_sender_payload_uses_clamp (test_p34_safe_message_formatting.TestP34SourceContracts.test_01_sender_payload_uses_clamp) ... ok
+test_02_worker_uses_clamp_preview_text (test_p34_safe_message_formatting.TestP34SourceContracts.test_02_worker_uses_clamp_preview_text) ... ok
+test_03_worker_enforces_res_msg_budget (test_p34_safe_message_formatting.TestP34SourceContracts.test_03_worker_enforces_res_msg_budget) ... ok
+test_04_budget_enforced_before_send (test_p34_safe_message_formatting.TestP34SourceContracts.test_04_budget_enforced_before_send) ... ok
+test_05_functions_defined_once (test_p34_safe_message_formatting.TestP34SourceContracts.test_05_functions_defined_once) ... ok
+test_06_preview_body_captured_for_budget (test_p34_safe_message_formatting.TestP34SourceContracts.test_06_preview_body_captured_for_budget) ... ok
+test_07_refactor_mirror_has_p34_symbols (test_p34_safe_message_formatting.TestP34SourceContracts.test_07_refactor_mirror_has_p34_symbols) ... ok
+test_01_long_text_trimmed_in_payload (test_p34_safe_message_formatting.TestSenderKeepsButtonsIntact.test_01_long_text_trimmed_in_payload) ... ok
+test_02_reply_markup_rows_fully_intact (test_p34_safe_message_formatting.TestSenderKeepsButtonsIntact.test_02_reply_markup_rows_fully_intact) ... ok
+test_03_short_text_not_modified (test_p34_safe_message_formatting.TestSenderKeepsButtonsIntact.test_03_short_text_not_modified) ... ok
+test_04_boolean_wrapper_still_works (test_p34_safe_message_formatting.TestSenderKeepsButtonsIntact.test_04_boolean_wrapper_still_works) ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -769,7 +810,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 592 tests in 0.823s
+Ran 633 tests in 1.116s
 
 OK
 ```
