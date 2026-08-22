@@ -42,7 +42,7 @@ answer this request..." كان يُحتسب COMPLETED (طوله > 25 حرفاً)
 8. **التوثيق:** DEC-030 في SESSION_LOG + TEST_SUITE_CATALOG (678/29 ملفاً +
    تصحيح متأخر لصف P33 ➔ 34 من S54) + README (678) + V3_RESUME (قاعدة P35
    الدائمة + المؤشرات 678) + نسختا PROGRESS.
-9. **نظافة git (المرة 19):** المزامنة أعادت `.pytest_cache/` و `bridge_bot.log`
+9. **نظافة git (المرتان 19 و20):** المزامنة أعادت `.pytest_cache/` و `bridge_bot.log`
    للتتبع مجدداً ➔ أُخرجا بـ `git rm --cached` (موافقة S41 الدائمة).
 
 ### 🟢 بوابة الجودة (S55 — النهائية)
