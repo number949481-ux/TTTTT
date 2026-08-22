@@ -7,6 +7,15 @@ from bridge_refactor.runtime import ns as _ns
 
 __all__ = [
     "_call_telegram_api_json",
+    "PREVIEW_MAX_CHARS",
+    "PREVIEW_TRUNCATION_SUFFIX",
+    "RES_MSG_MAX_CHARS",
+    "OUTGOING_TEXT_HARD_LIMIT",
+    "OUTGOING_TEXT_SAFE_LIMIT",
+    "_strip_partial_html_token",
+    "clamp_preview_text",
+    "enforce_completion_message_budget",
+    "clamp_outgoing_text",
     "send_telegram_message_detailed",
     "edit_telegram_message_text",
     "edit_telegram_message_reply_markup",
