@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-22 20:46:13 UTC`
+* **التاريخ والوقت:** `2026-08-22 21:11:04 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.420 ثانية`
-* **النتيجة العامة:** `Ran 736 tests — OK`
+* **الزمن المقاس:** `1.542 ثانية`
+* **النتيجة العامة:** `Ran 761 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -873,6 +873,31 @@ test_01_completed_keyboard_has_no_decline_buttons (test_p37_decline_resume_summa
 test_02_completed_rows_still_appended_verbatim (test_p37_decline_resume_summary.TestP37ZeroBreaking.test_02_completed_rows_still_appended_verbatim) ... ok
 test_03_resume_continue_path_intact (test_p37_decline_resume_summary.TestP37ZeroBreaking.test_03_resume_continue_path_intact) ... ok
 test_04_decline_status_constants_untouched (test_p37_decline_resume_summary.TestP37ZeroBreaking.test_04_decline_status_constants_untouched) ... ok
+test_01_unified_label_in_res_msg (test_p38_unified_account_email_display.TestP38CompletionAndDeclineCard.test_01_unified_label_in_res_msg) ... ok
+test_02_old_label_gone (test_p38_unified_account_email_display.TestP38CompletionAndDeclineCard.test_02_old_label_gone) ... ok
+test_03_journey_block_contract_preserved (test_p38_unified_account_email_display.TestP38CompletionAndDeclineCard.test_03_journey_block_contract_preserved) ... ok
+test_04_no_double_escaping_acc_email (test_p38_unified_account_email_display.TestP38CompletionAndDeclineCard.test_04_no_double_escaping_acc_email) ... ok
+test_05_decline_card_shares_res_msg (test_p38_unified_account_email_display.TestP38CompletionAndDeclineCard.test_05_decline_card_shares_res_msg) ... ok
+test_06_completed_live_card_has_account (test_p38_unified_account_email_display.TestP38CompletionAndDeclineCard.test_06_completed_live_card_has_account) ... ok
+test_01_unified_line_injected (test_p38_unified_account_email_display.TestP38CreditHandoffCard.test_01_unified_line_injected) ... ok
+test_02_after_project_key_line (test_p38_unified_account_email_display.TestP38CreditHandoffCard.test_02_after_project_key_line) ... ok
+test_01_function_exists_top_level (test_p38_unified_account_email_display.TestP38FormatterBehaviour.test_01_function_exists_top_level) ... ok
+test_02_unified_line_format (test_p38_unified_account_email_display.TestP38FormatterBehaviour.test_02_unified_line_format) ... ok
+test_03_trailing_newline_always (test_p38_unified_account_email_display.TestP38FormatterBehaviour.test_03_trailing_newline_always) ... ok
+test_04_html_escaped_email (test_p38_unified_account_email_display.TestP38FormatterBehaviour.test_04_html_escaped_email) ... ok
+test_05_fallback_on_empty (test_p38_unified_account_email_display.TestP38FormatterBehaviour.test_05_fallback_on_empty) ... ok
+test_06_whitespace_trimmed (test_p38_unified_account_email_display.TestP38FormatterBehaviour.test_06_whitespace_trimmed) ... ok
+test_07_non_string_input_safe (test_p38_unified_account_email_display.TestP38FormatterBehaviour.test_07_non_string_input_safe) ... ok
+test_01_five_lifecycle_injections (test_p38_unified_account_email_display.TestP38GlobalConsistency.test_01_five_lifecycle_injections) ... ok
+test_02_unified_label_everywhere (test_p38_unified_account_email_display.TestP38GlobalConsistency.test_02_unified_label_everywhere) ... ok
+test_03_p29_active_account_line_untouched (test_p38_unified_account_email_display.TestP38GlobalConsistency.test_03_p29_active_account_line_untouched) ... ok
+test_04_mirror_runtime_exports_formatter (test_p38_unified_account_email_display.TestP38GlobalConsistency.test_04_mirror_runtime_exports_formatter) ... ok
+test_05_formatter_never_raises (test_p38_unified_account_email_display.TestP38GlobalConsistency.test_05_formatter_never_raises) ... ok
+test_01_unified_line_injected (test_p38_unified_account_email_display.TestP38LiveStartCard.test_01_unified_line_injected) ... ok
+test_02_safe_getattr_no_direct_attr (test_p38_unified_account_email_display.TestP38LiveStartCard.test_02_safe_getattr_no_direct_attr) ... ok
+test_03_line_between_pid_and_model (test_p38_unified_account_email_display.TestP38LiveStartCard.test_03_line_between_pid_and_model) ... ok
+test_01_stage_email_finally_used (test_p38_unified_account_email_display.TestP38ProjectUpdateCard.test_01_stage_email_finally_used) ... ok
+test_02_line_inside_msg_between_key_and_status (test_p38_unified_account_email_display.TestP38ProjectUpdateCard.test_02_line_inside_msg_between_key_and_status) ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -925,7 +950,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 736 tests in 0.907s
+Ran 761 tests in 0.951s
 
 OK
 ```
