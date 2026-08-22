@@ -1374,3 +1374,39 @@
 2026-08-22 20:46:13 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
 2026-08-22 20:46:13 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
 2026-08-22 20:46:13 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-22 21:11:03 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-22 21:11:03 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-22 21:11:03 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_a (index=True, aliases=1, tree=1, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_b (index=True, aliases=1, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_freed (index=True, aliases=1, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_orphan_disk (index=False, aliases=0, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_two_pids (index=True, aliases=2, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_tree (index=True, aliases=1, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_pid (index=True, aliases=0, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_victim (index=True, aliases=1, tree=1, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_solo (index=True, aliases=1, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_twice (index=True, aliases=1, tree=0, disk=True)
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.txt] (1024 بايت) من Chat 888
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [prompt.txt] (1024 بايت) من Chat 888
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [notes.markdown] (1024 بايت) من Chat 888
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [README.md] (1024 بايت) من Chat 888
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.md] (1024 بايت) من Chat 888
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [spec.txt] (1024 بايت) من Chat 888
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [SPEC.TXT] (1024 بايت) من Chat 888
+2026-08-22 21:11:03 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [edge.txt] (5242880 بايت) من Chat 888
+2026-08-22 21:11:03 | ERROR    | تنزيل الملف فشل: HTTP 404
+2026-08-22 21:11:03 | ERROR    | توكن البوت غير مضبوط — لا يمكن تنزيل الملفات
+2026-08-22 21:11:03 | ERROR    | getFile فشل: HTTP 500 - server error
+2026-08-22 21:11:03 | ERROR    | getFile أعاد ok=false: {'ok': False, 'description': 'bad'}
+2026-08-22 21:11:03 | ERROR    | getFile نجح لكن file_path مفقود — لا يمكن التنزيل
+2026-08-22 21:11:03 | ERROR    | استثناء أثناء تنزيل الملف من تليجرام: network down
+2026-08-22 21:11:03 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-22 21:11:03 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-22 21:11:03 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-22 21:11:04 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-22 21:11:04 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): down
+2026-08-22 21:11:04 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-22 21:11:04 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-22 21:11:04 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-22 21:11:04 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
