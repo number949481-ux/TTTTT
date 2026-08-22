@@ -102,7 +102,8 @@ def log_event(level: str, msg: str, email: str = "", extra: dict = None):
     safe_email = redact_email(email) if email else ""
     prefix = f"[{safe_email}] " if safe_email else ""
     print(color + f"{prefix}{msg}")
-    log_func = getattr(logger, level if hasattr(logger, level) else "info", logger.info)
+    canonical_level = "warning" if level == "warn" else level
+    log_func = getattr(logger, canonical_level if hasattr(logger, canonical_level) else "info", logger.info)
     log_msg = f"{prefix}{msg}"
     if extra:
         log_msg += f" | {json.dumps(extra, ensure_ascii=False)}"
