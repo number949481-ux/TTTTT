@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6025..6364
-المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6086..6429
+المحتوى: process_user_task_async (المشغل الكامل للمهمة | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def process_user_task_async(
@@ -260,11 +260,13 @@ def process_user_task_async(
         outcome = describe_terminal_outcome(status, pub_url, cfg)
 
         response_preview = ""
+        preview_body = ""
         if outcome["allow_preview"] and last_resp_text:
             clean_text = redact_github_secrets(str(last_resp_text).strip())
             clean_text = html_escape(clean_text)
-            if len(clean_text) > 2500:
-                clean_text = clean_text[:2500] + "\n... [تم الاقتصاص لزيادة الحجم]"
+            # ✂️ [P34] قصّ المعاينة مركزياً إلى 1000 حرف + لاحقة الرابط الكامل
+            clean_text = clamp_preview_text(clean_text)
+            preview_body = clean_text
             response_preview = f"💬 <b>آخر رسالة من التوليد:</b>\n<pre>{clean_text}</pre>\n\n"
 
         # إصلاح: لو مفيش رابط عام نكتب تنبيه بدل زر ميت (كان تليجرام يرفض الكيبورد بالكامل)
@@ -295,6 +297,8 @@ def process_user_task_async(
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
             f"{timing_block}"
         )
+        # ✂️ [P34] ميزانية الرسالة المجمعة: لا تتجاوز 3500 حرفاً أبداً (القصّ على المعاينة أولاً)
+        res_msg = enforce_completion_message_budget(res_msg, preview_body)
 
         # 🎛️ [P33] الكيبورد المركزي للاكتمال — الأزرار الخمسة القديمة + ▶️ كمل الآن + ⬅️ رجوع للوحة التحكم
         reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
