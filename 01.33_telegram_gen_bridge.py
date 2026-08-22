@@ -1688,6 +1688,44 @@ def detect_response_status(response: str | dict | None) -> str:
 
 
 # ══════════════════════════════════════════════════════════════
+# 🚫 [P35] كشف رفض الموديل (Model Decline Recovery)
+# ══════════════════════════════════════════════════════════════
+# الرد "The model declined to answer this request..." يصل بطول > 25 حرفاً
+# فيُحتسب COMPLETED في detect_response_status — وهذا صحيح تقنياً (المهمة
+# انتهت فعلاً) لكنه خاطئ دلالياً: لا يوجد ناتج، والأسوأ أن مؤشر الاستئناف
+# كان يتقدم لنقطة "الرفض". فلسفة P35: الرفض يُعامل «كأن الطلب لم يُرسل».
+#
+# ⚠️ حارس False Positive: الكشف يعمل فقط للردود القصيرة
+# (≤ MODEL_DECLINE_MAX_RESPONSE_CHARS) — أي رد طويل شرعي *يقتبس* جملة
+# الرفض داخله لا يُحتسب رفضاً أبداً (نفس فلسفة إصلاح RUNNING الكاذب).
+MODEL_DECLINE_MARKERS = [
+    "the model declined to answer this request",
+    "model declined to answer",
+    "declined to answer this request",
+    "the model declined to respond",
+    "model declined this request",
+]
+MODEL_DECLINE_MAX_RESPONSE_CHARS = 300
+MODEL_DECLINED_STATUS = "MODEL_DECLINED"
+
+
+def is_model_decline_response(response_text: str | None) -> bool:
+    """🚫 [P35] هل هذا الرد رفض صريح من الموديل؟
+
+    True فقط إذا: الرد غير فارغ + قصير (≤ 300 حرف بعد strip) + جوهره
+    إحدى عبارات الرفض المعتمدة. الردود الطويلة تُستبعد فوراً حتى لو
+    احتوت العبارة (اقتباس داخل رد شرعي ≠ رفض).
+    """
+    text = str(response_text or "").strip()
+    if not text:
+        return False
+    if len(text) > MODEL_DECLINE_MAX_RESPONSE_CHARS:
+        return False
+    low = text.lower()
+    return any(marker in low for marker in MODEL_DECLINE_MARKERS)
+
+
+# ══════════════════════════════════════════════════════════════
 # ⛳ [P18] مراقب مؤشر النشاط الحي (Deep Thinking / Tasks Remaining)
 # لو المؤشر اتغيّر أثناء المتابعة → وقف فوري (مفيش أي تكملة على مهام جديدة)
 # ══════════════════════════════════════════════════════════════
@@ -5799,6 +5837,26 @@ def build_completed_message_keyboard(pub_url: str | None, resume_pid: str | None
         kb_rows.append([{"text": "⭐ تفاصيل المشروع", "callback_data": f"pview:{project_key}"}])
     kb_rows.append([{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}])
     kb_rows.append([{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:dashboard"}])
+    return make_inline_keyboard(kb_rows)
+
+
+def build_model_decline_keyboard(pub_url: str | None, resume_pid: str | None, project_key: str | None) -> dict:
+    """🚫 [P35] كيبورد رسالة رفض الموديل — تمييز بصري فوري عن رسالة الاكتمال.
+
+    الفرق البصري المعتمد: رسالة اكتمال عادية = زر أخضر واحد (▶️ كمل الآن) /
+    رسالة رفض = زران ملونان بارزان أعلى الكيبورد:
+      1. 🔵 [✍️ أعد صياغة البرومبت] (cmd:decline_retry) — style: primary (أزرق)
+      2. 🔴 [⬅️ رجوع للوحة التحكم] (cmd:decline_dashboard) — style: danger (أحمر)
+    ثم كل أزرار الاكتمال المعتادة تحتهما حرفياً عبر build_completed_message_keyboard
+    (بلا أي نسخ يدوي — أي تطور مستقبلي في كيبورد الاكتمال يسري هنا تلقائياً).
+    كلا النمطين ضمن ALLOWED_BUTTON_STYLES الرسمية (primary/success/danger).
+    """
+    kb_rows = [
+        [{"text": "✍️ أعد صياغة البرومبت", "callback_data": "cmd:decline_retry", "style": "primary"}],
+        [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:decline_dashboard", "style": "danger"}],
+    ]
+    base = build_completed_message_keyboard(pub_url, resume_pid, project_key)
+    kb_rows.extend(base.get("inline_keyboard") or [])
     return make_inline_keyboard(kb_rows)
 
 
