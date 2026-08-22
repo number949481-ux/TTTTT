@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-22 20:13:16 UTC`
+* **التاريخ والوقت:** `2026-08-22 20:36:42 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.548 ثانية`
-* **النتيجة العامة:** `Ran 707 tests — OK`
+* **الزمن المقاس:** `1.463 ثانية`
+* **النتيجة العامة:** `Ran 736 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -844,6 +844,35 @@ test_03_auto_download_guarded (test_p36_engine_fast_decline.TestParallelRegion.t
 test_04_ensure_public_guarded_with_direct_fallback (test_p36_engine_fast_decline.TestParallelRegion.test_04_ensure_public_guarded_with_direct_fallback) ... ok
 test_05_url_entry_still_saved (test_p36_engine_fast_decline.TestParallelRegion.test_05_url_entry_still_saved)
 Zero Breaking: save_url_entry يعمل كالمعتاد (بالرابط المباشر عند الرفض). ... ok
+test_01_keyed_handler_exists (test_p37_decline_resume_summary.TestP37DispatcherHandler.test_01_keyed_handler_exists) ... ok
+test_02_keyed_handler_opens_resume_summary (test_p37_decline_resume_summary.TestP37DispatcherHandler.test_02_keyed_handler_opens_resume_summary) ... ok
+test_03_keyed_handler_has_polite_fallback_message (test_p37_decline_resume_summary.TestP37DispatcherHandler.test_03_keyed_handler_has_polite_fallback_message) ... ok
+test_04_keyed_handler_never_submits_task (test_p37_decline_resume_summary.TestP37DispatcherHandler.test_04_keyed_handler_never_submits_task) ... ok
+test_05_exact_match_branch_precedes_startswith (test_p37_decline_resume_summary.TestP37DispatcherHandler.test_05_exact_match_branch_precedes_startswith) ... ok
+test_06_legacy_guidance_branch_untouched (test_p37_decline_resume_summary.TestP37DispatcherHandler.test_06_legacy_guidance_branch_untouched) ... ok
+test_07_decline_dashboard_branch_untouched (test_p37_decline_resume_summary.TestP37DispatcherHandler.test_07_decline_dashboard_branch_untouched) ... ok
+test_01_no_key_falls_back_to_legacy_callback (test_p37_decline_resume_summary.TestP37FallbackSafety.test_01_no_key_falls_back_to_legacy_callback) ... ok
+test_02_oversized_key_falls_back_to_legacy_callback (test_p37_decline_resume_summary.TestP37FallbackSafety.test_02_oversized_key_falls_back_to_legacy_callback) ... ok
+test_03_boundary_key_exactly_64_bytes_kept (test_p37_decline_resume_summary.TestP37FallbackSafety.test_03_boundary_key_exactly_64_bytes_kept) ... ok
+test_04_decline_rows_callbacks_valid_in_every_combination (test_p37_decline_resume_summary.TestP37FallbackSafety.test_04_decline_rows_callbacks_valid_in_every_combination) ... ok
+test_05_no_dead_url_button_without_pub_url (test_p37_decline_resume_summary.TestP37FallbackSafety.test_05_no_dead_url_button_without_pub_url) ... ok
+test_01_callback_carries_project_key (test_p37_decline_resume_summary.TestP37KeyedRetryButton.test_01_callback_carries_project_key) ... ok
+test_02_text_and_style_unchanged (test_p37_decline_resume_summary.TestP37KeyedRetryButton.test_02_text_and_style_unchanged) ... ok
+test_03_style_within_allowed_whitelist (test_p37_decline_resume_summary.TestP37KeyedRetryButton.test_03_style_within_allowed_whitelist) ... ok
+test_04_callback_within_telegram_64_bytes (test_p37_decline_resume_summary.TestP37KeyedRetryButton.test_04_callback_within_telegram_64_bytes) ... ok
+test_05_key_sanitized_like_registry_keys (test_p37_decline_resume_summary.TestP37KeyedRetryButton.test_05_key_sanitized_like_registry_keys) ... ok
+test_06_dashboard_danger_button_untouched (test_p37_decline_resume_summary.TestP37KeyedRetryButton.test_06_dashboard_danger_button_untouched) ... ok
+test_01_returns_true_and_sends_summary_card (test_p37_decline_resume_summary.TestP37ResumeSummaryBehavior.test_01_returns_true_and_sends_summary_card) ... ok
+test_02_state_set_to_awaiting_resume_decision (test_p37_decline_resume_summary.TestP37ResumeSummaryBehavior.test_02_state_set_to_awaiting_resume_decision) ... ok
+test_03_state_carries_clean_pid_from_identity (test_p37_decline_resume_summary.TestP37ResumeSummaryBehavior.test_03_state_carries_clean_pid_from_identity) ... ok
+test_04_keyboard_has_continue_and_settings_buttons (test_p37_decline_resume_summary.TestP37ResumeSummaryBehavior.test_04_keyboard_has_continue_and_settings_buttons) ... ok
+test_05_continue_button_text_and_style (test_p37_decline_resume_summary.TestP37ResumeSummaryBehavior.test_05_continue_button_text_and_style) ... ok
+test_06_empty_key_returns_false_without_side_effects (test_p37_decline_resume_summary.TestP37ResumeSummaryBehavior.test_06_empty_key_returns_false_without_side_effects) ... ok
+test_07_summary_text_mentions_project_key (test_p37_decline_resume_summary.TestP37ResumeSummaryBehavior.test_07_summary_text_mentions_project_key) ... ok
+test_01_completed_keyboard_has_no_decline_buttons (test_p37_decline_resume_summary.TestP37ZeroBreaking.test_01_completed_keyboard_has_no_decline_buttons) ... ok
+test_02_completed_rows_still_appended_verbatim (test_p37_decline_resume_summary.TestP37ZeroBreaking.test_02_completed_rows_still_appended_verbatim) ... ok
+test_03_resume_continue_path_intact (test_p37_decline_resume_summary.TestP37ZeroBreaking.test_03_resume_continue_path_intact) ... ok
+test_04_decline_status_constants_untouched (test_p37_decline_resume_summary.TestP37ZeroBreaking.test_04_decline_status_constants_untouched) ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -896,7 +925,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 707 tests in 0.919s
+Ran 736 tests in 0.869s
 
 OK
 ```
