@@ -273,3 +273,17 @@
 - **البوابة:** pytest ➔ **678 passed** + `hadith_sijil.py` ➔ **Exit Code 0** ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة التاسعة عشرة، موافقة S41 الدائمة).
 - **الحجم:** `01.33` ➔ **7765 سطراً** (+106).
 - **القرار:** ✅ S55 مغلقة — الحالة `READY` 🟢 — E2E الحي لدى المالك يشمل الآن P35 (برومبت يُتوقع رفضه ➔ رسالة 🚫 بالزرين الملونين + التأكد أن الاستئناف بعدها يكمل من النقطة الصالحة قبل الرفض).
+
+### [DEC-031] — S57/P36: مسار الرفض السريع في المحرك — Engine Fast Decline Path (طلب مالك مباشر، 2026-08-22)
+- **العلة المكتشفة:** رد الرفض القصير "The model declined to answer this request..." (المُكتشف في P35 على مستوى الجسر) كان المحرك `01.03Genspark_claude-opus-5-code.py` يشغّل عليه المسارات الثلاثة المكلفة رغم غياب أي ناتج: الشير العام `_do_auto_share` + التنزيل التلقائي `auto_download_project` + التحقق العام `ensure_public` (الأسوأ — كان يهدر حتى ~60s timeout retries قبل وصول رسالة الرفض للمستخدم).
+- **الفلسفة المعتمدة:** **استجابة الرفض لحظية** — رفض بلا ناتج = تخطٍّ فوري للمسارات العامة المكلفة الثلاثة، مع بقاء التسجيل المحلي (المحادثة/الرصيد/التذاكر) سليماً حرفياً.
+- **البنية (المحرك `01.03` — الآن 3805 أسطر):**
+  1. **الكاشف (سطر ~320-360):** نسخة مطابقة **دلالياً** لكاشف P35 في `01.33` — `MODEL_DECLINE_MARKERS` (نفس الـ 5 عبارات lowercase حرفياً) + `MODEL_DECLINE_MAX_RESPONSE_CHARS=300` + `is_model_decline_response` بنفس حارس False Positive (الرد الطويل الذي يقتبس الجملة ليس رفضاً). تعريف وحيد — واليافطة `[P36] Fast Decline Path` فوقه.
+  2. **موقع CLI chat (سطر ~2489-2512):** `_declined = is_model_decline_response(answer)` قبل أي مسار ➔ `_do_auto_share` محروسة بـ `if not _declined` — و`update_conversation` بلا حراسة (الرفض يُحفظ في سجل المحادثة).
+  3. **الموقع الرئيسي URL-mode (سطر ~3375-3443):** `ensure_public` محروسة بـ `if VERIFY_PUBLIC_AFTER and not _declined` مع else يبني الرابط المباشر `autopilotagent_viewer?id=` بلا شبكة (الرابط لا يضيع) + `_do_auto_share` محروسة + حتى المشاركة اليدوية `args.share` محروسة بـ `and not _declined`.
+  4. **المسار المتوازي (سطر ~3649-3669):** `_declined` يُحسب **بعد** `_update_balance` (الرصيد يُحدَّث دائماً — Zero Breaking) ➔ الشير محروس `if pid and not _declined` + التنزيل محروس `if cfg.auto_download_sandbox and pid and not _declined` + `ensure_public` بتعبير شرطي مع fallback الرابط المباشر — و`save_url_entry` تعمل كالمعتاد.
+- **Zero Breaking:** `_update_balance` + `update_conversation` + `_save_ticket_question` + `save_url_entry` كلها بلا حراسة — الرفض يُسجَّل محلياً بالكامل، فقط المسارات الشبكية/العامة المكلفة تُتخطى. كل منطقة تحسب `_declined` محلياً (3 مواقع = 3 تعريفات — صفر NameError).
+- **الحراسة (+29):** `tests/test_p36_engine_fast_decline.py` — 6 مجموعات: الثوابت والتطابق الدلالي مع كاشف الجسر P35 5 / سلوك الكاشف (يُنفَّذ معزولاً بقصّ snippet من سورس المحرك — بلا استيراد المحرك كاملاً) 6 / منطقة CLI 3 / المنطقة الرئيسية 6 / المنطقة المتوازية 5 / التغطية الشاملة (3 تعريفات بالضبط + py_compile + يافطة P36) 4. الإجمالي **707**.
+- **البوابة:** pytest ➔ **707 passed** + `hadith_sijil.py` ➔ **Exit Code 0** ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة الثانية والعشرون، موافقة S41 الدائمة).
+- **ملاحظة معمارية:** المرايا `bridge_refactor/` تخص `01.33` فقط — تعديل المحرك `01.03` لا يمسها (parity 11/11 بلا تغيير).
+- **القرار:** ✅ S57 مغلقة — الحالة `READY` 🟢 — E2E الحي لدى المالك يشمل الآن P36 (برومبت يُتوقع رفضه ➔ رسالة الرفض تصل **لحظياً** بلا انتظار ensure_public/share/download).
