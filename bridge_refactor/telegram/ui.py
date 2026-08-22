@@ -78,6 +78,7 @@ __all__ = [
     "copy_project_settings_to_new_project",
     "format_copied_settings_summary",
     "start_project_resume_from_key",
+    "build_completed_message_keyboard",
 ]
 
 def __getattr__(name):
