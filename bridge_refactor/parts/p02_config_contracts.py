@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p02_config_contracts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 155..458
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 156..459
 المحتوى: Global config + models + CONTRACTS + resume-prompt utils + project settings (P17: ALLOWED_GROUP_IDS + is_chat_allowed لدعم الجروبات)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
