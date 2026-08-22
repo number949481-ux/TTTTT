@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6086..6429
-المحتوى: process_user_task_async (المشغل الكامل للمهمة | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6158..6520
+المحتوى: process_user_task_async (المشغل الكامل للمهمة | P35: إعادة تصنيف COMPLETED+is_model_decline_response ← MODEL_DECLINED + تصفير final_pid (مؤشر الاستئناف لا يتقدم لنقطة الرفض) + كيبورد build_model_decline_keyboard بدل كيبورد الاكتمال | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def process_user_task_async(
@@ -199,6 +199,16 @@ def process_user_task_async(
             on_project_start_callback=handle_live_project_start,
         )
 
+        # 🚫 [P35] كشف رفض الموديل — الرد القصير "The model declined..." يصل
+        # بحالة COMPLETED تقنياً (طوله > 25 حرفاً) لكنه بلا أي ناتج؛ يُعاد
+        # تصنيفه MODEL_DECLINED ويُعامل «كأن الطلب لم يُرسل» — مؤشر الاستئناف
+        # لا يتقدم لنقطة الرفض أبداً (التجاوز فقط فوق COMPLETED — أي فشل آخر
+        # يمر بمساره القديم حرفياً = Zero Breaking).
+        model_declined = status == "COMPLETED" and is_model_decline_response(last_resp_text)
+        if model_declined:
+            status = MODEL_DECLINED_STATUS
+            log_event("warning", "🚫 [P35] الموديل رفض الطلب — يُعامل كأن الطلب لم يُرسل (مؤشر الاستئناف ثابت)")
+
         if status == "ALL_ACCOUNTS_IN_COOLDOWN":
             send_telegram_message(
                 chat_id,
@@ -246,6 +256,11 @@ def process_user_task_async(
         timing_block = f"\n\n{timing_stats}" if timing_stats else ""
         is_finished = check_project_finished_flag(status, last_resp_text)
         final_pid = extract_stage_project_id(pub_url, ext_dir)
+        if model_declined:
+            # 🚫 [P35] الرفض كأن الطلب لم يُرسل: تصفير final_pid يمنع تقدّم
+            # latest_genspark_pid/resume_pid لنقطة الرفض — المؤشر يبقى على
+            # آخر نقطة صالحة قبل الطلب المرفوض (requested_pid أو المخزّن).
+            final_pid = ""
         runtime_identity = remember_registry_identity(
             registry,
             root_pid=(runtime_identity or {}).get("root_genspark_pid") or requested_pid or final_pid,
@@ -301,7 +316,11 @@ def process_user_task_async(
         res_msg = enforce_completion_message_budget(res_msg, preview_body)
 
         # 🎛️ [P33] الكيبورد المركزي للاكتمال — الأزرار الخمسة القديمة + ▶️ كمل الآن + ⬅️ رجوع للوحة التحكم
-        reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
+        # 🚫 [P35] رسالة الرفض تأخذ كيبورداً مميزاً (زران ملونان أعلاه ثم أزرار الاكتمال المعتادة)
+        if status == MODEL_DECLINED_STATUS:
+            reply_markup = build_model_decline_keyboard(pub_url, resume_pid, project_key)
+        else:
+            reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
 
         send_telegram_message(chat_id, res_msg, reply_markup=reply_markup)
 
