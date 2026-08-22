@@ -316,6 +316,45 @@ def extract_project_id(url: str) -> str | None:
     return m.group(1) if m else None
 
 
+# ══════════════════════════════════════════════════════════════
+# 🚫 [P36] كشف رفض الموديل في المحرك (Fast Decline Path)
+# ══════════════════════════════════════════════════════════════
+# نسخة مطابقة دلالياً لكاشف P35 في الجسر 01.33: الرد المرفوض
+# "The model declined to answer this request..." لا يحمل أي ناتج،
+# فلا معنى لتشغيل الشير العام (_do_auto_share) ولا التنزيل التلقائي
+# (auto_download_project) ولا التحقق العام (ensure_public) عليه —
+# كانت تُهدر حتى ~60s timeout قبل وصول رسالة الرفض للمستخدم.
+# فلسفة P36: **استجابة الرفض لحظية** — تخطّي المسارات الثلاثة فوراً.
+#
+# ⚠️ حارس False Positive (نفس عقد P35 حرفياً): الكشف يعمل فقط للردود
+# القصيرة (≤ 300 حرف بعد strip) — أي رد طويل شرعي *يقتبس* جملة الرفض
+# داخله لا يُحتسب رفضاً أبداً.
+MODEL_DECLINE_MARKERS = [
+    "the model declined to answer this request",
+    "model declined to answer",
+    "declined to answer this request",
+    "the model declined to respond",
+    "model declined this request",
+]
+MODEL_DECLINE_MAX_RESPONSE_CHARS = 300
+
+
+def is_model_decline_response(response_text: str | None) -> bool:
+    """🚫 [P36] هل هذا الرد رفض صريح من الموديل؟ (مطابق دلالياً لكاشف P35 في 01.33)
+
+    True فقط إذا: الرد غير فارغ + قصير (≤ 300 حرف بعد strip) + جوهره
+    إحدى عبارات الرفض المعتمدة. الردود الطويلة تُستبعد فوراً حتى لو
+    احتوت العبارة (اقتباس داخل رد شرعي ≠ رفض).
+    """
+    text = str(response_text or "").strip()
+    if not text:
+        return False
+    if len(text) > MODEL_DECLINE_MAX_RESPONSE_CHARS:
+        return False
+    low = text.lower()
+    return any(marker in low for marker in MODEL_DECLINE_MARKERS)
+
+
 def create_downloader_session(cookies: dict):
     """إنشـاء جلسة curl_cffi معزولة وموثقة بالكوكيز المستهدفة"""
     try:
