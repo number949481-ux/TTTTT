@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5805..6085
-المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5863..6157
+المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer (P35: فرع MODEL_DECLINED مخصص بـ allow_preview=True — نص الرفض القصير يُعرض للمستخدم)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def _is_fresh_artifact(path: pathlib.Path, min_mtime: float | None) -> bool:
@@ -215,6 +215,20 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
             "kind": "success",
             "title": "🎉 <b>تم التوليد بنجاح!</b>",
             "note": "اكتمل التنفيذ أو تم الحصول على رابط عام صالح للمشروع.",
+            "allow_preview": True,
+        }
+
+    # 🚫 [P35] رفض الموديل — فرع مخصص لأنه الفشل الوحيد الذي يُسمح له
+    # بمعاينة الرد (نص الرفض قصير ≤ 300 حرف وعرضه يزيد ثقة المستخدم).
+    if status == MODEL_DECLINED_STATUS:
+        return {
+            "kind": "failure",
+            "title": "🚫 <b>رفض الموديل تنفيذ هذا الطلب.</b>",
+            "note": (
+                "وصل رد رفض صريح بلا أي ناتج، فعومل الطلب كأنه لم يُرسل: "
+                "مؤشر الاستئناف لم يتقدم ولم يُسجل أي ناتج جديد. "
+                "أعد صياغة البرومبت بشكل أوضح أو قسّمه لخطوات أصغر ثم أرسله من جديد."
+            ),
             "allow_preview": True,
         }
 
