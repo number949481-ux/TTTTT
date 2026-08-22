@@ -6075,6 +6075,20 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
             "allow_preview": True,
         }
 
+    # 🚫 [P35] رفض الموديل — فرع مخصص لأنه الفشل الوحيد الذي يُسمح له
+    # بمعاينة الرد (نص الرفض قصير ≤ 300 حرف وعرضه يزيد ثقة المستخدم).
+    if status == MODEL_DECLINED_STATUS:
+        return {
+            "kind": "failure",
+            "title": "🚫 <b>رفض الموديل تنفيذ هذا الطلب.</b>",
+            "note": (
+                "وصل رد رفض صريح بلا أي ناتج، فعومل الطلب كأنه لم يُرسل: "
+                "مؤشر الاستئناف لم يتقدم ولم يُسجل أي ناتج جديد. "
+                "أعد صياغة البرومبت بشكل أوضح أو قسّمه لخطوات أصغر ثم أرسله من جديد."
+            ),
+            "allow_preview": True,
+        }
+
     mapping = {
         "MAX_ATTEMPTS_EXHAUSTED": (
             "⚠️ <b>توقفت المهمة بعد استنفاد كل محاولات تغيير الحسابات.</b>",
@@ -6337,6 +6351,16 @@ def process_user_task_async(
             on_project_start_callback=handle_live_project_start,
         )
 
+        # 🚫 [P35] كشف رفض الموديل — الرد القصير "The model declined..." يصل
+        # بحالة COMPLETED تقنياً (طوله > 25 حرفاً) لكنه بلا أي ناتج؛ يُعاد
+        # تصنيفه MODEL_DECLINED ويُعامل «كأن الطلب لم يُرسل» — مؤشر الاستئناف
+        # لا يتقدم لنقطة الرفض أبداً (التجاوز فقط فوق COMPLETED — أي فشل آخر
+        # يمر بمساره القديم حرفياً = Zero Breaking).
+        model_declined = status == "COMPLETED" and is_model_decline_response(last_resp_text)
+        if model_declined:
+            status = MODEL_DECLINED_STATUS
+            log_event("warning", "🚫 [P35] الموديل رفض الطلب — يُعامل كأن الطلب لم يُرسل (مؤشر الاستئناف ثابت)")
+
         if status == "ALL_ACCOUNTS_IN_COOLDOWN":
             send_telegram_message(
                 chat_id,
@@ -6384,6 +6408,11 @@ def process_user_task_async(
         timing_block = f"\n\n{timing_stats}" if timing_stats else ""
         is_finished = check_project_finished_flag(status, last_resp_text)
         final_pid = extract_stage_project_id(pub_url, ext_dir)
+        if model_declined:
+            # 🚫 [P35] الرفض كأن الطلب لم يُرسل: تصفير final_pid يمنع تقدّم
+            # latest_genspark_pid/resume_pid لنقطة الرفض — المؤشر يبقى على
+            # آخر نقطة صالحة قبل الطلب المرفوض (requested_pid أو المخزّن).
+            final_pid = ""
         runtime_identity = remember_registry_identity(
             registry,
             root_pid=(runtime_identity or {}).get("root_genspark_pid") or requested_pid or final_pid,
@@ -6439,7 +6468,11 @@ def process_user_task_async(
         res_msg = enforce_completion_message_budget(res_msg, preview_body)
 
         # 🎛️ [P33] الكيبورد المركزي للاكتمال — الأزرار الخمسة القديمة + ▶️ كمل الآن + ⬅️ رجوع للوحة التحكم
-        reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
+        # 🚫 [P35] رسالة الرفض تأخذ كيبورداً مميزاً (زران ملونان أعلاه ثم أزرار الاكتمال المعتادة)
+        if status == MODEL_DECLINED_STATUS:
+            reply_markup = build_model_decline_keyboard(pub_url, resume_pid, project_key)
+        else:
+            reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
 
         send_telegram_message(chat_id, res_msg, reply_markup=reply_markup)
 
@@ -6622,6 +6655,21 @@ def handle_telegram_update(update: dict):
         elif data == "cmd:dashboard":
             # ⬅️ [P33] زر «رجوع للوحة التحكم» من رسالة الاكتمال — سلوك مطابق حرفياً
             # لـ cmd:show_dashboard (فرع منفصل عمداً: حراس P26 يرسون على حرفية الفرع القديم)
+            send_telegram_message(chat_id, render_dashboard_text(chat_id), reply_markup=get_main_keyboard(chat_id))
+        elif data == "cmd:decline_retry":
+            # 🚫 [P35] زر «✒️ أعد صياغة البرومبت» بعد رفض الموديل — إرشاد فوري:
+            # مؤشر الاستئناف لم يتقدم (الرفض كأن الطلب لم يُرسل)، فزر 🔄 استئناف
+            # المشروع في نفس الرسالة يكمل من آخر نقطة صالحة قبل الرفض مباشرة.
+            send_telegram_message(
+                chat_id,
+                "✒️ <b>أعد صياغة البرومبت وأرسله الآن كرسالة جديدة.</b>\n"
+                "🚫 الرفض عومل كأن الطلب لم يُرسل: مؤشر الاستئناف لم يتقدم ولم يُسجل أي ناتج.\n"
+                "💡 جرّب صياغة أوضح أو قسّم الطلب لخطوات أصغر، ثم استخدم زر 🔄 استئناف هذا المشروع "
+                "لإكمال نفس السياق، أو أرسل البرومبت مباشرة كمهمة جديدة.",
+            )
+        elif data == "cmd:decline_dashboard":
+            # 🚫 [P35] رجوع للوحة التحكم من رسالة الرفض — سلوك مطابق حرفياً لـ cmd:dashboard
+            # (فرع منفصل عمداً — نفس فلسفة P33: ممنوع مسّ حرفية الفروع القديمة)
             send_telegram_message(chat_id, render_dashboard_text(chat_id), reply_markup=get_main_keyboard(chat_id))
         elif data == "cmd:new_proj":
             set_user_state(chat_id, {"action": "AWAITING_NEW_PROJECT_NAME"})
