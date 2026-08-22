@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p09_github_dashboard
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4275..5713
-المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4275..5743
+المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات) + P33: build_completed_message_keyboard (كيبورد الاكتمال المركزي: الأزرار الخمسة القديمة + ▶️ كمل الآن cont:{pid} بصف مستقل + ⬅️ رجوع للوحة التحكم cmd:dashboard أسفل الكيبورد)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def parse_github_repository_ref(text: str | None) -> str:
@@ -1440,5 +1440,35 @@ def start_project_resume_from_key(chat_id: int, project_key: str) -> bool:
     target_url = str(context.get("resume_url") or "")
     target_pid = str(context.get("resume_pid") or context.get("latest_pid") or context.get("root_pid") or "")
     return present_resume_summary(chat_id, project_key=key, target_url=target_url, target_pid=target_pid)
+
+
+def build_completed_message_keyboard(pub_url: str | None, resume_pid: str | None, project_key: str | None) -> dict:
+    """🎛️ [P33] كيبورد رسالة الاكتمال النهائية — بناء مركزي قابل للاختبار.
+
+    الترتيب المعتمد (الأزرار الخمسة القديمة كلها محفوظة حرفياً بلا حذف أو تعديل):
+      1. 🌐 فتح المعاين المباشر (url — فقط عند وجود رابط عام: url=None كان يكسر الرسالة كلها بصمت)
+      2. ▶️ كمل الآن (cont:{resume_pid}) — صف مستقل [P33 جديد]
+      3. 🔄 استئناف هذا المشروع + 🌳 نقاط الاستئناف (نفس الصف القديم)
+      4. ⭐ تفاصيل المشروع (pview:{project_key})
+      5. 🚀 مشروع جديد
+      6. ⬅️ رجوع للوحة التحكم (cmd:dashboard) — أسفل الكيبورد دائماً [P33 جديد]
+    الزران الجديدان يعيدان استعمال معالجات قائمة: cont: (سطر السلسلة) + فرع
+    cmd:dashboard المكافئ حرفياً لـ cmd:show_dashboard (بلا لمس الفرع القديم —
+    حراس P26 يستخدمون حرفيته كمرساة index).
+    """
+    kb_rows = []
+    if pub_url:
+        kb_rows.append([{"text": "🌐 فتح المعاين المباشر", "url": pub_url}])
+    if resume_pid:
+        kb_rows.append([{"text": "▶️ كمل الآن", "callback_data": f"cont:{resume_pid}"}])
+        kb_rows.append([
+            {"text": "🔄 استئناف هذا المشروع", "callback_data": f"cont:{resume_pid}"},
+            {"text": "🌳 نقاط الاستئناف", "callback_data": f"tree:{resume_pid}"},
+        ])
+    if project_key:
+        kb_rows.append([{"text": "⭐ تفاصيل المشروع", "callback_data": f"pview:{project_key}"}])
+    kb_rows.append([{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}])
+    kb_rows.append([{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:dashboard"}])
+    return make_inline_keyboard(kb_rows)
 
 
