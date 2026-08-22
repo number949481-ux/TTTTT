@@ -20,7 +20,8 @@ test_p35_model_decline.py
   5. describe_terminal_outcome(MODEL_DECLINED): kind=failure + allow_preview=True
      (نص الرفض قصير وعرضه يفيد المستخدم) + عنوان 🚫 مميز.
   6. build_model_decline_keyboard: زران ملونان أعلى الكيبورد
-     (✍️ أعد صياغة البرومبت cmd:decline_retry style=primary +
+     (✍️ أعد صياغة البرومبت style=primary — منذ P37 يحمل مفتاح المشروع
+      cmd:decline_retry:{project_key} ومع غيابه fallback لـ cmd:decline_retry القديم +
       ⬅️ رجوع للوحة التحكم cmd:decline_dashboard style=danger)
      ثم أزرار الاكتمال المعتادة تحتهما حرفياً عبر build_completed_message_keyboard
      (بلا نسخ يدوي) — والنمطان ضمن ALLOWED_BUTTON_STYLES.
@@ -181,7 +182,8 @@ class TestP35DeclineKeyboard(unittest.TestCase):
     def test_01_first_row_is_retry_prompt_primary(self):
         btn = self.rows[0][0]
         self.assertEqual(btn["text"], "✍️ أعد صياغة البرومبت")
-        self.assertEqual(btn["callback_data"], "cmd:decline_retry")
+        # 🔄 [P37] مع مفتاح مشروع: الزر الأزرق يحمل المفتاح لفتح بطاقة ملخص الاستئناف
+        self.assertEqual(btn["callback_data"], f"cmd:decline_retry:{KEY}")
         self.assertEqual(btn["style"], "primary")
 
     def test_02_second_row_is_dashboard_danger(self):
@@ -212,7 +214,9 @@ class TestP35DeclineKeyboard(unittest.TestCase):
                 for key in (KEY, None):
                     kb = bridge.build_model_decline_keyboard(pub, pid, key)
                     cbs = _callbacks(kb)
-                    self.assertEqual(cbs[0], "cmd:decline_retry", (pub, pid, key))
+                    # 🔄 [P37] مع مفتاح: الزر يحمله / بلا مفتاح: الحرفية القديمة (fallback P35)
+                    expected_retry = f"cmd:decline_retry:{KEY}" if key else "cmd:decline_retry"
+                    self.assertEqual(cbs[0], expected_retry, (pub, pid, key))
                     self.assertEqual(cbs[1], "cmd:decline_dashboard", (pub, pid, key))
 
     def test_07_resume_button_present_with_pid(self):
