@@ -19,21 +19,21 @@
 
 | الحقل | القيمة |
 |---|---|
-| **last-updated** | 2026-08-22 — S53 |
+| **last-updated** | 2026-08-22 — S54 |
 | **repository / branch** | `number949481-ux/TTTTT` / `genspark_ai_developer` |
 | **target-version** | `01.33` |
 | **baseline code** | `01.30` (Baseline مجمّد — و`01.29`/`01.28`/`01.27`/`01.26` Golden Baselines للمرجعية فقط، ممنوع تعديلها) 🛡️ |
 | **target bot script** | `01.33_telegram_gen_bridge.py` 🚀 |
 | **target engine** | `01.03Genspark_claude-opus-5-code.py` ⚙️ |
 | **program-stage** | Stage 3 — Execution |
-| **current WBS phase** | **P34 — التنسيق الآمن للرسائل وحدود الأحرف (Safe Message Formatting — Total Message Guard)** ✂️ ✅ مغلقة — تنفيذ + **41 حارساً** + توثيق DEC-028 + بوابة 633/633 Exit 0 |
+| **current WBS phase** | **P34 — التنسيق الآمن للرسائل وحدود الأحرف (Total Message Guard)** ✂️ ✅ مغلقة + **S54: زر [▶️ كمل الآن] أخضر style: success** 🟩 — بوابة 636/636 Exit 0 |
 | **previous slice** | `TSK-4803` (DONE) ➔ S52 مكتملة: **P33** داخل `01.33` (**7594 سطراً**) — كيبورد الاكتمال المركزي `build_completed_message_keyboard` + [▶️ كمل الآن] + [⬅️ رجوع للوحة التحكم] (Pure Add Only) + **31 حارساً** + بوابة 592/592 Exit 0 |
 | **current slice** | `TSK-4903` (DONE) ➔ S53 مكتملة: **P34** داخل `01.33` (**7659 سطراً**) — Total Message Guard (طلب `11_Cap.MD`): استبدال القصّ القديم 2500/«تم الاقتصاص لزيادة الحجم» (كان يقيس الرد وحده فتتجاوز الرسالة المجمعة 4096 مع بلوكات P29/P30 وتسقط الأزرار) بثلاث طبقات مركزية في p04: `clamp_preview_text` (1000 + لاحقة الرابط) ➔ `enforce_completion_message_budget` (الرسالة المجمعة ≤3500 — القصّ على المعاينة أولاً والبيانات التشغيلية محفوظة) ➔ `clamp_outgoing_text` صمام أخير بطبقة الإرسال (>3900 ➔ ≤3800 و`reply_markup` سليم دائماً) + سلامة HTML عند نقاط القص `_strip_partial_html_token` + **41 حارساً** + parity 11/11 + بوابة 633/633 Exit 0 |
-| **current-task** | `S53` — إغلاق P34 (طلب المالك `11_Cap.MD`): فحص ميداني أكد تشخيص المالك (القصّ القديم على الرد وحده + بلوكات P29/P30 بعده = تجاوز 4096 وسقوط الأزرار) ➔ التنفيذ بثلاث طبقات حماية مركزية + حزمة حراسة واحدة (41 اختباراً) — الإجمالي **633** |
+| **current-task** | `S54` (DONE) — Button Style Update (طلب مالك مباشر): زر [▶️ كمل الآن] في `build_completed_message_keyboard` أصبح أخضر `"style": "success"` (ضمن `ALLOWED_BUTTON_STYLES`) في `01.33` + مرآة p09 + إعادة توليد bridge_refactor (parity 11/11) + **3 حراس جدد** في حزمة P33 (34 حارساً) — الإجمالي **636** |
 | **next-action** | اختبار تشغيلي حي (E2E) من المالك على 01.33: **P34** (مهمة برد طويل >2500 حرف ومتعددة الحسابات ➔ الرسالة الختامية تنزل كاملة بكل أزرارها) + **P33** (بناء مهمة للاكتمال ➔ ضغط ▶️ كمل الآن = استئناف فوري + ضغط ⬅️ رجوع = لوحة كاملة) + P32 (زر 🔐 ➔ بحث هجين) + P29/P30 (مهمة متعددة الحسابات) + P28 (ملف .txt فعلي) + تفويض GitHub لدفع Push/PR يدوياً (المزامنة التلقائية تدفع لـ main) |
 | **current-blocker** | `BLOCKED-ON-OWNER` — (أ) ميزة P22 معلّقة كلياً ⏸️ — لا تنفيذ إلا بخطة معتمدة Approve أولاً. (ب) **تنبيه وظيفي S51:** فحص الرصيد السريع الذي كان بالزر القديم `cmd:check_accs` زال بالاستبدال (قرار الطلب الصريح — الخيار B) — لو أراده المالك يُعاد كزر مستقل بجواره (الخيار C). (موافقة P27 صدرت ونُفذت في S48 ✅ — `AI_RACE_ACCOUNTS` حُسم في S44: `0` = الكل يتسابق) |
-| **completion** | 633/633 Tests Verified (100%) 🧪 |
-| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 633/633 PASS — Exit Code 0 |
+| **completion** | 636/636 Tests Verified (100%) 🧪 |
+| **quality-gate** | `python scripts/hadith_sijil.py` ➔ 636/636 PASS — Exit Code 0 |
 | **session-log** | `docs/engineering/SESSION_LOG.md` |
 | **release decision** | `READY` 🟢 (P34: التنسيق الآمن وحدود الأحرف — Total Message Guard + P33: أزرار الإجراءات السريعة برسالة الاكتمال + P32: استخراج باسورد الحساب ببحث هجين + P29: مسار رحلة الحسابات الحي + P30: توقيت كل حساب Unmasked في الرسالة النهائية + P31: صفر نداء لكوين عند sync بلا تغييرات + P28: استقبال ملفات المهام .txt/.md + P27: تصفح المشاريع 20/صفحة + P26: حذف ذري آمن + P25: إلغاء تفاعلي + P24: كوميت ذكي بكوين + P20/P21: REST-Only + DATA_RETENTION + P18: وقف فوري لمؤشر النشاط — صفر انحدار) |
 
