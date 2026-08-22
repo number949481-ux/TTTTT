@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-22 07:45:55 UTC`
+* **التاريخ والوقت:** `2026-08-22 09:14:53 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.356 ثانية`
-* **النتيجة العامة:** `Ran 636 tests — OK`
+* **الزمن المقاس:** `1.535 ثانية`
+* **النتيجة العامة:** `Ran 678 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -764,6 +764,48 @@ test_01_long_text_trimmed_in_payload (test_p34_safe_message_formatting.TestSende
 test_02_reply_markup_rows_fully_intact (test_p34_safe_message_formatting.TestSenderKeepsButtonsIntact.test_02_reply_markup_rows_fully_intact) ... ok
 test_03_short_text_not_modified (test_p34_safe_message_formatting.TestSenderKeepsButtonsIntact.test_03_short_text_not_modified) ... ok
 test_04_boolean_wrapper_still_works (test_p34_safe_message_formatting.TestSenderKeepsButtonsIntact.test_04_boolean_wrapper_still_works) ... ok
+test_01_markers_list_exists_and_lowercase (test_p35_model_decline.TestP35Constants.test_01_markers_list_exists_and_lowercase) ... ok
+test_02_canonical_marker_present (test_p35_model_decline.TestP35Constants.test_02_canonical_marker_present) ... ok
+test_03_max_chars_is_300 (test_p35_model_decline.TestP35Constants.test_03_max_chars_is_300) ... ok
+test_04_status_constant_value (test_p35_model_decline.TestP35Constants.test_04_status_constant_value) ... ok
+test_05_single_definition_of_each_constant (test_p35_model_decline.TestP35Constants.test_05_single_definition_of_each_constant) ... ok
+test_01_first_row_is_retry_prompt_primary (test_p35_model_decline.TestP35DeclineKeyboard.test_01_first_row_is_retry_prompt_primary) ... ok
+test_02_second_row_is_dashboard_danger (test_p35_model_decline.TestP35DeclineKeyboard.test_02_second_row_is_dashboard_danger) ... ok
+test_03_styles_within_allowed_whitelist (test_p35_model_decline.TestP35DeclineKeyboard.test_03_styles_within_allowed_whitelist) ... ok
+test_04_completed_keyboard_rows_appended_verbatim (test_p35_model_decline.TestP35DeclineKeyboard.test_04_completed_keyboard_rows_appended_verbatim) ... ok
+test_05_no_dead_url_button_without_pub_url (test_p35_model_decline.TestP35DeclineKeyboard.test_05_no_dead_url_button_without_pub_url) ... ok
+test_06_decline_rows_survive_all_input_combinations (test_p35_model_decline.TestP35DeclineKeyboard.test_06_decline_rows_survive_all_input_combinations) ... ok
+test_07_resume_button_present_with_pid (test_p35_model_decline.TestP35DeclineKeyboard.test_07_resume_button_present_with_pid) ... ok
+test_08_callback_data_within_telegram_64_bytes (test_p35_model_decline.TestP35DeclineKeyboard.test_08_callback_data_within_telegram_64_bytes) ... ok
+test_01_canonical_decline_detected (test_p35_model_decline.TestP35Detection.test_01_canonical_decline_detected) ... ok
+test_02_all_markers_detected (test_p35_model_decline.TestP35Detection.test_02_all_markers_detected) ... ok
+test_03_case_insensitive (test_p35_model_decline.TestP35Detection.test_03_case_insensitive) ... ok
+test_04_whitespace_stripped (test_p35_model_decline.TestP35Detection.test_04_whitespace_stripped) ... ok
+test_05_none_and_empty_are_not_decline (test_p35_model_decline.TestP35Detection.test_05_none_and_empty_are_not_decline) ... ok
+test_06_long_legit_response_quoting_marker_is_not_decline (test_p35_model_decline.TestP35Detection.test_06_long_legit_response_quoting_marker_is_not_decline) ... ok
+test_07_boundary_at_exactly_300_chars (test_p35_model_decline.TestP35Detection.test_07_boundary_at_exactly_300_chars) ... ok
+test_08_normal_short_answer_is_not_decline (test_p35_model_decline.TestP35Detection.test_08_normal_short_answer_is_not_decline) ... ok
+test_09_detect_response_status_still_completed_for_decline_text (test_p35_model_decline.TestP35Detection.test_09_detect_response_status_still_completed_for_decline_text) ... ok
+test_01_decline_retry_handler_exists (test_p35_model_decline.TestP35DispatcherHandlers.test_01_decline_retry_handler_exists) ... ok
+test_02_decline_dashboard_handler_exists (test_p35_model_decline.TestP35DispatcherHandlers.test_02_decline_dashboard_handler_exists) ... ok
+test_03_decline_dashboard_matches_dashboard_behavior (test_p35_model_decline.TestP35DispatcherHandlers.test_03_decline_dashboard_matches_dashboard_behavior) ... ok
+test_04_retry_handler_sends_guidance_not_task (test_p35_model_decline.TestP35DispatcherHandlers.test_04_retry_handler_sends_guidance_not_task) ... ok
+test_05_legacy_dashboard_branch_untouched (test_p35_model_decline.TestP35DispatcherHandlers.test_05_legacy_dashboard_branch_untouched) ... ok
+test_01_kind_is_failure (test_p35_model_decline.TestP35TerminalOutcome.test_01_kind_is_failure) ... ok
+test_02_allow_preview_true (test_p35_model_decline.TestP35TerminalOutcome.test_02_allow_preview_true) ... ok
+test_03_title_is_distinct_decline_banner (test_p35_model_decline.TestP35TerminalOutcome.test_03_title_is_distinct_decline_banner) ... ok
+test_04_note_explains_not_sent_semantics (test_p35_model_decline.TestP35TerminalOutcome.test_04_note_explains_not_sent_semantics) ... ok
+test_05_completed_outcome_untouched (test_p35_model_decline.TestP35TerminalOutcome.test_05_completed_outcome_untouched) ... ok
+test_06_other_failures_keep_allow_preview_false (test_p35_model_decline.TestP35TerminalOutcome.test_06_other_failures_keep_allow_preview_false) ... ok
+test_01_reclassification_only_over_completed (test_p35_model_decline.TestP35WorkerSourceContracts.test_01_reclassification_only_over_completed) ... ok
+test_02_status_becomes_model_declined (test_p35_model_decline.TestP35WorkerSourceContracts.test_02_status_becomes_model_declined) ... ok
+test_03_final_pid_reset_blocks_resume_pointer_advance (test_p35_model_decline.TestP35WorkerSourceContracts.test_03_final_pid_reset_blocks_resume_pointer_advance) ... ok
+test_04_decline_keyboard_used_for_declined_status (test_p35_model_decline.TestP35WorkerSourceContracts.test_04_decline_keyboard_used_for_declined_status) ... ok
+test_05_completed_keyboard_still_default (test_p35_model_decline.TestP35WorkerSourceContracts.test_05_completed_keyboard_still_default) ... ok
+test_06_reclassification_after_failover_before_identity_write (test_p35_model_decline.TestP35WorkerSourceContracts.test_06_reclassification_after_failover_before_identity_write) ... ok
+test_01_completed_keyboard_has_no_decline_buttons (test_p35_model_decline.TestP35ZeroBreaking.test_01_completed_keyboard_has_no_decline_buttons) ... ok
+test_02_completed_keyboard_contracts_intact (test_p35_model_decline.TestP35ZeroBreaking.test_02_completed_keyboard_contracts_intact) ... ok
+test_03_credit_exhausted_flow_not_reclassified (test_p35_model_decline.TestP35ZeroBreaking.test_03_credit_exhausted_flow_not_reclassified) ... ok
 test_continue_chat_payload_identical (test_p3_regression.TestP3RegressionSnapshots.test_continue_chat_payload_identical)
 التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter ... ok
 test_engine_selection_unchanged (test_p3_regression.TestP3RegressionSnapshots.test_engine_selection_unchanged)
@@ -816,7 +858,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 636 tests in 0.905s
+Ran 678 tests in 0.857s
 
 OK
 ```
