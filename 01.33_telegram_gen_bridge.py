@@ -5846,14 +5846,25 @@ def build_model_decline_keyboard(pub_url: str | None, resume_pid: str | None, pr
 
     الفرق البصري المعتمد: رسالة اكتمال عادية = زر أخضر واحد (▶️ كمل الآن) /
     رسالة رفض = زران ملونان بارزان أعلى الكيبورد:
-      1. 🔵 [✍️ أعد صياغة البرومبت] (cmd:decline_retry) — style: primary (أزرق)
+      1. 🔵 [✍️ أعد صياغة البرومبت] — style: primary (أزرق)
+         🔄 [P37] يحمل مفتاح المشروع: cmd:decline_retry:{project_key} ⟹ ضغطه يفتح
+         بطاقة «🔄 ملخص الاستئناف» الكاملة فوراً (▶️ كمل الآن / ⚙️ عدّل الإعدادات).
+         Fallback آمن: بلا مفتاح (أو لو تجاوز الـcallback حد تليجرام 64 بايت)
+         يعود للحرفية القديمة cmd:decline_retry (إرشاد نصي فقط — عقد P35).
       2. 🔴 [⬅️ رجوع للوحة التحكم] (cmd:decline_dashboard) — style: danger (أحمر)
     ثم كل أزرار الاكتمال المعتادة تحتهما حرفياً عبر build_completed_message_keyboard
     (بلا أي نسخ يدوي — أي تطور مستقبلي في كيبورد الاكتمال يسري هنا تلقائياً).
     كلا النمطين ضمن ALLOWED_BUTTON_STYLES الرسمية (primary/success/danger).
     """
+    # 🔄 [P37] الزر الأزرق يمرر مفتاح المشروع لفتح بطاقة ملخص الاستئناف مباشرة
+    retry_cb = "cmd:decline_retry"
+    clean_key = re.sub(r"[^A-Za-z0-9_-]", "_", str(project_key or ""))[:80]
+    if clean_key:
+        candidate = f"cmd:decline_retry:{clean_key}"
+        if len(candidate.encode("utf-8")) <= 64:
+            retry_cb = candidate
     kb_rows = [
-        [{"text": "✍️ أعد صياغة البرومبت", "callback_data": "cmd:decline_retry", "style": "primary"}],
+        [{"text": "✍️ أعد صياغة البرومبت", "callback_data": retry_cb, "style": "primary"}],
         [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:decline_dashboard", "style": "danger"}],
     ]
     base = build_completed_message_keyboard(pub_url, resume_pid, project_key)
@@ -6661,6 +6672,7 @@ def handle_telegram_update(update: dict):
             # 🚫 [P35] زر «✒️ أعد صياغة البرومبت» بعد رفض الموديل — إرشاد فوري:
             # مؤشر الاستئناف لم يتقدم (الرفض كأن الطلب لم يُرسل)، فزر 🔄 استئناف
             # المشروع في نفس الرسالة يكمل من آخر نقطة صالحة قبل الرفض مباشرة.
+            # (فرع الـ fallback القديم بحرفيته — يصل هنا فقط لو الكيبورد بلا مفتاح مشروع)
             send_telegram_message(
                 chat_id,
                 "✒️ <b>أعد صياغة البرومبت وأرسله الآن كرسالة جديدة.</b>\n"
@@ -6668,6 +6680,20 @@ def handle_telegram_update(update: dict):
                 "💡 جرّب صياغة أوضح أو قسّم الطلب لخطوات أصغر، ثم استخدم زر 🔄 استئناف هذا المشروع "
                 "لإكمال نفس السياق، أو أرسل البرومبت مباشرة كمهمة جديدة.",
             )
+        elif data.startswith("cmd:decline_retry:"):
+            # 🔄 [P37] زر «✍️ أعد صياغة البرومبت» بمفتاح مشروع — فتح بطاقة ملخص
+            # الاستئناف الكاملة فوراً: render_project_resume_summary_text + كيبوردها
+            # التفاعلي (▶️ كمل الآن / ⚙️ عدّل الإعدادات) وضبط الحالة على
+            # AWAITING_PROJECT_RESUME_DECISION بسياق المشروع النظيف (root/latest pid)
+            # عبر start_project_resume_from_key — البرومبت الجديد التالي يكمل على
+            # نفس المشروع مباشرة (المؤشر لم يتقدم لنقطة الرفض — عقد P35 محفوظ).
+            retry_key = data.split("cmd:decline_retry:", 1)[1]
+            if not start_project_resume_from_key(chat_id, retry_key):
+                send_telegram_message(
+                    chat_id,
+                    "⚠️ <b>تعذر فتح ملخص الاستئناف لهذا المشروع.</b>\n"
+                    "✒️ أعد صياغة البرومبت وأرسله كرسالة جديدة، أو استخدم زر 🔄 استئناف المشروع من الرسالة.",
+                )
         elif data == "cmd:decline_dashboard":
             # 🚫 [P35] رجوع للوحة التحكم من رسالة الرفض — سلوك مطابق حرفياً لـ cmd:dashboard
             # (فرع منفصل عمداً — نفس فلسفة P33: ممنوع مسّ حرفية الفروع القديمة)
