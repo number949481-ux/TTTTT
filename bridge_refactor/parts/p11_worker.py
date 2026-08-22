@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5995..6345
-المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6025..6364
+المحتوى: process_user_task_async (المشغل الكامل للمهمة | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def process_user_task_async(
@@ -296,19 +296,8 @@ def process_user_task_async(
             f"{timing_block}"
         )
 
-        # إصلاح: بناء الكيبورد بدون أزرار فارغة (url=None كان يكسر الرسالة كلها بصمت)
-        kb_rows = []
-        if pub_url:
-            kb_rows.append([{"text": "🌐 فتح المعاين المباشر", "url": pub_url}])
-        if resume_pid:
-            kb_rows.append([
-                {"text": "🔄 استئناف هذا المشروع", "callback_data": f"cont:{resume_pid}"},
-                {"text": "🌳 نقاط الاستئناف", "callback_data": f"tree:{resume_pid}"},
-            ])
-        if project_key:
-            kb_rows.append([{"text": "⭐ تفاصيل المشروع", "callback_data": f"pview:{project_key}"}])
-        kb_rows.append([{"text": "🚀 مشروع جديد", "callback_data": "cmd:new_proj"}])
-        reply_markup = make_inline_keyboard(kb_rows)
+        # 🎛️ [P33] الكيبورد المركزي للاكتمال — الأزرار الخمسة القديمة + ▶️ كمل الآن + ⬅️ رجوع للوحة التحكم
+        reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
 
         send_telegram_message(chat_id, res_msg, reply_markup=reply_markup)
 
