@@ -1,9 +1,9 @@
 # 🧪 كتالوج حالات واختبارات الوحدة (TEST_SUITE_CATALOG.md)
 
-> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **561 فحصاً النشطة محلياً** لإصدار `01.33`  
-> **حالة الاختبارات النشطة:** 561/561 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
+> **الكتالوج الشامل:** يوثق الـ 164 فحصاً التاريخية التراكمية للمشروع + الـ **592 فحصاً النشطة محلياً** لإصدار `01.33`  
+> **حالة الاختبارات النشطة:** 592/592 PASS (100% OK) — بوابة `hadith_sijil.py` بـ Exit Code 0 ⚡  
 
-## 📊 0. المصفوفة النشطة الحالية — 01.33 (561 فحصاً / 26 ملفاً)
+## 📊 0. المصفوفة النشطة الحالية — 01.33 (592 فحصاً / 27 ملفاً)
 
 | الحزمة | الملف | العدد | النطاق |
 |---|---|:---:|---|
@@ -32,8 +32,9 @@
 | **P30 المحاسبة الزمنية الجنائية** | `test_p30_account_timing.py` | **35** | **`open_account_timing_span` لحظة الـ claim + `close_account_timing_span` حتمي idempotent في `finally` + `aggregate_journey_spans_per_email` (تجميع عودة الحساب A→B→A في مدخل واحد ×2) + `format_arabic_duration` (ثوانٍ/دقائق/ساعات + سالب/None بلا Crash) + `format_account_timing_block` (إيميلات كاملة Unmasked + توتال + «(المُنجِز)» لآخر حساب) + monotonic مصدر المدة (محصّن ضد قفزات wall clock) + عزل التشغيلات والـ configs المتوازية + الفصل الصارم Resume ≠ Accounts−1** |
 | **P31 الاستدعاء الكسول لكوين** | `test_p31_lazy_qwen_prefix.py` | **14** | **`ai_prefix = None` + `_lazy_ai_prefix` memoized داخل `_default_github_uploader` — job كله unchanged (وكل delete على ريموت 404) = صفر نداء لكوين (توفير الباقة + إلغاء تأخير حتى 30ث/sync) + أول PUT/DELETE فعلي يوقظه مرة واحدة فقط (عقد DEC-019) + رسائل الكوميت حرفياً بلا تغيير (بادئة عند النجاح / القديمة عند الفشل) + عقود مصدرية (النداء بعد فحص unchanged داخل الحلقة)** |
 | **P32 استخراج باسورد الحساب (بحث هجين)** | `test_p32_account_password_lookup.py` | **78** | **استبدال زر `cmd:check_accs` بـ `cmd:account_pwd_lookup` (اختفاء الزر القديم نهائياً من الملف) + `list_lookup_accounts` (ترتيب أبجدي ثابت يضمن استقرار الفهرس + تصفية بلا-إيميل/non-dict + قراءة خالصة تُحرس ببصمة الملف قبل/بعد) + `compute_accounts_page_bounds` (5/صفحة — Out-of-Bounds Safe: 0/سالب/999/نص/None + بلا صفحة وهمية عند المضاعف التام) + `find_account_by_email` (تطبيع strip+lower + رفض التطابق الجزئي) + `render_account_password_card` (الإيميل والباسورد `<code>` للنسخ + تبليغ صريح عند غياب الباسورد + هروب HTML) + `describe_account_state` (ACTIVE/COOLDOWN/BANNED) + Pagination عبر `handle_telegram_update` (تقليب In-Place بـ editMessageText بلا Spam + فهارس مطلقة للصفحة الثانية + حفظ الصفحة في الحالة + `acc_page:noop` لا يفعل شيئاً) + `acc_view:{index}` بالفهرس لا بالإيميل (حراسة حد تيليجرام 64 بايت بإيميلات طويلة) + المسار اليدوي كأول فحص action (الإيميل لا يُرسل كبرومبت مهمة أبداً + الحالة تبقى عند الفشل لإعادة المحاولة) + الإلغاء `acc_cancel` (تصفير + لوحة التحكم + النص بعده يعود مهمة عادية) + Zero Regression لعقود P29/P30/P31** |
-| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.33 (7571 سطراً) |
-| **الإجمالي** | **26 ملفاً** | **561** | ✅ 561/561 PASS |
+| **P33 أزرار الإجراءات السريعة (رسالة الاكتمال)** | `test_p33_completed_quick_actions.py` | **31** | **البنّاء المركزي `build_completed_message_keyboard` (استخراج بناء `kb_rows` المحلي من الـ worker — Extract-then-Add) + الأزرار الخمسة القديمة محفوظة حرفياً (نص + callback/url — Pure Add Only) + [▶️ كمل الآن] صف مستقل بـ `cont:{resume_pid}` (إعادة استخدام معالج الاستئناف القائم + يختفي بلا pid + قياس حد 64 بايت فعلياً) + [⬅️ رجوع للوحة التحكم] `cmd:dashboard` آخر صف في كل التركيبات الثمانية للمدخلات + الشرطيات التاريخية الثلاث (لا زر url ميت بلا pub_url / لا استئناف بلا pid / لا تفاصيل بلا key) + معالج `cmd:dashboard` الحي مكافئ حرفياً لـ `cmd:show_dashboard` (لوحة كاملة + بوابة is_chat_allowed) + عقود مصدرية (تعريف وحيد + صفر kb_rows متبقٍ بالـ worker + الفرع الجديد elif بعد القديم)** |
+| Parity المرآة | `test_refactor_parity.py` | 11 | تطابق بايت bridge_refactor مع 01.33 (7594 سطراً) |
+| **الإجمالي** | **27 ملفاً** | **592** | ✅ 592/592 PASS |
 
 
 ---
