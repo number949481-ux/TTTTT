@@ -259,3 +259,17 @@
 - **البوابة:** pytest ➔ **636 passed** (633 + 3) + `hadith_sijil.py` ➔ **Exit Code 0** ✅ + parity 11/11 ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة الثامنة عشرة، موافقة S41 الدائمة).
 - **الحجم:** `01.33` ➔ **7659 سطراً** (بلا تغيير — تعديل داخل سطر قائم).
 - **القرار:** ✅ S54 مغلقة — الحالة `READY` 🟢 — E2E الحي لـ P33 لدى المالك يشمل الآن التحقق البصري من الزر الأخضر.
+
+### [DEC-030] — S55/P35: كشف رفض الموديل والتعافي منه — Model Decline Recovery (طلب مالك مباشر، 2026-08-22)
+- **العلة المكتشفة:** الرد القصير "The model declined to answer this request..." يصل بطول > 25 حرفاً فيُحتسب `COMPLETED` في `detect_response_status` — صحيح تقنياً (المهمة انتهت) لكنه خاطئ دلالياً: لا يوجد أي ناتج، والأسوأ أن **مؤشر الاستئناف كان يتقدم لنقطة "الرفض"** فيفسد سلسلة الاستئناف على المشروع.
+- **الفلسفة المعتمدة:** الرفض يُعامل **«كأن الطلب لم يُرسل»** — لا ناتج يُسجل، لا مؤشر يتقدم، والمستخدم يُوجَّه لإعادة الصياغة مع بقاء طريق «كمل من آخر نقطة صالحة» مفتوحاً.
+- **البنية (4 مواضع في `01.33`):**
+  1. **p05 — الكشف:** ثوابت مركزية بتعريف وحيد (`MODEL_DECLINE_MARKERS` 5 عبارات lowercase + `MODEL_DECLINE_MAX_RESPONSE_CHARS=300` + `MODEL_DECLINED_STATUS="MODEL_DECLINED"`) + `is_model_decline_response` (قصير ≤300 بعد strip + جوهره عبارة رفض — **حارس False Positive**: الرد الطويل الذي يقتبس الجملة ليس رفضاً، نفس فلسفة إصلاح RUNNING الكاذب). `detect_response_status` **لم يُلمس**.
+  2. **p10 — الوصف:** فرع `MODEL_DECLINED` في `describe_terminal_outcome`: failure بعنوان 🚫 مميز + `allow_preview=True` (الاستثناء الوحيد بين حالات الفشل — نص الرفض قصير وعرضه يزيد الثقة).
+  3. **p09 — الكيبورد:** `build_model_decline_keyboard` — زران ملونان أعلى الكيبورد (✍️ أعد صياغة البرومبت `cmd:decline_retry` primary + ⬅️ رجوع `cmd:decline_dashboard` danger) ثم أزرار الاكتمال المعتادة تحتهما حرفياً عبر `build_completed_message_keyboard` (بلا نسخ — أي تطور مستقبلي يسري تلقائياً).
+  4. **p11 worker + p12 dispatcher:** إعادة التصنيف `model_declined = status == "COMPLETED" and is_model_decline_response(...)` (فوق COMPLETED **حصرياً** = Zero Breaking) + تصفير `final_pid = ""` (المؤشر لا يتقدم) + اختيار الكيبورد بالحالة + معالجا `cmd:decline_retry` (إرشاد فقط — بلا `EXECUTOR.submit`) و`cmd:decline_dashboard` (مكافئ حرفياً لـ `cmd:dashboard` بفرع منفصل).
+- **الحراسة (+42):** `tests/test_p35_model_decline.py` — 7 مجموعات: الثوابت 5 / الكشف وحارس False Positive 9 (منها حدّية 300/301 فعلية وثبات detect_response_status) / terminal outcome 6 / الكيبورد 8 (منها التركيبات الثمانية وحد 64 بايت) / عقود worker المصدرية 6 (منها ترتيب إعادة التصنيف قبل كتابة الهوية) / معالجا الموزّع 5 / Zero Breaking 3. الإجمالي **678**.
+- **المرايا:** PARTS محدَّثة (p05 ➔ 1545–1827 وإزاحة حتى p12 ➔ 7765) + إعادة توليد `bridge_refactor/` + parity **11/11**.
+- **البوابة:** pytest ➔ **678 passed** + `hadith_sijil.py` ➔ **Exit Code 0** ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة التاسعة عشرة، موافقة S41 الدائمة).
+- **الحجم:** `01.33` ➔ **7765 سطراً** (+106).
+- **القرار:** ✅ S55 مغلقة — الحالة `READY` 🟢 — E2E الحي لدى المالك يشمل الآن P35 (برومبت يُتوقع رفضه ➔ رسالة 🚫 بالزرين الملونين + التأكد أن الاستئناف بعدها يكمل من النقطة الصالحة قبل الرفض).
