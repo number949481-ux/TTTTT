@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p04_telegram_api
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1021..1544
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1022..1545
 المحتوى: Telegram API core + P34: ثوابت ودوال Safe Message Formatting (PREVIEW_MAX_CHARS/RES_MSG_MAX_CHARS/OUTGOING limits + _strip_partial_html_token + clamp_preview_text + enforce_completion_message_budget + clamp_outgoing_text محقونة في payload الإرسال) + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport (P29: سطر الحساب النشط + سطر تبديل الحساب بعد handoff) + send_document + P28: ALLOWED_DOCUMENT_EXTENSIONS/MAX_DOCUMENT_SIZE_BYTES + download_telegram_document_text (getFile → تنزيل UTF-8 آمن بلا Crash)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
