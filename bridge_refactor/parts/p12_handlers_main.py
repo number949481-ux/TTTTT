@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6522..7766
-المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P35: معالجا cmd:decline_retry (إرشاد إعادة الصياغة) + cmd:decline_dashboard (لوحة التحكم — مكافئ حرفياً لـ cmd:dashboard بفرع منفصل) | P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place | P28: كتلة Document Ingestion المعزولة — .txt/.md → text بعد بوابة الصلاحيات وقبل /start مع دمج Caption ورفض ودي للامتداد/الحجم | P32: معالجات cmd:account_pwd_lookup/acc_page:/acc_view:/acc_cancel + المسار اليدوي AWAITING_ACCOUNT_PASSWORD_LOOKUP كأول فحص في سلسلة الحالات | P33: فرع cmd:dashboard المكافئ حرفياً لـ cmd:show_dashboard)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6533..7792
+المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P37: معالج cmd:decline_retry:{key} — فتح بطاقة ملخص الاستئناف فوراً عبر start_project_resume_from_key + AWAITING_PROJECT_RESUME_DECISION بسياق نظيف + fallback مهذب عند الفشل | P35: معالجا cmd:decline_retry (إرشاد إعادة الصياغة — fallback بلا مفتاح) + cmd:decline_dashboard (لوحة التحكم — مكافئ حرفياً لـ cmd:dashboard بفرع منفصل) | P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place | P28: كتلة Document Ingestion المعزولة — .txt/.md → text بعد بوابة الصلاحيات وقبل /start مع دمج Caption ورفض ودي للامتداد/الحجم | P32: معالجات cmd:account_pwd_lookup/acc_page:/acc_view:/acc_cancel + المسار اليدوي AWAITING_ACCOUNT_PASSWORD_LOOKUP كأول فحص في سلسلة الحالات | P33: فرع cmd:dashboard المكافئ حرفياً لـ cmd:show_dashboard)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def get_main_keyboard(chat_id: int | None = None):
@@ -145,6 +145,7 @@ def handle_telegram_update(update: dict):
             # 🚫 [P35] زر «✒️ أعد صياغة البرومبت» بعد رفض الموديل — إرشاد فوري:
             # مؤشر الاستئناف لم يتقدم (الرفض كأن الطلب لم يُرسل)، فزر 🔄 استئناف
             # المشروع في نفس الرسالة يكمل من آخر نقطة صالحة قبل الرفض مباشرة.
+            # (فرع الـ fallback القديم بحرفيته — يصل هنا فقط لو الكيبورد بلا مفتاح مشروع)
             send_telegram_message(
                 chat_id,
                 "✒️ <b>أعد صياغة البرومبت وأرسله الآن كرسالة جديدة.</b>\n"
@@ -152,6 +153,20 @@ def handle_telegram_update(update: dict):
                 "💡 جرّب صياغة أوضح أو قسّم الطلب لخطوات أصغر، ثم استخدم زر 🔄 استئناف هذا المشروع "
                 "لإكمال نفس السياق، أو أرسل البرومبت مباشرة كمهمة جديدة.",
             )
+        elif data.startswith("cmd:decline_retry:"):
+            # 🔄 [P37] زر «✍️ أعد صياغة البرومبت» بمفتاح مشروع — فتح بطاقة ملخص
+            # الاستئناف الكاملة فوراً: render_project_resume_summary_text + كيبوردها
+            # التفاعلي (▶️ كمل الآن / ⚙️ عدّل الإعدادات) وضبط الحالة على
+            # AWAITING_PROJECT_RESUME_DECISION بسياق المشروع النظيف (root/latest pid)
+            # عبر start_project_resume_from_key — البرومبت الجديد التالي يكمل على
+            # نفس المشروع مباشرة (المؤشر لم يتقدم لنقطة الرفض — عقد P35 محفوظ).
+            retry_key = data.split("cmd:decline_retry:", 1)[1]
+            if not start_project_resume_from_key(chat_id, retry_key):
+                send_telegram_message(
+                    chat_id,
+                    "⚠️ <b>تعذر فتح ملخص الاستئناف لهذا المشروع.</b>\n"
+                    "✒️ أعد صياغة البرومبت وأرسله كرسالة جديدة، أو استخدم زر 🔄 استئناف المشروع من الرسالة.",
+                )
         elif data == "cmd:decline_dashboard":
             # 🚫 [P35] رجوع للوحة التحكم من رسالة الرفض — سلوك مطابق حرفياً لـ cmd:dashboard
             # (فرع منفصل عمداً — نفس فلسفة P33: ممنوع مسّ حرفية الفروع القديمة)
