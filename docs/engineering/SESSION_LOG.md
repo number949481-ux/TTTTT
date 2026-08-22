@@ -250,3 +250,12 @@
 - **المرايا والبوابة:** حدود `PARTS` محدَّثة (p04 ➔ 1021–1544 يشمل P34، الإزاحة حتى p12 ➔ 7659) + إعادة توليد `bridge_refactor/` ➔ parity **11/11** بايت-بايت. pytest ➔ **633 passed** (592 + 41) + `hadith_sijil.py` ➔ **Exit Code 0** ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة السادسة عشرة، موافقة S41 الدائمة).
 - **الحجم:** `01.33` ➔ **7659 سطراً** (+65: ثوابت ودوال P34 في p04 + حقن الـ worker).
 - **القرار:** ✅ P34 مغلقة — الحالة `READY` 🟢 بانتظار E2E حي من المالك (مهمة متعددة الحسابات برد طويل >2500 حرف ➔ الرسالة الختامية تنزل كاملة بكل أزرارها بلا رفض من تيليجرام).
+
+### [DEC-029] — S54: تحويل زر [▶️ كمل الآن] إلى الأخضر style: success (طلب مالك مباشر، 2026-08-22)
+- **الطلب:** Button Style Update — إضافة `"style": "success"` لزر [▶️ كمل الآن] داخل `build_completed_message_keyboard` (كيبورد الاكتمال المركزي P33) في `01.33`، مع مزامنة المرايا وتحديث حراس P33 والبوابة الكاملة والتوثيق.
+- **الفحص قبل التنفيذ:** النمط `success` ضمن `ALLOWED_BUTTON_STYLES = {"primary", "success", "danger"}` المعتمدة منذ البداية — `make_inline_keyboard` يمرره سليماً بلا إسقاط. سابقة قائمة بالفعل: زر [▶️ كمل الآن] في كيبورد قرار الاستئناف (`cmd:resume_continue`) يحمل `success` منذ إنشائه — التعديل يوحّد الهوية البصرية للزر نفسه في كيبورد الاكتمال.
+- **التنفيذ (سطر واحد لكل مرآة):** `kb_rows.append([{"text": "▶️ كمل الآن", "callback_data": f"cont:{resume_pid}", "style": "success"}])` في `01.33` (داخل حدود p09) + `bridge_refactor/parts/p09_github_dashboard.py` + إعادة توليد `bridge_refactor/` بـ `scripts/rebuild_refactor.py` — تكافؤ الدالة **IDENTICAL** والوصول عبر `bridge_refactor.telegram.ui` يعيد الزر بالنمط الأخضر. **Zero Breaking:** زر 🔄 استئناف القديم وكل الأزرار الأخرى بلا مساس (بلا style).
+- **الحراسة (+3 ➔ 34):** في `tests/test_p33_completed_quick_actions.py`: `test_02b_style_is_success_green` (النمط حرفياً "success") + `test_02c_success_style_is_in_allowed_styles` (عضوية ALLOWED_BUTTON_STYLES — ضمان عدم السقوط في make_inline_keyboard) + `test_02d_legacy_resume_button_has_no_style` (Zero Breaking على زر 🔄 القديم).
+- **البوابة:** pytest ➔ **636 passed** (633 + 3) + `hadith_sijil.py` ➔ **Exit Code 0** ✅ + parity 11/11 ✅ (بعد إخراج `.pytest_cache/`+`bridge_bot.log` من التتبع — المرة الثامنة عشرة، موافقة S41 الدائمة).
+- **الحجم:** `01.33` ➔ **7659 سطراً** (بلا تغيير — تعديل داخل سطر قائم).
+- **القرار:** ✅ S54 مغلقة — الحالة `READY` 🟢 — E2E الحي لـ P33 لدى المالك يشمل الآن التحقق البصري من الزر الأخضر.
