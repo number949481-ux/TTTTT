@@ -20,6 +20,7 @@ __all__ = [
     "evaluate_credit_checkpoint_gate",
     "describe_credit_checkpoint_state",
     "describe_terminal_outcome",
+    "format_active_account_line",
     "process_user_task_async",
 ]
 
