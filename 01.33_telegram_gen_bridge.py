@@ -6167,6 +6167,17 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
     return {"kind": "failure", "title": title, "note": note, "allow_preview": False}
 
 
+def format_active_account_line(raw_email) -> str:
+    """📧 [P38] سطر الحساب النشط الموحد عبر كل بطاقات دورة حياة المشروع.
+
+    مصدر واحد للحقيقة بدل نسخ متفرقة: تفريغ/تقليم آمن للإيميل الخام ثم
+    fallback ودّي «غير محدد» ثم تهريب HTML مركزي — حتى يعرف المالك دائماً
+    أي حساب ينفذ المهمة الحالية في أي بطاقة (لايف/handoff/لقطة/اكتمال/رفض).
+    """
+    active_email = str(raw_email or "").strip() or "غير محدد"
+    return f"📧 <b>الحساب:</b> <code>{html_escape(active_email)}</code>\n"
+
+
 def process_user_task_async(
     chat_id: int,
     url: str | None,
@@ -6239,6 +6250,7 @@ def process_user_task_async(
                 "🔁 <b>تم تثبيت handoff وسيبدأ الآن الاستئناف بنفس سياق المشروع.</b>\n"
                 f"<b>المشروع:</b> {html_escape(project_name)}\n"
                 f"<b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
+                f"{format_active_account_line(getattr(cfg, 'selected_account_email', ''))}"  # 📧 [P38] الحساب المستنزَف الذي ثبّت الـ handoff
                 f"<b>Root Project ID:</b> <code>{html_escape(root_pid)}</code>\n"
                 f"<b>Latest Project ID:</b> <code>{html_escape(latest_pid)}</code>\n"
                 f"<b>عداد الاستئناف:</b> <code>{html_escape(str(handoff_meta.get('continuation_index') or 0))}/{html_escape(str(handoff_meta.get('continuation_limit') or get_credit_continuation_limit(cfg)))}</code>{checkpoint_line}\n"
@@ -6316,6 +6328,7 @@ def process_user_task_async(
                 )
             msg = (f"{stage_label}\n<b>المشروع:</b> {html_escape(project_name)}\n"
                    f"<b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
+                   f"{format_active_account_line(stage_email or getattr(cfg, 'selected_account_email', ''))}"  # 📧 [P38] الحساب المنفِّذ للقطة — stage_email من المحرك أولاً
                    f"<b>الحالة:</b> <code>{html_escape(stage_status)}</code>\n"
                    f"<b>Project ID:</b> <code>{html_escape(stage_meta['pid'])}</code>{continuation_line}{handoff_line}\n"
                    f"<b>GitHub:</b> {github_label}\n<b>طابور/الملفات:</b>\n{details}")
@@ -6348,6 +6361,7 @@ def process_user_task_async(
                 f"⚡ <b>بدأ بناء المشروع السحابي فوراً!</b>\n"
                 f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
                 f"🆔 <b>Project ID:</b> <code>{html_escape(live_pid)}</code>\n"
+                f"{format_active_account_line(getattr(cfg, 'selected_account_email', ''))}"  # 📧 [P38] الحساب المنفِّذ من أول لحظة
                 f"🧠 <b>الموديل:</b> <code>{html_escape(cfg.model)}</code>\n\n"
                 f"🌐 <i>يمكنك متابعة التوليد والأكواد لحظياً عبر الزر أدناه:</i>"
             )
@@ -6471,7 +6485,7 @@ def process_user_task_async(
             f"📊 <b>الحالة:</b> <code>{html_escape(status)}</code>\n"
             f"📌 <b>اسم المشروع:</b> {html_escape(project_name)}\n"
             f"🔐 <b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
-            f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>{journey_block}\n"
+            f"📧 <b>الحساب:</b> <code>{acc_email}</code>{journey_block}\n"  # 📧 [P38] تسمية موحدة (acc_email مُهرَّب مسبقاً — لا تهريب مزدوج) + عقد P29 journey_block محفوظ حرفياً
             f"🆔 <b>Project ID:</b> <code>{html_escape(pid)}</code>{root_line}{latest_line}{resume_line}{fork_line}\n"
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
             f"{timing_block}"
@@ -6495,6 +6509,7 @@ def process_user_task_async(
                 f"✅ <b>اكتمل بناء المشروع بنجاح 100%!</b>\n"
                 f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
                 f"🆔 <b>Project ID:</b> <code>{html_escape(seen_live_preview_pid)}</code>\n"
+                f"{format_active_account_line(used_acc.get('email') if used_acc else '')}"  # 📧 [P38] الحساب المنفِّذ في بطاقة اللايف المكتملة
                 f"🧠 <b>الموديل:</b> <code>{html_escape(cfg.model)}</code>\n\n"
                 f"🟢 <i>تم الانتهاء وجاهز للعرض والمعاينة التفاعلية:</i>"
             )
