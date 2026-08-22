@@ -7,5 +7,9 @@
   "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_05_empty_changes_return_none": true,
   "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_06_ai_failure_returns_none": true,
   "tests/test_p17_hardening.py::TestQwenCommitIntegration::test_07_ai_success_returns_first_line_trimmed": true,
-  "tests/test_p22_live_ops_reporter.py": true
+  "tests/test_p22_live_ops_reporter.py": true,
+  "tests/test_p17_hardening.py::TestGeneratedFilesUntracked::test_01_pytest_cache_untracked": true,
+  "tests/test_p17_hardening.py::TestGeneratedFilesUntracked::test_02_bridge_log_untracked": true,
+  "tests/test_refactor_parity.py::TestByteParity::test_parts_reassemble_to_original": true,
+  "tests/test_refactor_parity.py::TestSymbolParity::test_all_toplevel_defs_present": true
 }
