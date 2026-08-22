@@ -8,7 +8,8 @@ test_p33_completed_quick_actions.py
   1. الأزرار الخمسة القديمة كلها محفوظة حرفياً (نص + callback/url) — Zero Breaking:
      🌐 فتح المعاين المباشر / 🔄 استئناف هذا المشروع / 🌳 نقاط الاستئناف /
      ⭐ تفاصيل المشروع / 🚀 مشروع جديد.
-  2. ▶️ كمل الآن: صف مستقل خاص به، callback = cont:{resume_pid} — يظهر فقط عند وجود resume_pid.
+  2. ▶️ كمل الآن: صف مستقل خاص به، callback = cont:{resume_pid} — يظهر فقط عند وجود resume_pid،
+     وبنمط أخضر style == "success" (ضمن ALLOWED_BUTTON_STYLES المعتمدة).
   3. ⬅️ رجوع للوحة التحكم: آخر صف دائماً في كل التركيبات، callback = cmd:dashboard.
   4. الشرطية القديمة محفوظة: pub_url=None ⟹ لا زر url ميت (كان يكسر الرسالة بصمت)،
      resume_pid=None ⟹ لا أزرار استئناف، project_key=None ⟹ لا زر تفاصيل.
@@ -119,6 +120,21 @@ class TestContinueNowButton(unittest.TestCase):
     def test_02_callback_is_cont_resume_pid(self):
         kb = bridge.build_completed_message_keyboard(URL, PID, KEY)
         self.assertEqual(_rows(kb)[1][0]["callback_data"], f"cont:{PID}")
+
+    def test_02b_style_is_success_green(self):
+        """زر ▶️ كمل الآن أخضر: style == "success" حرفياً."""
+        kb = bridge.build_completed_message_keyboard(URL, PID, KEY)
+        self.assertEqual(_rows(kb)[1][0]["style"], "success")
+
+    def test_02c_success_style_is_in_allowed_styles(self):
+        """النمط المستخدم ضمن ALLOWED_BUTTON_STYLES — لن يسقط في make_inline_keyboard."""
+        kb = bridge.build_completed_message_keyboard(URL, PID, KEY)
+        self.assertIn(_rows(kb)[1][0]["style"], bridge.ALLOWED_BUTTON_STYLES)
+
+    def test_02d_legacy_resume_button_has_no_style(self):
+        """Zero Breaking: زر 🔄 استئناف هذا المشروع القديم بلا style — لم يُمَس."""
+        kb = bridge.build_completed_message_keyboard(URL, PID, KEY)
+        self.assertNotIn("style", _rows(kb)[2][0])
 
     def test_03_reuses_existing_cont_handler_prefix(self):
         """يعيد استعمال معالج cont: القائم — نفس بادئة زر الاستئناف القديم حرفياً."""
