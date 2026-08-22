@@ -259,3 +259,243 @@ Phase 34 Specifications — Universal Telegram Message Truncation & Button Deliv
 2. ✅ هل تم تضمين القاعدة العليا غير القابلة للتفاوض؟ نعم.
 3. ✅ هل تم إلزام المحرر بعرض خطة ونتائج الفحص T0-T7 أولاً قبل التعديل؟ نعم.
 4. ✅ هل تم تثبيت مواصفات Phase 34 الكاملة لحماية الأزرار والرسائل؟ نعم.
+
+
+
+
+
+
+# Phase 34 — Universal Telegram Message Truncation & Action Button Guard
+
+## 1. Context & Objectives
+In completion messages (`res_msg`), the text payload can exceed Telegram's 4096-character limit when long generation outputs, deep sandbox file paths, and multi-account journey histories are combined. This results in an `HTTP 400 Bad Request: message is too long` error, which drops the message and its interactive action buttons (`reply_markup`).
+
+Phase 34 implements a triple-layer safe truncation guard to guarantee that:
+1. Completion messages are strictly bounded to safe character limits (< 3500 chars).
+2. Action buttons are 100% protected and never dropped even if message text is unusually large.
+
+---
+
+## 2. Technical Specifications
+
+### A. Completion Message Truncation (`01.33_telegram_gen_bridge.py` ~lines 6095–6130):
+- Cap `clean_text` (the preview of the latest model generation response) to **1000 characters**:
+  ```python
+  if len(clean_text) > 1000:
+      clean_text = clean_text[:1000] + "\n... [انقر على الرابط لمشاهدة الرد الكامل]"
+  ```
+- Ensure the total assembled `res_msg` remains safely under 3500 characters so Telegram never rejects it.
+
+### B. Low-Level Transport Guard (`send_telegram_message_detailed` ~lines 1070–1095):
+- In `send_telegram_message_detailed`:
+  ```python
+  text_str = str(payload.get("text") or "")
+  if len(text_str) > 3900:
+      payload["text"] = text_str[:3800] + "\n\n⚠️ [تم اختصار النص لحماية تسليم الرسالة والأزرار]"
+  ```
+- Add automatic retry fallback: If Telegram API returns `HTTP 400` with description containing `message is too long`, immediately retry sending a safe 200-character fallback summary message carrying the exact same `reply_markup` so that keyboard action buttons are NEVER dropped.
+
+### C. Refactor Parity:
+- Synchronize all changes to `bridge_refactor/` modules (`telegram/messaging.py` and `workers/jobs.py`) to maintain 100% byte-for-byte parity (11/11).
+
+---
+
+## 3. Verification & Quality Gates
+1. **Unit Tests:** Add comprehensive unit tests in `tests/test_p34_safe_message_truncation.py` validating:
+   - Text with 5000+ characters is truncated cleanly without throwing errors.
+   - Action buttons (`reply_markup`) are always attached and preserved.
+   - Retry fallback succeeds on simulated 400 errors.
+2. **Quality Gate:** Run `pytest tests/` (expect 100% green pass) and `python scripts/hadith_sijil.py` (Exit Code 0).
+3. **Documentation:** Update `docs/engineering/PROGRESS.md`, `SESSION_LOG.md` (DEC-028), and `docs/tests/TEST_SUITE_CATALOG.md`.
+
+
+
+
+
+
+---------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 🎯 **تفكير هندسي احترافي 100% يا زيزو! الفحص الميداني وعرض التقرير أولاً قبل ما يلمس حرف! 👏🔥**
+
+---
+
+### 🛡️ أمر الفحص والتحقق المسبق (Inspect-Only & Plan First):
+
+البرومت ده بيأمره صراحة:
+1. يفتح ملف `11_Cap.MD` ويفهم المطلوب.
+2. يفتح ملفات السورس بنفسه (`01.33` والـ `bridge_refactor`) ويتأكد من كل سطر بنفسه ومياخدش أي كلام مسلم به.
+3. **يعرض عليك تقرير الفحص الميداني T0–T7 والخطة أولاً قبل ما يكتب أو يعدل أي سطر كود!**
+
+---
+
+### 🚀 انسخ البرومت ده وابعتهوله:
+
+#### 🌐 الخيار الأول (بالإنجليزي — الأضمن 1000%):
+```text
+Please review the specifications in file: 11_Cap.MD
+
+MANDATORY DIRECTIVES (INSPECT-ONLY & PLAN FIRST):
+1. DO NOT MODIFY ANY CODE YET.
+2. Do not assume the specifications are ground truth — open actual source files (01.33 and bridge_refactor) and verify the line numbers, message pipelines, and test baselines yourself with real evidence.
+3. Check for any regression risks or conflicts.
+4. Present your T0–T7 Source Inspection Report and detailed implementation plan first for review before touching any code.
+```
+
+---
+
+#### 🇸🇦 الخيار الثاني (بالعربي النظيف):
+```text
+يرجى مراجعة مواصفات الملف 11_Cap.MD
+
+تعليمات إلزامية (وضع الفحص والمعاينة أولاً — ممنوع تعديل الكود حالياً):
+1. لا تعدل أي كود الآن.
+2. لا تعتبر أي كلام أمراً مسلماً به — افتح سورس 01.33 والـ bridge_refactor بنفسك وتتبع مسار الرسائل والاختبارات بالأدلة.
+3. تأكد من عدم وجود أي تعارضات أو مخاطر انحدار (Regression).
+4. قدّم تقرير الفحص الميداني T0–T7 والخطة أولاً للمراجعة قبل لمس أي حرف في الكود.
+```
+
+---
+
+البرومت ده هيخليه يقف تماماً عن كتابة الكود، ويفتش السورس سطر بسطر ويقدملك التقرير والخطة أولاً عشان تعتمدها بنفسك! 🫡✨
+
+---
+
+🔍 نقد ذاتي:
+1. ✅ هل البرومت يمنع التعديل الفوري ويفرض وضع الفحص الميداني أولاً (Inspect-Only)؟ نعم.
+2. ✅ هل يلزم الموديل بعدم التسليم الأعمى والتحقق من السورس الفعلي بنفسه؟ نعم.
+3. ✅ هل يطلب عرض تقرير T0-T7 والخطة للمراجعة أولاً قبل كتابة الكود؟ نعم.
