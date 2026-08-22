@@ -1,8 +1,19 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6170..6532
-المحتوى: process_user_task_async (المشغل الكامل للمهمة | P35: إعادة تصنيف COMPLETED+is_model_decline_response ← MODEL_DECLINED + تصفير final_pid (مؤشر الاستئناف لا يتقدم لنقطة الرفض) + كيبورد build_model_decline_keyboard بدل كيبورد الاكتمال | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6170..6547
+المحتوى: format_active_account_line (P38: سطر 📧 الحساب الموحد — مصدر واحد للحقيقة: تفريغ آمن + fallback غير محدد + html_escape مركزي) + process_user_task_async (المشغل الكامل للمهمة | P38: حقن السطر الموحد في بطاقات اللايف الفوري/handoff الرصيد/اللقطة (stage_email المهمل صار مستخدماً + fallback لـ cfg)/اللايف المكتملة + توحيد تسمية بطاقة الاكتمال «📧 الحساب:» مع الحفاظ الحرفي على journey_block (عقد P29) وبلا تهريب مزدوج لـ acc_email | P35: إعادة تصنيف COMPLETED+is_model_decline_response ← MODEL_DECLINED + تصفير final_pid (مؤشر الاستئناف لا يتقدم لنقطة الرفض) + كيبورد build_model_decline_keyboard بدل كيبورد الاكتمال | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
+def format_active_account_line(raw_email) -> str:
+    """📧 [P38] سطر الحساب النشط الموحد عبر كل بطاقات دورة حياة المشروع.
+
+    مصدر واحد للحقيقة بدل نسخ متفرقة: تفريغ/تقليم آمن للإيميل الخام ثم
+    fallback ودّي «غير محدد» ثم تهريب HTML مركزي — حتى يعرف المالك دائماً
+    أي حساب ينفذ المهمة الحالية في أي بطاقة (لايف/handoff/لقطة/اكتمال/رفض).
+    """
+    active_email = str(raw_email or "").strip() or "غير محدد"
+    return f"📧 <b>الحساب:</b> <code>{html_escape(active_email)}</code>\n"
+
+
 def process_user_task_async(
     chat_id: int,
     url: str | None,
@@ -75,6 +86,7 @@ def process_user_task_async(
                 "🔁 <b>تم تثبيت handoff وسيبدأ الآن الاستئناف بنفس سياق المشروع.</b>\n"
                 f"<b>المشروع:</b> {html_escape(project_name)}\n"
                 f"<b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
+                f"{format_active_account_line(getattr(cfg, 'selected_account_email', ''))}"  # 📧 [P38] الحساب المستنزَف الذي ثبّت الـ handoff
                 f"<b>Root Project ID:</b> <code>{html_escape(root_pid)}</code>\n"
                 f"<b>Latest Project ID:</b> <code>{html_escape(latest_pid)}</code>\n"
                 f"<b>عداد الاستئناف:</b> <code>{html_escape(str(handoff_meta.get('continuation_index') or 0))}/{html_escape(str(handoff_meta.get('continuation_limit') or get_credit_continuation_limit(cfg)))}</code>{checkpoint_line}\n"
@@ -152,6 +164,7 @@ def process_user_task_async(
                 )
             msg = (f"{stage_label}\n<b>المشروع:</b> {html_escape(project_name)}\n"
                    f"<b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
+                   f"{format_active_account_line(stage_email or getattr(cfg, 'selected_account_email', ''))}"  # 📧 [P38] الحساب المنفِّذ للقطة — stage_email من المحرك أولاً
                    f"<b>الحالة:</b> <code>{html_escape(stage_status)}</code>\n"
                    f"<b>Project ID:</b> <code>{html_escape(stage_meta['pid'])}</code>{continuation_line}{handoff_line}\n"
                    f"<b>GitHub:</b> {github_label}\n<b>طابور/الملفات:</b>\n{details}")
@@ -184,6 +197,7 @@ def process_user_task_async(
                 f"⚡ <b>بدأ بناء المشروع السحابي فوراً!</b>\n"
                 f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
                 f"🆔 <b>Project ID:</b> <code>{html_escape(live_pid)}</code>\n"
+                f"{format_active_account_line(getattr(cfg, 'selected_account_email', ''))}"  # 📧 [P38] الحساب المنفِّذ من أول لحظة
                 f"🧠 <b>الموديل:</b> <code>{html_escape(cfg.model)}</code>\n\n"
                 f"🌐 <i>يمكنك متابعة التوليد والأكواد لحظياً عبر الزر أدناه:</i>"
             )
@@ -307,7 +321,7 @@ def process_user_task_async(
             f"📊 <b>الحالة:</b> <code>{html_escape(status)}</code>\n"
             f"📌 <b>اسم المشروع:</b> {html_escape(project_name)}\n"
             f"🔐 <b>مفتاح المشروع:</b> <code>{project_key}</code>\n"
-            f"📧 <b>الحساب المستعمل:</b> <code>{acc_email}</code>{journey_block}\n"
+            f"📧 <b>الحساب:</b> <code>{acc_email}</code>{journey_block}\n"  # 📧 [P38] تسمية موحدة (acc_email مُهرَّب مسبقاً — لا تهريب مزدوج) + عقد P29 journey_block محفوظ حرفياً
             f"🆔 <b>Project ID:</b> <code>{html_escape(pid)}</code>{root_line}{latest_line}{resume_line}{fork_line}\n"
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
             f"{timing_block}"
@@ -331,6 +345,7 @@ def process_user_task_async(
                 f"✅ <b>اكتمل بناء المشروع بنجاح 100%!</b>\n"
                 f"📌 <b>المشروع:</b> {html_escape(project_name)}\n"
                 f"🆔 <b>Project ID:</b> <code>{html_escape(seen_live_preview_pid)}</code>\n"
+                f"{format_active_account_line(used_acc.get('email') if used_acc else '')}"  # 📧 [P38] الحساب المنفِّذ في بطاقة اللايف المكتملة
                 f"🧠 <b>الموديل:</b> <code>{html_escape(cfg.model)}</code>\n\n"
                 f"🟢 <i>تم الانتهاء وجاهز للعرض والمعاينة التفاعلية:</i>"
             )
