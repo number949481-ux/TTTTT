@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-22 07:30:12 UTC`
+* **التاريخ والوقت:** `2026-08-22 07:45:55 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.455 ثانية`
-* **النتيجة العامة:** `Ran 633 tests — OK`
+* **الزمن المقاس:** `1.356 ثانية`
+* **النتيجة العامة:** `Ran 636 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (33 files, 3 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -691,6 +691,12 @@ test_04_minimal_keyboard_still_has_two_rows (test_p33_completed_quick_actions.Te
 test_05_resume_and_tree_share_same_row_as_before (test_p33_completed_quick_actions.TestConditionalRowsPreserved.test_05_resume_and_tree_share_same_row_as_before) ... ok
 test_01_dedicated_row_alone (test_p33_completed_quick_actions.TestContinueNowButton.test_01_dedicated_row_alone) ... ok
 test_02_callback_is_cont_resume_pid (test_p33_completed_quick_actions.TestContinueNowButton.test_02_callback_is_cont_resume_pid) ... ok
+test_02b_style_is_success_green (test_p33_completed_quick_actions.TestContinueNowButton.test_02b_style_is_success_green)
+زر ▶️ كمل الآن أخضر: style == "success" حرفياً. ... ok
+test_02c_success_style_is_in_allowed_styles (test_p33_completed_quick_actions.TestContinueNowButton.test_02c_success_style_is_in_allowed_styles)
+النمط المستخدم ضمن ALLOWED_BUTTON_STYLES — لن يسقط في make_inline_keyboard. ... ok
+test_02d_legacy_resume_button_has_no_style (test_p33_completed_quick_actions.TestContinueNowButton.test_02d_legacy_resume_button_has_no_style)
+Zero Breaking: زر 🔄 استئناف هذا المشروع القديم بلا style — لم يُمَس. ... ok
 test_03_reuses_existing_cont_handler_prefix (test_p33_completed_quick_actions.TestContinueNowButton.test_03_reuses_existing_cont_handler_prefix)
 يعيد استعمال معالج cont: القائم — نفس بادئة زر الاستئناف القديم حرفياً. ... ok
 test_04_hidden_without_resume_pid (test_p33_completed_quick_actions.TestContinueNowButton.test_04_hidden_without_resume_pid) ... ok
@@ -810,7 +816,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 633 tests in 0.860s
+Ran 636 tests in 0.905s
 
 OK
 ```
