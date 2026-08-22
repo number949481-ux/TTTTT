@@ -35,8 +35,9 @@
 5. **T6 — التوثيق:** DEC-032 في SESSION_LOG + TEST_SUITE_CATALOG (736/31 ملفاً)
    + README (بانر P37 + 736) + V3_RESUME (قاعدة P37 الدائمة + المؤشرات 736)
    + نسختا PROGRESS.
-6. **نظافة git (المرة 23):** المزامنة أعادت `.pytest_cache/` و `bridge_bot.log`
-   للتتبع مجدداً ➔ أُخرجا بـ `git rm --cached` (موافقة S41 الدائمة).
+6. **نظافة git (المرة 23 ثم 24):** المزامنة أعادت `.pytest_cache/` و
+   `bridge_bot.log` للتتبع مجدداً — مرتين ➔ أُخرجا بـ `git rm --cached`
+   في كل مرة (موافقة S41 الدائمة). آخر تحقق: بوابة 736/736 Exit 0 بعد المرة 24.
 
 ### 🟢 بوابة الجودة (S58 — النهائية)
 - pytest: **736 passed** ✅ (707 + 29) | `scripts/hadith_sijil.py`: **Exit Code 0** ✅ | parity 11/11 ✅
