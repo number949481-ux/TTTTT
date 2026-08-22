@@ -1060,6 +1060,66 @@ def _call_telegram_api_json(method: str, payload: dict, timeout: int = 15) -> di
     }
 
 
+# ✂️ [P34] Safe Message Formatting — ثوابت الحدود المركزية (تعريف وحيد لكل حد)
+PREVIEW_MAX_CHARS = 1000            # الحد الأقصى لجسم معاينة آخر رسالة توليد
+PREVIEW_TRUNCATION_SUFFIX = "\n... [انقر على الرابط لمشاهدة الرد الكامل]"
+RES_MSG_MAX_CHARS = 3500            # الحد الأقصى لرسالة الاكتمال المجمعة بالكامل
+OUTGOING_TEXT_HARD_LIMIT = 3900     # عتبة تفعيل القص في طبقة الإرسال
+OUTGOING_TEXT_SAFE_LIMIT = 3800     # الطول الآمن النهائي بعد القص
+
+
+def _strip_partial_html_token(text: str) -> str:
+    """✂️ [P34] إزالة أي وسم `<...` أو كيان `&...` مبتور عند نقطة القص — يمنع 400 Bad Request من تيليجرام."""
+    trimmed = str(text or "")
+    lt = trimmed.rfind("<")
+    if lt != -1 and ">" not in trimmed[lt:]:
+        trimmed = trimmed[:lt]
+    amp = trimmed.rfind("&")
+    if amp != -1 and ";" not in trimmed[amp:]:
+        trimmed = trimmed[:amp]
+    return trimmed
+
+
+def clamp_preview_text(clean_text: str) -> str:
+    """✂️ [P34] قصّ جسم المعاينة إلى 1000 حرف كحد أقصى + لاحقة إرشادية لرابط الرد الكامل."""
+    body = str(clean_text or "")
+    if len(body) <= PREVIEW_MAX_CHARS:
+        return body
+    return _strip_partial_html_token(body[:PREVIEW_MAX_CHARS]) + PREVIEW_TRUNCATION_SUFFIX
+
+
+def enforce_completion_message_budget(res_msg: str, preview_body: str = "") -> str:
+    """✂️ [P34] ضمان ألا تتجاوز رسالة الاكتمال المجمعة 3500 حرف:
+    1. القصّ يقع على جسم المعاينة فقط (البيانات التشغيلية والروابط محفوظة حرفياً).
+    2. fallback أخير: قصّ الذيل إن ظل التجاوز قائماً بدون معاينة قابلة للتقليص.
+    """
+    msg = str(res_msg or "")
+    if len(msg) <= RES_MSG_MAX_CHARS:
+        return msg
+    body = str(preview_body or "")
+    overflow = len(msg) - RES_MSG_MAX_CHARS
+    if body and body in msg:
+        keep = max(0, len(body) - overflow - len(PREVIEW_TRUNCATION_SUFFIX))
+        shrunk_core = _strip_partial_html_token(body[:keep])
+        if shrunk_core.endswith(PREVIEW_TRUNCATION_SUFFIX):
+            shrunk = shrunk_core
+        else:
+            shrunk = shrunk_core + PREVIEW_TRUNCATION_SUFFIX
+        msg = msg.replace(body, shrunk, 1)
+    if len(msg) > RES_MSG_MAX_CHARS:
+        msg = _strip_partial_html_token(msg[:RES_MSG_MAX_CHARS])
+    return msg
+
+
+def clamp_outgoing_text(text: str) -> str:
+    """✂️ [P34] شبكة الأمان في طبقة الإرسال: نص > 3900 حرفاً ➔ قصّ آمن إلى 3800 حرفاً.
+    reply_markup لا يُمس إطلاقاً — كل صفوف الأزرار التفاعلية تبقى سليمة بالكامل."""
+    raw = str(text or "")
+    if len(raw) <= OUTGOING_TEXT_HARD_LIMIT:
+        return raw
+    return _strip_partial_html_token(raw[:OUTGOING_TEXT_SAFE_LIMIT])
+
+
 def send_telegram_message_detailed(
     chat_id: int | str,
     text: str,
@@ -1072,7 +1132,8 @@ def send_telegram_message_detailed(
         return {"ok": False, "message_id": None, "error": "BOT_TOKEN_MISSING"}
     payload = {
         "chat_id": chat_id,
-        "text": str(text or ""),
+        # ✂️ [P34] القصّ الآمن 3900→3800 يتم هنا مركزياً — الأزرار في reply_markup تبقى كما هي
+        "text": clamp_outgoing_text(text),
         "disable_web_page_preview": False,
     }
     if parse_mode:
@@ -6279,11 +6340,13 @@ def process_user_task_async(
         outcome = describe_terminal_outcome(status, pub_url, cfg)
 
         response_preview = ""
+        preview_body = ""
         if outcome["allow_preview"] and last_resp_text:
             clean_text = redact_github_secrets(str(last_resp_text).strip())
             clean_text = html_escape(clean_text)
-            if len(clean_text) > 2500:
-                clean_text = clean_text[:2500] + "\n... [تم الاقتصاص لزيادة الحجم]"
+            # ✂️ [P34] قصّ المعاينة مركزياً إلى 1000 حرف + لاحقة الرابط الكامل
+            clean_text = clamp_preview_text(clean_text)
+            preview_body = clean_text
             response_preview = f"💬 <b>آخر رسالة من التوليد:</b>\n<pre>{clean_text}</pre>\n\n"
 
         # إصلاح: لو مفيش رابط عام نكتب تنبيه بدل زر ميت (كان تليجرام يرفض الكيبورد بالكامل)
@@ -6314,6 +6377,8 @@ def process_user_task_async(
             f"🏁 <b>علم الانتهاء:</b> {'✅ مكتمل (FINISHED)' if is_finished else '⚠️ غير مكتمل'}"
             f"{timing_block}"
         )
+        # ✂️ [P34] ميزانية الرسالة المجمعة: لا تتجاوز 3500 حرفاً أبداً (القصّ على المعاينة أولاً)
+        res_msg = enforce_completion_message_budget(res_msg, preview_body)
 
         # 🎛️ [P33] الكيبورد المركزي للاكتمال — الأزرار الخمسة القديمة + ▶️ كمل الآن + ⬅️ رجوع للوحة التحكم
         reply_markup = build_completed_message_keyboard(pub_url, resume_pid, project_key)
