@@ -1,0 +1,165 @@
+2026-08-29 19:38:00 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-29 19:38:00 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-29 19:38:00 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_a (index=True, aliases=1, tree=1, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_b (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_freed (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_orphan_disk (index=False, aliases=0, tree=0, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_two_pids (index=True, aliases=2, tree=0, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_tree (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_pid (index=True, aliases=0, tree=0, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_victim (index=True, aliases=1, tree=1, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_solo (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:00 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_twice (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.txt] (1024 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=888 nonce=aad14481626e len=39
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [prompt.txt] (1024 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [notes.markdown] (1024 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=7e3d436577d2 len=21
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [README.md] (1024 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=f4e0b36866d7 len=21
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.md] (1024 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=f59718273f6f len=11
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [spec.txt] (1024 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=888 nonce=aa067a3cac84 len=20
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [SPEC.TXT] (1024 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=63d566c3314d len=21
+2026-08-29 19:38:01 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [edge.txt] (5242880 بايت) من Chat 888
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=faee826ed88e len=21
+2026-08-29 19:38:01 | ERROR    | تنزيل الملف فشل: HTTP 404
+2026-08-29 19:38:01 | ERROR    | توكن البوت غير مضبوط — لا يمكن تنزيل الملفات
+2026-08-29 19:38:01 | ERROR    | getFile فشل: HTTP 500 - server error
+2026-08-29 19:38:01 | ERROR    | getFile أعاد ok=false: {'ok': False, 'description': 'bad'}
+2026-08-29 19:38:01 | ERROR    | getFile نجح لكن file_path مفقود — لا يمكن التنزيل
+2026-08-29 19:38:01 | ERROR    | استثناء أثناء تنزيل الملف من تليجرام: network down
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=2d681e5d6026 len=7
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=4cd5395b46ec len=14
+2026-08-29 19:38:01 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-29 19:38:01 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-29 19:38:01 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-29 19:38:01 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-29 19:38:01 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): down
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=999 nonce=0dc9058883f4 len=16
+2026-08-29 19:38:01 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=999 nonce=4338d2e65ebd len=21
+2026-08-29 19:38:01 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=test_01_long_text_trimmed_in_payload origin=_callTestMethod:606
+2026-08-29 19:38:01 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=test_02_reply_markup_rows_fully_intact origin=_callTestMethod:606
+2026-08-29 19:38:01 | INFO     | 📤 [P44] TG_SEND_OK chars=11 chat=999 caller=test_03_short_text_not_modified origin=_callTestMethod:606
+2026-08-29 19:38:01 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=send_telegram_message origin=test_04_boolean_wrapper_still_works:279
+2026-08-29 19:38:01 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-29 19:38:01 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-29 19:38:01 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-29 19:38:01 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_NEW_PROMPT لـ (proj_alpha) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:38:01 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_NEW_PROMPT لـ (proj_a) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:38:01 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_CONT_PROMPT لـ (proj_a) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:38:01 | WARNING  | Unknown model 'claude-opus-5-code', falling back to default 'claude-fable-5'
+2026-08-29 19:38:02 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-29 19:38:34 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-29 19:38:34 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-29 19:38:34 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_a (index=True, aliases=1, tree=1, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_b (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_freed (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_orphan_disk (index=False, aliases=0, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_two_pids (index=True, aliases=2, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_tree (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_pid (index=True, aliases=0, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_victim (index=True, aliases=1, tree=1, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_solo (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_twice (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.txt] (1024 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=888 nonce=910b68adefda len=39
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [prompt.txt] (1024 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [notes.markdown] (1024 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=f308cb6ec8f8 len=21
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [README.md] (1024 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=bed397faf459 len=21
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.md] (1024 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=66baa8ae48ba len=11
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [spec.txt] (1024 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=888 nonce=0e42ed4b2912 len=20
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [SPEC.TXT] (1024 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=0049f82b9015 len=21
+2026-08-29 19:38:34 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [edge.txt] (5242880 بايت) من Chat 888
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=8bc30eb4a8c0 len=21
+2026-08-29 19:38:34 | ERROR    | تنزيل الملف فشل: HTTP 404
+2026-08-29 19:38:34 | ERROR    | توكن البوت غير مضبوط — لا يمكن تنزيل الملفات
+2026-08-29 19:38:34 | ERROR    | getFile فشل: HTTP 500 - server error
+2026-08-29 19:38:34 | ERROR    | getFile أعاد ok=false: {'ok': False, 'description': 'bad'}
+2026-08-29 19:38:34 | ERROR    | getFile نجح لكن file_path مفقود — لا يمكن التنزيل
+2026-08-29 19:38:34 | ERROR    | استثناء أثناء تنزيل الملف من تليجرام: network down
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=814a295c1e96 len=7
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=da901760e526 len=14
+2026-08-29 19:38:34 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-29 19:38:34 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-29 19:38:34 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-29 19:38:34 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-29 19:38:34 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): down
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=999 nonce=ca27faf63394 len=16
+2026-08-29 19:38:34 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=999 nonce=34300868a43f len=21
+2026-08-29 19:38:34 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=test_01_long_text_trimmed_in_payload origin=_callTestMethod:606
+2026-08-29 19:38:34 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=test_02_reply_markup_rows_fully_intact origin=_callTestMethod:606
+2026-08-29 19:38:34 | INFO     | 📤 [P44] TG_SEND_OK chars=11 chat=999 caller=test_03_short_text_not_modified origin=_callTestMethod:606
+2026-08-29 19:38:34 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=send_telegram_message origin=test_04_boolean_wrapper_still_works:279
+2026-08-29 19:38:34 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-29 19:38:34 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-29 19:38:34 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-29 19:38:34 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_NEW_PROMPT لـ (proj_alpha) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:38:34 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_NEW_PROMPT لـ (proj_a) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:38:34 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_CONT_PROMPT لـ (proj_a) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:38:34 | WARNING  | Unknown model 'claude-opus-5-code', falling back to default 'claude-fable-5'
+2026-08-29 19:38:34 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-29 19:41:15 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-29 19:41:15 | WARNING  | تم تحميل توكن البوت من الملف المحلي telegram_bot_token.txt (يُفضَّل متغير البيئة TELEGRAM_BOT_TOKEN)
+2026-08-29 19:41:15 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_a (index=True, aliases=1, tree=1, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_b (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_del_freed (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_orphan_disk (index=False, aliases=0, tree=0, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_two_pids (index=True, aliases=2, tree=0, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_tree (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_no_pid (index=True, aliases=0, tree=0, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_victim (index=True, aliases=1, tree=1, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_solo (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:41:15 | INFO     | 🗑️ [P26] تم حذف المشروع نهائياً: key=proj_twice (index=True, aliases=1, tree=0, disk=True)
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.txt] (1024 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=888 nonce=5966ac50b753 len=39
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [prompt.txt] (1024 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [notes.markdown] (1024 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=b8c791536e54 len=21
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [README.md] (1024 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=63df2cf3b2bb len=21
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [t.md] (1024 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=165d811e4f0b len=11
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [spec.txt] (1024 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=888 nonce=8de5dfdb54ca len=20
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [SPEC.TXT] (1024 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=aeca75b0b146 len=21
+2026-08-29 19:41:16 | INFO     | 📄 [P28] تم استيعاب ملف مهمة [edge.txt] (5242880 بايت) من Chat 888
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=dc8af387a667 len=21
+2026-08-29 19:41:16 | ERROR    | تنزيل الملف فشل: HTTP 404
+2026-08-29 19:41:16 | ERROR    | توكن البوت غير مضبوط — لا يمكن تنزيل الملفات
+2026-08-29 19:41:16 | ERROR    | getFile فشل: HTTP 500 - server error
+2026-08-29 19:41:16 | ERROR    | getFile أعاد ok=false: {'ok': False, 'description': 'bad'}
+2026-08-29 19:41:16 | ERROR    | getFile نجح لكن file_path مفقود — لا يمكن التنزيل
+2026-08-29 19:41:16 | ERROR    | استثناء أثناء تنزيل الملف من تليجرام: network down
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=0d53c89e102d len=7
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=888 nonce=21815688fb6b len=14
+2026-08-29 19:41:16 | WARNING  | Unknown model 'invalid_xyz_model', falling back to default 'claude-fable-5'
+2026-08-29 19:41:16 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-29 19:41:16 | WARNING  | No contract for model 'unknown-future-model', fallback models only
+2026-08-29 19:41:16 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): network down
+2026-08-29 19:41:16 | WARNING  | ⚠️ [DEC-019] تعذر توليد كوميت كوين (fallback للرسالة القديمة): down
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (ambiguous) — chat=999 nonce=c7a1a09ca42f len=16
+2026-08-29 19:41:16 | INFO     | 🛡️ [P42] Intent Guard SHOWN (strong) — chat=999 nonce=fbaeba403a06 len=21
+2026-08-29 19:41:16 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=test_01_long_text_trimmed_in_payload origin=_callTestMethod:606
+2026-08-29 19:41:16 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=test_02_reply_markup_rows_fully_intact origin=_callTestMethod:606
+2026-08-29 19:41:16 | INFO     | 📤 [P44] TG_SEND_OK chars=11 chat=999 caller=test_03_short_text_not_modified origin=_callTestMethod:606
+2026-08-29 19:41:16 | INFO     | 📤 [P44] TG_SEND_OK chars=3800 chat=999 caller=send_telegram_message origin=test_04_boolean_wrapper_still_works:279
+2026-08-29 19:41:16 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
+2026-08-29 19:41:16 | WARNING  | [ROUTING BUG] Protected model 'gpt-5.5' reached generic apply_contract adapter
+2026-08-29 19:41:16 | WARNING  | [ROUTING BUG] Protected model 'claude-opus-4-8' reached generic apply_contract adapter
+2026-08-29 19:41:16 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_NEW_PROMPT لـ (proj_alpha) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:41:16 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_NEW_PROMPT لـ (proj_a) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:41:16 | WARNING  | 🧭 [P41] تصادم سياق: رابط مشروع (bbbbbbbb-1111-2222-3333-444444444444) ورد أثناء AWAITING_CONT_PROMPT لـ (proj_a) — أُغلق السياق ووُجّه الرابط لمساره الشرعي
+2026-08-29 19:41:16 | WARNING  | Unknown model 'claude-opus-5-code', falling back to default 'claude-fable-5'
+2026-08-29 19:41:16 | INFO     | تم استيراد المحرك بنجاح: 01.03Genspark_claude-opus-5-code.py
