@@ -13,3 +13,8 @@
 - [GSB-001] تكملة نفس المشروع برمجياً = send_chat(project_id=PID) في 01.03 سطر 1761 — الرابط (agents?id= أو autopilotagent_viewer?id=) مجرد مصدر للـ PID عبر extract_project_id.
 - [GSB-001] فورك لحساب تاني = ensure_public ثم create_forked_project (GET /api/continue_conversation?id=OLD → 307 → NEW_PID في Location).
 - [GSB-001] شرط الـ PID: UUID بصيغة 8-4-4-4-12 (is_probable_project_id) — غير كده بيتصنف malformed في parse_project_locator.
+- [GSB-001] بُنيت أداة continue_project.py في جذر الريبو: أمر واحد لتكملة مشروع من رابط (Fork=False) أو فورك لحساب تاني (--fork). موثّقة في 07_CONTINUE_PROJECT_CLI.md.
+- [GSB-001] continue_project.py --dry-run آمن 100%: لا شبكة ولا تحميل محرك — استخدمه لفحص أي رابط قبل التنفيذ.
+- [GSB-001] اختبارات الأداة: tests/test_continue_project_cli.py = 20/20 OK؛ ارتجاع test_p1* = 151/151 OK (2026-08-29).
+- [GSB-001] لم يُتحقّق من الإرسال الحقيقي في الساندبوكس (لا يوجد accounts_genspark.json) — الأداة تفشل بأمان بكود خروج 5.
+- [GSB-001] دوال تحليل الـ PID مكرّرة نسخة محلية داخل continue_project.py (تجنباً لاستيراد 01.33 بحجم 490KB) — لو تغيّرت في 01.33 لازم تُحدّث هنا.
