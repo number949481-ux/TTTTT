@@ -52,7 +52,30 @@ import sys
 import time
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
-ENGINE_CANDIDATES = ("01.03Genspark_claude-opus-5-code.py",)
+# أسماء المحرك المعروفة — بس مش شرط، لأن الـ bridge بينزل المحرك بأسماء مختلفة
+# (01.03... / 02.07... / بدون بادئة). عشان كده في glob fallback تحت.
+ENGINE_CANDIDATES = (
+    "02.07_Genspark_claude-opus-5-code.py",
+    "01.03Genspark_claude-opus-5-code.py",
+    "Genspark_claude-opus-5-code.py",
+)
+
+
+def _find_engine_paths() -> list:
+    """مرشحي المحرك: الأسماء الثابتة الأول، ثم بحث بأنماط (أي ملف فيه
+    Genspark و claude-opus-5-code في نفس المجلد) — مترتب للاستقرار."""
+    seen, cands = set(), []
+    for name in ENGINE_CANDIDATES:
+        path = SCRIPT_DIR / name
+        if path not in seen:
+            seen.add(path)
+            cands.append(path)
+    for pattern in ("*Genspark*claude-opus-5-code.py",):
+        for path in sorted(SCRIPT_DIR.glob(pattern)):
+            if path.is_file() and path not in seen:
+                seen.add(path)
+                cands.append(path)
+    return cands
 
 # ══════════════════════════════════════════════════════════════
 # 🎨 طباعة بسيطة (بدون اعتماديات خارجية إلزامية)
@@ -152,8 +175,8 @@ def load_engine():
         sys.path.insert(0, str(SCRIPT_DIR))
 
     errors = []
-    for name in ENGINE_CANDIDATES:
-        path = SCRIPT_DIR / name
+    for path in _find_engine_paths():
+        name = path.name
         if not path.exists():
             errors.append(f"{name}: غير موجود")
             continue
