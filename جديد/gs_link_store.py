@@ -66,10 +66,8 @@ def get_pid(key: str = "default") -> str | None:
     return pids[0] if pids else None
 
 
-def push_pid(pid: str, key: str = "default", owner: str | None = None) -> bool:
-    """إضافة PID صالح للمقدمة مع إزالة التكرار والقص على 3 — يرفض أي نص غير صالح.
-    owner (اختياري): إيميل صاحب المشروع — بيتخزن عشان الشغلة الجاية تقدر
-    تقفل على نفس الحساب وتكمل مباشرة بدل ما تعمل Fork."""
+def push_pid(pid: str, key: str = "default") -> bool:
+    """إضافة PID صالح للمقدمة مع إزالة التكرار والقص على 3 — يرفض أي نص غير صالح"""
     if not pid or not isinstance(pid, str):
         return False
     pid_clean = pid.strip().lower()
@@ -82,29 +80,9 @@ def push_pid(pid: str, key: str = "default", owner: str | None = None) -> bool:
         lst = [p for p in existing if p != pid_clean]
         lst.insert(0, pid_clean)
         data[key] = lst[:MAX_KEEP]
-        if owner:
-            owners = data.get("_owners")
-            if not isinstance(owners, dict):
-                owners = {}
-            owners[pid_clean] = str(owner).strip().lower()
-            data["_owners"] = owners
         data["_updated_at"] = datetime.now(timezone.utc).isoformat()
         _write(data)
         return True
-
-
-def get_owner(pid: str) -> str | None:
-    """إيميل صاحب الـ PID (لو متسجل) — أو None"""
-    if not pid or not isinstance(pid, str):
-        return None
-    pid_clean = pid.strip().lower()
-    if not _is_valid_pid(pid_clean):
-        return None
-    owners = _read().get("_owners")
-    if not isinstance(owners, dict):
-        return None
-    owner = owners.get(pid_clean)
-    return str(owner).strip().lower() if owner else None
 
 
 def drop_pid(pid: str, key: str = "default") -> bool:
@@ -122,9 +100,6 @@ def drop_pid(pid: str, key: str = "default") -> bool:
             return False
         lst = [p for p in existing if p != pid_clean]
         data[key] = lst
-        owners = data.get("_owners")
-        if isinstance(owners, dict) and pid_clean in owners:
-            del owners[pid_clean]
         data["_updated_at"] = datetime.now(timezone.utc).isoformat()
         _write(data)
         return True
