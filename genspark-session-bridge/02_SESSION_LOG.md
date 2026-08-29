@@ -84,3 +84,30 @@
   ← create_forked_project (1661، عبر /api/continue_conversation) ←
   carry_pid (2416) للالتقاط الحي.
 - ✅ إنشاء `06_CONTINUE_SAME_PROJECT_API.md` بالسلسلة وخريطة القرار كاملة.
+
+---
+
+## 🗓️ SESSION-GSB-001 — رسالة المالك الرابعة (نفس اليوم 2026-08-29)
+
+### طلب المالك:
+- "اوكي موافق نفذ" (على عرض بناء سكريبت CLI للتكملة)
+- + تنبيه صريح: "genspark-session-bridge كمل بيه برضو اوعى تنسى"
+
+### ما نُفِّذ:
+- ✅ بناء `continue_project.py` (جذر الريبو) — أمر واحد يغلّف السلسلة:
+  parse_project_locator ➔ load_engine ➔ resolve_account ➔ [ensure_public +
+  create_forked_project لو --fork] ➔ send_chat(project_id=PID).
+- ✅ خيارات: `--dry-run` (بدون شبكة نهائياً) / `--fork` / `--email` /
+  `--owner-email` / `--model` / `--history` / `--timeout` / `--accounts` /
+  `--out` (JSON أو نص) / `--debug` / `--quiet`.
+- ✅ أكواد خروج مُصنّفة 0/2/3/4/5/6/7/8/9/130 (موثّقة في الملف 07).
+- ✅ أمان: تقنيع الإيميلات، صفر طبع لكوكيز، رفض روابط login، fullmatch صارم للـ UUID.
+- ✅ اختبارات: `tests/test_continue_project_cli.py` ➔ **20/20 OK**، ومنها اختبار
+  عقد (TestEngineContract) يمنع الهلوسة بالتأكد أن دوال المحرك موجودة فعلاً.
+- ✅ ارتجاع: `tests/test_p1*.py` ➔ **151/151 OK** (صفر انكسار).
+- ✅ توثيق: `07_CONTINUE_PROJECT_CLI.md` + تحديث 00/03/04 (التنبيه نُفِّذ ✔).
+
+### أمانة علمية (ما لم يُتحقّق):
+- ⚠️ الإرسال الحقيقي لـ Genspark **لم يُجرَّب** — ملف الحسابات السري غير موجود
+  في هذا الساندبوكس. السكريبت يفشل بأمان بكود `5` برسالة واضحة.
+  التجربة الفعلية تلزم على جهاز المالك حيث `accounts_genspark.json` موجود.
