@@ -221,12 +221,6 @@ class Config:
     save_prefix_q: str = "❓"        # بداية اسم ملف السؤال (اموجي أو حرف زي q)
     save_prefix_a: str = "✅"        # بداية اسم ملف الرد (اموجي أو حرف زي a)
 
-    # ── Auto-Register في الخلفية ──
-    auto_register: bool = True                      # True = يشغل register تلقائي لما الشات يبدأ
-    auto_register_script: str = "Genspark_V5.5/genspark_register.py"  # اسم سكربت الإنشاء
-    auto_register_max: int = 1                      # كام حساب يعمل ويقفل (0=unlimited)
-    auto_register_args: str = "--no-loop"           # args إضافية
-
     # ── Auto-Refresh Session عند CREDIT_EXHAUSTED ──
     auto_refresh_on_exhausted: bool = True  # True = يعمل re-login تلقائي لو الكريدت خلص (session منتهية)
     refresh_attempts: int = 1               # كام محاولة re-login قبل يصفّر الحساب
@@ -508,53 +502,6 @@ def _cfg_path(cfg: Config, filename: str) -> str:
     """مسار ملف نسبي لمجلد السكربت"""
     return str(_DIR / filename)
 
-
-# ══════════════════════════════════════════════════════════════
-# 🔄 Auto-Register — تشغيل الإنشاء في الخلفية
-# ══════════════════════════════════════════════════════════════
-def _start_auto_register(cfg: Config):
-    """يشغل genspark_register.py في الخلفية — بيرجع subprocess.Popen أو None"""
-    if not cfg.auto_register:
-        return None
-    script = _DIR / cfg.auto_register_script
-    if not script.exists():
-        p(Fore.YELLOW, f"  ⚠️ Auto-Register: مش لاقي {cfg.auto_register_script}")
-        return None
-    cmd = [sys.executable, str(script)]
-    if cfg.auto_register_max > 0:
-        cmd += ["--max", str(cfg.auto_register_max)]
-    if cfg.auto_register_args:
-        cmd += cfg.auto_register_args.split()
-    try:
-        proc = subprocess.Popen(
-            cmd, cwd=str(_DIR),
-            stdout=subprocess.DEVNULL,  # مش يطبع في الشات
-            stderr=subprocess.DEVNULL,
-        )
-        p(Fore.CYAN + Style.BRIGHT,
-          f"  🔄 Auto-Register شغال (PID {proc.pid}) → {cfg.auto_register_max or 'unlimited'} حسابات")
-        return proc
-    except Exception as e:
-        p(Fore.RED, f"  ❌ Auto-Register فشل: {e}")
-        return None
-
-
-def _stop_auto_register(proc, run_once=False):
-    """يوقف register لما الشات يخلص"""
-    if proc is None:
-        return
-    if run_once:
-        p(Fore.CYAN + Style.BRIGHT, f"  🚀 Auto-Register مستمر في الخلفية لتسجيل الحسابات (PID {proc.pid})")
-        return
-    if proc.poll() is None:  # لسه شغال
-        try:
-            proc.terminate()
-            proc.wait(timeout=5)
-            p(Fore.CYAN, f"  ⏹️ Auto-Register اتوقف (PID {proc.pid})")
-        except Exception:
-            proc.kill()  # force kill
-    else:
-        p(Fore.GREEN, f"  ✅ Auto-Register خلص (PID {proc.pid})")
 
 
 
@@ -1870,9 +1817,6 @@ def cli_mode(cfg: Config):
     locked_email = None
     skip_emails = set()
 
-    # ── Auto-Register في الخلفية ──
-    reg_proc = _start_auto_register(cfg)
-
     # تحميل المحادثة الحالية لو موجودة — دايماً آخر رابط
     convs = load_convs(cfg)
     cv = {}  # default فاضي لو مفيش محادثة
@@ -2099,9 +2043,6 @@ def cli_mode(cfg: Config):
             locked_email = acc.get("email", "")
             p(Fore.GREEN, f"  ✅ تحول لـ {locked_email[:20]}")
             continue
-
-    # ── لما الشات يخلص — وقف register ──
-    _stop_auto_register(reg_proc)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2784,9 +2725,6 @@ def main():
 
     # ✅ FIX: شلنا Final Entry URL Check كمان — نفس السبب
 
-    # ── Auto-Register في الخلفية ──
-    reg_proc = _start_auto_register(cfg)
-
     # ── Ticket — رقم التيكت يتحدد مبكراً, الحفظ يحصل بعد النجاح فقط (Lazy Ticket) ──
     ticket_num = _get_next_ticket_num(cfg) if cfg.save_tickets else 0
 
@@ -3028,9 +2966,6 @@ def main():
         break
 
     print()
-    # في وضع السؤال الواحد — متوقفش register، خليه يكمل في الخلفية
-    if reg_proc and reg_proc.poll() is None:
-        p(Fore.CYAN, f"  🔄 Auto-Register كمّل في الخلفية (PID {reg_proc.pid}) — هينشئ {cfg.auto_register_max} حسابات")
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -3231,9 +3166,6 @@ def ask_all_parallel_interactive():
     print(f"  💡 exit=خروج")
     print(f"{Fore.LIGHTBLACK_EX}{'─' * 60}{Style.RESET_ALL}\n")
 
-    # ── Auto-Register في الخلفية ──
-    reg_proc = _start_auto_register(cfg)
-
     query = ""
     try:
         val = (_DIR / "chat_send.txt").read_text(encoding="utf-8", errors="replace").strip()
@@ -3296,7 +3228,6 @@ def ask_all_parallel_interactive():
         if run_once:
             break
 
-    _stop_auto_register(reg_proc, run_once=run_once)
 
 def legacy_cli_mode():
     pass
