@@ -10,3 +10,6 @@
 - [GSB-001] استمرارية نفس الشات = Fetch & Forward (Fork=False): السيرفر يجيب آخر N رسالة ويحقنها مع الجديدة — الموديل نفسه Stateless.
 - [GSB-001] Fork=True = تفريع لمشروع جديد بـ PID جديد؛ Root Project ID = الأصل؛ forked = (root != current).
 - [GSB-001] المصطلحات (Fetch&Forward/Root PID/رابط الاستئناف) هي نفسها بطاقات بوت المالك 01.33 — الشات بيشتغل بنفس الميكانيزم اللي البوت بيأتمته.
+- [GSB-001] تكملة نفس المشروع برمجياً = send_chat(project_id=PID) في 01.03 سطر 1761 — الرابط (agents?id= أو autopilotagent_viewer?id=) مجرد مصدر للـ PID عبر extract_project_id.
+- [GSB-001] فورك لحساب تاني = ensure_public ثم create_forked_project (GET /api/continue_conversation?id=OLD → 307 → NEW_PID في Location).
+- [GSB-001] شرط الـ PID: UUID بصيغة 8-4-4-4-12 (is_probable_project_id) — غير كده بيتصنف malformed في parse_project_locator.
