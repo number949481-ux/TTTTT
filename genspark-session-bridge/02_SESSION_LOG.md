@@ -67,3 +67,20 @@
   استمرارية نفس الشات (سيرفر Genspark) واستمرارية الشاتات الجديدة (ملفات الريبو).
 - ✅ اكتشاف لطيف: كل المصطلحات دي أصلاً من بطاقات بوت المالك نفسه
   (01.33_telegram_gen_bridge.py — أسطر 2416/2333/4732/6735/6963).
+
+---
+
+## 🗓️ SESSION-GSB-001 — رسالة المالك الثالثة (نفس اليوم 2026-08-29)
+
+### طلب المالك:
+- "عاوز الدوال اللي أقدر أخليها تكمل بنفس المشروع" + هل مثال
+  `autopilotagent_viewer?id=***` صح ولا غلط؟
+
+### ما نُفِّذ:
+- ✅ الجواب: الرابط صح كمصدر PID — والتكملة = `send_chat(project_id=PID)`.
+- ✅ حصر السلسلة الكاملة من كود المالك: extract_project_id (2025) ←
+  is_probable_project_id (4307) ← parse_project_locator (2050) ←
+  send_chat(project_id=) (01.03:1761) ← ولو حساب تاني: ensure_public (739)
+  ← create_forked_project (1661، عبر /api/continue_conversation) ←
+  carry_pid (2416) للالتقاط الحي.
+- ✅ إنشاء `06_CONTINUE_SAME_PROJECT_API.md` بالسلسلة وخريطة القرار كاملة.
