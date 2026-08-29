@@ -6,7 +6,10 @@ session_bridge:
   branch: main
 
 last_done:
-  - "continue_project.py: أداة CLI لتكملة نفس المشروع من رابط (dry-run/fork/out) + 20 اختبار ناجح في tests/test_continue_project_cli.py"
+  - "08_LINK_STORE.md: توثيق مخزن gs_link_store (آخر 3 PIDs + قفل المالك) — ترتيب القراءة في 00 أصبح 9 ملفات"
+  - "tests/test_gs_link_store.py: 22 حارساً (+12 subtests) للمخزن — Parity بايت-ببايت + رفض __INVALID_PROJECT__ + Self-Heal + عقد تكامل المحركين 01.04/02.07"
+  - "مزامنة جديد/continue_project.py بايت-ببايت مع النسخة الأساسية (كانت متفرعة أقدم) — الثلاث نسخ متطابقة الآن"
+  - "continue_project.py: أداة CLI لتكملة نفس المشروع من رابط (dry-run/fork/out) + 29 اختبار ناجح في tests/test_continue_project_cli.py"
   - "07_CONTINUE_PROJECT_CLI.md: توثيق الأداة (خيارات/أكواد خروج/ضمانات أمان)"
   - "06_CONTINUE_SAME_PROJECT_API.md: سلسلة دوال تكملة نفس المشروع (extract_project_id → send_chat(project_id=) → fork)"
   - "05_SAME_CHAT_CONTEXT.md: شرح Fetch & Forward / Project ID / رابط الاستئناف / Root Project ID"
@@ -37,8 +40,16 @@ platform_facts:
   auto_github_sync: true  # commits تلقائية بوسم sync — لا حاجة لدفع يدوي
 
 cli_tool:
-  path: continue_project.py
+  path: continue_project.py   # + نسخ متطابقة بايت-ببايت في الحماس/ وجديد/
   tests: tests/test_continue_project_cli.py
-  tests_status: "20/20 OK (2026-08-29)"
+  tests_status: "29/29 OK (2026-08-29)"
   regression: "tests/test_p1*.py 151/151 OK"
   real_send_verified: false  # ملف الحسابات غير موجود في الساندبوكس — يفشل بأمان بكود 5
+
+link_store:
+  copies: ["جديد/gs_link_store.py", "الحماس/gs_link_store.py"]  # متطابقتان — يحرسهما TestParity
+  consumers: ["الحماس/01.04_Genspark_claude-opus-5-code.py", "جديد/02.07_Genspark_claude-opus-5-code.py"]
+  doc: genspark-session-bridge/08_LINK_STORE.md
+  tests: tests/test_gs_link_store.py
+  tests_status: "22/22 OK +12 subtests (2026-08-29)"
+  live_cycle_verified: false  # push بعد رد حقيقي / قفل المالك — تجربة المالك فقط
