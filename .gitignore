@@ -1,0 +1,27 @@
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+.env
+.env.*
+
+# Secrets & Accounts (Strict Protection)
+accounts*.json
+*.pem
+*.key
+telegram_bot_token.txt
+telegram_offset.txt
+resume_state.json
+projects_tree.json
+
+# Temporary & Output Folders
+extracted_webapp/
+downloads/
+cache/
+.tmp/
+
+# Test cache
+.pytest_cache/
+bridge_bot.log
+bridge_refactor_BACKUP/

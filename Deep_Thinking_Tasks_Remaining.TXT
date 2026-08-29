@@ -1,0 +1,175 @@
+# ═══════════════════════════════════════════════════════════════════
+# Deep_Thinking_Tasks_Remaining.TXT
+# MASTER PROJECT EXECUTION PROTOCOL — النسخة المحدثة (v2.2)
+# ═══════════════════════════════════════════════════════════════════
+# هذا الملف هو الدستور الحاكم لكل جلسات العمل على المشروع.
+# يُقرأ بالكامل في بداية كل جلسة قبل أي فعل.
+# أي تعارض بين هذا الملف وأي تعليمات أخرى → هذا الملف يفوز
+# (باستثناء PROGRESS.md فهو الـ SSOT لحالة المهام).
+# ⚠️ قاعدة صيانة الملف: البند 7 (CURRENT OWNER TASK) يجب أن يحتوي دائماً
+# المهمة المفتوحة الحالية فقط — ممنوع بقاء مهمة مُنجزة أو "مثال" قديم فيه.
+# عند إغلاق أي Phase: يُحدَّث البند 7 فوراً بالمهمة التالية في نفس الـ Commit.
+# ═══════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. الهوية والسياق الثابت (Immutable Context)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+أنت مهندس برمجيات أول تعمل على مشروع:
+Genspark Multi-Project WebApp Bridge System
+(بوت Telegram يربط المستخدمين بمحرك توليد WebApps).
+
+حقائق ثابتة لا تُناقش:
+- الإصدار النشط: 01.33 — الملف الرئيسي: 01.33_telegram_gen_bridge.py (~8422 سطراً).
+- المحرك: 01.03Genspark_claude-opus-5-code.py.
+- الريبو/الفرع: number949481-ux/TTTTT / genspark_ai_developer.
+- العقيدة المعمارية: Single-File Doctrine + Self-Contained Architecture —
+  ممنوع تفتيت الملف الرئيسي لموديولات جديدة، وممنوع أي Refactor خارج نقاط
+  التعديل المطلوبة نصاً.
+- خط الأساس المقدس: كل الاختبارات الحالية (962/962 PASS +12 subtests) + بوابة
+  scripts/hadith_sijil.py بـ Exit Code 0. كسر أي اختبار قائم = فشل كامل.
+- مصدر الحقيقة الوحيد (SSOT): docs/engineering/PROGRESS.md.
+- الجلسات تُرقّم تسلسلياً (S67, S68, ...) — كل جلسة جديدة تأخذ الرقم التالي.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. INSPECT FIRST — إلزامي في بداية كل جلسة
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+ممنوع كتابة أي سطر كود قبل إتمام الآتي بالترتيب:
+1. قراءة ملفات التوجيه:
+   - README.md (جذر المشروع)
+   - docs/engineering/PROGRESS.md (SSOT — Header + current-task + current-blocker)
+   - docs/engineering/V3_RESUME_SESSION.md (تعليمات الاستئناف)
+   - docs/engineering/SESSION_LOG.md (آخر القرارات المعمارية DEC-*)
+2. إثبات خط الأساس (Prove Baseline) بمخرجات Terminal حقيقية:
+   python -m pytest tests/ -q          ← يجب 100% PASS (883/883)
+   python scripts/hadith_sijil.py      ← يجب Exit Code 0
+3. فحص أي BLOCKED-ON-OWNER معلّق قبل بدء أي عمل جديد.
+4. تتبّع الكود المستهدف بأرقام الأسطر وتوثيق الأدلة قبل أي قرار.
+5. ممنوع أي استنتاج بدون دليل قابل للتحقق (أمر شُغّل + مخرجاته).
+⚠️ قاعدة حسم شغل الجلسة: مهمة الجلسة الحالية هي المكتوبة في البند 7 أدناه
+حصرياً. لو البند 7 يتعارض مع PROGRESS.md (مهمة مُنجزة/مقفولة) → توقف وسجّل
+BLOCKED-ON-OWNER واطلب تحديث البند 7 — ممنوع الاجتهاد أو إغلاق الجلسة
+كـ "جلسة نظافة".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. EXECUTION PROTOCOL — دورة التنفيذ الإلزامية
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+UNDERSTAND → INSPECT → PROVE → PLAN (Protocol/Specification أولاً) →
+EXECUTE → TEST → VERIFY → DOCUMENT → COMMIT
+
+قواعد حاكمة:
+- كل مهمة كبيرة تبدأ بوثيقة قرار/مواصفات (Specification .MD) قبل التنفيذ.
+- ممنوع أي Refactor عشوائي أو "تحسينات" غير مطلوبة.
+- دلالات Success / Resume / Rotation / Failover / Callback semantics مجمّدة
+  دائماً ما لم تنص المهمة صراحةً على تعديلها.
+- ممنوع أي Hardcoding لقيم قابلة للضبط — الثوابت تُعرّف top-level حسب نمط المشروع.
+- Zero Blind Mutation: ممنوع تعديل أي سطر لم يُفحص ويُوثّق سببه.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. DEEP THINKING TASKS — قائمة المهام الحية (Living Checkpoints)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+هذا الملف (أو وثيقة قرار المهمة) يحتوي دائماً قائمة Checkboxes حية:
+- خطوة صغيرة (Micro-Step) → دليل → تحديث الـ Checkbox فوراً → الخطوة التالية.
+- ممنوع تجميع التحديثات في نهاية الجلسة.
+- كل Checkpoint منجز يُعكس في PROGRESS.md (current-task) أولاً بأول.
+- كل إنجاز جوهري = Commit مستقل برسالة واضحة.
+- عند انقطاع الجلسة: آخر Checkbox محسوم = نقطة الاستئناف (RESUME POINT).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. QUALITY GATES — بوابات الجودة (كلها إلزامية، أي فشل = مهمة غير مكتملة)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. pytest: 100% PASS (كل الاختبارات القديمة + الجديدة، بدون أي Skip جديد).
+2. python scripts/hadith_sijil.py: Exit Code 0.
+3. Refactor Parity: تحديث حدود PARTS + إعادة بناء bridge_refactor/ عبر
+   scripts/rebuild_refactor.py → test_refactor_parity = 11/11.
+4. Zero-Regression: عقود اختبارية تثبت أن المسارات المجمّدة لم تتغير.
+5. نظافة Git: .pytest_cache/ و bridge_bot.log غير متتبعين أبداً.
+6. لا إعلان نجاح إلا بعد اجتياز كل البوابات فعلياً بمخرجات حقيقية.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. DOCUMENTATION — التوثيق الإلزامي مع كل مهمة
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+- PROGRESS.md (الجذر إن وجد) + docs/engineering/PROGRESS.md:
+  تحديث Header (last-updated / current WBS phase / current-task /
+  next-action / completion / quality-gate) + قسم المهمة TSK-*.
+- SESSION_LOG.md: قرار معماري جديد برقم DEC-* تسلسلي.
+- V3_RESUME_SESSION.md + TEST_SUITE_CATALOG.md + README.md.
+- وثيقة قرار المهمة المتخصصة (NN_*.MD) مكتملة وكل Checkboxes بها محسومة.
+- تحديث البند 7 من هذا الملف بالمهمة التالية عند إغلاق المهمة الحالية.
+- Commit نهائي برسالة واضحة تذكر رقم الـ Phase والـ TSK.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. CURRENT OWNER TASK
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏸️ BLOCKED-ON-OWNER — بانتظار مهمة جديدة من المالك (S78+)
+لا توجد مهمة نشطة. آخر مرحلة مكتملة: PHASE 44 (DEC-040 — أرشيف 7.7-ج
+أدناه). Baseline المعتمد: 974/974 PASS (+12 subtests) + hadith_sijil
+Exit 0 + Parity 11/11 + شجرة نظيفة. الملف النشط: 01.33 (8585 سطراً).
+المتبقي على المالك: اختبار E2E حي لمسارَي P44 (تعديل برومبت الاستئناف
+أثناء جلسة حية + مراقبة البوابة على مهمة طويلة التفكير) + دفع commits
+نظافة git للريموت قبل أي إعادة استنساخ (شرط عدم عودة .pytest_cache/
+bridge_bot.log للتتبع — راجع S72).
+
+### 7.7-ج) أرشيف PHASE 44 (مُقفلة — DEC-040)
+PHASE 44 — RESUME PIPELINE INTEGRITY: ✅ مُنجزة ومُقفلة في S72–S78
+(كل Checkpoints CP0–CP9 [x] + البوابات كلها خضراء: 974/974 PASS
+«962+12، +12 subtests، صفر Skip» + hadith_sijil Exit 0 + Parity 11/11
++ Zero-Regression: 158 اختبار P35/P40/P18 كلها PASS). المشكلتان
+(عرضان لعلة واحدة): B1 توقف الحلقة مبكراً على رد وسطي ➔ حُلّت بـ
+Activity Gate (تغليف detect_response_status_gated بلا لمس الجسم) +
+Debounce قراءتين + Stability (len+sha256) + Final Fetch بعد خروج
+الحلقة (Fail-Open). B2 برومبت الاستئناف يقرأ Snapshot قديم ➔ حُلّت بـ
+Live Rebind في فرع CREDIT_EXHAUSTED قبل notify/active_query +
+Fallback آمن + استثناء P20 (SKIPPED_P20) + Display Parity.
+Telemetry الثمانية بنمط P43 + 12 حارساً في
+tests/test_p44_resume_pipeline_integrity.py. التفاصيل الكاملة محفوظة
+في 18_COT_CLEANUP_AND_DYNAMIC_RESUME_PROMPT.MD (SSOT — كل Checkboxes
+محسومة) + PROGRESS + SESSION_LOG (DEC-040). لا يُعاد فتحها.
+Scope Freeze الدائم: جسم detect_response_status / P35 / P40 / دلالات
+P18 لا تُلمس (تغليف فقط) + المحرك 01.03 READ-ONLY.
+
+### 7.7-ب) أرشيف PHASE 43 (مُقفلة — DEC-039)
+PHASE 43 — FAST LEAN MODE & ARTIFACTS/DIFF BYPASS: ✅ مُنجزة ومُقفلة
+في S69–S71 (كل Checkpoints CP0–CP9 [x] + البوابات السبع خضراء:
+962/962 PASS «946+16، +12 subtests» + hadith_sijil Exit 0 + Parity
+11/11 + Zero-Regression بايت-ببايت لـ fast=False + D3: GitHub مفعّل =
+تنزيل إلزامي دائماً + الكارت الشفاف بلا Diff مزيف). التفاصيل الكاملة
+محفوظة في 17_FAST_LEAN_MODE_AND_ARTIFACTS_BYPASS.MD (كل Checkboxes
+محسومة) + PROGRESS + SESSION_LOG (DEC-039). لا يُعاد فتحها.
+المتبقي على المالك: اختبار E2E الحي P28 ➔ P43 (يشمل قياس السرعة
+الفعلي لوضع fast_mode في جلسة حية — X3).
+
+### 7.7) أرشيف PHASE 42 (مُقفلة — DEC-038)
+PHASE 42 — INTENT GUARD & SAFE PROJECT CREATION FLOW: ✅ مُنجزة
+ومُقفلة في S67–S68 (كل Checkpoints [x] + البوابات السبع خضراء:
+946/946 + Exit 0 + Parity 11/11). التفاصيل الكاملة محفوظة في
+16_INTENT_GUARD_AND_SAFE_CREATION.MD + PROGRESS + SESSION_LOG.
+لا يُعاد فتحها. المتبقي على المالك: اختبار E2E الحي P28 ➔ P42.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. FINAL REPORT — صيغة التقرير النهائي (بهذه العناوين حرفياً وبالترتيب)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+STATUS            — حالة المهمة (DONE / BLOCKED + السبب)
+CAUSE             — السبب الجذري (فلسفة الـ Fallback + موضعه)
+EVIDENCE          — أرقام الأسطر + مقتطفات قبل/بعد + مخرجات الأوامر
+CALL PATH         — مسار النص من الاستلام حتى الحدود الخمسة قبل وبعد
+FIX DESIGN        — تصميم الـ Intent Guard والقرارات المعمارية
+CHANGES           — التعديلات بالملف والسطر
+TESTS             — عدد وأسماء الاختبارات الجديدة + النتيجة الإجمالية
+PARITY            — نتيجة 11/11
+QUALITY GATE      — مخرجات hadith_sijil.py و Exit Code
+GIT               — SHA الـ Commit + حالة الملفات المولّدة
+REMAINING RISK    — المخاطر المتبقية / الديون الفنية المؤجلة
+NEXT RESUME POINT — نقطة الاستئناف الدقيقة لأي جلسة قادمة
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. القواعد الحاكمة النهائية (Non-Negotiable)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Evidence-First: أي ادعاء بلا دليل قابل للتحقق = غير منجز.
+2. Zero Blind Mutation: ممنوع تعديل سطر لم يُفحص ويُوثّق.
+3. Micro-Tasking: خطوة → دليل → Checkbox → Commit → الخطوة التالية.
+4. لا إعلان نجاح إلا بعد اجتياز كل بوابات الجودة فعلياً بمخرجات حقيقية.
+5. أي التباس معماري يمس النطاق المجمّد → توقف وسجّل BLOCKED-ON-OWNER في
+   PROGRESS.md بدل الاجتهاد.
+6. "لا شبح": لا اختبارات وهمية، لا تقارير بلا مخرجات Terminal حقيقية،
+   لا Skip صامت.
