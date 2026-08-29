@@ -5,3 +5,8 @@
 - [GSB-001] المالك أكد أن المنصة المقصودة هي Genspark، وطلب مجلد استئناف دائم لحوار الجلسات.
 - [GSB-001] أُنشئ genspark-session-bridge/ كذاكرة دائمة بخمسة ملفات وقواعد استئناف ملزمة.
 - [GSB-001] معماريّة Genspark: شات (مؤقت) ← ساندبوكس (مؤقت) ← GitHub (دائم). روابط e2b.dev مؤقتة بطبيعتها.
+- [GSB-001] مزامنة GitHub التلقائية شغالة: Genspark بيعمل commit+push بوسم [prj_660b714cee4f4184] sync — المجلد وصل GitHub بدون تدخل.
+- [GSB-001] Project ID الشات الحالي = prj_660b714cee4f4184، رابط الاستئناف = genspark.ai/agents?id=prj_660b714cee4f4184.
+- [GSB-001] استمرارية نفس الشات = Fetch & Forward (Fork=False): السيرفر يجيب آخر N رسالة ويحقنها مع الجديدة — الموديل نفسه Stateless.
+- [GSB-001] Fork=True = تفريع لمشروع جديد بـ PID جديد؛ Root Project ID = الأصل؛ forked = (root != current).
+- [GSB-001] المصطلحات (Fetch&Forward/Root PID/رابط الاستئناف) هي نفسها بطاقات بوت المالك 01.33 — الشات بيشتغل بنفس الميكانيزم اللي البوت بيأتمته.
