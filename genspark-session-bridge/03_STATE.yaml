@@ -6,6 +6,7 @@ session_bridge:
   branch: main
 
 last_done:
+  - "06_CONTINUE_SAME_PROJECT_API.md: سلسلة دوال تكملة نفس المشروع (extract_project_id → send_chat(project_id=) → fork)"
   - "05_SAME_CHAT_CONTEXT.md: شرح Fetch & Forward / Project ID / رابط الاستئناف / Root Project ID"
   - "تأكيد نجاح المزامنة التلقائية للريبو (commits بوسم sync) — T-GSB-1 مقفولة"
   - "إنشاء مجلد genspark-session-bridge بملفات الاستئناف الخمسة"
