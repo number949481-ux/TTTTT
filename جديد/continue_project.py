@@ -52,30 +52,23 @@ import sys
 import time
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
-# أسماء المحرك المعروفة — بس مش شرط، لأن الـ bridge بينزل المحرك بأسماء مختلفة
-# (01.03... / 02.07... / بدون بادئة). عشان كده في glob fallback تحت.
-ENGINE_CANDIDATES = (
-    "02.07_Genspark_claude-opus-5-code.py",
-    "01.03Genspark_claude-opus-5-code.py",
-    "Genspark_claude-opus-5-code.py",
-)
+# 🔎 اكتشاف ديناميكي: أي محرك بنمط *Genspark_claude-opus-5-code.py جنب السكريبت
+#    (عشان النسخ اللي جنب 01.04 في الحماس/ و 02.07 في جديد/ تشتغل برضو)
+ENGINE_GLOB = "*Genspark_claude-opus-5-code.py"
+CANONICAL_ENGINE = "01.03Genspark_claude-opus-5-code.py"
 
 
-def _find_engine_paths() -> list:
-    """مرشحي المحرك: الأسماء الثابتة الأول، ثم بحث بأنماط (أي ملف فيه
-    Genspark و claude-opus-5-code في نفس المجلد) — مترتب للاستقرار."""
-    seen, cands = set(), []
-    for name in ENGINE_CANDIDATES:
-        path = SCRIPT_DIR / name
-        if path not in seen:
-            seen.add(path)
-            cands.append(path)
-    for pattern in ("*Genspark*claude-opus-5-code.py",):
-        for path in sorted(SCRIPT_DIR.glob(pattern)):
-            if path.is_file() and path not in seen:
-                seen.add(path)
-                cands.append(path)
-    return cands
+def discover_engine_names(directory=None) -> list:
+    """أسماء المحركات المرشحة في مجلد السكريبت — الأساسي 01.03 أولاً لو موجود."""
+    d = pathlib.Path(directory) if directory else SCRIPT_DIR
+    try:
+        names = sorted((p.name for p in d.glob(ENGINE_GLOB)), reverse=True)
+    except OSError:
+        return []
+    if CANONICAL_ENGINE in names:
+        names.remove(CANONICAL_ENGINE)
+        names.insert(0, CANONICAL_ENGINE)
+    return names
 
 # ══════════════════════════════════════════════════════════════
 # 🎨 طباعة بسيطة (بدون اعتماديات خارجية إلزامية)
@@ -97,7 +90,11 @@ def say(icon: str, msg: str, color: str = "cyn") -> None:
     print(c(color, f"{icon} {msg}"), flush=True)
 
 
+_LAST_ERROR = {"msg": ""}  # آخر رسالة خطأ — تقرأها continue_from_link بعد SystemExit
+
+
 def die(msg: str, code: int = 2):
+    _LAST_ERROR["msg"] = msg
     say("❌", msg, "red")
     sys.exit(code)
 
@@ -174,9 +171,14 @@ def load_engine():
     if str(SCRIPT_DIR) not in sys.path:
         sys.path.insert(0, str(SCRIPT_DIR))
 
+    candidates = discover_engine_names()
+    if not candidates:
+        die(f"لا يوجد أي محرك بنمط {ENGINE_GLOB} جنب السكريبت ({SCRIPT_DIR}).\n"
+            "   حط السكريبت في نفس مجلد محرك Genspark (مثل 01.03/01.04/02.07).", 3)
+
     errors = []
-    for path in _find_engine_paths():
-        name = path.name
+    for name in candidates:
+        path = SCRIPT_DIR / name
         if not path.exists():
             errors.append(f"{name}: غير موجود")
             continue
@@ -197,6 +199,26 @@ def load_engine():
     die("فشل تحميل محرك Genspark:\n   - " + "\n   - ".join(errors), 3)
 
 
+def fork_supported(mod) -> bool:
+    """هل المحرك المحمّل يدعم الفورك؟ (01.04/02.07 مثلاً ناقصهم create_forked_project)"""
+    return hasattr(mod, "create_forked_project") and hasattr(mod, "ensure_public")
+
+
+def _release_quietly(mod, email: str, cfg) -> bool:
+    """فك حجز الحساب فوراً بدل انتظار TTL الـ60 ثانية — بدون ما يرمي أبداً.
+
+    send_chat في المحرك لا تفك الحجز بنفسها (الفك في cli_mode/main هناك)،
+    فلازم السكريبت يفك بنفسه وإلا الحساب يفضل محجوز عن أي عملية موازية.
+    """
+    if not email or not hasattr(mod, "release_account"):
+        return False
+    try:
+        mod.release_account(email, cfg)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 # ══════════════════════════════════════════════════════════════
 # 👤 اختيار الحساب
 # ══════════════════════════════════════════════════════════════
@@ -213,19 +235,23 @@ def find_account_by_email(mod, cfg, email: str):
 
 
 def resolve_account(mod, cfg, email: str | None, role: str = "المُرسِل"):
-    """اختيار حساب: بالإيميل لو محدد، وإلا Smart Picker مع حجز ذري."""
+    """اختيار حساب. يرجع (acc, cookies, reserved) —
+    reserved=True فقط لو الحجز الذري (lock_pick_and_reserve) هو اللي نجح،
+    وساعتها السكريبت مسؤول عن فك الحجز في النهاية."""
     if email:
         found = find_account_by_email(mod, cfg, email)
         if not found:
             die(f"لم أجد الحساب {mask_email(email)} في {cfg.accounts_file}", 4)
         acc, cookies = found
         say("👤", f"{role}: {mask_email(acc.get('email'))} (محدد يدوياً)")
-        return acc, cookies
+        return acc, cookies, False
 
+    reserved = False
     picked = None
     if hasattr(mod, "lock_pick_and_reserve"):
         try:
             picked = mod.lock_pick_and_reserve(cfg)
+            reserved = bool(picked)
         except Exception as e:  # noqa: BLE001
             say("⚠️", f"lock_pick_and_reserve فشل ({e}) — بجرب pick_account", "yel")
     if not picked and hasattr(mod, "pick_account"):
@@ -235,7 +261,7 @@ def resolve_account(mod, cfg, email: str | None, role: str = "المُرسِل")
 
     acc, cookies = picked
     say("👤", f"{role}: {mask_email(acc.get('email'))} | 💰 {acc.get('balance')}")
-    return acc, cookies
+    return acc, cookies, reserved
 
 
 # ══════════════════════════════════════════════════════════════
@@ -257,8 +283,9 @@ def build_cfg(mod, args):
     return cfg
 
 
-def run(args) -> int:
+def run(args, result: dict | None = None) -> int:
     t0 = time.time()
+    res = result if result is not None else {}
 
     # ── 1) تحليل الرابط (SSOT) ──
     locator = parse_project_locator(args.link)
@@ -277,6 +304,8 @@ def run(args) -> int:
         die("لم أستطع استخراج Project ID من المدخل. مرّر رابط مشروع أو UUID كامل.", 6)
 
     pid = locator["pid"]
+    res["source_pid"] = pid
+    res["forked"] = bool(args.fork)
     print(c("grn", f"     ✅ PID   : {pid}"))
     print(c("gry", f"     رابط    : https://www.genspark.ai/agents?id={pid}"))
     print()
@@ -305,11 +334,29 @@ def run(args) -> int:
     cfg = build_cfg(mod, args)
     say("⚙️", f"موديل: {cfg.model} | history: {cfg.cli_history_max} | حسابات: {cfg.accounts_file}", "gry")
 
+    # فحص مبكر: --fork مع محرك لا يدعم الفورك = خطأ واضح بدل AttributeError غامض
+    if args.fork and not fork_supported(mod):
+        die(f"المحرك المحمّل ({pathlib.Path(_ENGINE['path']).name}) لا يدعم الفورك —\n"
+            "   create_forked_project/ensure_public غير موجودة فيه.\n"
+            "   استخدم نسخة السكريبت اللي جنب محرك 01.03، أو شيل --fork.", 7)
+
     # ── 4) الحساب المُرسِل ──
-    actor_acc, actor_cookies = resolve_account(mod, cfg, args.email, "المُرسِل")
+    actor_acc, actor_cookies, reserved = resolve_account(mod, cfg, args.email, "المُرسِل")
+    reserved_email = actor_acc.get("email", "") if reserved else ""
 
     target_pid = pid
+    try:
+        return _run_send_phase(args, mod, cfg, pid, target_pid,
+                               actor_acc, actor_cookies, t0, res)
+    finally:
+        # 🔓 فك الحجز فوراً (send_chat لا تفكه بنفسها) — بدل انتظار TTL الـ60 ثانية.
+        #    يعمل حتى مع die()/Ctrl+C بفضل finally.
+        if reserved_email and _release_quietly(mod, reserved_email, cfg):
+            say("🔓", f"فُكّ حجز {mask_email(reserved_email)} فوراً (بدل انتظار TTL)", "gry")
 
+
+def _run_send_phase(args, mod, cfg, pid, target_pid,
+                    actor_acc, actor_cookies, t0, res) -> int:
     # ── 5) مسار الفورك (حساب مختلف) ──
     if args.fork:
         owner_cookies = actor_cookies
@@ -342,6 +389,7 @@ def run(args) -> int:
                 "   الأسباب الشائعة: المشروع ليس عاماً، أو كوكيز المُرسِل منتهية.", 7)
 
         target_pid = new_pid
+        res["forked_pid"] = new_pid
         say("✅", f"الفورك نجح ➔ PID جديد: {new_pid}", "grn")
         print(c("gry", f"     (Root Project ID = {pid})"))
         print()
@@ -365,6 +413,9 @@ def run(args) -> int:
 
     final_pid = live_pid if is_probable_project_id(live_pid or "") else target_pid
     elapsed = time.time() - t0
+    res.update({"final_pid": final_pid, "answer": answer, "message_id": msg_id,
+                "elapsed_sec": round(elapsed, 2),
+                "resume_url": f"https://www.genspark.ai/agents?id={final_pid}"})
 
     if not answer:
         say("❌", f"لم يرجع رد. (PID: {final_pid[:16]}…، {elapsed:.1f}s)", "red")
@@ -403,6 +454,49 @@ def run(args) -> int:
         print(c("b", "═════════════════════════════════════════"))
 
     return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# 🔌 واجهة الاستدعاء الخارجي (Embeddable API)
+#    للاستخدام من أي سكريبت بايثون تاني بدون subprocess:
+#        from continue_project import continue_from_link   # (بعد ضبط sys.path)
+#        r = continue_from_link("<رابط أو UUID>", "كمّل")
+#        if r["ok"]: print(r["answer"])
+#    ⚠️ عكس run(): لا ترمي SystemExit أبداً — بترجع dict دايماً.
+# ══════════════════════════════════════════════════════════════
+def continue_from_link(link: str, prompt: str, *, fork: bool = False,
+                       email: str = "", owner_email: str = "", model: str = "",
+                       history: int | None = None, timeout: int = 0,
+                       accounts: str = "", out: str = "", dry_run: bool = False,
+                       debug: bool = False, quiet: bool = True) -> dict:
+    res = {"ok": False, "exit_code": None, "source_pid": "", "final_pid": "",
+           "forked": bool(fork), "answer": None, "message_id": None,
+           "resume_url": "", "error": ""}
+    if not str(prompt or "").strip():
+        res.update(exit_code=2, error="البرومبت فاضي — مرّر نص فعلي للإرسال.")
+        return res
+
+    _LAST_ERROR["msg"] = ""
+    args = argparse.Namespace(
+        link=link, prompt=prompt, fork=fork, email=email, owner_email=owner_email,
+        model=model, history=history, timeout=timeout, accounts=accounts,
+        out=out, dry_run=dry_run, debug=debug, quiet=quiet)
+    try:
+        code = run(args, res)
+    except SystemExit as e:
+        code = e.code if isinstance(e.code, int) else 1
+    except KeyboardInterrupt:
+        code = 130
+    except Exception as e:  # noqa: BLE001 — عزل كامل: الخطأ يرجع في dict مش استثناء
+        code = 8
+        res["error"] = f"{type(e).__name__}: {e}"
+    res["exit_code"] = code
+    res["ok"] = (code == 0)
+    if code != 0 and not res["error"]:
+        res["error"] = _LAST_ERROR["msg"]
+    if res["source_pid"] and not res["resume_url"]:
+        res["resume_url"] = f"https://www.genspark.ai/agents?id={res['final_pid'] or res['source_pid']}"
+    return res
 
 
 def main() -> int:
