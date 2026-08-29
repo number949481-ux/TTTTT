@@ -6,6 +6,8 @@ session_bridge:
   branch: main
 
 last_done:
+  - "continue_project.py: أداة CLI لتكملة نفس المشروع من رابط (dry-run/fork/out) + 20 اختبار ناجح في tests/test_continue_project_cli.py"
+  - "07_CONTINUE_PROJECT_CLI.md: توثيق الأداة (خيارات/أكواد خروج/ضمانات أمان)"
   - "06_CONTINUE_SAME_PROJECT_API.md: سلسلة دوال تكملة نفس المشروع (extract_project_id → send_chat(project_id=) → fork)"
   - "05_SAME_CHAT_CONTEXT.md: شرح Fetch & Forward / Project ID / رابط الاستئناف / Root Project ID"
   - "تأكيد نجاح المزامنة التلقائية للريبو (commits بوسم sync) — T-GSB-1 مقفولة"
@@ -33,3 +35,10 @@ platform_facts:
   resume_link: "https://www.genspark.ai/agents?id=prj_660b714cee4f4184"
   same_chat_continuity: "Fetch & Forward (Fork=False) — السيرفر يعيد حقن آخر N رسالة"
   auto_github_sync: true  # commits تلقائية بوسم sync — لا حاجة لدفع يدوي
+
+cli_tool:
+  path: continue_project.py
+  tests: tests/test_continue_project_cli.py
+  tests_status: "20/20 OK (2026-08-29)"
+  regression: "tests/test_p1*.py 151/151 OK"
+  real_send_verified: false  # ملف الحسابات غير موجود في الساندبوكس — يفشل بأمان بكود 5
