@@ -1,0 +1,3 @@
+{
+  "tests/test_p17_hardening.py::TestGeneratedFilesUntracked::test_02_bridge_log_untracked": true
+}
