@@ -16,6 +16,7 @@
 5. `04_MEMORY.md` ← ذاكرة إضافة-فقط (append-only) — لا تعدّل سطراً قديماً أبداً
 6. `05_SAME_CHAT_CONTEXT.md` ← شرح استمرارية السياق داخل نفس الشات (Fetch & Forward / Project ID)
 7. `06_CONTINUE_SAME_PROJECT_API.md` ← الدوال الفعلية لتكملة نفس المشروع من رابط (send_chat/fork)
+8. `07_CONTINUE_PROJECT_CLI.md` ← أداة `continue_project.py` الجاهزة (CLI تكملة بأمر واحد)
 
 ## ⚖️ قواعد الاستئناف (مستوحاة من دستور CONNECT-CAPSULE v1)
 1. **لا هلوسة:** لا تدّعِ معرفة شيء غير مكتوب في هذه الملفات أو في الريبو.
