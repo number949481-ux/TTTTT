@@ -6,6 +6,7 @@ session_bridge:
   branch: main
 
 last_done:
+  - "استئناف ثانٍ: إخراج bridge_bot.log + .pytest_cache/ من تتبع git (رجعوا مع مزامنة sync) — المجموعة الكاملة 1025 passed + 49 subtests صفر فشل"
   - "08_LINK_STORE.md: توثيق مخزن gs_link_store (آخر 3 PIDs + قفل المالك) — ترتيب القراءة في 00 أصبح 9 ملفات"
   - "tests/test_gs_link_store.py: 22 حارساً (+12 subtests) للمخزن — Parity بايت-ببايت + رفض __INVALID_PROJECT__ + Self-Heal + عقد تكامل المحركين 01.04/02.07"
   - "مزامنة جديد/continue_project.py بايت-ببايت مع النسخة الأساسية (كانت متفرعة أقدم) — الثلاث نسخ متطابقة الآن"
@@ -53,3 +54,7 @@ link_store:
   tests: tests/test_gs_link_store.py
   tests_status: "22/22 OK +12 subtests (2026-08-29)"
   live_cycle_verified: false  # push بعد رد حقيقي / قفل المالك — تجربة المالك فقط
+
+test_suite:
+  full_run: "1025 passed + 49 subtests — 0 failed (2026-08-29، بعد إخراج الملفات المولّدة من التتبع)"
+  chronic_issue: "مزامنة sync بترجّع bridge_bot.log و.pytest_cache/ للتتبع — حارس test_p17 هو الإنذار، العلاج git rm --cached"
