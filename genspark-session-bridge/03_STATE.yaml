@@ -6,14 +6,16 @@ session_bridge:
   branch: main
 
 last_done:
+  - "05_SAME_CHAT_CONTEXT.md: شرح Fetch & Forward / Project ID / رابط الاستئناف / Root Project ID"
+  - "تأكيد نجاح المزامنة التلقائية للريبو (commits بوسم sync) — T-GSB-1 مقفولة"
   - "إنشاء مجلد genspark-session-bridge بملفات الاستئناف الخمسة"
   - "توثيق إجابة سؤال استمرارية الجلسات في 01_GENSPARK_HOW_IT_WORKS.md"
   - "توثيق ملخص أمين لجلسة connect-now-lab السابقة (SESSION-GSB-000) في السجل"
 
 open_tasks:
   - id: T-GSB-1
-    what: "دفع (push) هذا المجلد إلى GitHub — يتطلب تفويض GitHub في Genspark من المالك"
-    status: BLOCKED_ON_OWNER
+    what: "دفع (push) المجلد إلى GitHub"
+    status: DONE  # اتحلت تلقائياً — مزامنة Genspark بتدفع بوسم [prj_660b714cee4f4184]
   - id: T-GSB-2
     what: "قرار المالك: هل نعيد بناء connect-now-lab داخل هذا الريبو (المجلد ضاع مع الساندبوكس القديم)؟"
     status: AWAITING_OWNER
@@ -24,3 +26,9 @@ open_tasks:
 decisions:
   - "الريبو هو مصدر الحقيقة الوحيد — أي عمل لا يُدفع لـ GitHub يعتبر غير موجود"
   - "كل جلسة جديدة تقرأ 00_RESUME_HERE.md أولاً وتحدّث السجل والحالة قبل النهاية"
+
+platform_facts:
+  current_chat_project_id: prj_660b714cee4f4184
+  resume_link: "https://www.genspark.ai/agents?id=prj_660b714cee4f4184"
+  same_chat_continuity: "Fetch & Forward (Fork=False) — السيرفر يعيد حقن آخر N رسالة"
+  auto_github_sync: true  # commits تلقائية بوسم sync — لا حاجة لدفع يدوي
