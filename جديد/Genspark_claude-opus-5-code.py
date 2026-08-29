@@ -28,7 +28,6 @@ import os
 import re
 import pathlib
 import random
-import subprocess
 import sys
 import time
 import uuid
