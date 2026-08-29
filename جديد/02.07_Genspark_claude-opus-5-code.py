@@ -181,13 +181,6 @@ class Config:
     conv_name: str = "default"      # اسم المحادثة الافتراضية
     conv_file: str = "conversations.json"
 
-    # ── 🔗 Link Store — تكملة السياق (gs_link_store.json) ──
-    # True  = بعد كل رد ناجح بيحفظ الـ PID الجديد، والشغلة الجاية تاخد آخر
-    #         سياق محفوظ وتكمّل عليه (بدل ما تفتح مشروع جديد كل مرة)
-    # False = السلوك القديم (مشوفش المخزن خالص)
-    # ملاحظة: في الوضع المتوازي المخزن بيتقسم على الإيميل — كل حساب يكمل سياقه هو
-    continue_from_store: bool = True
-
     # ── روابط المحادثات ──
     max_urls: int = 10              # كام رابط يحفظ — آخر 10 بس عشان الملف ميكبرش
     auto_continue: bool = False      # False = دايماً جديدة بدون سؤال
@@ -482,52 +475,6 @@ def fork_from_url(source_url: str, cookies: dict) -> list:
         p(Fore.YELLOW, f"  ⚠️ fork_from_url فشل: {e}")
         return []
 
-
-def create_forked_project(source_pid: str, cookies: dict, cfg: "Config" = None) -> str | None:
-    """
-    🔀 عمل Fork سيرفري كامل لمشروع موجود (ملفات + سجل محادثة).
-    بيضرب GET /api/continue_conversation?id=OLD_PID بكوكيز الحساب المُرسل،
-    والسيرفر يرجّع 307 والـ NEW_PID في Location header (/agents?id=NEW_PID).
-    يرجع الـ PID الجديد — أو None لو فشل (مشروع مش عام / كوكيز منتهية).
-    """
-    if not source_pid or not str(source_pid).strip():
-        return None
-    cfg = cfg or Config()
-    try:
-        from curl_cffi import requests as cffi
-        sess = cffi.Session(impersonate="chrome120")
-        for name, val in cookies.items():
-            sess.cookies.set(name, val, domain="www.genspark.ai")
-        sess.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Referer": f"{GENSPARK}/",
-            "Origin": GENSPARK,
-        })
-        r = sess.get(
-            f"{GENSPARK}/api/continue_conversation?id={source_pid}",
-            timeout=30,
-            allow_redirects=False,
-        )
-        loc = r.headers.get("Location") or r.headers.get("location") or ""
-        m = re.search(r"[?&]id=([a-f0-9-]{36})", loc, re.IGNORECASE)
-        if m:
-            new_pid = m.group(1).lower()
-            p(Fore.CYAN, f"  🔀 Fork: اتعمل مشروع جديد → {new_pid[:16]}...")
-            return new_pid
-        # Fallback: لو الـ response جاي 200 نحاول نلقّي UUID في الجسم
-        m2 = re.search(
-            r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}",
-            str(getattr(r, "text", "") or "")[:8000],
-            re.IGNORECASE,
-        )
-        if m2:
-            p(Fore.CYAN, f"  🔀 Fork: اتعمل مشروع جديد (من الجسم) → {m2.group(0)[:16]}...")
-            return m2.group(0).lower()
-        p(Fore.YELLOW, f"  ⚠️ create_forked_project: رجع {r.status_code} بدون NEW_PID صالح (Location: {loc[:80] or '—'})")
-        return None
-    except Exception as e:
-        p(Fore.YELLOW, f"  ⚠️ create_forked_project فشل: {e}")
-        return None
 
 
 def ensure_public(project_id: str, cookies: dict, cfg: "Config", label: str = "") -> str:
@@ -2612,22 +2559,9 @@ def main():
         else:
             p(Fore.YELLOW, "  🆕 URL Mode: مفيش روابط محفوظة — سيبدأ شات جديد")
 
-    # ── 🔗 Link Store: آخر PID محفوظ للمحادثة دي (مصدر التكملة الأساسي) ──
-    # الـ key اسمه المنطقي للمحادثة (default أو اللي جاي من --conv) — مش conv_name اللي بيتظبط
-    store_key = args.conv or cfg.conv_name
-    _store_pid = None
-    _store_owner = None
-    if getattr(cfg, "continue_from_store", True) and not args.new:
-        _store_pid = gs_link_store.get_pid(key=store_key)
-        if _store_pid:
-            p(Fore.CYAN, f"  🔗 Link Store: بيكمل من آخر سياق محفوظ ({_store_pid[:16]}...)")
-            _store_owner = gs_link_store.get_owner(_store_pid)
-            if _store_owner:
-                p(Fore.WHITE, f"  📌 صاحب السياق المحفوظ: {_store_owner}")
-
     # ── اسم المحادثة ───────────────────────────────────────────────────────
-    # الأولوية: URL Mode > Link Store > always_new_chat — عشان السياق ميفرقنش
-    if args.new or (getattr(cfg, "always_new_chat", False) and not _url_mode_project_id and not _store_pid):
+    # URL Mode له أولوية على always_new_chat — عشان الأسئلة تتسلسل فوق بعض
+    if args.new or (getattr(cfg, "always_new_chat", False) and not _url_mode_project_id):
         # محادثة جديدة خالص
         conv_name = f"chat_{int(time.time())}"
         project_id = None
@@ -2654,15 +2588,6 @@ def main():
         locked_email = None
         _do_fresh = False
         _fresh_pid = None
-    elif _store_pid:
-        # → 🔗 Link Store: نكمل من آخر مشروع محفوظ (التكملة التلقائية)
-        conv_name = args.conv or cfg.conv_name
-        project_id = _store_pid
-        history = []
-        locked_email = None
-        _do_fresh = False
-        _fresh_pid = None
-        p(Fore.CYAN, f"  🔗 Link Store: تكملة على المشروع {_store_pid[:16]}...")
     else:
         conv_name = args.conv or cfg.conv_name
         project_id = None
@@ -2764,28 +2689,6 @@ def main():
             p(Fore.RED, f"  ❌ مش لاقي: {args.email}")
             sys.exit(1)
         cookies = acc["cookies"]
-    elif project_id and _store_owner:
-        # ── 🔗 Link Store: الحساب اللي يملك السياق المحفوظ — تكملة مباشرة بدون Fork ──
-        _owner_norm = _store_owner.strip().lower()
-        _owner_acc = next(
-            (a for a in accounts if str(a.get("email", "")).strip().lower() == _owner_norm and a.get("cookies")),
-            None,
-        )
-        if _owner_acc:
-            acc = _owner_acc
-            cookies = _owner_acc["cookies"]
-            p(Fore.GREEN, f"  📧 {_owner_norm[:22]} → صاحب السياق المحفوظ — تكملة مباشرة (من غير Fork ✅)")
-        else:
-            # الـ owner مش متاح → Smart Picker + Fork (context محفوظ في مشروع جديد)
-            p(Fore.YELLOW, f"  ⚠️ صاحب السياق المحفوظ ({_owner_norm[:22]}) مش متاح — هنعمل Fork")
-            result = lock_pick_and_reserve(cfg, skip_emails)
-            if not result:
-                p(Fore.RED, "  ❌ مفيش حساب متاح!")
-                sys.exit(1)
-            acc, cookies = result
-            fork_pid = project_id
-            project_id = None
-            p(Fore.CYAN, f"  📧 {acc.get('email', '')[:22]} → project جديد ← context محفوظ (Fork 🔀)")
     elif project_id:
         # ── FIX الجذري: pick_account أولاً (بيراعي cooldown 29h) ──
         # ثم pick_best_project للحساب المختار — مش نجبر الـ owner!
@@ -2866,8 +2769,6 @@ def main():
             p(Fore.YELLOW, "  ⚠️ Project قديم/محذوف → Auto-Recovery...")
             _bad_pid = project_id
             project_id = None
-            if _bad_pid:  # 🔗 امسح الـ PID البايظ من المخزن عشان الـ run الجاي يبدأ جديد
-                gs_link_store.drop_pid(_bad_pid, key=store_key)
             # ✅ FIX: نحتفظ بالـ history! كده الـ AI يعرف السياق القديم
             # (زي ما المتصفح بيعمل في Continue Conversation بالظبط)
             # history = []  ← كان بيمسح — ده غلط!
@@ -2980,9 +2881,6 @@ def main():
                 str(uuid.uuid4()), answer,
                 safe_asst_id, final_pid,
             )
-            # ── 🔗 Link Store: احفظ آخر PID ناجح (معاها owner) عشان الـ run الجاي يكمل منه ──
-            if final_pid:
-                gs_link_store.push_pid(final_pid, key=store_key, owner=acc.get("email", ""))
             if getattr(cfg, "save_to_json", False):
                 p(Fore.GREEN, f"\n  💾 [{conv_name}] | 🔗 {final_pid[:16]}...")
             else:
@@ -3088,9 +2986,7 @@ def _do_ask_parallel_worker(model_dict: dict, email: str, cookies: dict, query: 
 
     # ── 🔗 URL Mode: هجين — Fork من entry_url أو تكملة من JSON ──────────────
     _start_project_id = None
-    # 🔗 Link Store: كل حساب يكمل من سياقه هو (key = إيميل الحساب) — عشان
-    # التوازي مايضربش مشروع حساب تاني وياخد __INVALID_PROJECT__
-    _start_project_id = gs_link_store.get_pid(key=email) if getattr(cfg, "continue_from_store", True) else None
+    _start_project_id = getattr(cfg, "active_pid", None)  # ⚠️ تنبيه: USE_URL_MODE يدوس على هذا لو تم تفعيله لاحقاً
     _fork_history     = []          # رسايل قديمة لو Fork Mode
 
     if USE_URL_MODE:
@@ -3123,7 +3019,7 @@ def _do_ask_parallel_worker(model_dict: dict, email: str, cookies: dict, query: 
                 p(Fore.YELLOW, f"  ⚠️ [Genspark Parallel] Project قديم/محذوف ({_start_project_id}) الحساب: {email} → Auto-Recovery...")
                 _bad_pid = _start_project_id
                 if _bad_pid:
-                    gs_link_store.drop_pid(_bad_pid, key=email)
+                    gs_link_store.drop_pid(_bad_pid)
                 _start_project_id = None
                 _fork_history = []
 
@@ -3231,7 +3127,7 @@ def _do_ask_parallel_worker(model_dict: dict, email: str, cookies: dict, query: 
 
             # 🌸 الشير العام التلقائي + طباعة الرابط بلون بينك فاقع في الترمنال 🌸
             if pid:
-                gs_link_store.push_pid(pid, key=email)
+                gs_link_store.push_pid(pid)
                 _do_auto_share(cfg, "default", pid, cookies)
 
             # ── 🔗 URL Mode: احفظ الرابط بعد النجاح ──────────────────────────────
@@ -3295,7 +3191,7 @@ def ask_all_parallel_interactive():
         print(f"  📝 السؤال : {query}")
         print(f"{'═' * 76}{Style.RESET_ALL}\n")
 
-        # 🔗 Link Store: الـ worker بقري PID كل حساب بنفسه (key = email)
+        cfg.active_pid = gs_link_store.get_pid()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(active) or 1) as executor:
             future_to_model = {}
