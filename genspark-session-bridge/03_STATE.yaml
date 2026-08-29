@@ -1,0 +1,26 @@
+# 03_STATE.yaml — الحالة الآلية لجسر جلسات Genspark (حدّثها كل جلسة)
+session_bridge:
+  current_session: SESSION-GSB-001
+  updated_at: "2026-08-29"
+  repo: number949481-ux/TTTTT
+  branch: main
+
+last_done:
+  - "إنشاء مجلد genspark-session-bridge بملفات الاستئناف الخمسة"
+  - "توثيق إجابة سؤال استمرارية الجلسات في 01_GENSPARK_HOW_IT_WORKS.md"
+  - "توثيق ملخص أمين لجلسة connect-now-lab السابقة (SESSION-GSB-000) في السجل"
+
+open_tasks:
+  - id: T-GSB-1
+    what: "دفع (push) هذا المجلد إلى GitHub — يتطلب تفويض GitHub في Genspark من المالك"
+    status: BLOCKED_ON_OWNER
+  - id: T-GSB-2
+    what: "قرار المالك: هل نعيد بناء connect-now-lab داخل هذا الريبو (المجلد ضاع مع الساندبوكس القديم)؟"
+    status: AWAITING_OWNER
+  - id: T-GSB-3
+    what: "متابعة قصة CP0: هل أرسل المالك لصقة التصحيح لـ AG؟ وما رده؟"
+    status: AWAITING_OWNER
+
+decisions:
+  - "الريبو هو مصدر الحقيقة الوحيد — أي عمل لا يُدفع لـ GitHub يعتبر غير موجود"
+  - "كل جلسة جديدة تقرأ 00_RESUME_HERE.md أولاً وتحدّث السجل والحالة قبل النهاية"
