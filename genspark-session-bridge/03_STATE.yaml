@@ -6,6 +6,7 @@ session_bridge:
   branch: main
 
 last_done:
+  - "2026-08-30: توضيح هوية من المالك — «Genspark_claude-opus-5-code.py» في وثائق الوكيل الخارجي = الحماس/01.04 عندنا (+ توأم جديد/02.07، return سطر 1721) — خريطة الأسماء موثقة + T-GSB-6 مفتوحة"
   - "2026-08-30: P45 منفذة (المرحلة A) — clean_assistant_reply + تحصين fetch_final_reply_text (تخطي tool_calls/الفارغ + Fail-Open) في 01.33+p05 + 20 حارساً (+18 subtests) — المجموعة 1045 passed + 67 subtests صفر فشل"
   - "2026-08-30: تقييم gist وكيل خارجي (تنظيف الرد النهائي) — Fact-Check: Architecture Brief لا دليل حي؛ إنشاء 09_FINAL_REPLY_CLEANUP_PLAN.md بخطة مرحلتين + أسئلة للوكيل"
   - "استئناف ثانٍ: إخراج bridge_bot.log + .pytest_cache/ من تتبع git (رجعوا مع مزامنة sync) — المجموعة الكاملة 1025 passed + 49 subtests صفر فشل"
@@ -36,6 +37,9 @@ open_tasks:
     status: DONE  # 2026-08-30 — P45: الوكيل رد (خطة_استخراج_الرد_النهائي...md) والمرحلة A منفذة بالكامل
   - id: T-GSB-5
     what: "الاختبار الحي لـ P45 عند المالك (رد genspark فعلي عبر تيليجرام) + قرار المرحلة B (ضبط regex على عيّنات حية لو ظهرت شوائب جديدة)"
+    status: AWAITING_OWNER
+  - id: T-GSB-6
+    what: "قرار المالك: تطبيق «الموضع الأول» من وثيقة الوكيل (clean_assistant_reply عند return المحرك سطر 1721) على الحماس/01.04 + جديد/02.07 معاً؟ (ليسا Golden Baseline — مسموح)"
     status: AWAITING_OWNER
 
 decisions:
@@ -73,3 +77,9 @@ p45_clean_final_reply:
   tests_status: "20/20 OK (+18 subtests) — ضمن المجموعة الكاملة"
   engine_01_03: "Golden Baseline — لم يُمس (يحرسه test_03_engine_golden_baseline_untouched)"
   live_verified: false  # الاختبار الحي عند المالك — T-GSB-5
+
+engine_name_map:  # توضيح مالك 2026-08-30 — الأسماء متغيرة بين البيئات
+  external_agent_name: "Genspark_claude-opus-5-code.py"  # كما يرد في وثائق الوكيل الخارجي
+  our_file: "الحماس/01.04_Genspark_claude-opus-5-code.py"  # المقصود فعلياً (توأمه: جديد/02.07)
+  twins_verified: "3345 سطراً لكليهما — return سطر 1721"
+  telegram_engine: "01.03Genspark_claude-opus-5-code.py (الجذر، 3807 سطراً، return سطر 2171) — Golden Baseline لا يُمس"
