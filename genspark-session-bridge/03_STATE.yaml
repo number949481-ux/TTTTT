@@ -6,6 +6,7 @@ session_bridge:
   branch: main
 
 last_done:
+  - "2026-08-30: T-GSB-7 منفذة (P46) — بوابة الحالة الابتدائية: نقل قراءة prev_activity قبل حسم الحالة + تمرير raw_initial عبر detect_response_status_gated (صفر شبكة إضافية، T2 لم يُنفذ عمداً — polled_any باقٍ وعقد P44-D8 محفوظ) + tests/test_p46 (10 حراس +4 subtests) + إعادة توليد bridge_refactor (خريطة PARTS +16 من p06) — المجموعة 1055 passed + 71 subtests صفر فشل + إصلاح المزمنة للمرتين 7-9"
   - "2026-08-30: مراجعة ثالثة (بطلب المالك) — اكتشاف تحديث خطة الوكيل الخارجي (04646a2، 479 سطراً): دليل حي + تشخيص جذري جديد (الاكتمال المبكر الكاذب سطر 2678 → تخطي الحلقة والجلبة) — تحققت منه في كودنا وصحيح بنيوياً؛ فتح T-GSB-7 (إصلاح T1/T2) + إصلاح المشكلة المزمنة للمرة السادسة — 1045 passed"
   - "2026-08-30: مراجعة ثانية مستقلة (بطلب المالك) ثبّتت خريطة الأسماء بأدلة md5/أرقام سطور — التوأمان 01.04≡02.07 بايت-ببايت (74c1591e…) وclean_assistant_reply غير موجودة فيهما بعد (T-GSB-6 قائمة) + إصلاح المشكلة المزمنة للمرة الخامسة — 1045 passed"
   - "2026-08-30: توضيح هوية من المالك — «Genspark_claude-opus-5-code.py» في وثائق الوكيل الخارجي = الحماس/01.04 عندنا (+ توأم جديد/02.07، return سطر 1721) — خريطة الأسماء موثقة + T-GSB-6 مفتوحة"
@@ -46,7 +47,8 @@ open_tasks:
     note: "⚠️ تحديث خطة الوكيل (04646a2) ينتقدها كـ«لن تحل مشكلة الرد الناقص» — النقد صحيح لعلة الاكتمال المبكر، لكنها تظل دفاعاً سليماً لعلة تلوث CoT (علتان مستقلتان). القرار للمالك."
   - id: T-GSB-7
     what: "إصلاح «الاكتمال المبكر الكاذب» (تشخيص الوكيل الخارجي المثبت): [T1] بوابة الحالة الابتدائية عبر detect_response_status_gated + prev_activity (سطر 2678 في 01.33 — يمكن بصفر شبكة إضافية بإعادة استخدام قراءة سطر 2683) + [T2 قرار عقد] إسقاط حارس polled_any من الجلبة النهائية (سطر 2781 — يكسر حارس P44-D8 في test_p44 سطر 369، يحتاج تحديث العقد). ملاحظتنا: T1 وحده قد يغني عن معظم T2."
-    status: AWAITING_OWNER
+    status: DONE  # 2026-08-30 — P46: T1 منفذ بصفر شبكة إضافية؛ T2 لم يُنفذ بقرار واعٍ (T1 يقلب COMPLETED الكاذبة → RUNNING → polled_any=True تلقائياً — عقد P44-D8 وحارسه سطر 369 محفوظان). التفاصيل في قسم p46 أدناه.
+    live_verified: false  # الاختبار الحي عند المالك — نفس عقد T-GSB-5 (يُختبر P45+P46 معاً)
 
 decisions:
   - "الريبو هو مصدر الحقيقة الوحيد — أي عمل لا يُدفع لـ GitHub يعتبر غير موجود"
@@ -74,8 +76,8 @@ link_store:
   live_cycle_verified: false  # push بعد رد حقيقي / قفل المالك — تجربة المالك فقط
 
 test_suite:
-  full_run: "1045 passed + 67 subtests — 0 failed (2026-08-30، بعد P45 + إخراج الملفات المولّدة للمرة الثالثة)"
-  chronic_issue: "مزامنة sync بترجّع bridge_bot.log و.pytest_cache/ للتتبع — حارس test_p17 هو الإنذار، العلاج git rm --cached (تكررت 6 مرات حتى 2026-08-30)"
+  full_run: "1055 passed + 71 subtests — 0 failed (2026-08-30، بعد P46 بوابة الحالة الابتدائية — في 3.99s)"
+  chronic_issue: "مزامنة sync بترجّع bridge_bot.log و.pytest_cache/ للتتبع — حارس test_p17 هو الإنذار، العلاج git rm --cached (تكررت 9 مرات حتى 2026-08-30 — آخرها أعادها sync أثناء التقاط ملفات P46 نفسها)"
 
 p45_clean_final_reply:
   functions: ["clean_assistant_reply (01.33 سطر 1871)", "fetch_final_reply_text محصّنة (سطر ~1890)"]
@@ -84,12 +86,25 @@ p45_clean_final_reply:
   engine_01_03: "Golden Baseline — لم يُمس (يحرسه test_03_engine_golden_baseline_untouched)"
   live_verified: false  # الاختبار الحي عند المالك — T-GSB-5
 
+p46_initial_status_gate:  # T-GSB-7 — إصلاح «الاكتمال المبكر الكاذب»
+  root_cause: "detect_response_status(answer) كانت تصنف فاتحة Autopilot القصيرة (~108 حرفاً) COMPLETED → polled_any=False → تخطي حلقة الجلبة → fetch_final_reply_text لا تُستدعى → خروج بعد ~29 ثانية والسيرفر لسه شغال"
+  t1_fix: "نقل prev_activity = fetch_project_activity_signature(pid, cookies) قبل حسم الحالة (01.33 سطر 2674) + فرع else يمر عبر detect_response_status_gated(raw_initial, prev_activity, inactive_streak=0, stable_streak=None, email=email) — نفس القراءة الواحدة تخدم البوابة وbaseline P18 (صفر شبكة إضافية)"
+  t2_decision: "لم يُنفذ عمداً — حارس polled_any باقٍ (سطر 2797): T1 يقلب COMPLETED الكاذبة → RUNNING → polled_any=True تلقائياً، فعقد P44-D8 (صفر شبكة للبث المكتمل) وحارسه الحرفي test_p44 سطر 369 محفوظان"
+  gate_semantics: "الحالات المهيكلة (CREDIT_EXHAUSTED/DATA_RETENTION/SESSION_EXPIRED/FORBIDDEN) تخترق فوراً؛ activity=None → حياد Fail-Open؛ نشاط حي → RUNNING؛ debounce يتطلب قراءتين خاملتين"
+  tradeoff: "الردود المباشرة المكتملة فعلاً تدخل الآن الحلقة لدورتي debounce (ثمن مقبول مقابل منع الخروج المبكر الكاذب)"
+  key_lines: "gated def@1819 / P44_STRUCTURED_STATUSES@1812 / prev_activity@2674 / raw_initial@2693 / النداء المبوب@2694 / polled_any@2713 / بوابة الحلقة@2777 / حارس الجلبة@2797"
+  files_changed: ["01.33_telegram_gen_bridge.py (8632 سطراً، +16)", "scripts/rebuild_refactor.py (خريطة PARTS +16 من p06 — p06=2116..3225)", "bridge_refactor/ (معاد توليده — p06=1115 سطراً)", "tests/test_p46_initial_status_gate.py (207 سطراً)"]
+  tests_status: "10/10 OK (+4 subtests) — ضمن المجموعة الكاملة 1055"
+  anchors_preserved: "test_p44 سطر 369 + مرساتا polled_any + test_p18 سطر 153 (baseline قبل الحلقة — النقل للأبكر يرضيها) + test_p12 نافذة STREAM_INTERRUPTED"
+  relation_to_p45: "علتان مستقلتان — P45 ينظف داخل الجلبة النهائية، P46 يضمن الوصول إليها أصلاً"
+  live_verified: false  # الاختبار الحي عند المالك — T-GSB-5
+
 external_plan_file:  # خطة_استخراج_الرد_النهائي_الصافي_فيب_كودج.md — وثيقة الوكيل الخارجي المتطورة
   last_seen_commit: "04646a2"
   lines: 479
   md5: "8bd8790efa45fb01474baa8e8cdb4ee4"
   content: "ترمنال حي (Windows) + تشخيص جذري: الاكتمال المبكر الكاذب (سطر 2678) لا تلوث CoT + خطة T1/T2"
-  our_verdict: "التشخيص صحيح بنيوياً في 01.33 (تحقق مستقل بالأسطر 2678/2697/2761/2781) — T2 يكسر عقد P44-D8 المحروس؛ T-GSB-7 مفتوحة بانتظار المالك"
+  our_verdict: "التشخيص صحيح بنيوياً في 01.33 (تحقق مستقل بالأسطر 2678/2697/2761/2781) — نُفذ T1 بالكامل (P46)؛ T2 رُفض بقرار واعٍ لأن T1 يجعله غير لازم ويحفظ عقد P44-D8"
 
 engine_name_map:  # توضيح مالك 2026-08-30 — الأسماء متغيرة بين البيئات
   external_agent_name: "Genspark_claude-opus-5-code.py"  # كما يرد في وثائق الوكيل الخارجي
