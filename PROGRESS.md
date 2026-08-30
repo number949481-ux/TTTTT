@@ -1521,6 +1521,12 @@ P23 مكتملة ومغلقة بالأدلة. التالي: انتظار قرا�
 - [x] إنشاء test_p20 + إعادة بناء refactor + تحديث كل التوثيق (S39 — 219 passed).
 - [x] (S40 / P21) إصلاح تصنيف commit جديد/معدل + حارسان — 221 passed + بوابة Exit 0.
 - [x] commit محلي — الدفع للريموت عبر المزامنة التلقائية (الدفع اليدوي يحتاج تفويض GitHub).
+- [x] (S41 / P45 — 2026-08-30) **الرد النهائي الصافي**: `clean_assistant_reply()` (تطهير
+      `<thought|thinking|antThinking>` + بادئات `Assistant:`) + تحصين `fetch_final_reply_text`
+      (تخطي أغلفة `tool_calls` والفارغ + Fail-Open لو التنظيف أفرغ الرد) في `01.33`+`p05` —
+      المحرك 01.03 لم يُمس (Golden Baseline). خريطة PARTS محدثة (8616 سطراً) + إعادة توليد
+      `bridge_refactor/`. اختبارات `test_p45_clean_final_reply.py` = 20 حارساً (+18 subtests).
+      **المجموعة الكاملة: 1045 passed + 67 subtests — صفر فشل.**
 - [x] (استئناف 2026-08-29) إخراج `bridge_bot.log` + `.pytest_cache/` (5 ملفات) من تتبع git
       مرة أخرى (رجعوا مع مزامنة sync) — بعدها المجموعة الكاملة **1025 passed + 49 subtests صفر فشل**.
 - [x] (استئناف 2026-08-29) تحديث genspark-session-bridge (02_SESSION_LOG / 03_STATE / 04_MEMORY / 07)
