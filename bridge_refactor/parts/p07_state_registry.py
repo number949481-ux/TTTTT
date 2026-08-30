@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3179..4164
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3210..4195
 المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
