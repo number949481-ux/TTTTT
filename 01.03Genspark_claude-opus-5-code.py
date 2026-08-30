@@ -1799,11 +1799,11 @@ def send_chat(
             if getattr(cfg, "show_debug", False):
                 p(Fore.YELLOW, "  ✂️ تم إلغاء الـ History وإرسال سؤالك فقط (اعتماداً على الرابط لتوفير الرصيد)")
         else:
-            # Seed Mode: New project with history from URL. Keep up to 10 messages.
-            if len(history) > 10:
-                history = history[-10:]
+            # Seed Mode: New project with history from URL. Keep up to 200 messages.
+            if len(history) > 200:
+                history = history[-200:]
                 if getattr(cfg, "show_debug", False):
-                    p(Fore.YELLOW, "  ✂️ تم قص الـ History (Seed Mode) لآخر 10 رسائل")
+                    p(Fore.YELLOW, "  ✂️ تم قص الـ History (Seed Mode) لآخر 200 رسالة")
     elif limit > 0:
         history = history[-limit:]
         if getattr(cfg, "show_debug", False):
@@ -1912,7 +1912,7 @@ def send_chat(
             target_fetch_id = project_id or fork_project_id
             old_msgs = fetch_project_messages(target_fetch_id, cookies, cfg)
             if old_msgs:
-                _fork_limit = limit if limit > 0 else 10
+                _fork_limit = limit if limit > 0 else 200
                 if len(old_msgs) > _fork_limit:
                     old_msgs = old_msgs[-_fork_limit:]
                 context_messages = old_msgs + [new_msg]
@@ -1967,7 +1967,7 @@ def send_chat(
             target_fetch_id = project_id or fork_project_id
             old_msgs = fetch_project_messages(target_fetch_id, cookies, cfg)
             if old_msgs:
-                _fork_limit = limit if limit > 0 else 10  # لو -1 خد آخر 10 بس كحد أقصى
+                _fork_limit = limit if limit > 0 else 200  # لو -1 خد آخر 200 كحد أقصى
                 if len(old_msgs) > _fork_limit:
                     old_msgs = old_msgs[-_fork_limit:]
                     if getattr(cfg, "show_debug", False):
