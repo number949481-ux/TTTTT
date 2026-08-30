@@ -1260,7 +1260,6 @@ def send_telegram_message_detailed(
     if not result.get("ok"):
         detail = result.get("error") or result.get("description") or "UNKNOWN_TELEGRAM_SEND_ERROR"
         log_event("error", f"فشل إرسال رسالة تليجرام: HTTP {result.get('status_code', 0)} - {detail}")
-    if result.get("ok"): log_event("info", f"📤 [P44] TG_SEND_OK chars={len(str(payload.get('text', '')))} chat={chat_id} caller={sys._getframe(1).f_code.co_name} origin={sys._getframe(1).f_back.f_code.co_name + ':' + str(sys._getframe(1).f_back.f_lineno) if sys._getframe(1).f_back else 'ROOT'}")
     return {
         "ok": bool(result.get("ok")),
         "message_id": (result.get("result") or {}).get("message_id"),
@@ -1802,99 +1801,6 @@ def detect_response_status(response: str | dict | None) -> str:
             return "RUNNING"
 
     return "COMPLETED"
-
-
-# ══════════════════════════════════════════════════════════════
-# 🚪 [P44] Activity Gate — تغليف detect_response_status (D5+D6+D9+D12)
-# «التغليف مسموح، التعديل محظور» — جسم detect_response_status لا يُلمس (R4).
-# البوابة تمنع فقط COMPLETED المبكر؛ الإشارات المهيكلة تخترقها فوراً دائماً.
-# ══════════════════════════════════════════════════════════════
-# الإشارات المهيكلة (تتكشف بدليل لا بالظن — §3.3 وثيقة 18): تمر بلا أي بوابة
-P44_STRUCTURED_STATUSES = ("CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN")
-# D6: قراءتان متتاليتان بـ active=False مطلوبتان لفتح البوابة
-P44_GATE_INACTIVE_READS_REQUIRED = 2
-# D8 (يُوصَّل في CP5): قراءتان بمحتوى ثابت (بصمة len+hash) لاعتماد الرد نهائياً
-P44_GATE_STABLE_READS_REQUIRED = 2
-FINAL_REPLY_ONLY = os.environ.get("FINAL_REPLY_ONLY", "1") == "1"  # NEW
-
-
-def detect_response_status_gated(
-    raw_status: str,
-    activity: dict | None,
-    inactive_streak: int = 0,
-    stable_streak: int | None = None,
-    email: str = "",
-) -> str:
-    """🚪 [P44-D9] Wrapper حول detect_response_status — بلا لمس جسمها.
-
-    القرار النهائي للحالة داخل حلقة المتابعة (polling):
-      - raw_status مهيكلة (CREDIT_EXHAUSTED/DATA_RETENTION/SESSION_EXPIRED/FORBIDDEN)
-        → تمر فوراً (تخترق البوابة — صفر تأخير).
-      - raw_status ≠ COMPLETED (RUNNING/EMPTY/...) → تمر كما هي (البوابة تمنع
-        فقط الاكتمال المبكر الكاذب).
-      - activity is None (فشل شبكة P18) → البوابة محايدة تماماً — Fail-Open
-        = سلوك اليوم حرفياً (D6: لا يُحتسب قراءة).
-      - activity.active=True → RUNNING مهما طال النص (D5: ACTIVITY_GATE_HOLD).
-      - inactive_streak < 2 → RUNNING (D6: debounce — قراءة واحدة لا تكفي).
-      - stable_streak (D8 — يُمرَّر من CP5): None = غير مقاس (محايد)؛
-        قيمة < 2 = محتوى متغير بين قراءتين → RUNNING (REPLY_UNSTABLE_HOLD).
-      - D12: سقف session_timeout القائم يعمل فوق كل ذلك في الحلقة نفسها
-        (فحص elapsed قبل هذا الاستدعاء) — شبكة أمان محفوظة بلا تغيير.
-    """
-    if raw_status in P44_STRUCTURED_STATUSES:
-        return raw_status
-    if raw_status != "COMPLETED":
-        return raw_status
-    if activity is None:
-        return raw_status
-    if activity.get("active"):
-        log_event("info", "🚪 [P44] ACTIVITY_GATE_HOLD reason=indicator-active", email=email)
-        return "RUNNING"
-    if inactive_streak < P44_GATE_INACTIVE_READS_REQUIRED:
-        log_event("info", f"🚪 [P44] ACTIVITY_GATE_HOLD reason=debounce inactive_streak={inactive_streak}", email=email)
-        return "RUNNING"
-    if stable_streak is not None and stable_streak < P44_GATE_STABLE_READS_REQUIRED:
-        log_event("info", f"🚪 [P44] REPLY_UNSTABLE_HOLD stable_streak={stable_streak}", email=email)
-        return "RUNNING"
-    log_event("info", f"🚪 [P44] ACTIVITY_GATE_RELEASE inactive_streak={inactive_streak}", email=email)
-    return "COMPLETED"
-
-
-def compute_reply_fingerprint(text) -> tuple[int, str]:
-    """🫆 [P44-D7] بصمة الرد len+hash — قراءتان متطابقتان = محتوى مستقر.
-
-    sha256 على البايتات UTF-8 (errors=replace) + الطول — رخيصة ومحلية
-    بالكامل (صفر شبكة)، وتكشف أي تغيّر في المحتوى حتى مع ثبات الطول.
-    """
-    s = str(text or "")
-    return (len(s), hashlib.sha256(s.encode("utf-8", "replace")).hexdigest())
-
-
-def fetch_final_reply_text(mod, pid, cookies, cfg, old_text, email: str = ""):
-    """🎣 [P44-D8] الجلبة النهائية بعد خروج حلقة المتابعة بأي سبب (خصوصاً وقف P18).
-
-    آخر رسالة assistant حقيقية = الرد النهائي المعتمد — وقف P18 يكسر الحلقة
-    قبل قراءة الرسائل فيبقى last_resp_text على نسخة وسطية قديمة؛ هذه الجلبة
-    تصحح ذلك بطلب واحد أخير. أي فشل (شبكة/لا رسائل/محتوى فارغ) →
-    FINAL_FETCH_FALLBACK بالنص القديم كما هو — صفر كسر (Fail-Open).
-    """
-    try:
-        if not hasattr(mod, "fetch_project_messages"):
-            raise RuntimeError("fetch_project_messages غير متاح في المحرك")
-        msgs = mod.fetch_project_messages(pid, cookies, cfg)
-        last_asst = next(
-            (m for m in reversed(msgs or [])
-             if isinstance(m, dict) and m.get("role") == "assistant"),
-            None,
-        )
-        final_c = (last_asst or {}).get("content", "")
-        if final_c and str(final_c).strip():
-            log_event("info", f"🎣 [P44] FINAL_FETCH_OK chars={len(str(final_c))}", email=email)
-            return final_c
-        raise RuntimeError("لا توجد رسالة assistant بمحتوى")
-    except Exception as _ff_err:
-        log_event("warning", f"🎣 [P44] FINAL_FETCH_FALLBACK reason={_ff_err}", email=email)
-        return old_text
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2652,24 +2558,6 @@ def send_message_and_make_public(
 
         # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
         prev_activity = fetch_project_activity_signature(pid, cookies)
-        # 🚪 [P44-D6] عدّاد القراءات المتتالية بـ active=False — من قراءة P18
-        # القائمة نفسها (صفر طلبات شبكة إضافية). فشل الشبكة (None) لا يُحتسب
-        # قراءة ولا يُصفّر العداد (حياد Fail-Open).
-        inactive_streak = 0
-        # 🫆 [P44-D7] بصمة استقرار الرد (len+hash): قراءتان متطابقتان مطلوبتان
-        # لاعتماد المحتوى نهائياً — المتغيرة بين قراءتين = RUNNING (REPLY_UNSTABLE_HOLD).
-        prev_reply_fp = None
-        stable_streak = 0
-        if FINAL_REPLY_ONLY and answer != "__STREAM_INTERRUPTED__" and hasattr(mod, "fetch_project_messages"):
-            final_status = detect_response_status_gated(
-                final_status, prev_activity, inactive_streak=0, stable_streak=0, email=email
-            )
-        # 🎣 [P44-D8] علم دخول المتابعة فعلياً — يُحسم قبل الحلقة من نفس شرطها
-        # (مكافئ دلالياً لـ «دخلنا الحلقة مرة على الأقل» — بلا لمس أول سطر فيها:
-        # عقد P25 يلزم فحص الإلغاء أول كل دورة). الجلبة النهائية تعمل فقط عند
-        # polling حقيقي (الرد المكتمل مباشرة من البث لا يحتاج جلبة — صفر شبكة).
-        _P44_TERMINAL_STATUSES = ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN")
-        polled_any = final_status not in _P44_TERMINAL_STATUSES
 
         while final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
             # 🛑 [P25] فحص الإلغاء أول كل دورة متابعة — استجابة شبه فورية للزر
@@ -2703,8 +2591,6 @@ def send_message_and_make_public(
                     final_status = "COMPLETED"
                     break
                 prev_activity = curr_activity
-                # 🚪 [P44-D6] تحديث عدّاد الخمول من نفس القراءة — active يصفّره
-                inactive_streak = 0 if curr_activity.get("active") else inactive_streak + 1
 
             try:
                 if hasattr(mod, "fetch_project_messages"):
@@ -2722,19 +2608,7 @@ def send_message_and_make_public(
                             last_c = last_asst.get("content", "")
                             if last_c:
                                 last_resp_text = last_c
-                            # 🫆 [P44-D7] تحديث بصمة الاستقرار من نفس القراءة —
-                            # تطابُق مع السابقة يزيد العداد، أي تغيّر يعيده لـ 1.
-                            curr_reply_fp = compute_reply_fingerprint(last_c)
-                            stable_streak = stable_streak + 1 if curr_reply_fp == prev_reply_fp else 1
-                            prev_reply_fp = curr_reply_fp
-                            # 🚪 [P44-D9] البوابة تغلّف الكشف القائم — جسمه لا يُلمس:
-                            # المهيكلة تخترق فوراً / active=True → RUNNING (D5) /
-                            # debounce قراءتين (D6) / بصمة مستقرة قراءتين (D7/D8) /
-                            # None → حياد Fail-Open /
-                            # سقف session_timeout فوق الكل (D12 — فحص elapsed أعلاه).
-                            raw_status = detect_response_status(last_c)
-                            final_status = detect_response_status_gated(
-                                raw_status, curr_activity, inactive_streak, stable_streak, email=email)
+                            final_status = detect_response_status(last_c)
             except Exception:
                 pass
 
@@ -2748,13 +2622,6 @@ def send_message_and_make_public(
                 if attempt < max_retries:
                     continue
                 return None, "TIMEOUT", None, None, None
-
-        # 🎣 [P44-D8] الجلبة النهائية بعد خروج الحلقة بأي سبب — خصوصاً وقف P18
-        # الذي يكسر الحلقة قبل قراءة الرسائل (last_resp_text وسطي قديم حينها).
-        # تعمل فقط عند polling فعلي وحالة COMPLETED (المهيكلة تحتاج نصها الأصلي
-        # لمسار الـ failover). فشلها = FINAL_FETCH_FALLBACK بالنص القديم كما هو.
-        if polled_any and final_status == "COMPLETED":
-            last_resp_text = fetch_final_reply_text(mod, pid, cookies, cfg, last_resp_text, email=email)
 
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
@@ -2951,14 +2818,6 @@ def send_message_with_auto_account_failover(
                     "🧬 [P20] رُصد خطأ AI Data Retention على هذا الحساب — معاملة كنفاد رصيد: تبريد وانتقال لحساب آخر مع إعادة إرسال نفس آخر رسالة كما هي",
                     email=curr_email,
                 )
-                # 🔄 [P44][D3] استثناء P20: لا Live Rebind هنا إطلاقاً — عقد
-                # DATA_RETENTION الموثق = «إعادة إرسال نفس آخر رسالة كما هي»
-                # (الفرع يعمل continue ولا يمر على بناء active_query أصلاً).
-                log_event(
-                    "info",
-                    f"🔄 [P44] LIVE_REBIND_SKIPPED_P20 project={str(getattr(bridge_cfg, 'selection_project_key', '') or '')}",
-                    email=curr_email,
-                )
                 continue
 
             if status == "CREDIT_EXHAUSTED":
@@ -3091,32 +2950,6 @@ def send_message_with_auto_account_failover(
 
                 bridge_cfg.last_credit_resume_target_url = continuation_url
                 bridge_cfg.last_credit_resume_project_id = source_pid or extract_project_id(continuation_url)
-                # 🔄 [P44][D1] Live Rebind: إعادة قراءة الـ manifest حياً قبل بناء برومبت
-                # الاستئناف — تعديل المستخدم أثناء الجلسة يصل لأول استئناف بعد نفاد الرصيد.
-                # [D2] Fail-Open: أي استثناء → نكمل بالصورة القديمة (Snapshot₀) بصفر كسر.
-                # [D3] فرع DATA_RETENTION مستثنى تماماً (لا يمر هنا — عقد P20 «نفس آخر رسالة»).
-                # [D4] Display Parity: الـ rebind يسبق إشعار continuation-handoff-ready ليقرأ
-                # الكارت (القراءة الحية في notify — continuation_prompt_public) القيمة ذاتها
-                # التي ستُرسل فعلاً — «اللي يظهر = اللي يتبعت». قراءة الـ manifest تتم خلف
-                # قفل الـ Registry القائم (self.lock) — بلا أي أقفال جديدة.
-                # التوقيع القائم بنفس نمط الاستدعاء المرجعي في مسار المحرك.
-                try:
-                    apply_project_runtime_binding(
-                        bridge_cfg,
-                        getattr(bridge_cfg, "selection_project_key", "") or None,
-                        requested_model=getattr(bridge_cfg, "model", DEFAULT_PROJECT_MODEL),
-                    )
-                    log_event(
-                        "info",
-                        f"🔄 [P44] LIVE_REBIND_OK project={str(getattr(bridge_cfg, 'selection_project_key', '') or '')}",
-                        email=curr_email,
-                    )
-                except Exception as _rb_err:
-                    log_event(
-                        "warning",
-                        f"🔄 [P44] LIVE_REBIND_FALLBACK reason={_rb_err}",
-                        email=curr_email,
-                    )
                 notify_account_selection_observer(
                     bridge_cfg,
                     "continuation-handoff-ready",
@@ -3141,8 +2974,6 @@ def send_message_with_auto_account_failover(
                         log_event("warning", f"فشل تبليغ handoff بدون إيقاف المتابعة: {notify_err}", email=curr_email)
 
                 active_url = continuation_url
-                # 🔄 [P44][D4] active_query يُبنى من نفس القيمة الحية التي قرأها الكارت أعلاه
-                # (الـ rebind تم قبل continuation-handoff-ready) — تطابق العرض/الإرسال مضمون.
                 active_query = get_bridge_cfg_runtime_resume_prompt(bridge_cfg)
                 public_resume_prompt = summarize_resume_prompt_for_display(get_bridge_cfg_public_resume_prompt(bridge_cfg))
                 log_event(
@@ -8581,7 +8412,6 @@ def run_telegram_polling():
 
 def main():
     log_event("success", f"RUNNING FILE VERIFIED: {pathlib.Path(__file__).resolve()}")
-    log_event("info", f"⚙️ [P44] FINAL_REPLY_ONLY = {FINAL_REPLY_ONLY}")
     if not TELEGRAM_BOT_TOKEN:
         log_event("error", "لم يتم العثور على توكن البوت — شغّل مع متغير البيئة TELEGRAM_BOT_TOKEN أو ملف telegram_bot_token.txt")
         sys.exit(1)
