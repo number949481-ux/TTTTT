@@ -1868,6 +1868,25 @@ def compute_reply_fingerprint(text) -> tuple[int, str]:
     return (len(s), hashlib.sha256(s.encode("utf-8", "replace")).hexdigest())
 
 
+def clean_assistant_reply(text) -> str:
+    """🧼 [P45] تطهير الرد النهائي من شوائب CoT والوسوم الداخلية (SSOT).
+
+    فلتر دفاعي Post-processing (قرار خطة 09_FINAL_REPLY_CLEANUP_PLAN —
+    المعتمد مع الوكيل الخارجي):
+      1. إزالة كتل التفكير <thought|thinking|antThinking>...</...>
+         (DOTALL + IGNORECASE — تشمل المتعددة الأسطر والمتعددة التكرار).
+      2. إزالة بادئات "Assistant:" المتسربة من الـ System Prompt.
+    لو النص نظيف أصلاً فالدالة no-op (نفس النص بعد strip) — صفر ضرر.
+    """
+    if not text or not isinstance(text, str):
+        return ""
+    cleaned = re.sub(
+        r"<(?:thought|thinking|antThinking)>.*?</(?:thought|thinking|antThinking)>",
+        "", text, flags=re.DOTALL | re.IGNORECASE)
+    cleaned = re.sub(r"^(\s*Assistant:\s*)+", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
 def fetch_final_reply_text(mod, pid, cookies, cfg, old_text, email: str = ""):
     """🎣 [P44-D8] الجلبة النهائية بعد خروج حلقة المتابعة بأي سبب (خصوصاً وقف P18).
 
@@ -1875,20 +1894,32 @@ def fetch_final_reply_text(mod, pid, cookies, cfg, old_text, email: str = ""):
     قبل قراءة الرسائل فيبقى last_resp_text على نسخة وسطية قديمة؛ هذه الجلبة
     تصحح ذلك بطلب واحد أخير. أي فشل (شبكة/لا رسائل/محتوى فارغ) →
     FINAL_FETCH_FALLBACK بالنص القديم كما هو — صفر كسر (Fail-Open).
+
+    🧼 [P45] تحصين الفلترة: تخطّي أغلفة الأدوات (assistant بـ tool_calls)
+    والرسائل فارغة المحتوى — الحقول الحقيقية من عيّنة الوكيل المعتمدة
+    (لا وجود للحقل المتخيَّل في الـ gist) + تمرير الناتج على clean_assistant_reply؛
+    لو التنظيف أفرغ الرد بالكامل (رد كله CoT) → Fail-Open بالنص القديم.
     """
     try:
         if not hasattr(mod, "fetch_project_messages"):
             raise RuntimeError("fetch_project_messages غير متاح في المحرك")
         msgs = mod.fetch_project_messages(pid, cookies, cfg)
+        # 🧼 [P45] آخر assistant حقيقية = بلا tool_calls وبمحتوى فعلي
         last_asst = next(
             (m for m in reversed(msgs or [])
-             if isinstance(m, dict) and m.get("role") == "assistant"),
+             if isinstance(m, dict)
+             and m.get("role") == "assistant"
+             and not m.get("tool_calls")
+             and str(m.get("content", "")).strip()),
             None,
         )
         final_c = (last_asst or {}).get("content", "")
         if final_c and str(final_c).strip():
-            log_event("info", f"🎣 [P44] FINAL_FETCH_OK chars={len(str(final_c))}", email=email)
-            return final_c
+            clean_final = clean_assistant_reply(str(final_c))
+            if not clean_final:
+                raise RuntimeError("الرد بعد تنظيف CoT فارغ بالكامل")
+            log_event("info", f"🎣 [P44] FINAL_FETCH_OK chars={len(clean_final)}", email=email)
+            return clean_final
         raise RuntimeError("لا توجد رسالة assistant بمحتوى")
     except Exception as _ff_err:
         log_event("warning", f"🎣 [P44] FINAL_FETCH_FALLBACK reason={_ff_err}", email=email)
