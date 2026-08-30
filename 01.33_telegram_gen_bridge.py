@@ -2668,6 +2668,11 @@ def send_message_and_make_public(
         # [P12] تثبيت المشروع الملتقط للمحاولات التالية — لا شات جديد بعد الآن
         carry_pid = pid
 
+        # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
+        # 🚪 [P46/T-GSB-7] القراءة نُقلت قبل حسم الحالة الابتدائية لتُستخدم أيضاً في
+        # بوابة «الاكتمال المبكر الكاذب» أدناه — نفس القراءة الواحدة (صفر شبكة إضافية).
+        prev_activity = fetch_project_activity_signature(pid, cookies)
+
         # [P12] انقطاع البث مع مشروع حي → لا نفشل ولا نعيد من الصفر:
         # ندخل حلقة المتابعة (polling) على نفس الـ pid حتى يكتمل التوليد سحابياً.
         if answer == "__STREAM_INTERRUPTED__":
@@ -2675,12 +2680,23 @@ def send_message_and_make_public(
             final_status = "RUNNING"
             last_resp_text = ""
         else:
-            final_status = detect_response_status(answer)
+            # 🚪 [P46/T-GSB-7] بوابة الحالة الابتدائية — إصلاح «الاكتمال المبكر الكاذب»:
+            # detect_response_status الخام قد يصنّف افتتاحية Autopilot القصيرة
+            # («تمام، الخطة واضحة… هنبدأ») كـ COMPLETED → polled_any=False → تُتخطى
+            # حلقة المتابعة والجلبة النهائية بالكامل ويخرج البوت بعد ~29ث والخادم
+            # ما زال يعمل. التمرير عبر بوابة P44-D9 بنفس قراءة النشاط أعلاه يحسم:
+            #   - نشاط حي أو debounce غير مكتمل → RUNNING (ندخل الحلقة، polled_any=True)
+            #   - الحالات المهيكلة (CREDIT_EXHAUSTED/…) تخترق فوراً — صفر تأخير
+            #   - activity=None (فشل قراءة) → حياد Fail-Open (تمر الحالة الخام كما هي)
+            # المقايضة المقبولة: الرد المكتمل فعلاً مباشرة من البث يدخل الحلقة
+            # لبضع دورات debounce بدل الخروج الفوري — كلفة صغيرة مقابل ضمان الجلبة.
+            raw_initial = detect_response_status(answer)
+            final_status = detect_response_status_gated(
+                raw_initial, prev_activity, inactive_streak=0, stable_streak=None, email=email,
+            )
             last_resp_text = str(answer) if answer else ""
         is_timeout = False
 
-        # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
-        prev_activity = fetch_project_activity_signature(pid, cookies)
         # 🚪 [P44-D6] عدّاد القراءات المتتالية بـ active=False — من قراءة P18
         # القائمة نفسها (صفر طلبات شبكة إضافية). فشل الشبكة (None) لا يُحتسب
         # قراءة ولا يُصفّر العداد (حياد Fail-Open).
