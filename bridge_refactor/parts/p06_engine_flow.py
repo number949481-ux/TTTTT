@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2116..3209
-المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2116..3225
+المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P46/T-GSB-7: بوابة الحالة الابتدائية عبر detect_response_status_gated + prev_activity المنقولة قبل حسم الحالة (إصلاح الاكتمال المبكر الكاذب — صفر شبكة إضافية) | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -558,6 +558,11 @@ def send_message_and_make_public(
         # [P12] تثبيت المشروع الملتقط للمحاولات التالية — لا شات جديد بعد الآن
         carry_pid = pid
 
+        # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
+        # 🚪 [P46/T-GSB-7] القراءة نُقلت قبل حسم الحالة الابتدائية لتُستخدم أيضاً في
+        # بوابة «الاكتمال المبكر الكاذب» أدناه — نفس القراءة الواحدة (صفر شبكة إضافية).
+        prev_activity = fetch_project_activity_signature(pid, cookies)
+
         # [P12] انقطاع البث مع مشروع حي → لا نفشل ولا نعيد من الصفر:
         # ندخل حلقة المتابعة (polling) على نفس الـ pid حتى يكتمل التوليد سحابياً.
         if answer == "__STREAM_INTERRUPTED__":
@@ -565,12 +570,23 @@ def send_message_and_make_public(
             final_status = "RUNNING"
             last_resp_text = ""
         else:
-            final_status = detect_response_status(answer)
+            # 🚪 [P46/T-GSB-7] بوابة الحالة الابتدائية — إصلاح «الاكتمال المبكر الكاذب»:
+            # detect_response_status الخام قد يصنّف افتتاحية Autopilot القصيرة
+            # («تمام، الخطة واضحة… هنبدأ») كـ COMPLETED → polled_any=False → تُتخطى
+            # حلقة المتابعة والجلبة النهائية بالكامل ويخرج البوت بعد ~29ث والخادم
+            # ما زال يعمل. التمرير عبر بوابة P44-D9 بنفس قراءة النشاط أعلاه يحسم:
+            #   - نشاط حي أو debounce غير مكتمل → RUNNING (ندخل الحلقة، polled_any=True)
+            #   - الحالات المهيكلة (CREDIT_EXHAUSTED/…) تخترق فوراً — صفر تأخير
+            #   - activity=None (فشل قراءة) → حياد Fail-Open (تمر الحالة الخام كما هي)
+            # المقايضة المقبولة: الرد المكتمل فعلاً مباشرة من البث يدخل الحلقة
+            # لبضع دورات debounce بدل الخروج الفوري — كلفة صغيرة مقابل ضمان الجلبة.
+            raw_initial = detect_response_status(answer)
+            final_status = detect_response_status_gated(
+                raw_initial, prev_activity, inactive_streak=0, stable_streak=None, email=email,
+            )
             last_resp_text = str(answer) if answer else ""
         is_timeout = False
 
-        # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
-        prev_activity = fetch_project_activity_signature(pid, cookies)
         # 🚪 [P44-D6] عدّاد القراءات المتتالية بـ active=False — من قراءة P18
         # القائمة نفسها (صفر طلبات شبكة إضافية). فشل الشبكة (None) لا يُحتسب
         # قراءة ولا يُصفّر العداد (حياد Fail-Open).
