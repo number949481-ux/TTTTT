@@ -2,7 +2,7 @@
 """
 bridge_refactor.main
 ====================
-نقطة تشغيل البوت:
+نقطة تشغيل البوت: 
     python -m bridge_refactor.main
 أو  python bridge_refactor/main.py
 """

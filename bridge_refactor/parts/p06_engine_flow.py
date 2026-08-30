@@ -1,8 +1,11 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2090..3187
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2085..3178
 المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
+# ══════════════════════════════════════════════════════════════
+# 📦 فك الأرشيف الآمن (إصلاح Tar-Slip / Path Traversal)
+# ══════════════════════════════════════════════════════════════
 def _is_safe_archive_member_name(member_name: str) -> bool:
     """رفض أي مسار مطلق أو متجاوز (../) أو حرف درايف (C:) داخل الأرشيف"""
     if not member_name:
@@ -576,10 +579,6 @@ def send_message_and_make_public(
         # لاعتماد المحتوى نهائياً — المتغيرة بين قراءتين = RUNNING (REPLY_UNSTABLE_HOLD).
         prev_reply_fp = None
         stable_streak = 0
-        if FINAL_REPLY_ONLY and answer != "__STREAM_INTERRUPTED__" and hasattr(mod, "fetch_project_messages"):
-            final_status = detect_response_status_gated(
-                final_status, prev_activity, inactive_streak=0, stable_streak=0, email=email
-            )
         # 🎣 [P44-D8] علم دخول المتابعة فعلياً — يُحسم قبل الحلقة من نفس شرطها
         # (مكافئ دلالياً لـ «دخلنا الحلقة مرة على الأقل» — بلا لمس أول سطر فيها:
         # عقد P25 يلزم فحص الإلغاء أول كل دورة). الجلبة النهائية تعمل فقط عند
@@ -1098,6 +1097,3 @@ def send_message_with_auto_account_failover(
     return None, "MAX_ATTEMPTS_EXHAUSTED", None, None, None
 
 
-# ══════════════════════════════════════════════════════════════
-# ⚡ [Task-4] مشغل المهام الموازية للبوت (Concurrent Parallel Queue)
-# ══════════════════════════════════════════════════════════════

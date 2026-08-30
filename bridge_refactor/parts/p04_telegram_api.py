@@ -1,8 +1,11 @@
 """[VERBATIM SLICE] p04_telegram_api
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1140..1664
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1137..1660
 المحتوى: Telegram API core + P34: ثوابت ودوال Safe Message Formatting (PREVIEW_MAX_CHARS/RES_MSG_MAX_CHARS/OUTGOING limits + _strip_partial_html_token + clamp_preview_text + enforce_completion_message_budget + clamp_outgoing_text محقونة في payload الإرسال) + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport (P29: سطر الحساب النشط + سطر تبديل الحساب بعد handoff) + send_document + P28: ALLOWED_DOCUMENT_EXTENSIONS/MAX_DOCUMENT_SIZE_BYTES + download_telegram_document_text (getFile → تنزيل UTF-8 آمن بلا Crash)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
+# ══════════════════════════════════════════════════════════════
+# 📲 [Task-1] دوال الاتصال المباشر والرفع الآلي لبوت تليجرام
+# ══════════════════════════════════════════════════════════════
 def _call_telegram_api_json(method: str, payload: dict, timeout: int = 15) -> dict:
     if not TELEGRAM_BOT_TOKEN:
         return {"ok": False, "status_code": 0, "result": {}, "description": "BOT_TOKEN_MISSING", "error": "BOT_TOKEN_MISSING"}
@@ -126,7 +129,6 @@ def send_telegram_message_detailed(
     if not result.get("ok"):
         detail = result.get("error") or result.get("description") or "UNKNOWN_TELEGRAM_SEND_ERROR"
         log_event("error", f"فشل إرسال رسالة تليجرام: HTTP {result.get('status_code', 0)} - {detail}")
-    if result.get("ok"): log_event("info", f"📤 [P44] TG_SEND_OK chars={len(str(payload.get('text', '')))} chat={chat_id} caller={sys._getframe(1).f_code.co_name} origin={sys._getframe(1).f_back.f_code.co_name + ':' + str(sys._getframe(1).f_back.f_lineno) if sys._getframe(1).f_back else 'ROOT'}")
     return {
         "ok": bool(result.get("ok")),
         "message_id": (result.get("result") or {}).get("message_id"),
@@ -525,6 +527,3 @@ def send_telegram_document(
     log_event("error", f"تعذر رفع الملف [{doc_p.name}] بعد {attempts} محاولات")
     return False
 
-# ══════════════════════════════════════════════════════════════
-# 🌳 [Task-2] شجرة التفريعات وعلم انتهاء المشروع
-# ══════════════════════════════════════════════════════════════
