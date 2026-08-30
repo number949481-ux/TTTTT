@@ -1,11 +1,12 @@
 # 03_STATE.yaml — الحالة الآلية لجسر جلسات Genspark (حدّثها كل جلسة)
 session_bridge:
   current_session: SESSION-GSB-001
-  updated_at: "2026-08-29"
+  updated_at: "2026-08-30"
   repo: number949481-ux/TTTTT
   branch: main
 
 last_done:
+  - "2026-08-30: تقييم gist وكيل خارجي (تنظيف الرد النهائي) — Fact-Check: Architecture Brief لا دليل حي؛ إنشاء 09_FINAL_REPLY_CLEANUP_PLAN.md بخطة مرحلتين + أسئلة للوكيل"
   - "استئناف ثانٍ: إخراج bridge_bot.log + .pytest_cache/ من تتبع git (رجعوا مع مزامنة sync) — المجموعة الكاملة 1025 passed + 49 subtests صفر فشل"
   - "08_LINK_STORE.md: توثيق مخزن gs_link_store (آخر 3 PIDs + قفل المالك) — ترتيب القراءة في 00 أصبح 9 ملفات"
   - "tests/test_gs_link_store.py: 22 حارساً (+12 subtests) للمخزن — Parity بايت-ببايت + رفض __INVALID_PROJECT__ + Self-Heal + عقد تكامل المحركين 01.04/02.07"
@@ -28,6 +29,9 @@ open_tasks:
     status: AWAITING_OWNER
   - id: T-GSB-3
     what: "متابعة قصة CP0: هل أرسل المالك لصقة التصحيح لـ AG؟ وما رده؟"
+    status: AWAITING_OWNER
+  - id: T-GSB-4
+    what: "تنفيذ المرحلة A من خطة تنظيف الرد النهائي (09_FINAL_REPLY_CLEANUP_PLAN.md) + إرسال الأسئلة الأربعة للوكيل الخارجي"
     status: AWAITING_OWNER
 
 decisions:
