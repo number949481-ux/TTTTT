@@ -28,3 +28,6 @@
 - [GSB-001] استئناف ثانٍ 2026-08-29: الأمر المقطوع (untrack bridge_bot.log) لم يكن نُفِّذ فعلاً — تحقّقنا بـ git ls-files قبل الإعادة. درس: بعد أي انقطاع افحص الحالة الفعلية، لا تفترض نجاح ولا فشل.
 - [GSB-001] نمط مزمن: مزامنة sync التلقائية بترجّع الملفات المولّدة (bridge_bot.log و .pytest_cache/) للتتبع رغم .gitignore — حارس test_p17 TestGeneratedFilesUntracked هو الإنذار، والعلاج git rm --cached دوريًا.
 - [GSB-001] بعد الإصلاحين: المجموعة الكاملة 1025 passed + 49 subtests — صفر فشل (2026-08-29).
+- [GSB-001] gist خارجي (pijsal1-tech/8fb7fd76) عن تنظيف الرد النهائي = Architecture Brief لا دليل حي: حقل is_tool_call غير موجود في الريبو (الحقيقي tool_calls/role/tool_call_id في _NULL_MSG_FIELDS)، والسقف 3500 منفَّذ أصلاً (P34 enforce_completion_message_budget).
+- [GSB-001] الثغرة الحقيقية المؤكدة: fetch_final_reply_text (p05 ~228 + 01.33 ~1871) بياخد آخر role=="assistant" بلا فحص أغلفة الأدوات أو الفراغ — خطة الإصلاح في 09_FINAL_REPLY_CLEANUP_PLAN.md (STATUS: AWAITING_OWNER).
+- [GSB-001] تذكير تشغيلي: بوت التليجرام بيحمّل المحرك 01.03 فقط (01.33 سطر 503) — أي تعديل تنظيف يتم في 01.33+p05 معاً، لا في المحرك (Golden Baseline).
