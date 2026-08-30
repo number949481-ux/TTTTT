@@ -21,6 +21,7 @@ __all__ = [
     "P44_GATE_STABLE_READS_REQUIRED",
     "detect_response_status_gated",
     "compute_reply_fingerprint",
+    "clean_assistant_reply",
     "fetch_final_reply_text",
     "MODEL_DECLINE_MARKERS",
     "MODEL_DECLINE_MAX_RESPONSE_CHARS",
