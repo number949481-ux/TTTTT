@@ -31,3 +31,7 @@
 - [GSB-001] gist خارجي (pijsal1-tech/8fb7fd76) عن تنظيف الرد النهائي = Architecture Brief لا دليل حي: حقل is_tool_call غير موجود في الريبو (الحقيقي tool_calls/role/tool_call_id في _NULL_MSG_FIELDS)، والسقف 3500 منفَّذ أصلاً (P34 enforce_completion_message_budget).
 - [GSB-001] الثغرة الحقيقية المؤكدة: fetch_final_reply_text (p05 ~228 + 01.33 ~1871) بياخد آخر role=="assistant" بلا فحص أغلفة الأدوات أو الفراغ — خطة الإصلاح في 09_FINAL_REPLY_CLEANUP_PLAN.md (STATUS: AWAITING_OWNER).
 - [GSB-001] تذكير تشغيلي: بوت التليجرام بيحمّل المحرك 01.03 فقط (01.33 سطر 503) — أي تعديل تنظيف يتم في 01.33+p05 معاً، لا في المحرك (Golden Baseline).
+- [GSB-001] P45 منفذة (المرحلة A): clean_assistant_reply (01.33 سطر 1871 — تطهير thought/thinking/antThinking + بادئات Assistant:) + تحصين fetch_final_reply_text (تخطي tool_calls والفارغ + تمرير clean + Fail-Open لو التنظيف أفرغ الرد). p05 أعيد توليده — byte-parity سليم.
+- [GSB-001] رد الوكيل الخارجي وصل في ملف خطة_استخراج_الرد_النهائي_الصافي_فيب_كودج.md بجذر الريبو: اعتمد الحقول الحقيقية (tool_calls/role/content) وأكد عدم وجود is_tool_call — تطابق كامل مع فحصنا في 09.
+- [GSB-001] أي تعديل في 01.33 يغيّر عدد الأسطر يستلزم تحديث خريطة PARTS في scripts/rebuild_refactor.py ثم python3 scripts/rebuild_refactor.py — وإلا ينكسر byte-parity في test_refactor_parity.
+- [GSB-001] test_p45_clean_final_reply.py = 20 حارساً (+18 subtests) منها حارس يمنع ظهور is_tool_call في الكود وحارس يمنع مسّ المحرك 01.03. العدّاد الكلي: 1045 passed + 67 subtests (2026-08-30).
