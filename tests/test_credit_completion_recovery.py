@@ -38,7 +38,8 @@ class CreditRecoveryTests(unittest.TestCase):
             check_balance=mock.Mock(return_value=99999),
             send_chat=mock.Mock(return_value=(DONE, PID, "assistant")),
             fetch_project_messages=mock.Mock(return_value=[
-                {"role": "assistant", "content": CREDIT}]),
+                {"role": "assistant", "content": CREDIT,
+                 "action": {"type": "ACTION_CREDIT_EXHAUSTED"}}]),
         )
         self.cfg = bridge.BridgeConfig()
         self.cfg.max_timeout_retries = 1
@@ -72,7 +73,8 @@ class CreditRecoveryTests(unittest.TestCase):
     def interrupted_then_activity_stop(self, final_text=CREDIT):
         self.engine.send_chat.return_value = ("__STREAM_INTERRUPTED__", PID, "assistant")
         self.engine.fetch_project_messages.return_value = [
-            {"role": "assistant", "content": final_text},
+            {"role": "assistant", "content": final_text,
+             "action": {"type": "ACTION_CREDIT_EXHAUSTED"} if final_text == CREDIT else {}},
             {"role": "user", "content": "This user message is not the final reply"},
         ]
         self.activity.side_effect = [
@@ -115,14 +117,13 @@ class CreditRecoveryTests(unittest.TestCase):
         self.assertEqual(result[1], "COMPLETED")
         self.assertEqual(result[3], "")
 
-    def test_credit_in_fast_mode_downloads_recovery_checkpoint(self):
+    def test_credit_in_fast_mode_never_downloads_recovery_artifacts(self):
         self.cfg.project_fast_lean_skip = True
         self.engine.send_chat.return_value = (CREDIT, PID, "assistant")
         result = self.run_pipeline()
         self.assertEqual(result[1], "CREDIT_EXHAUSTED")
-        self.download.assert_called_once()
-        actionable, _ = bridge.should_capture_project_update(URL, result[1], result[2])
-        self.assertTrue(actionable)
+        self.download.assert_not_called()
+        self.assertFalse(pathlib.Path(result[2]).exists())
 
     def test_successful_fast_mode_still_skips_archive_and_final_fetch(self):
         self.cfg.project_fast_lean_skip = True
@@ -166,14 +167,16 @@ class CreditRecoveryTests(unittest.TestCase):
         registry_home = self.root / "registry"
         self.stack.enter_context(mock.patch.object(bridge, "PROJECT_REGISTRY_HOME", registry_home))
         registry = bridge.ProjectRegistry("credit_recovery")
+        registry.update_project_settings({"fast_mode": True})
         checkpoints = []
 
         def progress(url, status, folder, text, email, query):
-            actionable, meta = bridge.should_capture_project_update(url, status, folder)
-            if not actionable or not allow_checkpoint:
+            if status != "CREDIT_EXHAUSTED":
+                return {"allow_continuation": True, "project_update_preserved": False}
+            if not allow_checkpoint:
                 return {"allow_continuation": False, "project_update_preserved": False,
-                        "reason": meta["reason"] or "Preservation failed"}
-            update = registry.snapshot(folder, url, status, text)
+                        "reason": "Preservation failed"}
+            update = registry.preserve_cloud_resume(url, PID, email, query, text)
             checkpoint = update["checkpoint"]
             self.assertTrue(registry.verify_checkpoint_record_checksum(checkpoint))
             checkpoints.append(checkpoint)
@@ -182,6 +185,8 @@ class CreditRecoveryTests(unittest.TestCase):
 
         result = bridge.send_message_with_auto_account_failover(
             None, "Original task", bridge_cfg=self.cfg, progress_callback=progress)
+        self.download.assert_not_called()
+        self.assertFalse((registry.root / "archive").exists())
         return result, checkpoints, release
 
     def test_fast_credit_handoff_preserves_checkpoint_before_second_account(self):
@@ -214,6 +219,204 @@ class CreditRecoveryTests(unittest.TestCase):
         result, _, _ = self.run_failover(limit=1)
         self.assertEqual(result[1], "CREDIT_EXHAUSTED")
         self.assertEqual(self.engine.send_chat.call_count, 1)
+
+    def isolated_registry(self, key="cloud_worker"):
+        home = self.root / "registry"
+        self.stack.enter_context(mock.patch.object(bridge, "PROJECT_REGISTRY_HOME", home))
+        self.stack.enter_context(mock.patch.object(bridge, "PROJECT_REGISTRY_INDEX_FILE", home / "registry.json"))
+        reg = bridge.ProjectRegistry(key)
+        reg.update_project_settings({"fast_mode": True})
+        return reg
+
+    def test_metadata_survives_reload_without_deleting_existing_files(self):
+        reg = self.isolated_registry()
+        data = reg._read()
+        data["file_index"] = {"index.html": {"sha256": "old", "bytes": 12}}
+        data["checkpoints"] = ["existing-artifact"]
+        reg._write(data)
+        before = reg._read()
+        update = reg.preserve_cloud_resume(URL, PID, "owner@test.invalid", "Continue", CREDIT)
+        reloaded = bridge.ProjectRegistry(reg.key)
+        record = reloaded.load_checkpoint_record(update["checkpoint"])
+        self.assertTrue(reloaded.verify_checkpoint_record_checksum(update["checkpoint"]))
+        self.assertEqual(record["artifact_state"], "cloud_resume_only")
+        self.assertFalse(record["summary"]["artifact_backup"])
+        self.assertEqual(record["summary"]["latest_pid"], PID)
+        self.assertEqual(record["archive_ref"], "")
+        self.assertEqual(record["deleted_files"], [])
+        self.assertEqual(reloaded._read()["file_index"], before["file_index"])
+        self.assertEqual(reloaded._read()["checkpoints"], before["checkpoints"])
+        self.assertFalse((reg.root / "archive").exists())
+        self.assertFalse((reg.root / "checkpoints").exists())
+
+    def test_metadata_rejects_invalid_locator_and_github_artifact_mode(self):
+        reg = self.isolated_registry()
+        with self.assertRaises(ValueError):
+            reg.preserve_cloud_resume("not-a-project", PID, "e", "Continue", CREDIT)
+        reg.update_project_settings({"fast_mode": False})
+        with self.assertRaises(ValueError):
+            reg.preserve_cloud_resume(URL, PID, "e", "Continue", CREDIT)
+        data = reg._read()
+        data["project_settings"]["fast_mode"] = True
+        data["project_settings"]["github"]["enabled"] = True
+        reg._write(data)
+        with self.assertRaises(ValueError):
+            reg.preserve_cloud_resume(URL, PID, "e", "Continue", CREDIT)
+        self.assertFalse((reg.root / "reports").exists())
+
+    def test_metadata_checksum_failure_blocks_preservation(self):
+        reg = self.isolated_registry()
+        with mock.patch.object(reg, "verify_checkpoint_record_checksum", return_value=False):
+            with self.assertRaises(RuntimeError):
+                reg.preserve_cloud_resume(URL, PID, "e", "Continue", CREDIT)
+
+    def test_platform_flags_override_completed_and_empty_content(self):
+        for fields in [
+            {"action": {"type": "ACTION_CREDIT_EXHAUSTED"}},
+            {"action": {"action_params": {"block_reason": "balance_drained"}}},
+            {"session_state": {"consume_usage_quota_exceeded": True}},
+        ]:
+            with self.subTest(fields=fields):
+                message = {"role": "assistant", "content": DONE, **fields}
+                self.assertTrue(bridge.has_platform_credit_signal(message))
+                self.assertEqual(bridge.resolve_runtime_credit_status(
+                    "COMPLETED", DONE, self.engine, PID, {}, types.SimpleNamespace(), message),
+                    "CREDIT_EXHAUSTED")
+                self.interrupted_then_activity_stop()
+                self.engine.fetch_project_messages.return_value = [{**message, "content": ""}]
+                self.assertEqual(self.run_pipeline()[1], "CREDIT_EXHAUSTED")
+
+    def test_quoted_json_user_messages_and_string_booleans_are_not_flags(self):
+        for message in [
+            {"role": "assistant", "content": 'Example: {"type":"ACTION_CREDIT_EXHAUSTED"}'},
+            {"role": "user", "action": {"type": "ACTION_CREDIT_EXHAUSTED"}},
+            {"role": "assistant", "session_state": {"consume_usage_quota_exceeded": "true"}},
+            {"role": "assistant", "action": "ACTION_CREDIT_EXHAUSTED"},
+        ]:
+            with self.subTest(message=message):
+                self.assertFalse(bridge.has_platform_credit_signal(message))
+
+    def test_quoted_credit_text_in_finished_reply_does_not_rotate(self):
+        text = "Documentation: visit https://www.genspark.ai/pricing for pricing."
+        self.engine.send_chat.return_value = (text, PID, "assistant")
+        self.engine.fetch_project_messages.return_value = [
+            {"role": "assistant", "content": text, "session_state": {"_finish_reason": "stop"}}]
+        self.cfg.project_fast_lean_skip = True
+        result = self.run_pipeline()
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertEqual(result[3], text)
+        self.cooldown.assert_not_called()
+        self.download.assert_not_called()
+
+    def test_unconfirmed_credit_and_network_failure_are_not_success(self):
+        self.engine.send_chat.return_value = ("__CREDIT_EXHAUSTED__", PID, "assistant")
+        for failure in [False, True]:
+            with self.subTest(network_failure=failure):
+                self.engine.fetch_project_messages.return_value = []
+                self.engine.fetch_project_messages.side_effect = OSError("offline") if failure else None
+                result = self.run_pipeline()
+                self.assertEqual(result[1], "CREDIT_UNCONFIRMED")
+                self.assertEqual(bridge.describe_terminal_outcome(result[1], result[0])["kind"], "failure")
+        self.cooldown.assert_not_called()
+        self.download.assert_not_called()
+
+    def test_old_credit_before_new_user_turn_is_not_current_evidence(self):
+        self.engine.send_chat.return_value = ("__CREDIT_EXHAUSTED__", PID, "assistant")
+        self.engine.fetch_project_messages.return_value = [
+            {"role": "assistant", "content": CREDIT, "action": {"type": "ACTION_CREDIT_EXHAUSTED"}},
+            {"role": "user", "content": "New task"}]
+        self.assertEqual(self.run_pipeline()[1], "CREDIT_UNCONFIRMED")
+
+    def test_sentinel_cannot_become_success_from_a_stale_finished_reply(self):
+        self.engine.send_chat.return_value = ("__CREDIT_EXHAUSTED__", PID, "assistant")
+        self.engine.fetch_project_messages.return_value = [
+            {"role": "assistant", "content": DONE, "session_state": {"_finish_reason": "stop"}}]
+        self.assertEqual(self.run_pipeline()[1], "CREDIT_UNCONFIRMED")
+        self.cooldown.assert_not_called()
+
+    def test_normal_mode_credit_still_preserves_artifacts(self):
+        self.cfg.project_fast_lean_skip = False
+        self.engine.send_chat.return_value = (CREDIT, PID, "assistant")
+        result = self.run_pipeline()
+        self.assertEqual(result[1], "CREDIT_EXHAUSTED")
+        self.download.assert_called_once()
+        self.assertTrue(bridge.should_capture_project_update(URL, result[1], result[2])[0])
+
+    def run_real_worker(self, fail_write=False, unconfirmed=False):
+        reg = self.isolated_registry()
+        fork_pid = "22222222-2222-4222-8222-222222222222"
+        original_failover = bridge.send_message_with_auto_account_failover
+        def bind(cfg, *args, **kwargs):
+            cfg.project_fast_lean_skip = True
+            cfg.extracted_webapp_dir = str(self.root / "extracted")
+            return {}
+        bridge.apply_project_runtime_binding.side_effect = bind
+        self.patch("claim_eligible_account_for_owner", side_effect=[
+            (a, self.accounts, "claimed") for a in self.accounts])
+        release = self.patch("release_account_selection")
+        self.patch("get_public_forked_pid", return_value=fork_pid)
+        self.patch("make_project_always_public", side_effect=lambda pid, *a, **kw: bridge.build_genspark_viewer_url(pid))
+        self.stack.enter_context(mock.patch.object(bridge.threading, "Thread"))
+        sends = self.patch("send_telegram_message")
+        self.patch("send_telegram_message_detailed", return_value={"ok": False})
+        self.patch("edit_telegram_message_text")
+        snapshot = self.stack.enter_context(mock.patch.object(bridge.ProjectRegistry, "snapshot"))
+        sync = self.stack.enter_context(mock.patch.object(bridge.ProjectRegistry, "github_sync"))
+        scan = self.patch("should_capture_project_update", wraps=bridge.should_capture_project_update)
+        if fail_write:
+            self.stack.enter_context(mock.patch.object(bridge.ProjectRegistry, "_write_checkpoint_record", side_effect=OSError("disk full")))
+        if unconfirmed:
+            self.engine.fetch_project_messages.return_value = []
+        calls = []
+        def chat(cookies, query, email, **kwargs):
+            calls.append(email)
+            if len(calls) == 1:
+                return CREDIT, PID, "a1"
+            updates = reg._read()["updates"]
+            self.assertEqual(len(updates), 1)
+            self.assertTrue(reg.verify_checkpoint_record_checksum(updates[0]["checkpoint"]))
+            self.assertEqual(kwargs["project_id"], fork_pid)
+            return DONE, fork_pid, "a2"
+        self.engine.send_chat.side_effect = chat
+        result_box = []
+        def failover(**kwargs):
+            result = original_failover(**kwargs)
+            result_box.append(result)
+            return result
+        self.patch("send_message_with_auto_account_failover", side_effect=failover)
+        bridge.process_user_task_async(12345, None, "Implement existing task", project_key_hint=reg.key)
+        self.assertEqual(len(result_box), 1)
+        self.download.assert_not_called()
+        snapshot.assert_not_called()
+        sync.assert_not_called()
+        scan.assert_not_called()
+        self.assertFalse((reg.root / "archive").exists())
+        self.assertFalse((self.root / "extracted").exists())
+        return result_box[0], calls, sends, release, reg
+
+    def test_real_worker_handoff_uses_cloud_checkpoint_and_second_account(self):
+        result, calls, sends, release, reg = self.run_real_worker()
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertEqual(calls, [a["email"] for a in self.accounts])
+        self.assertEqual(release.call_count, 2)
+        self.assertEqual(len(reg._read()["updates"]), 1)
+        self.assertIn("cloud_resume_only", str(reg._read()["updates"]))
+        self.assertIn("بدون تنزيل", str(sends.call_args_list))
+        self.assertNotIn("حدث خطأ داخلي", str(sends.call_args_list))
+
+    def test_real_worker_disk_failure_blocks_handoff(self):
+        result, calls, sends, release, reg = self.run_real_worker(fail_write=True)
+        self.assertEqual(result[1], "CREDIT_EXHAUSTED")
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(release.call_count, 1)
+        self.assertNotIn("تم التوليد بنجاح", str(sends.call_args_list))
+
+    def test_real_worker_unconfirmed_credit_does_not_cooldown_or_retry(self):
+        result, calls, sends, _, _ = self.run_real_worker(unconfirmed=True)
+        self.assertEqual(result[1], "CREDIT_UNCONFIRMED")
+        self.assertEqual(len(calls), 1)
+        self.cooldown.assert_not_called()
+        self.assertIn("تعذر تأكيد", str(sends.call_args_list))
 
 
 if __name__ == "__main__":
