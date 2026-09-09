@@ -19,6 +19,8 @@ __all__ = [
     "P44_STRUCTURED_STATUSES",
     "P44_GATE_INACTIVE_READS_REQUIRED",
     "P44_GATE_STABLE_READS_REQUIRED",
+    "has_platform_credit_signal",
+    "resolve_runtime_credit_status",
     "detect_response_status_gated",
     "compute_reply_fingerprint",
     "fetch_final_reply_text",
