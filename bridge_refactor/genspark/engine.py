@@ -49,6 +49,11 @@ __all__ = [
     "download_project_archive",
     "make_project_always_public",
     "get_public_forked_pid",
+    "COMPACT_TRIGGER_SECONDS",
+    "COMPACT_VERIFY_READS",
+    "current_account_duration",
+    "compact_summary_context",
+    "run_verified_compact",
     "send_message_and_make_public",
     "send_message_with_auto_account_failover",
 ]
