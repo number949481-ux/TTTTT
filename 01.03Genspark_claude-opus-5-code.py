@@ -1653,6 +1653,9 @@ def filter_messages_after_compact(messages: list) -> list:
     return messages
 
 
+VERIFIED_COMPACT_CONTEXT_SUPPORTED = True
+
+
 def fetch_project_messages(project_id: str, cookies: dict, cfg: "Config" = None) -> list:
     """
     استخراج رسائل المشروع السابقة بدقة 100% عبر الـ Direct Clean API: /api/project?id=XXX
@@ -1661,6 +1664,23 @@ def fetch_project_messages(project_id: str, cookies: dict, cfg: "Config" = None)
     """
     if not project_id:
         return []
+    # Opt-in, per-call context verified by the bridge after /compact. Pin the
+    # next payload to that exact session/history instead of a stale re-fetch.
+    verified = getattr(cfg, "_verified_compact_context", None) if cfg is not None else None
+    if verified is not None:
+        import copy
+        if (not isinstance(verified, dict) or verified.get("project_id") != project_id
+                or not verified.get("chat_session_id") or not verified.get("messages")):
+            raise RuntimeError("Invalid verified compact context")
+        messages = verified["messages"]
+        first = messages[0] if isinstance(messages, list) else None
+        if (not isinstance(first, dict) or first.get("role") != "assistant"
+                or not isinstance(first.get("session_state"), dict)
+                or first["session_state"].get("is_compact_summary") is not True):
+            raise RuntimeError("Verified compact context has no typed summary")
+        cfg._last_chat_session_id = verified["chat_session_id"]
+        cfg._last_fetch_status = 200
+        return copy.deepcopy(messages)
     if cfg is not None:
         setattr(cfg, "_last_fetch_status", 0)   # B1: تصفير قبل كل جلب
     try:
