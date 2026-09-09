@@ -147,6 +147,8 @@ class CreditRecoveryTests(unittest.TestCase):
         self.cooldown.assert_not_called()
 
     def run_failover(self, interrupted=False, allow_checkpoint=True, limit=10):
+        # Isolate credit recovery from auto-compact; short-run policy has its own suite.
+        self.patch("current_account_duration", return_value=300)
         self.cfg.project_fast_lean_skip = True
         self.cfg.max_credit_continuations = limit
         if interrupted:
@@ -343,6 +345,8 @@ class CreditRecoveryTests(unittest.TestCase):
         self.assertTrue(bridge.should_capture_project_update(URL, result[1], result[2])[0])
 
     def run_real_worker(self, fail_write=False, unconfirmed=False):
+        # This fixture verifies recovery, not the separately tested compact path.
+        self.patch("current_account_duration", return_value=300)
         reg = self.isolated_registry()
         fork_pid = "22222222-2222-4222-8222-222222222222"
         original_failover = bridge.send_message_with_auto_account_failover

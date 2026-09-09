@@ -113,7 +113,7 @@ class CompactTests(unittest.TestCase):
         self.assertFalse((reg.root / "archive").exists())
 
     def test_actual_engine_fetch_pins_verified_history_without_network(self):
-        source = (ROOT / "01.03Genspark_claude-opus-5-code.py").read_text()
+        source = (ROOT / "01.03Genspark_claude-opus-5-code.py").read_text(encoding="utf-8")
         function = next(n for n in ast.parse(source).body
                         if isinstance(n, ast.FunctionDef) and n.name == "fetch_project_messages")
         namespace = {}
@@ -175,7 +175,7 @@ class CompactTests(unittest.TestCase):
                 return "Compacted", compact_pid, "summary"
             if not initial_due and len(calls) == 1:
                 return (DONE if complete_only else CREDIT), PID, "first"
-            if first_duration >= 180 or initial_due:
+            if first_duration <= bridge.COMPACT_TRIGGER_SECONDS or initial_due:
                 pinned = cfg._verified_compact_context
                 self.assertEqual(kwargs["project_id"], compact_pid)
                 self.assertEqual(pinned["chat_session_id"], "verified-session")
@@ -195,7 +195,7 @@ class CompactTests(unittest.TestCase):
         sync.assert_not_called()
         return calls, results[0], previews, reg, sends
 
-    def test_credit_after_180_compacts_on_new_account_before_resume(self):
+    def test_credit_at_180_compacts_on_new_account_before_resume(self):
         calls, result, previews, reg, sends = self.worker_scenario()
         self.assertEqual([c[0] for c in calls], ["User modification", "/compact", "تابع"])
         self.assertEqual(calls[0][1], self.accounts[0]["email"])
@@ -209,11 +209,55 @@ class CompactTests(unittest.TestCase):
         self.assertIn("https://", markup)
         self.assertIn(self.accounts[1]["email"], compact_cards[0][0][1])
 
-    def test_short_account_run_does_not_compact(self):
-        calls, result, _, _, _ = self.worker_scenario(first_duration=179)
+    def test_account_above_180_does_not_compact(self):
+        calls, result, _, _, _ = self.worker_scenario(first_duration=180.001)
         self.assertEqual(len(calls), 2)
         self.assertNotIn("/compact", [c[0] for c in calls])
         self.assertEqual(result[1], "COMPLETED")
+
+    def assert_credit_threshold(self, duration, expected_compact):
+        calls, result, _, _, _ = self.worker_scenario(first_duration=duration)
+        expected = ["User modification", "/compact", "تابع"] if expected_compact else ["User modification", "تابع"]
+        self.assertEqual([call[0] for call in calls], expected)
+        self.assertEqual(result[1], "COMPLETED")
+
+    def test_55_second_credit_exhaustion_compacts(self):
+        self.assert_credit_threshold(55, True)
+
+    def test_90_second_credit_exhaustion_compacts(self):
+        self.assert_credit_threshold(90, True)
+
+    def test_just_below_180_credit_exhaustion_compacts(self):
+        self.assert_credit_threshold(179.999, True)
+
+    def test_zero_duration_uses_inclusive_owner_policy(self):
+        self.assert_credit_threshold(0, True)
+
+    def test_five_minute_credit_exhaustion_does_not_compact(self):
+        self.assert_credit_threshold(300, False)
+
+    def test_nine_minute_credit_exhaustion_does_not_compact(self):
+        self.assert_credit_threshold(540, False)
+
+    def assert_completion_threshold(self, duration, expected_due):
+        calls, result, _, reg, _ = self.worker_scenario(complete_only=True, first_duration=duration)
+        self.assertEqual([call[0] for call in calls], ["User modification"])
+        self.assertEqual(result[1], "COMPLETED")
+        state = bridge.ProjectRegistry(reg.key).get_compact_state()
+        self.assertIs(state["due"], expected_due)
+        self.assertEqual(state["duration_seconds"], duration)
+
+    def test_short_completion_persists_due_without_immediate_compact(self):
+        self.assert_completion_threshold(55, True)
+
+    def test_completion_just_above_180_persists_not_due(self):
+        self.assert_completion_threshold(180.001, False)
+
+    def test_five_minute_completion_persists_not_due(self):
+        self.assert_completion_threshold(300, False)
+
+    def test_nine_minute_completion_persists_not_due(self):
+        self.assert_completion_threshold(540, False)
 
     def test_completed_run_only_schedules_without_sending_compact(self):
         calls, result, _, reg, _ = self.worker_scenario(complete_only=True)
