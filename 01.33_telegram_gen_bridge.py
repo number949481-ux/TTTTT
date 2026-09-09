@@ -7069,7 +7069,7 @@ def process_user_task_async(
         cfg.compact_before_send = bool(requested_pid and compact_state.get("due") is True)
 
         def schedule_compact(stage_status, stage_url, duration):
-            registry.set_compact_state(duration >= COMPACT_TRIGGER_SECONDS,
+            registry.set_compact_state(duration <= COMPACT_TRIGGER_SECONDS,
                                        extract_project_id(stage_url), duration)
 
         def remember_compact(context):
