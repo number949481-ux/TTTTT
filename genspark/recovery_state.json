@@ -1,0 +1,21 @@
+{
+  "task": "Credit exhaustion must not become false completion or block recoverable continuation",
+  "branch": "genspark_ai_developer",
+  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/1",
+  "status": "implementation_verified",
+  "verification": {"tests_passed": 988, "subtests_passed": 15, "quality_gate_exit": 0, "parity_tests_passed": 11, "syntax_check": "passed", "live_e2e": "not_run"},
+  "baseline": {"tests_passed": 976, "subtests_passed": 12, "quality_gate_exit": 0},
+  "confirmed_code_paths": [
+    "Final fetch replaces reply text without reclassifying COMPLETED",
+    "Fast mode skips archive download but credit continuation requires preserved artifacts"
+  ],
+  "plan": [
+    "Add offline regression tests reproducing both paths",
+    "Reclassify structured failures after final fetch without modifying detect_response_status or polling stop rules",
+    "Require recovery archive on credit exhaustion even in fast mode; keep normal fast completion unchanged",
+    "Regenerate faithful split, run full tests and quality gate, squash and publish PR"
+  ],
+  "safety": ["Keep checkpoint failure blocking", "Keep cancellation priority", "Keep finite continuation/account limits", "Do not store credentials"],
+  "completed": ["regression_tests", "final_reply_reclassification", "credit_recovery_archive", "faithful_split", "full_quality_gates"],
+  "next_action": "Review and merge PR #1, then validate on a real owner-controlled run; do not repeat implementation"
+}
