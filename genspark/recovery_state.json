@@ -2,7 +2,29 @@
   "task": "Approved automatic /compact before continuation",
   "branch": "genspark_ai_developer",
   "pull_request": "https://github.com/number949481-ux/TTTTT/pull/2",
-  "status": "verified_implementation",
+  "status": "review_complete_code_unchanged",
+  "last_review": {
+    "gist": "https://gist.github.com/pijsal1-tech/68039140242daedca60ae8eaca6ae02e",
+    "source_revision": "c4225aa",
+    "scope": "Explanation and genspark folder updates only. No project code changes authorized.",
+    "findings": [
+      "current_account_duration reads the account claim span, not pure generation time (bridge lines 2477-2490).",
+      "The span opens at account claim (3111); download and publication run at 3009/3013 before send_message_and_make_public returns; compact eligibility is sampled at 3196/3197.",
+      "Consequently, archive download, setup/login/fork and publication can inflate the 180-second compact trigger even when generation itself lasted 55 seconds.",
+      "The normal GitHub sync callback runs after compact eligibility is sampled (3228 then worker github_sync at 7132). It extends displayed total account duration, but is not included in that already-sampled trigger.",
+      "should_skip_artifacts_download at 476-486 gives enabled GitHub precedence over fast_mode. Actual fast mode skips artifacts irrespective of run duration or changed files.",
+      "The gist is a user-described scenario, not a runtime log: actual deployed revision, effective fast flag and project GitHub settings were not verified."
+    ],
+    "recommendations_not_implemented": [
+      "Keep compact eligibility and artifact delivery as independent decisions; do not skip downloads merely because a response took less than 180 seconds.",
+      "Use a dedicated monotonic generation interval starting at the business prompt send and ending when a terminal response or confirmed credit event is observed, before downloads/publication/sync. Exclude prior compact maintenance and account setup.",
+      "Maintain a separate total operational duration for accounting and UI. Client-observed generation duration is not exact server compute time unless server timestamps are available.",
+      "In effective fast mode, leave changed files in the cloud and preserve only resume metadata; a local diff is not needed when artifact synchronization is intentionally disabled.",
+      "For the current local GitHub sync design, automatic file mirroring requires fetching file content. Zero local downloads plus automatic GitHub sync would require a separately approved cloud-side publishing design.",
+      "Before any approved fix, add a regression with 55 seconds of generation plus 160 seconds of artifact work: compact must remain ineligible under the proposed generation-only policy."
+    ],
+    "validation": "Read-only source trace. No application import, tests, rebuild, deployment or code modification performed. Existing verification figures below are historical."
+  },
   "verification": {"tests_passed": 1018, "subtests_passed": 26, "compact_tests_passed": 17, "compact_subtests_passed": 2, "parity_tests_passed": 11, "syntax_check": "passed", "quality_gate_exit": 0},
   "spec": "https://gist.github.com/pijsal1-tech/143bb8bf9a2478451114376123b017f8",
   "baseline": {"tests_passed": 1001, "subtests_passed": 24},
@@ -16,7 +38,7 @@
     "Keep fast mode at zero archive downloads, snapshots and diffs; regenerate byte-identical split and run full tests"
   ],
   "completed": ["180_second_monotonic_trigger", "new_account_compact_before_resume", "deferred_post_completion_trigger", "fresh_summary_and_session_verification", "pinned_next_send_context", "durable_eligibility", "live_preview_and_cancel", "zero_fast_artifacts", "full_tests_and_parity"],
-  "next_action": "Review PR #2 and perform owner-controlled live /compact validation. Install both bridge 01.33 and engine 01.03 from the same revision. Do not repeat implementation.",
+  "next_action": "Explain timing versus artifact decisions and wait for explicit approval before changing project code. Only genspark/recovery_state.json may be updated in this review; do not implement the proposed generation-only timer yet.",
   "live_e2e": "not_run",
   "credentials": "Never stored"
 }
