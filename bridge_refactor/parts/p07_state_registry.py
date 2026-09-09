@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3281..4308
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3433..4484
 المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -182,6 +182,8 @@ class ProjectRegistry:
                     "deleted_at": entry.get("deleted_at"),
                 }
             base["file_index"] = normalized_index
+        if isinstance(data.get("compact_state"), dict):
+            base["compact_state"] = dict(data["compact_state"])
         base["project_settings"] = self._normalize_project_settings(data.get("project_settings"))
         base["schema_version"] = PROJECT_MANIFEST_SCHEMA_VERSION
         return base
@@ -845,6 +847,28 @@ class ProjectRegistry:
             return False
         expected = str(record.get("checksum") or "")
         return bool(expected) and expected == self._checkpoint_record_checksum(record)
+
+    def get_compact_state(self):
+        with self.lock:
+            return dict(self._read().get("compact_state") or {})
+
+    def set_compact_state(self, due, source_pid, duration=0.0, context=None):
+        """Persist eligibility/verified locator, without snapshots or chat secrets."""
+        pid = extract_project_id(source_pid)
+        if not pid:
+            raise ValueError("Compact maintenance requires a valid project")
+        state = {"due": due is True, "source_pid": pid,
+                 "duration_seconds": max(0.0, float(duration)), "updated_at": _utc()}
+        if context is not None:
+            state.update({"chat_session_id": context["chat_session_id"],
+                          "summary_key": context["summary_key"], "verified": True})
+        with self.lock:
+            data = self._read()
+            data["compact_state"] = state
+            self._write(data)
+            if self._read().get("compact_state") != state:
+                raise IOError("Compact state was not durably preserved")
+        return state
 
     def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message):
         """Durable cloud locator/context only; not an artifact backup or a diff."""
