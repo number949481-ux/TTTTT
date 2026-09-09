@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2093..3199
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2157..3280
 المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -566,7 +566,10 @@ def send_message_and_make_public(
             last_resp_text = ""
         else:
             final_status = detect_response_status(answer)
+            final_status = resolve_runtime_credit_status(final_status, answer, mod, pid, cookies, cfg)
             last_resp_text = str(answer) if answer else ""
+        if final_status == "CREDIT_UNCONFIRMED":
+            return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
         is_timeout = False
 
         # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
@@ -648,6 +651,11 @@ def send_message_and_make_public(
                             # None → حياد Fail-Open /
                             # سقف session_timeout فوق الكل (D12 — فحص elapsed أعلاه).
                             raw_status = detect_response_status(last_c)
+                            raw_status = resolve_runtime_credit_status(
+                                raw_status, last_c, mod, pid, cookies, cfg, message=last_asst)
+                            if raw_status == "CREDIT_UNCONFIRMED":
+                                final_status = raw_status
+                                break
                             final_status = detect_response_status_gated(
                                 raw_status, curr_activity, inactive_streak, stable_streak, email=email)
             except Exception:
@@ -674,9 +682,15 @@ def send_message_and_make_public(
             # Preserve P18's immediate stop and P44's fallback, but never keep
             # a success label over a structured failure in the authoritative reply.
             refreshed_status = detect_response_status(last_resp_text)
-            if refreshed_status in P44_STRUCTURED_STATUSES:
+            refreshed_status = resolve_runtime_credit_status(
+                refreshed_status, last_resp_text, mod, pid, cookies, cfg,
+                message=getattr(cfg, "_final_reply_message", None))
+            if refreshed_status in P44_STRUCTURED_STATUSES or refreshed_status == "CREDIT_UNCONFIRMED":
                 log_event("warning", f"[CREDIT_RECOVERY] FINAL_STATUS_RECONCILED status={refreshed_status}", email=email)
                 final_status = refreshed_status
+
+        if final_status == "CREDIT_UNCONFIRMED":
+            return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
 
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
@@ -697,12 +711,7 @@ def send_message_and_make_public(
         # وsave_project_branch بلا حراسة (شجرة الاستئناف tree:* محفوظة دائماً).
         # fast_mode=False (الافتراضي) = السلوك الحالي بالبايت (G3 Zero Regression).
         fast_lean_skip = bool(getattr(bridge_cfg, "project_fast_lean_skip", False))
-        # Credit handoff requires a real checkpoint before another account sends.
-        # Fast mode still skips ordinary completion downloads, not recovery data.
-        # A failed download remains fail-closed at the existing checkpoint gate.
-        if fast_lean_skip and final_status == "CREDIT_EXHAUSTED":
-            fast_lean_skip = False
-            log_event("info", f"[CREDIT_RECOVERY] RECOVERY_ARCHIVE_REQUIRED pid={str(pid)[:16]}", email=email)
+        # Fast credit handoff persists cloud resume metadata, never an archive.
         skip_archive = _declined or fast_lean_skip
         if fast_lean_skip and not _declined:
             # 📊 [P43-D7] Telemetry إلزامية لكل تخطٍ — أرقام السرعة تُنشر من قياس فعلي فقط
@@ -853,6 +862,9 @@ def send_message_with_auto_account_failover(
             # 💰 [P13] رصيد منخفض مكتشف قبل الإرسال → الحساب مُبرَّد 29h بالفعل داخل
             # send_message_and_make_public — تخطٍ صامت فوري للحساب التالي:
             # لا progress_callback، لا إشعار للمستخدم، لا حظر auth_failed خاطئ.
+            if status == "CREDIT_UNCONFIRMED":
+                return pub_url, status, curr_acc, ext_dir, last_text
+
             if status == "LOW_BALANCE":
                 notify_account_selection_observer(
                     bridge_cfg,
@@ -898,9 +910,14 @@ def send_message_with_auto_account_failover(
             callback_error = None
             event_meta = {}
             if progress_callback:
-                emit_event, event_meta = should_emit_progress_event(
-                    pub_url, status, ext_dir, min_mtime=getattr(bridge_cfg, "run_started_at", None)
-                )
+                if bool(getattr(bridge_cfg, "project_fast_lean_skip", False)):
+                    # No scan of stale artifact trees even before the fast callback.
+                    emit_event = status not in NON_ACTIONABLE_PROGRESS_STATUSES
+                    event_meta = {"reason": "fast mode: cloud metadata only"}
+                else:
+                    emit_event, event_meta = should_emit_progress_event(
+                        pub_url, status, ext_dir, min_mtime=getattr(bridge_cfg, "run_started_at", None)
+                    )
                 public_stage_query = get_public_continuation_prompt_text(active_query)
                 safe_last_text = redact_github_secrets(last_text)
                 if emit_event:
