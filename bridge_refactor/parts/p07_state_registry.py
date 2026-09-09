@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3200..4185
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3281..4308
 المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -845,6 +845,48 @@ class ProjectRegistry:
             return False
         expected = str(record.get("checksum") or "")
         return bool(expected) and expected == self._checkpoint_record_checksum(record)
+
+    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message):
+        """Durable cloud locator/context only; not an artifact backup or a diff."""
+        locator = parse_project_locator(public_url)
+        if locator.get("kind") != "pid":
+            raise ValueError("A valid cloud project locator is required for fast resume")
+        pid = locator["pid"]
+        with self.lock:
+            data = self._read()
+            if not should_skip_artifacts_download(data.get("project_settings")):
+                raise ValueError("Metadata-only resume requires fast mode with GitHub disabled")
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            summary = {
+                "preservation": "cloud_resume_only",
+                "root_pid": extract_project_id(root_pid) or pid,
+                "latest_pid": pid,
+                "account_email": str(email or ""),
+                "resume_prompt": redact_github_secrets(get_public_continuation_prompt_text(resume_prompt)),
+                "message_preview": redact_github_secrets(str(message or ""))[:500],
+                "artifact_backup": False,
+            }
+            record = self._write_checkpoint_record({
+                "checkpoint_id": stamp,
+                "artifact_state": "cloud_resume_only",
+                "summary": summary,
+                "status": "CREDIT_EXHAUSTED",
+                "url": build_genspark_viewer_url(pid),
+            })
+            entry = {
+                "at": record["created_at"], "status": record["status"],
+                "url": record["url"], "checkpoint": stamp,
+                "artifact_state": "cloud_resume_only", "archive_ref": "",
+                "files": [], "deleted_files": [], "summary": summary,
+                "manifest_path": record["manifest_path"], "checksum": record["checksum"],
+            }
+            # Do not mutate file_index or evict existing artifact checkpoints.
+            data["updates"].append(entry)
+            data["last_three_urls"] = [u["url"] for u in data["updates"] if u.get("url")][-3:]
+            self._write(data)
+            if not self.verify_checkpoint_record_checksum(stamp):
+                raise RuntimeError("Cloud resume record failed durable checksum verification")
+            return entry
 
     def snapshot(self, sandbox_dir, public_url, status, message):
         """نسخ streaming إلى hot checkpoint مع تسطيح مسار webapp واستبعاد الأرشيف والملفات السرية."""
