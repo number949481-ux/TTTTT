@@ -1,8 +1,9 @@
 {
-  "task": "Approved automatic /compact before continuation",
+  "task": "Approved compact threshold flip: duration <= 180 seconds",
   "branch": "genspark_ai_developer",
-  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/2",
-  "status": "review_complete_code_unchanged",
+  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/3",
+  "status": "implementation_complete_validated",
+  "current_scope": "Owner now explicitly authorizes <= in sender and registry callback, matching tests, Windows UTF-8 reads, rebuild and full quality gate. Existing duration measurement and artifact policies stay unchanged.",
   "last_review": {
     "gist": "https://gist.github.com/pijsal1-tech/68039140242daedca60ae8eaca6ae02e",
     "source_revision": "c4225aa",
@@ -25,20 +26,22 @@
     ],
     "validation": "Read-only source trace. No application import, tests, rebuild, deployment or code modification performed. Existing verification figures below are historical."
   },
-  "verification": {"tests_passed": 1018, "subtests_passed": 26, "compact_tests_passed": 17, "compact_subtests_passed": 2, "parity_tests_passed": 11, "syntax_check": "passed", "quality_gate_exit": 0},
+  "previous_verification": {"tests_passed": 1018, "subtests_passed": 26, "compact_tests_passed": 17, "compact_subtests_passed": 2, "parity_tests_passed": 11, "syntax_check": "passed", "quality_gate_exit": 0},
   "spec": "https://gist.github.com/pijsal1-tech/143bb8bf9a2478451114376123b017f8",
   "baseline": {"tests_passed": 1001, "subtests_passed": 24},
-  "approved": {"threshold_seconds": 180, "credit_compact_account": "new account before continuation prompt", "completed_trigger": "next user prompt, never at completion itself"},
+  "approved": {"threshold_seconds": 180, "comparison": "<=", "credit_compact_account": "new account before continuation prompt", "completed_trigger": "next user prompt, never at completion itself"},
   "plan": [
-    "Persist per-project compact eligibility using existing monotonic account spans",
-    "Send /compact through send_chat on receiving account after fork; retain cancel event and live preview",
-    "Verify a fresh typed compact summary and actual current chat_session_id; never infer success from response text or PID change alone",
-    "Pin verified history and session for the immediate next send with an opt-in engine fetch context, without changing endpoints or global module state",
-    "Fail closed on failed or ambiguous compact; preserve verified latest project/session metadata",
-    "Keep fast mode at zero archive downloads, snapshots and diffs; regenerate byte-identical split and run full tests"
+    "Retain owner change at sender (fac373f); change remaining registry comparator to <=",
+    "Update compact tests for short, exact boundary and long runs in both credit and completion paths; explicitly read source as UTF-8",
+    "Keep unrelated credit tests isolated from auto-compact trigger changes",
+    "Run python -X utf8 scripts/rebuild_refactor.py, parity 11/11, full pytest and hadith_sijil Exit 0",
+    "Push each chunk, update progress and squash final PR"
   ],
-  "completed": ["180_second_monotonic_trigger", "new_account_compact_before_resume", "deferred_post_completion_trigger", "fresh_summary_and_session_verification", "pinned_next_send_context", "durable_eligibility", "live_preview_and_cancel", "zero_fast_artifacts", "full_tests_and_parity"],
-  "next_action": "Explain timing versus artifact decisions and wait for explicit approval before changing project code. Only genspark/recovery_state.json may be updated in this review; do not implement the proposed generation-only timer yet.",
+  "completed": ["sender_and_registry_comparators_le_180", "compact_threshold_tests_and_explicit_utf8", "isolated_credit_recovery_fixtures", "utf8_rebuild_and_byte_parity", "full_pytest_and_syntax", "quality_gate_and_execution_report", "active_threshold_audit", "authoritative_progress_updated", "push_per_chunk"],
+  "verification": {"tests_passed": 1028, "subtests_passed": 26, "compact_tests_passed": 27, "compact_subtests_passed": 2, "combined_focused_tests_passed": 52, "combined_focused_subtests_passed": 14, "parity_tests_passed": 11, "syntax_check": "passed", "quality_gate_exit": 0, "quality_gate_unittest_count": 1028, "source_lines": 8962},
+  "scope_notes": ["Duration remains the existing monotonic account claim span, not pure generation time.", "Zero duration including invalid/missing duration fallback qualifies under the explicitly approved <= policy.", "Long credit runs do not newly qualify but do not erase pending eligibility from earlier work.", "Typed credit evidence, verified compact history/session, cancellation and zero-download effective fast mode are unchanged."],
+  "reset_recovery": "Restored d7505bd, reapplied only the missing fixture edits and pushed each validated chunk. Source changes already pushed before reset were not repeated. Rebuild, tests, quality report and progress documentation are now complete.",
+  "next_action": "Owner review of PR #3 and live validation after merge. Delivery uses one squashed commit; if interrupted during final publication, inspect remote head and PR draft status before retrying push/readiness. Do not reimplement completed changes or redesign duration measurement.",
   "live_e2e": "not_run",
   "credentials": "Never stored"
 }
