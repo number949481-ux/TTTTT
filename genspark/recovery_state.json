@@ -1,19 +1,20 @@
 {
-  "task": "Fast-mode credit continuation with ZERO archive downloads",
+  "task": "Approved automatic /compact before continuation",
   "branch": "genspark_ai_developer",
   "pull_request": "https://github.com/number949481-ux/TTTTT/pull/2",
-  "status": "verified_followup",
-  "verification": {"tests_passed": 1001, "subtests_passed": 24, "targeted_tests_passed": 25, "targeted_subtests_passed": 12, "parity_tests_passed": 11, "syntax_check": "passed", "quality_gate_exit": 0, "live_e2e": "not_run"},
-  "supersedes": "PR #1 recovery-archive exception; owner explicitly rejected any fast-mode download",
-  "baseline": {"tests_passed": 988, "subtests_passed": 15, "quality_gate_exit": 0},
+  "status": "implementation_planned",
+  "spec": "https://gist.github.com/pijsal1-tech/143bb8bf9a2478451114376123b017f8",
+  "baseline": {"tests_passed": 1001, "subtests_passed": 24},
+  "approved": {"threshold_seconds": 180, "credit_compact_account": "new account before continuation prompt", "completed_trigger": "next user prompt, never at completion itself"},
   "plan": [
-    "Remove recovery archive exception; fast mode never snapshots, diffs or downloads automatically",
-    "Persist metadata-only cloud resume record with project URL, root/latest IDs, account and public resume context; verify durable checksum before handoff",
-    "Use platform action/session-state credit flags, not text mentions alone; unconfirmed credit errors must not silently rotate accounts",
-    "Keep normal artifact mode and GitHub-enabled download contract unchanged",
-    "Test real worker callbacks and multi-account handoff plus persistence failure and false positives; regenerate split and run full gates"
+    "Persist per-project compact eligibility using existing monotonic account spans",
+    "Send /compact through send_chat on receiving account after fork; retain cancel event and live preview",
+    "Verify a fresh typed compact summary and actual current chat_session_id; never infer success from response text or PID change alone",
+    "Pin verified history and session for the immediate next send with an opt-in engine fetch context, without changing endpoints or global module state",
+    "Fail closed on failed or ambiguous compact; preserve verified latest project/session metadata",
+    "Keep fast mode at zero archive downloads, snapshots and diffs; regenerate byte-identical split and run full tests"
   ],
-  "safety": ["Cloud resume metadata is not a file backup", "Never mark existing files deleted", "No upload job for metadata checkpoints", "Preserve cancellation and finite limits", "No stored credentials"],
-  "completed": ["zero_archive_downloads", "zero_artifact_scans", "durable_cloud_resume_metadata", "typed_credit_evidence", "real_worker_offline_handoff_tests", "faithful_split", "full_quality_gates"],
-  "next_action": "Review and merge PR #2, then validate on a live owner-controlled run. Do not repeat implementation. Some runtime/test changes were already copied to main by automatic snapshot sync; PR completes generated parity and verified documentation."
+  "next_action": "Implement opt-in verified context and compact helpers in small pushed chunks",
+  "live_e2e": "not_run",
+  "credentials": "Never stored"
 }
