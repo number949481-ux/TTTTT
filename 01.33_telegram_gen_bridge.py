@@ -7064,9 +7064,9 @@ def process_user_task_async(
 
         cfg.credit_handoff_callback = on_credit_handoff
         compact_state = registry.get_compact_state()
-        cfg.compact_before_send = bool(
-            requested_pid and compact_state.get("due") is True
-            and compact_state.get("source_pid") == requested_pid)
+        # Eligibility belongs to this registry, not a disposable fork ID. A
+        # failed compact may have produced a newer PID; retry must remain gated.
+        cfg.compact_before_send = bool(requested_pid and compact_state.get("due") is True)
 
         def schedule_compact(stage_status, stage_url, duration):
             registry.set_compact_state(duration >= COMPACT_TRIGGER_SECONDS,
