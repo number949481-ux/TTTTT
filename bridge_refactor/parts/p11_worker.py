@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6793..7204
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6973..7408
 المحتوى: P43-X7: fast_mode_line في كارت الإكمال — إعلان التخطي صراحةً بلا Diff مزيف + format_active_account_line (P38: سطر 📧 الحساب الموحد — مصدر واحد للحقيقة: تفريغ آمن + fallback غير محدد + html_escape مركزي) + process_user_task_async (المشغل الكامل للمهمة | P39: بطاقة الاكتمال المبسطة — حذف 6 عناصر حشو من res_msg (latest_line/resume_line/fork_line/مسار الساندبوكس/علم الانتهاء+استدعاء is_finished اليتيم/حقن journey_block) مع بقاء دوال P29/P30/P38 كاملة + التسجيل الجنائي: القائمة الكاملة غير المفلترة تُسجَّل في اللوج قبل الإرسال (best-effort) | P38: حقن السطر الموحد في بطاقات اللايف الفوري/handoff الرصيد/اللقطة (stage_email المهمل صار مستخدماً + fallback لـ cfg)/اللايف المكتملة + توحيد تسمية بطاقة الاكتمال «📧 الحساب:» بلا تهريب مزدوج لـ acc_email | P35: إعادة تصنيف COMPLETED+is_model_decline_response ← MODEL_DECLINED + تصفير final_pid (مؤشر الاستئناف لا يتقدم لنقطة الرفض) + كيبورد build_model_decline_keyboard بدل كيبورد الاكتمال | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -96,6 +96,25 @@ def process_user_task_async(
             )
 
         cfg.credit_handoff_callback = on_credit_handoff
+        compact_state = registry.get_compact_state()
+        # Eligibility belongs to this registry, not a disposable fork ID. A
+        # failed compact may have produced a newer PID; retry must remain gated.
+        cfg.compact_before_send = bool(requested_pid and compact_state.get("due") is True)
+
+        def schedule_compact(stage_status, stage_url, duration):
+            registry.set_compact_state(duration >= COMPACT_TRIGGER_SECONDS,
+                                       extract_project_id(stage_url), duration)
+
+        def remember_compact(context):
+            nonlocal runtime_identity
+            registry.set_compact_state(False, context["project_id"], context=context)
+            runtime_identity = remember_registry_identity(
+                registry, root_pid=(runtime_identity or {}).get("root_genspark_pid") or requested_pid,
+                latest_pid=context["project_id"], project_name=project_name,
+                chat_id=chat_id, status="COMPACT_VERIFIED") or runtime_identity
+
+        cfg.compact_schedule_callback = schedule_compact
+        cfg.compact_verified_callback = remember_compact
 
         def on_project_update(stage_url, stage_status, stage_dir, stage_text, stage_email, stage_query):
             nonlocal runtime_identity
@@ -209,12 +228,15 @@ def process_user_task_async(
 
         live_preview_msg_id = None
         seen_live_preview_pid = None
+        seen_live_compact_phase = False
 
         def handle_live_project_start(live_pid: str):
-            nonlocal live_preview_msg_id, seen_live_preview_pid
-            if not live_pid or seen_live_preview_pid == live_pid:
+            nonlocal live_preview_msg_id, seen_live_preview_pid, seen_live_compact_phase
+            compact_phase = bool(getattr(cfg, "compact_in_progress", False))
+            if not live_pid or (seen_live_preview_pid == live_pid and seen_live_compact_phase == compact_phase):
                 return
             seen_live_preview_pid = live_pid
+            seen_live_compact_phase = compact_phase
             # 🛑 [P25] زر الإلغاء الأحمر يظهر أسفل زر المعاينة الأزرق من أول لحظة
             preview_kb = build_live_preview_keyboard(live_pid, status="running", cancel_token=cancel_token)
             update_cancel_entry(cancel_token, live_pid=live_pid, project_key=project_key)
@@ -226,6 +248,8 @@ def process_user_task_async(
                 f"🧠 <b>الموديل:</b> <code>{html_escape(format_model_display_label(cfg.model))}</code>\n\n"
                 f"🌐 <i>يمكنك متابعة التوليد والأكواد لحظياً عبر الزر أدناه:</i>"
             )
+            if compact_phase:
+                text = "<b>جاري ضغط سياق المحادثة /compact قبل الاستكمال.</b>\n" + text.split("\n", 1)[-1]
             try:
                 res = send_telegram_message_detailed(chat_id, text, reply_markup=preview_kb)
                 if res and isinstance(res, dict) and res.get("ok"):
