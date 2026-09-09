@@ -1824,6 +1824,61 @@ P44_GATE_INACTIVE_READS_REQUIRED = 2
 P44_GATE_STABLE_READS_REQUIRED = 2
 
 
+def has_platform_credit_signal(message) -> bool:
+    """Only typed platform fields count; quoted text/JSON/code never does."""
+    if not isinstance(message, dict) or message.get("role") != "assistant":
+        return False
+    action = message.get("action")
+    state = message.get("session_state")
+    action = action if isinstance(action, dict) else {}
+    state = state if isinstance(state, dict) else {}
+    params = action.get("action_params")
+    params = params if isinstance(params, dict) else {}
+    return (action.get("type") == "ACTION_CREDIT_EXHAUSTED"
+            or params.get("block_reason") == "balance_drained"
+            or state.get("consume_usage_quota_exceeded") is True)
+
+
+def resolve_runtime_credit_status(raw_status, response, mod, pid, cookies, cfg, message=None):
+    """Confirm credit errors from current platform metadata, not engine text heuristics.
+
+    The engine sentinel can itself originate from a pricing link in model text.
+    Unavailable/ambiguous evidence must not cool down accounts or claim success.
+    Non-credit responses do not incur any additional network request.
+    """
+    if has_platform_credit_signal(message):
+        return "CREDIT_EXHAUSTED"
+    if raw_status != "CREDIT_EXHAUSTED":
+        return raw_status
+    if message is None:
+        try:
+            messages = mod.fetch_project_messages(pid, cookies, cfg)
+            # Inspect only the current turn, never an exhausted earlier turn.
+            for item in reversed(messages or []):
+                if not isinstance(item, dict):
+                    continue
+                if item.get("role") == "user":
+                    break
+                if item.get("role") == "assistant":
+                    message = item
+                    break
+        except Exception:
+            message = None
+    if isinstance(message, dict):
+        content = message.get("content", "")
+        # Do not accept a stale API reply from another turn for a text response.
+        matches = str(response) == "__CREDIT_EXHAUSTED__" or content == response
+        if matches and has_platform_credit_signal(message):
+            return "CREDIT_EXHAUSTED"
+        state = message.get("session_state")
+        if (matches and isinstance(state, dict) and state.get("_finish_reason") == "stop"
+                and content and str(content) != "__CREDIT_EXHAUSTED__"):
+            cfg._verified_credit_reply = content
+            return "COMPLETED"
+    log_event("warning", "[CREDIT_EVIDENCE] UNCONFIRMED: no current platform credit flag")
+    return "CREDIT_UNCONFIRMED"
+
+
 def detect_response_status_gated(
     raw_status: str,
     activity: dict | None,
@@ -1885,6 +1940,10 @@ def fetch_final_reply_text(mod, pid, cookies, cfg, old_text, email: str = ""):
     FINAL_FETCH_FALLBACK بالنص القديم كما هو — صفر كسر (Fail-Open).
     """
     try:
+        cfg._final_reply_message = None
+    except (AttributeError, TypeError):
+        pass
+    try:
         if not hasattr(mod, "fetch_project_messages"):
             raise RuntimeError("fetch_project_messages غير متاح في المحرك")
         msgs = mod.fetch_project_messages(pid, cookies, cfg)
@@ -1894,7 +1953,11 @@ def fetch_final_reply_text(mod, pid, cookies, cfg, old_text, email: str = ""):
             None,
         )
         final_c = (last_asst or {}).get("content", "")
-        if final_c and str(final_c).strip():
+        if (final_c and str(final_c).strip()) or has_platform_credit_signal(last_asst):
+            try:
+                cfg._final_reply_message = last_asst
+            except (AttributeError, TypeError):
+                pass
             log_event("info", f"🎣 [P44] FINAL_FETCH_OK chars={len(str(final_c))}", email=email)
             return final_c
         raise RuntimeError("لا توجد رسالة assistant بمحتوى")
@@ -2653,7 +2716,12 @@ def send_message_and_make_public(
             last_resp_text = ""
         else:
             final_status = detect_response_status(answer)
+            final_status = resolve_runtime_credit_status(final_status, answer, mod, pid, cookies, cfg)
             last_resp_text = str(answer) if answer else ""
+            if final_status == "COMPLETED" and answer == "__CREDIT_EXHAUSTED__":
+                last_resp_text = str(getattr(cfg, "_verified_credit_reply", ""))
+        if final_status == "CREDIT_UNCONFIRMED":
+            return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
         is_timeout = False
 
         # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
@@ -2735,6 +2803,11 @@ def send_message_and_make_public(
                             # None → حياد Fail-Open /
                             # سقف session_timeout فوق الكل (D12 — فحص elapsed أعلاه).
                             raw_status = detect_response_status(last_c)
+                            raw_status = resolve_runtime_credit_status(
+                                raw_status, last_c, mod, pid, cookies, cfg, message=last_asst)
+                            if raw_status == "CREDIT_UNCONFIRMED":
+                                final_status = raw_status
+                                break
                             final_status = detect_response_status_gated(
                                 raw_status, curr_activity, inactive_streak, stable_streak, email=email)
             except Exception:
@@ -2761,9 +2834,15 @@ def send_message_and_make_public(
             # Preserve P18's immediate stop and P44's fallback, but never keep
             # a success label over a structured failure in the authoritative reply.
             refreshed_status = detect_response_status(last_resp_text)
-            if refreshed_status in P44_STRUCTURED_STATUSES:
+            refreshed_status = resolve_runtime_credit_status(
+                refreshed_status, last_resp_text, mod, pid, cookies, cfg,
+                message=getattr(cfg, "_final_reply_message", None))
+            if refreshed_status in P44_STRUCTURED_STATUSES or refreshed_status == "CREDIT_UNCONFIRMED":
                 log_event("warning", f"[CREDIT_RECOVERY] FINAL_STATUS_RECONCILED status={refreshed_status}", email=email)
                 final_status = refreshed_status
+
+        if final_status == "CREDIT_UNCONFIRMED":
+            return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
 
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
@@ -2784,12 +2863,7 @@ def send_message_and_make_public(
         # وsave_project_branch بلا حراسة (شجرة الاستئناف tree:* محفوظة دائماً).
         # fast_mode=False (الافتراضي) = السلوك الحالي بالبايت (G3 Zero Regression).
         fast_lean_skip = bool(getattr(bridge_cfg, "project_fast_lean_skip", False))
-        # Credit handoff requires a real checkpoint before another account sends.
-        # Fast mode still skips ordinary completion downloads, not recovery data.
-        # A failed download remains fail-closed at the existing checkpoint gate.
-        if fast_lean_skip and final_status == "CREDIT_EXHAUSTED":
-            fast_lean_skip = False
-            log_event("info", f"[CREDIT_RECOVERY] RECOVERY_ARCHIVE_REQUIRED pid={str(pid)[:16]}", email=email)
+        # Fast credit handoff persists cloud resume metadata, never an archive.
         skip_archive = _declined or fast_lean_skip
         if fast_lean_skip and not _declined:
             # 📊 [P43-D7] Telemetry إلزامية لكل تخطٍ — أرقام السرعة تُنشر من قياس فعلي فقط
@@ -2940,6 +3014,9 @@ def send_message_with_auto_account_failover(
             # 💰 [P13] رصيد منخفض مكتشف قبل الإرسال → الحساب مُبرَّد 29h بالفعل داخل
             # send_message_and_make_public — تخطٍ صامت فوري للحساب التالي:
             # لا progress_callback، لا إشعار للمستخدم، لا حظر auth_failed خاطئ.
+            if status == "CREDIT_UNCONFIRMED":
+                return pub_url, status, curr_acc, ext_dir, last_text
+
             if status == "LOW_BALANCE":
                 notify_account_selection_observer(
                     bridge_cfg,
@@ -4039,6 +4116,48 @@ class ProjectRegistry:
             return False
         expected = str(record.get("checksum") or "")
         return bool(expected) and expected == self._checkpoint_record_checksum(record)
+
+    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message):
+        """Durable cloud locator/context only; not an artifact backup or a diff."""
+        locator = parse_project_locator(public_url)
+        if locator.get("kind") != "pid":
+            raise ValueError("A valid cloud project locator is required for fast resume")
+        pid = locator["pid"]
+        with self.lock:
+            data = self._read()
+            if not should_skip_artifacts_download(data.get("project_settings")):
+                raise ValueError("Metadata-only resume requires fast mode with GitHub disabled")
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            summary = {
+                "preservation": "cloud_resume_only",
+                "root_pid": extract_project_id(root_pid) or pid,
+                "latest_pid": pid,
+                "account_email": str(email or ""),
+                "resume_prompt": redact_github_secrets(get_public_continuation_prompt_text(resume_prompt)),
+                "message_preview": redact_github_secrets(str(message or ""))[:500],
+                "artifact_backup": False,
+            }
+            record = self._write_checkpoint_record({
+                "checkpoint_id": stamp,
+                "artifact_state": "cloud_resume_only",
+                "summary": summary,
+                "status": "CREDIT_EXHAUSTED",
+                "url": build_genspark_viewer_url(pid),
+            })
+            entry = {
+                "at": record["created_at"], "status": record["status"],
+                "url": record["url"], "checkpoint": stamp,
+                "artifact_state": "cloud_resume_only", "archive_ref": "",
+                "files": [], "deleted_files": [], "summary": summary,
+                "manifest_path": record["manifest_path"], "checksum": record["checksum"],
+            }
+            # Do not mutate file_index or evict existing artifact checkpoints.
+            data["updates"].append(entry)
+            data["last_three_urls"] = [u["url"] for u in data["updates"] if u.get("url")][-3:]
+            self._write(data)
+            if not self.verify_checkpoint_record_checksum(stamp):
+                raise RuntimeError("Cloud resume record failed durable checksum verification")
+            return entry
 
     def snapshot(self, sandbox_dir, public_url, status, message):
         """نسخ streaming إلى hot checkpoint مع تسطيح مسار webapp واستبعاد الأرشيف والملفات السرية."""
@@ -6598,6 +6717,10 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
         }
 
     mapping = {
+        "CREDIT_UNCONFIRMED": (
+            "<b>تعذر تأكيد سبب توقف الرد.</b>",
+            "ظهرت إشارة نصية للرصيد لكن بيانات المنصة لم تؤكد نفاده. لم يتم تبريد الحساب أو تبديله، ولم يُعلن اكتمال التنفيذ. راجع المشروع وأعد الاستئناف عند وضوح الحالة.",
+        ),
         "MAX_ATTEMPTS_EXHAUSTED": (
             "⚠️ <b>توقفت المهمة بعد استنفاد كل محاولات تغيير الحسابات.</b>",
             "لم ينجح أي حساب في إكمال الطلب ضمن الحد المسموح للمحاولات.",
@@ -6759,6 +6882,31 @@ def process_user_task_async(
 
         def on_project_update(stage_url, stage_status, stage_dir, stage_text, stage_email, stage_query):
             nonlocal runtime_identity
+            if bool(getattr(cfg, "project_fast_lean_skip", False)):
+                if stage_status != "CREDIT_EXHAUSTED":
+                    return {"allow_continuation": True, "project_update_preserved": False,
+                            "reason": "fast mode: artifacts intentionally skipped", "checkpoint_id": ""}
+                root_pid = (runtime_identity or {}).get("root_genspark_pid") or requested_pid
+                update = registry.preserve_cloud_resume(
+                    stage_url, root_pid, stage_email,
+                    get_bridge_cfg_public_resume_prompt(cfg), stage_text)
+                pid = update["summary"]["latest_pid"]
+                runtime_identity = remember_registry_identity(
+                    registry, root_pid=update["summary"]["root_pid"], latest_pid=pid,
+                    project_name=project_name, chat_id=chat_id, status=stage_status,
+                ) or runtime_identity
+                try:
+                    send_telegram_message(
+                        chat_id,
+                        "<b>تم حفظ نقطة استئناف سحابية للوضع السريع.</b>\n"
+                        "بدون تنزيل أرشيف أو ملفات أو حساب Diff. هذه بيانات استئناف وليست نسخة احتياطية للملفات.\n"
+                        f"<b>Project ID:</b> <code>{html_escape(pid)}</code>\n"
+                        f"<b>Checkpoint:</b> <code>{html_escape(update['checkpoint'])}</code>")
+                except Exception:
+                    pass  # Notification failure must not discard a durable resume record.
+                return {"allow_continuation": True, "project_update_preserved": True,
+                        "reason": "cloud resume metadata preserved; no artifact backup",
+                        "checkpoint_id": update["checkpoint"], "resume_url": update["url"]}
             actionable, stage_meta = should_capture_project_update(stage_url, stage_status, stage_dir, min_mtime=task_started_at)
             if not actionable:
                 log_event("warning", f"تم تخطي checkpoint/report للحالة {stage_status}: {stage_meta['reason']}", extra=stage_meta)
