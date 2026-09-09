@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2162..3432
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2162..3507
 المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -614,17 +614,83 @@ def send_message_and_make_public(
                     except Exception:
                         pass
 
-        if bool(getattr(bridge_cfg, "compact_before_send", False)):
+        compact_deferred = bool(getattr(bridge_cfg, "compact_deferred", False))
+        check_compact_bypass = bool(getattr(bridge_cfg, "compact_bypass_blocked", False))
+        if bool(getattr(bridge_cfg, "compact_before_send", False)) and not compact_deferred:
             compact_status, compact_pid, verified_compact_context = run_verified_compact(
                 mod, cookies, cfg, bridge_cfg, project_id, email, _pid_capture_callback)
             carry_pid = project_id = compact_pid
-            if compact_status != "COMPACT_VERIFIED":
+            if compact_status == "COMPACT_FAILED":
+                # Maintenance failure is not business-prompt failure. Never pretend
+                # it produced a verified summary, or rotate an otherwise valid account.
+                verified_compact_context = None
+                bridge_cfg.compact_before_send = False
+                bridge_cfg.compact_deferred = compact_deferred = True
+                bridge_cfg.compact_deferred_this_run = True
+                check_compact_bypass = True
+            elif compact_status != "COMPACT_VERIFIED":
                 return build_genspark_viewer_url(compact_pid), compact_status, None, "", None
-            history = verified_compact_context["messages"]
+            else:
+                history = verified_compact_context["messages"]
             if _cancel_event is not None and _cancel_event.is_set():
                 return build_genspark_viewer_url(compact_pid), CANCELLED_STATUS, None, "", None
             if on_project_start_callback:
                 on_project_start_callback(project_id)
+
+        if check_compact_bypass:
+            # Also guard resumed blocked sessions: no repeated /compact, stale
+            # pre-maintenance history, active generation or fabricated session ID.
+            cfg._verified_compact_context = None
+            cfg._last_chat_session_id = ""
+            cfg._last_fetch_status = 0
+            history = []
+            bypass_status = "COMPACT_BLOCKED"
+            session_id = ""
+            try:
+                if not extract_project_id(project_id):
+                    raise ValueError("No current project for compact bypass")
+                history = mod.fetch_project_messages(project_id, cookies, cfg)
+                session_id = str(getattr(cfg, "_last_chat_session_id", "") or "").strip()
+                if getattr(cfg, "_last_fetch_status", 0) != 200 or not session_id:
+                    raise RuntimeError("No readable current chat session")
+                if not isinstance(history, list) or not history:
+                    raise RuntimeError("No current history")
+                latest = history[-1]
+                if not isinstance(latest, dict) or latest.get("role") != "assistant":
+                    raise RuntimeError("Current turn is not finished")
+                content = latest.get("content", "")
+                status = resolve_runtime_credit_status(
+                    detect_response_status(content), content, mod, project_id, cookies, cfg, message=latest)
+                if status in P44_STRUCTURED_STATUSES or status == "CREDIT_UNCONFIRMED":
+                    bypass_status = status
+                else:
+                    state = latest.get("session_state")
+                    if (not isinstance(state, dict) or state.get("_finish_reason") != "stop"
+                            or latest.get("pending") is True):
+                        raise RuntimeError("Current turn has no terminal evidence")
+                    activity = fetch_project_activity_signature(project_id, cookies)
+                    if isinstance(activity, dict) and activity.get("active"):
+                        raise RuntimeError("Current generation is still active")
+                    bypass_status = "COMPACT_BYPASSED"
+            except Exception as err:
+                log_event("warning", f"[COMPACT] BYPASS_BLOCKED: {type(err).__name__}", email=email)
+            if _cancel_event is not None and _cancel_event.is_set():
+                return build_genspark_viewer_url(project_id), CANCELLED_STATUS, None, "", None
+            bridge_cfg.compact_current_session_id = session_id
+            bypass_ready = bypass_status in ("COMPACT_BYPASSED", "CREDIT_EXHAUSTED", "DATA_RETENTION")
+            bridge_cfg.compact_bypass_blocked = not bypass_ready
+            defer = getattr(bridge_cfg, "compact_deferred_callback", None)
+            try:
+                if callable(defer):
+                    defer(project_id, session_id, bypass_ready)
+            except Exception as err:
+                log_event("warning", f"[COMPACT] DEFER_SAVE_FAILED: {type(err).__name__}", email=email)
+                bypass_status = "COMPACT_BLOCKED"
+            if bypass_status != "COMPACT_BYPASSED":
+                return build_genspark_viewer_url(project_id), bypass_status, None, "", None
+            log_event("warning", "[COMPACT] BYPASSED: unverified compact; sending pending work prompt", email=email)
+            if _cancel_event is not None and _cancel_event.is_set():
+                return build_genspark_viewer_url(project_id), CANCELLED_STATUS, None, "", None
 
         start_time = time.time()
         answer, pid, asst_id = None, None, None
@@ -645,6 +711,7 @@ def send_message_and_make_public(
                     answer, pid, asst_id = mod.send_chat(cookies, query, email, **send_chat_kwargs)
                 finally:
                     cfg._verified_compact_context = None  # Subsequent polling must see live replies.
+                    bridge_cfg.compact_current_session_id = str(getattr(cfg, "_last_chat_session_id", "") or "")
                 break
 
             except Exception as chat_err:
@@ -996,7 +1063,9 @@ def send_message_with_auto_account_failover(
             # 💰 [P13] رصيد منخفض مكتشف قبل الإرسال → الحساب مُبرَّد 29h بالفعل داخل
             # send_message_and_make_public — تخطٍ صامت فوري للحساب التالي:
             # لا progress_callback، لا إشعار للمستخدم، لا حظر auth_failed خاطئ.
-            if status in ("CREDIT_UNCONFIRMED", "COMPACT_FAILED"):
+            # Unconfirmed compact is handled before the business send. Only an
+            # unsafe/unreadable session or failed durable deferral blocks that send.
+            if status in ("CREDIT_UNCONFIRMED", "COMPACT_BLOCKED"):
                 return pub_url, status, curr_acc, ext_dir, last_text
 
             if status == "LOW_BALANCE":
@@ -1038,15 +1107,21 @@ def send_message_with_auto_account_failover(
             if status == "CREDIT_EXHAUSTED" or (
                     status == "COMPLETED" and not is_model_decline_response(last_text)):
                 duration = current_account_duration(bridge_cfg, curr_email)
-                due = duration <= COMPACT_TRIGGER_SECONDS
+                due = (duration <= COMPACT_TRIGGER_SECONDS
+                       and not getattr(bridge_cfg, "compact_deferred", False))
                 if status == "CREDIT_EXHAUSTED" and due:
                     bridge_cfg.compact_before_send = True
                 schedule = getattr(bridge_cfg, "compact_schedule_callback", None)
                 if callable(schedule) and (due or status == "COMPLETED"):
                     try:
                         schedule(status, pub_url, duration)
-                    except Exception:
-                        return pub_url, "COMPACT_FAILED", curr_acc, ext_dir, last_text
+                    except Exception as err:
+                        # Optional maintenance scheduling cannot override a real
+                        # business outcome or skip the credit preservation callback.
+                        bridge_cfg.compact_before_send = False
+                        bridge_cfg.compact_deferred = True
+                        bridge_cfg.compact_deferred_this_run = True
+                        log_event("warning", f"[COMPACT] SCHEDULE_DEFERRED: {type(err).__name__}", email=curr_email)
 
             if status == "CREDIT_EXHAUSTED":
                 credit_continuations += 1

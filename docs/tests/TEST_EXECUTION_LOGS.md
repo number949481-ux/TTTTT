@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-09-09 21:56:45 UTC`
+* **التاريخ والوقت:** `2026-09-09 22:47:00 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `3.671 ثانية`
-* **النتيجة العامة:** `Ran 1028 tests — OK`
+* **الزمن المقاس:** `15.194 ثانية`
+* **النتيجة العامة:** `Ran 1045 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (34 files, 8 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -20,30 +20,47 @@
 ```text
 test_55_second_credit_exhaustion_compacts (test_auto_compact.CompactTests.test_55_second_credit_exhaustion_compacts) ... ok
 test_90_second_credit_exhaustion_compacts (test_auto_compact.CompactTests.test_90_second_credit_exhaustion_compacts) ... ok
+test_absent_current_session_blocks_bypass (test_auto_compact.CompactTests.test_absent_current_session_blocks_bypass) ... ok
 test_account_above_180_does_not_compact (test_auto_compact.CompactTests.test_account_above_180_does_not_compact) ... ok
+test_active_generation_blocks_bypass (test_auto_compact.CompactTests.test_active_generation_blocks_bypass) ... ok
 test_actual_engine_fetch_pins_verified_history_without_network (test_auto_compact.CompactTests.test_actual_engine_fetch_pins_verified_history_without_network) ... ok
+test_blocked_restart_rechecks_readiness_without_repeating_compact (test_auto_compact.CompactTests.test_blocked_restart_rechecks_readiness_without_repeating_compact) ... ok
 test_cancel_before_send_and_during_stream_blocks_next_prompt (test_auto_compact.CompactTests.test_cancel_before_send_and_during_stream_blocks_next_prompt) ... ok
 test_cancel_during_compact_never_sends_user_prompt (test_auto_compact.CompactTests.test_cancel_during_compact_never_sends_user_prompt) ... ok
+test_cancel_during_post_compact_fetch_never_sends_work (test_auto_compact.CompactTests.test_cancel_during_post_compact_fetch_never_sends_work) ... ok
 test_compact_eligibility_survives_registry_reload (test_auto_compact.CompactTests.test_compact_eligibility_survives_registry_reload) ... ok
-test_compact_failure_never_sends_user_prompt_or_claims_success (test_auto_compact.CompactTests.test_compact_failure_never_sends_user_prompt_or_claims_success) ... ok
 test_completed_run_only_schedules_without_sending_compact (test_auto_compact.CompactTests.test_completed_run_only_schedules_without_sending_compact) ... ok
 test_completion_just_above_180_persists_not_due (test_auto_compact.CompactTests.test_completion_just_above_180_persists_not_due) ... ok
+test_credit_after_bypass_keeps_real_failover_without_recompacting (test_auto_compact.CompactTests.test_credit_after_bypass_keeps_real_failover_without_recompacting) ... ok
 test_credit_at_180_compacts_on_new_account_before_resume (test_auto_compact.CompactTests.test_credit_at_180_compacts_on_new_account_before_resume) ... ok
+test_deferred_metadata_preserves_v1_manifest_and_session_scope (test_auto_compact.CompactTests.test_deferred_metadata_preserves_v1_manifest_and_session_scope) ... ok
+test_deferred_session_survives_new_worker_without_recompacting (test_auto_compact.CompactTests.test_deferred_session_survives_new_worker_without_recompacting) ... ok
+test_deferred_write_failure_never_sends_business_prompt (test_auto_compact.CompactTests.test_deferred_write_failure_never_sends_business_prompt) ... ok
 test_disk_failure_after_verification_blocks_next_prompt (test_auto_compact.CompactTests.test_disk_failure_after_verification_blocks_next_prompt) ... ok
 test_five_minute_completion_persists_not_due (test_auto_compact.CompactTests.test_five_minute_completion_persists_not_due) ... ok
 test_five_minute_credit_exhaustion_does_not_compact (test_auto_compact.CompactTests.test_five_minute_credit_exhaustion_does_not_compact) ... ok
 test_just_below_180_credit_exhaustion_compacts (test_auto_compact.CompactTests.test_just_below_180_credit_exhaustion_compacts) ... ok
+test_latest_user_turn_blocks_bypass (test_auto_compact.CompactTests.test_latest_user_turn_blocks_bypass) ... ok
+test_legacy_due_and_deferred_state_does_not_repeat_compact (test_auto_compact.CompactTests.test_legacy_due_and_deferred_state_does_not_repeat_compact) ... ok
 test_new_project_result_is_authoritative (test_auto_compact.CompactTests.test_new_project_result_is_authoritative) ... ok
 test_new_summary_without_current_session_is_not_success (test_auto_compact.CompactTests.test_new_summary_without_current_session_is_not_success) ... ok
 test_next_user_prompt_consumes_persisted_compact_eligibility (test_auto_compact.CompactTests.test_next_user_prompt_consumes_persisted_compact_eligibility) ... ok
 test_nine_minute_completion_persists_not_due (test_auto_compact.CompactTests.test_nine_minute_completion_persists_not_due) ... ok
 test_nine_minute_credit_exhaustion_does_not_compact (test_auto_compact.CompactTests.test_nine_minute_credit_exhaustion_does_not_compact) ... ok
 test_pending_compact_survives_changed_resume_project_id (test_auto_compact.CompactTests.test_pending_compact_survives_changed_resume_project_id) ... ok
-test_plain_reply_or_stale_summary_never_authorizes_continuation (test_auto_compact.CompactTests.test_plain_reply_or_stale_summary_never_authorizes_continuation) ... ok
+test_pending_turn_blocks_bypass (test_auto_compact.CompactTests.test_pending_turn_blocks_bypass) ... ok
+test_plain_reply_or_stale_summary_never_claims_verified_compact (test_auto_compact.CompactTests.test_plain_reply_or_stale_summary_never_claims_verified_compact) ... ok
 test_platform_credit_during_compact_remains_credit_exhausted (test_auto_compact.CompactTests.test_platform_credit_during_compact_remains_credit_exhausted) ... ok
 test_same_project_new_summary_and_session_are_verified (test_auto_compact.CompactTests.test_same_project_new_summary_and_session_are_verified) ... ok
+test_schedule_write_error_does_not_replace_real_credit_outcome (test_auto_compact.CompactTests.test_schedule_write_error_does_not_replace_real_credit_outcome) ... ok
 test_short_completion_persists_due_without_immediate_compact (test_auto_compact.CompactTests.test_short_completion_persists_due_without_immediate_compact) ... ok
+test_stale_summary_without_finished_turn_blocks_bypass (test_auto_compact.CompactTests.test_stale_summary_without_finished_turn_blocks_bypass) ... ok
 test_threshold_uses_monotonic_span_at_exactly_180_seconds (test_auto_compact.CompactTests.test_threshold_uses_monotonic_span_at_exactly_180_seconds) ... ok
+test_unconfirmed_credit_in_bypass_does_not_rotate_or_send (test_auto_compact.CompactTests.test_unconfirmed_credit_in_bypass_does_not_rotate_or_send) ... ok
+test_unreadable_history_blocks_bypass (test_auto_compact.CompactTests.test_unreadable_history_blocks_bypass) ... ok
+test_unverified_compact_on_receiver_sends_resume_once (test_auto_compact.CompactTests.test_unverified_compact_on_receiver_sends_resume_once) ... ok
+test_unverified_compact_safely_sends_original_prompt_once (test_auto_compact.CompactTests.test_unverified_compact_safely_sends_original_prompt_once) ... ok
+test_verified_compact_clears_deferred_metadata (test_auto_compact.CompactTests.test_verified_compact_clears_deferred_metadata) ... ok
 test_zero_duration_uses_inclusive_owner_policy (test_auto_compact.CompactTests.test_zero_duration_uses_inclusive_owner_policy) ... ok
 test_continuation_limit_is_still_enforced (test_credit_completion_recovery.CreditRecoveryTests.test_continuation_limit_is_still_enforced) ... ok
 test_credit_in_fast_mode_never_downloads_recovery_artifacts (test_credit_completion_recovery.CreditRecoveryTests.test_credit_in_fast_mode_never_downloads_recovery_artifacts) ... ok
@@ -1316,7 +1333,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 1028 tests in 2.887s
+Ran 1045 tests in 14.401s
 
 OK
 ```

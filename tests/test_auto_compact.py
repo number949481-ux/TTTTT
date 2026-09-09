@@ -68,7 +68,7 @@ class CompactTests(unittest.TestCase):
         self.assertEqual(context["project_id"], NEW_PID)
         self.assertEqual(self.engine.fetch_project_messages.call_args.args[0], NEW_PID)
 
-    def test_plain_reply_or_stale_summary_never_authorizes_continuation(self):
+    def test_plain_reply_or_stale_summary_never_claims_verified_compact(self):
         for messages in [[{"role": "assistant", "content": "Compact complete"}], [OLD_SUMMARY]]:
             with self.subTest(messages=messages):
                 self.engine.fetch_project_messages.side_effect = None
@@ -129,13 +129,21 @@ class CompactTests(unittest.TestCase):
             namespace["fetch_project_messages"](NEW_PID, {}, cfg)
 
     def worker_scenario(self, initial_due=False, first_duration=180, failure=False,
-                        cancel=False, complete_only=False, resume_pid=PID):
+                        cancel=False, complete_only=False, resume_pid=PID,
+                        fail_defer=False, restart=False, post_bypass_credit=False,
+                        restored_state=None):
         reg = self.isolated_registry("compact_worker")
         if initial_due:
             reg.set_compact_state(True, PID, 180)
+        if restored_state is not None:
+            data = reg._read()
+            data["compact_state"] = restored_state
+            reg._write(data)
         compact_pid = "33333333-3333-4333-8333-333333333333"
         calls, results, previews = [], [], []
-        phase = {"compacted": False}
+        phase = {"compacted": False, "work_count": 0, "credit": False}
+        ordinary = {"role": "assistant", "id": "ordinary-finished-reply", "content": "Compact unavailable",
+                    "pending": False, "session_state": {"_finish_reason": "stop"}}
         real_failover = bridge.send_message_with_auto_account_failover
         def bind(cfg, *args, **kwargs):
             cfg.project_fast_lean_skip = True
@@ -154,11 +162,39 @@ class CompactTests(unittest.TestCase):
         self.patch("send_telegram_message_detailed", side_effect=lambda *a, **kw: previews.append((a, kw)) or {"ok": False})
         snapshot = self.stack.enter_context(mock.patch.object(bridge.ProjectRegistry, "snapshot"))
         sync = self.stack.enter_context(mock.patch.object(bridge.ProjectRegistry, "github_sync"))
+        scan = self.patch("should_capture_project_update", wraps=bridge.should_capture_project_update)
+        if failure == "active":
+            self.activity.return_value = {"active": True}
+        if fail_defer:
+            original_save = bridge.ProjectRegistry.set_compact_state
+            def save(registry, *args, **kwargs):
+                if kwargs.get("deferred"):
+                    raise OSError("disk full")
+                return original_save(registry, *args, **kwargs)
+            self.stack.enter_context(mock.patch.object(bridge.ProjectRegistry, "set_compact_state", new=save))
         def fetch(pid, cookies, cfg):
             cfg._last_fetch_status = 200
             cfg._last_chat_session_id = "verified-session" if phase["compacted"] else "old-session"
+            if phase["credit"]:
+                return [{"role": "assistant", "content": CREDIT,
+                         "action": {"type": "ACTION_CREDIT_EXHAUSTED"}}]
             if phase["compacted"]:
-                return [OLD_SUMMARY] if failure else [SUMMARY]
+                if failure == "no_session":
+                    cfg._last_chat_session_id = ""
+                if failure == "unreadable":
+                    cfg._last_fetch_status = 503
+                    return []
+                if failure == "pending":
+                    return [{**ordinary, "pending": True}]
+                if failure == "stale":
+                    return [OLD_SUMMARY]
+                if failure == "user_last":
+                    return [ordinary, {"role": "user", "content": "Still waiting"}]
+                if failure == "unconfirmed_credit":
+                    return [{"role": "assistant", "content": "__CREDIT_EXHAUSTED__"}]
+                if failure == "cancel_fetch":
+                    cfg.cancel_event.set()
+                return [copy.deepcopy(ordinary)] if failure else [SUMMARY]
             if pid == PID and not initial_due:
                 return [{"role": "assistant", "content": CREDIT,
                          "action": {"type": "ACTION_CREDIT_EXHAUSTED"}}]
@@ -175,12 +211,26 @@ class CompactTests(unittest.TestCase):
                 return "Compacted", compact_pid, "summary"
             if not initial_due and len(calls) == 1:
                 return (DONE if complete_only else CREDIT), PID, "first"
-            if first_duration <= bridge.COMPACT_TRIGGER_SECONDS or initial_due:
+            if phase["compacted"] and failure:
+                self.assertIsNone(cfg._verified_compact_context)
+                if phase["work_count"] == 0:
+                    self.assertEqual(kwargs["project_id"], compact_pid)
+                    self.assertEqual(kwargs["history"], [ordinary])
+                    self.assertEqual(cfg._last_chat_session_id, "verified-session")
+                    saved = bridge.ProjectRegistry(reg.key).get_compact_state()
+                    self.assertFalse(saved["due"])
+                    self.assertTrue(saved["deferred"])
+                    self.assertFalse(saved["verified"])
+                    self.assertTrue(saved["bypass_ready"])
+                cfg._last_chat_session_id = "verified-session"
+            elif first_duration <= bridge.COMPACT_TRIGGER_SECONDS or initial_due:
                 pinned = cfg._verified_compact_context
                 self.assertEqual(kwargs["project_id"], compact_pid)
                 self.assertEqual(pinned["chat_session_id"], "verified-session")
                 self.assertEqual(pinned["messages"], [SUMMARY])
-            return DONE, compact_pid if phase["compacted"] else NEW_PID, "final"
+            phase["work_count"] += 1
+            phase["credit"] = post_bypass_credit and phase["work_count"] == 1
+            return (CREDIT if phase["credit"] else DONE), compact_pid if phase["compacted"] else NEW_PID, "final"
         self.engine.send_chat.side_effect = chat
         def failover(**kwargs):
             result = real_failover(**kwargs)
@@ -189,11 +239,16 @@ class CompactTests(unittest.TestCase):
         self.patch("send_message_with_auto_account_failover", side_effect=failover)
         bridge.process_user_task_async(12345, bridge.build_genspark_viewer_url(resume_pid) if initial_due else None,
                                        "User modification", project_key_hint=reg.key)
-        self.assertEqual(len(results), 1, str(sends.call_args_list))
+        if restart:
+            bridge.process_user_task_async(12345, bridge.build_genspark_viewer_url(compact_pid),
+                                           "Second user prompt", project_key_hint=reg.key)
+        self.assertEqual(len(results), 2 if restart else 1, str(sends.call_args_list))
         self.download.assert_not_called()
         snapshot.assert_not_called()
         sync.assert_not_called()
-        return calls, results[0], previews, reg, sends
+        scan.assert_not_called()
+        self.assertEqual(reg._read()["schema_version"], 1)
+        return calls, results[-1], previews, reg, sends
 
     def test_credit_at_180_compacts_on_new_account_before_resume(self):
         calls, result, previews, reg, sends = self.worker_scenario()
@@ -270,11 +325,147 @@ class CompactTests(unittest.TestCase):
         self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
         self.assertEqual(result[1], "COMPLETED")
 
-    def test_compact_failure_never_sends_user_prompt_or_claims_success(self):
-        calls, result, _, _, sends = self.worker_scenario(initial_due=True, failure=True)
+    def test_unverified_compact_safely_sends_original_prompt_once(self):
+        calls, result, _, reg, _ = self.worker_scenario(initial_due=True, failure=True)
+        self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
+        self.assertEqual(calls[0][1], calls[1][1])
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertFalse(bridge.ProjectRegistry(reg.key).get_compact_state()["due"])
+        self.cooldown.assert_not_called()
+
+    def test_unverified_compact_on_receiver_sends_resume_once(self):
+        calls, result, _, reg, _ = self.worker_scenario(failure=True)
+        self.assertEqual([c[0] for c in calls], ["User modification", "/compact", "تابع"])
+        self.assertEqual(calls[1][1], self.accounts[1]["email"])
+        self.assertEqual(calls[2][1], self.accounts[1]["email"])
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertFalse(reg.get_compact_state()["due"])
+        self.cooldown.assert_called_once()
+
+    def test_deferred_session_survives_new_worker_without_recompacting(self):
+        calls, result, _, reg, _ = self.worker_scenario(initial_due=True, failure=True, restart=True)
+        self.assertEqual([c[0] for c in calls], ["/compact", "User modification", "Second user prompt"])
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertTrue(bridge.ProjectRegistry(reg.key).get_compact_state()["deferred"])
+        self.assertFalse(reg.get_compact_state()["due"])
+
+    def test_credit_after_bypass_keeps_real_failover_without_recompacting(self):
+        calls, result, _, reg, _ = self.worker_scenario(
+            initial_due=True, failure=True, post_bypass_credit=True)
+        self.assertEqual([c[0] for c in calls], ["/compact", "User modification", "تابع"])
+        self.assertEqual(calls[-1][1], self.accounts[1]["email"])
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertFalse(reg.get_compact_state()["due"])
+        self.assertEqual(len(reg._read()["updates"]), 1)
+        self.cooldown.assert_called_once()
+
+    def assert_bypass_blocked(self, failure):
+        calls, result, _, reg, sends = self.worker_scenario(initial_due=True, failure=failure)
         self.assertEqual([c[0] for c in calls], ["/compact"])
-        self.assertEqual(result[1], "COMPACT_FAILED")
+        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.assertFalse(reg.get_compact_state()["due"])
+        self.assertFalse(reg.get_compact_state()["bypass_ready"])
         self.assertNotIn("تم التوليد بنجاح", str(sends.call_args_list))
+        self.cooldown.assert_not_called()
+
+    def test_stale_summary_without_finished_turn_blocks_bypass(self):
+        self.assert_bypass_blocked("stale")
+
+    def test_absent_current_session_blocks_bypass(self):
+        self.assert_bypass_blocked("no_session")
+
+    def test_unreadable_history_blocks_bypass(self):
+        self.assert_bypass_blocked("unreadable")
+
+    def test_pending_turn_blocks_bypass(self):
+        self.assert_bypass_blocked("pending")
+
+    def test_latest_user_turn_blocks_bypass(self):
+        self.assert_bypass_blocked("user_last")
+
+    def test_active_generation_blocks_bypass(self):
+        self.assert_bypass_blocked("active")
+
+    def test_deferred_write_failure_never_sends_business_prompt(self):
+        calls, result, _, _, _ = self.worker_scenario(initial_due=True, failure=True, fail_defer=True)
+        self.assertEqual([c[0] for c in calls], ["/compact"])
+        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.cooldown.assert_not_called()
+
+    def test_unconfirmed_credit_in_bypass_does_not_rotate_or_send(self):
+        calls, result, _, _, _ = self.worker_scenario(initial_due=True, failure="unconfirmed_credit")
+        self.assertEqual([c[0] for c in calls], ["/compact"])
+        self.assertEqual(result[1], "CREDIT_UNCONFIRMED")
+        self.cooldown.assert_not_called()
+
+    def test_cancel_during_post_compact_fetch_never_sends_work(self):
+        calls, result, _, _, _ = self.worker_scenario(initial_due=True, failure="cancel_fetch")
+        self.assertEqual([c[0] for c in calls], ["/compact"])
+        self.assertEqual(result[1], bridge.CANCELLED_STATUS)
+        self.cooldown.assert_not_called()
+
+    def test_deferred_metadata_preserves_v1_manifest_and_session_scope(self):
+        reg = self.isolated_registry()
+        before = reg._read()
+        reg.set_compact_state(False, PID, deferred=True, chat_session_id="same", bypass_ready=True)
+        reg = bridge.ProjectRegistry(reg.key)
+        reg.set_compact_state(True, NEW_PID, 55, chat_session_id="same")
+        self.assertFalse(reg.get_compact_state()["due"])
+        self.assertTrue(reg.get_compact_state()["bypass_ready"])
+        reg.set_compact_state(True, NEW_PID, 55)  # Unknown session must not clear deferral.
+        self.assertFalse(reg.get_compact_state()["due"])
+        after = reg._read()
+        self.assertEqual(after["schema_version"], 1)
+        for key in ("project_settings", "file_index", "checkpoints", "updates"):
+            self.assertEqual(after[key], before[key])
+        reg.set_compact_state(True, NEW_PID, 55, chat_session_id="distinct-session")
+        self.assertTrue(reg.get_compact_state()["due"])
+        self.assertNotIn("deferred", reg.get_compact_state())
+
+    def test_blocked_restart_rechecks_readiness_without_repeating_compact(self):
+        calls, result, _, reg, _ = self.worker_scenario(initial_due=True, failure="stale", restart=True)
+        self.assertEqual([c[0] for c in calls], ["/compact"])
+        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.assertFalse(reg.get_compact_state()["due"])
+        self.assertFalse(reg.get_compact_state()["bypass_ready"])
+
+    def test_legacy_due_and_deferred_state_does_not_repeat_compact(self):
+        state = {"due": True, "deferred": True, "source_pid": PID,
+                 "chat_session_id": "old-session"}
+        calls, result, _, reg, _ = self.worker_scenario(initial_due=True, restored_state=state)
+        self.assertEqual(calls, [])
+        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.assertFalse(reg.get_compact_state()["due"])
+
+    def test_schedule_write_error_does_not_replace_real_credit_outcome(self):
+        self.patch("current_account_duration", return_value=55)
+        self.patch("claim_eligible_account_for_owner", side_effect=[
+            (a, self.accounts, "claimed") for a in self.accounts])
+        release = self.patch("release_account_selection")
+        pipeline = self.patch("send_message_and_make_public", side_effect=[
+            (URL, "CREDIT_EXHAUSTED", None, CREDIT, None),
+            (URL, "COMPLETED", None, DONE, None)])
+        self.cfg.compact_schedule_callback = mock.Mock(side_effect=OSError("disk full"))
+        progress = mock.Mock(return_value={"allow_continuation": True,
+                                          "project_update_preserved": True})
+        result = bridge.send_message_with_auto_account_failover(
+            None, "Original work", bridge_cfg=self.cfg, progress_callback=progress)
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertEqual(pipeline.call_count, 2)
+        self.assertEqual(pipeline.call_args.kwargs["query"], bridge.get_bridge_cfg_runtime_resume_prompt(self.cfg))
+        self.assertEqual(progress.call_args_list[0].args[1], "CREDIT_EXHAUSTED")
+        self.assertFalse(self.cfg.compact_before_send)
+        self.assertTrue(self.cfg.compact_deferred)
+        self.cooldown.assert_called_once()
+        self.assertEqual(release.call_count, 2)
+
+    def test_verified_compact_clears_deferred_metadata(self):
+        reg = self.isolated_registry()
+        reg.set_compact_state(False, PID, deferred=True, chat_session_id="same")
+        context = {"chat_session_id": "verified", "summary_key": "fresh"}
+        reg.set_compact_state(False, PID, context=context)
+        self.assertTrue(reg.get_compact_state()["verified"])
+        self.assertNotIn("deferred", reg.get_compact_state())
 
     def test_pending_compact_survives_changed_resume_project_id(self):
         calls, result, _, _, _ = self.worker_scenario(initial_due=True, resume_pid=NEW_PID)
