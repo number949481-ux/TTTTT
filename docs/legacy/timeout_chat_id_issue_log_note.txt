@@ -1,0 +1,33 @@
+
+  💬 كمل ولو شايف انك تعيد بناء كامل هيكون افضل عيد بنائه محافظا علي  المرجعيه
+  🔗 تكملة: 2decb483-3358-4e...
+
+  🧠 Fetch & Forward (Fork=False): 10 رسالة قديمة + رسالتك
+  ❌ خطأ: Failed to perform, curl: (28) Operation timed out after 600004 milliseconds with 356829 bytes r المرجعيه
+  🔗 تكملة: 2decb483-3358-4e...
+
+  🧠 Fetch & Forward (Fork=False): 10 رسالة قديمة + رسالتك
+  ❌ خطأ: Failed to perform, curl: (28) Operation timed out after 600004 milliseconds with 356829 bytes r المرجعيه
+  🔗 تكملة: 2decb483-3358-4e...
+
+  🧠 Fetch & Forward (Fork=False): 10 رسالة قديمة + رسالتك
+  ❌ خطأ: Failed to perform, curl: (28) Operation timed out after 600004 milliseconds with 356829 bytes r
+
+  🧠 Fetch & Forward (Fork=False): 10 رسالة قديمة + رسالتك  
+  ❌ خطأ: Failed to perform, curl: (28) Operation timed out after 600004 milliseconds with 356829 bytes r + رسالتك
+  ❌ خطأ: Failed to perform, curl: (28) Operation timed out after 600004 milliseconds with 356829 bytes received. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.
+──────────────────────────────────────────────────────────────        
+  📧 .com
+  💬 كمل ولو شايف انك تعيد بناء كامل هيكون افضل عيد بنائه محافظا علي الملفات المرجعيه
+  🔗 تكملة: 645584ab-45cc-47...    
+
+  🧠 Fetch & Forward (Fork=False): 10 رسالة قديمة + رسالتك
+  ❌ خطأ: Failed to perform, curl: (28) Operation timed out after 600012 milliseconds with 1135682 bytes received. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.
+[ol***@googlemail.com] تمت فلترة progress event غير قابل للحفظ للحالة FAILED: لا يوجد Project ID صالح للحفظ أو الاستئناف
+2026-08-20 10:09:18 | INFO     | [ol***@googlemail.com] تمت فلترة progress event غير قابل للحفظ للحالة FAILED: لا يوجد Project ID صالح للحفظ أو الاستئناف | {"pid": "", "status": "FAILED", "has_artifacts": false, "reason": "لا يوجد Project ID صالح للحفظ أو الاستئناف", "stage_dir": "", "stage_dir_exists": false, "archive_exists": false, "archive_fresh": false, "payload_files": 0, "fresh_payload_files": 0, "stale_only": false, "emit_reason": "filtered-no2026-08-20 10:09:18 | INFO     | [d.a***@googlemail.com] تم حجز الحساب للمهمة الحالية أثناء التنفيذ
+──────────────────────────────────────────────────────────────
+  📧 .com
+  💬 كمل ولو شايف انك تعيد بناء كامل هيكون افضل عيد بنائه محافظا علي الملفات المرجعيه
+  🔗 تكملة: 4b0902b9-8c11-42...
+
+  🧠 Fetch & Forward (Fork=False): 10 رسالة قديمة + رسالتك
