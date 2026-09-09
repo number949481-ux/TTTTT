@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6494..6792
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6670..6972
 المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer (P35: فرع MODEL_DECLINED مخصص بـ allow_preview=True — نص الرفض القصير يُعرض للمستخدم)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -233,6 +233,10 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
         }
 
     mapping = {
+        "COMPACT_FAILED": (
+            "<b>توقف الاستكمال لعدم تأكيد ضغط السياق.</b>",
+            "لم يُرسل برومبت الاستكمال ولم يتم الرجوع للسياق القديم. راجع جلسة المشروع ثم أعد المحاولة؛ يلزم تلخيص جديد وجلسة شات مؤكدة قبل المتابعة.",
+        ),
         "CREDIT_UNCONFIRMED": (
             "<b>تعذر تأكيد سبب توقف الرد.</b>",
             "ظهرت إشارة نصية للرصيد لكن بيانات المنصة لم تؤكد نفاده. لم يتم تبريد الحساب أو تبديله، ولم يُعلن اكتمال التنفيذ. راجع المشروع وأعد الاستئناف عند وضوح الحالة.",
