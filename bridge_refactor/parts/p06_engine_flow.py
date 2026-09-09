@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2093..3186
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2093..3199
 المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -670,6 +670,13 @@ def send_message_and_make_public(
         # لمسار الـ failover). فشلها = FINAL_FETCH_FALLBACK بالنص القديم كما هو.
         if polled_any and final_status == "COMPLETED":
             last_resp_text = fetch_final_reply_text(mod, pid, cookies, cfg, last_resp_text, email=email)
+            # The final fetch may reveal a credit error after polling stopped.
+            # Preserve P18's immediate stop and P44's fallback, but never keep
+            # a success label over a structured failure in the authoritative reply.
+            refreshed_status = detect_response_status(last_resp_text)
+            if refreshed_status in P44_STRUCTURED_STATUSES:
+                log_event("warning", f"[CREDIT_RECOVERY] FINAL_STATUS_RECONCILED status={refreshed_status}", email=email)
+                final_status = refreshed_status
 
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
@@ -690,6 +697,12 @@ def send_message_and_make_public(
         # وsave_project_branch بلا حراسة (شجرة الاستئناف tree:* محفوظة دائماً).
         # fast_mode=False (الافتراضي) = السلوك الحالي بالبايت (G3 Zero Regression).
         fast_lean_skip = bool(getattr(bridge_cfg, "project_fast_lean_skip", False))
+        # Credit handoff requires a real checkpoint before another account sends.
+        # Fast mode still skips ordinary completion downloads, not recovery data.
+        # A failed download remains fail-closed at the existing checkpoint gate.
+        if fast_lean_skip and final_status == "CREDIT_EXHAUSTED":
+            fast_lean_skip = False
+            log_event("info", f"[CREDIT_RECOVERY] RECOVERY_ARCHIVE_REQUIRED pid={str(pid)[:16]}", email=email)
         skip_archive = _declined or fast_lean_skip
         if fast_lean_skip and not _declined:
             # 📊 [P43-D7] Telemetry إلزامية لكل تخطٍ — أرقام السرعة تُنشر من قياس فعلي فقط
