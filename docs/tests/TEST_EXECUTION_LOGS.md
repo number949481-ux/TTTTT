@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-08-24 11:14:57 UTC`
+* **التاريخ والوقت:** `2026-09-09 11:03:55 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `1.743 ثانية`
-* **النتيجة العامة:** `Ran 974 tests — OK`
+* **الزمن المقاس:** `1.897 ثانية`
+* **النتيجة العامة:** `Ran 976 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (34 files, 8 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -521,7 +521,9 @@ test_journey_recorded_at_claim_moment (test_p29_account_observability.TestSource
 test_journey_reset_at_failover_start (test_p29_account_observability.TestSourceContracts.test_journey_reset_at_failover_start) ... ok
 test_start_message_has_no_email_line (test_p29_account_observability.TestSourceContracts.test_start_message_has_no_email_line) ... ok
 test_fable_models_is_gpt41_hardcoded (test_p2_model_routing.TestP2ModelRouting.test_fable_models_is_gpt41_hardcoded) ... ok
+test_format_model_display_label (test_p2_model_routing.TestP2ModelRouting.test_format_model_display_label) ... ok
 test_gpt56_sol_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt56_sol_contract) ... ok
+test_gpt6_astra_contract (test_p2_model_routing.TestP2ModelRouting.test_gpt6_astra_contract) ... ok
 test_kimi_k3_contract (test_p2_model_routing.TestP2ModelRouting.test_kimi_k3_contract) ... ok
 test_normalize_always_returns_str (test_p2_model_routing.TestP2ModelRouting.test_normalize_always_returns_str) ... ok
 test_opus5_has_no_ai_chat_model (test_p2_model_routing.TestP2ModelRouting.test_opus5_has_no_ai_chat_model) ... ok
@@ -1262,7 +1264,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 974 tests in 1.107s
+Ran 976 tests in 1.181s
 
 OK
 ```
