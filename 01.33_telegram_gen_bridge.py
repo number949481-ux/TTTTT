@@ -1871,9 +1871,10 @@ def resolve_runtime_credit_status(raw_status, response, mod, pid, cookies, cfg, 
         if matches and has_platform_credit_signal(message):
             return "CREDIT_EXHAUSTED"
         state = message.get("session_state")
-        if (matches and isinstance(state, dict) and state.get("_finish_reason") == "stop"
+        # A finished but different API reply can be stale. It must not turn an
+        # engine sentinel into success; require the exact current response text.
+        if (content == response and isinstance(state, dict) and state.get("_finish_reason") == "stop"
                 and content and str(content) != "__CREDIT_EXHAUSTED__"):
-            cfg._verified_credit_reply = content
             return "COMPLETED"
     log_event("warning", "[CREDIT_EVIDENCE] UNCONFIRMED: no current platform credit flag")
     return "CREDIT_UNCONFIRMED"
@@ -2718,8 +2719,6 @@ def send_message_and_make_public(
             final_status = detect_response_status(answer)
             final_status = resolve_runtime_credit_status(final_status, answer, mod, pid, cookies, cfg)
             last_resp_text = str(answer) if answer else ""
-            if final_status == "COMPLETED" and answer == "__CREDIT_EXHAUSTED__":
-                last_resp_text = str(getattr(cfg, "_verified_credit_reply", ""))
         if final_status == "CREDIT_UNCONFIRMED":
             return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
         is_timeout = False
@@ -3062,9 +3061,14 @@ def send_message_with_auto_account_failover(
             callback_error = None
             event_meta = {}
             if progress_callback:
-                emit_event, event_meta = should_emit_progress_event(
-                    pub_url, status, ext_dir, min_mtime=getattr(bridge_cfg, "run_started_at", None)
-                )
+                if bool(getattr(bridge_cfg, "project_fast_lean_skip", False)):
+                    # No scan of stale artifact trees even before the fast callback.
+                    emit_event = status not in NON_ACTIONABLE_PROGRESS_STATUSES
+                    event_meta = {"reason": "fast mode: cloud metadata only"}
+                else:
+                    emit_event, event_meta = should_emit_progress_event(
+                        pub_url, status, ext_dir, min_mtime=getattr(bridge_cfg, "run_started_at", None)
+                    )
                 public_stage_query = get_public_continuation_prompt_text(active_query)
                 safe_last_text = redact_github_secrets(last_text)
                 if emit_event:
