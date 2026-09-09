@@ -6,10 +6,10 @@
 
 ## ⚡ آخر جلسة تشغيل ناجحة (Latest Execution Session)
 
-* **التاريخ والوقت:** `2026-09-09 11:51:28 UTC`
+* **التاريخ والوقت:** `2026-09-09 12:09:16 UTC`
 * **الأمر المنفذ:** `python -m unittest discover tests -v`
-* **الزمن المقاس:** `2.240 ثانية`
-* **النتيجة العامة:** `Ran 988 tests — OK`
+* **الزمن المقاس:** `2.337 ثانية`
+* **النتيجة العامة:** `Ran 1001 tests — OK`
 * **فحص تكامل التوثيق (P10):** `PASS (34 files, 8 links)`
 * **رمز الخروج (Exit Code):** `0` ✅
 
@@ -19,7 +19,7 @@
 
 ```text
 test_continuation_limit_is_still_enforced (test_credit_completion_recovery.CreditRecoveryTests.test_continuation_limit_is_still_enforced) ... ok
-test_credit_in_fast_mode_downloads_recovery_checkpoint (test_credit_completion_recovery.CreditRecoveryTests.test_credit_in_fast_mode_downloads_recovery_checkpoint) ... ok
+test_credit_in_fast_mode_never_downloads_recovery_artifacts (test_credit_completion_recovery.CreditRecoveryTests.test_credit_in_fast_mode_never_downloads_recovery_artifacts) ... ok
 test_decline_fast_path_is_unchanged (test_credit_completion_recovery.CreditRecoveryTests.test_decline_fast_path_is_unchanged) ... ok
 test_explicit_cancellation_wins_over_credit (test_credit_completion_recovery.CreditRecoveryTests.test_explicit_cancellation_wins_over_credit) ... ok
 test_failed_preservation_does_not_send_on_another_account (test_credit_completion_recovery.CreditRecoveryTests.test_failed_preservation_does_not_send_on_another_account) ... ok
@@ -29,7 +29,20 @@ test_final_fetch_credit_reaches_real_failover_in_fast_mode (test_credit_completi
 test_final_fetch_failure_keeps_previous_behavior (test_credit_completion_recovery.CreditRecoveryTests.test_final_fetch_failure_keeps_previous_behavior) ... ok
 test_final_fetch_other_structured_failures_are_not_success (test_credit_completion_recovery.CreditRecoveryTests.test_final_fetch_other_structured_failures_are_not_success) ... ok
 test_final_fetch_success_preserves_completion (test_credit_completion_recovery.CreditRecoveryTests.test_final_fetch_success_preserves_completion) ... ok
+test_metadata_checksum_failure_blocks_preservation (test_credit_completion_recovery.CreditRecoveryTests.test_metadata_checksum_failure_blocks_preservation) ... ok
+test_metadata_rejects_invalid_locator_and_github_artifact_mode (test_credit_completion_recovery.CreditRecoveryTests.test_metadata_rejects_invalid_locator_and_github_artifact_mode) ... ok
+test_metadata_survives_reload_without_deleting_existing_files (test_credit_completion_recovery.CreditRecoveryTests.test_metadata_survives_reload_without_deleting_existing_files) ... ok
+test_normal_mode_credit_still_preserves_artifacts (test_credit_completion_recovery.CreditRecoveryTests.test_normal_mode_credit_still_preserves_artifacts) ... ok
+test_old_credit_before_new_user_turn_is_not_current_evidence (test_credit_completion_recovery.CreditRecoveryTests.test_old_credit_before_new_user_turn_is_not_current_evidence) ... ok
+test_platform_flags_override_completed_and_empty_content (test_credit_completion_recovery.CreditRecoveryTests.test_platform_flags_override_completed_and_empty_content) ... ok
+test_quoted_credit_text_in_finished_reply_does_not_rotate (test_credit_completion_recovery.CreditRecoveryTests.test_quoted_credit_text_in_finished_reply_does_not_rotate) ... ok
+test_quoted_json_user_messages_and_string_booleans_are_not_flags (test_credit_completion_recovery.CreditRecoveryTests.test_quoted_json_user_messages_and_string_booleans_are_not_flags) ... ok
+test_real_worker_disk_failure_blocks_handoff (test_credit_completion_recovery.CreditRecoveryTests.test_real_worker_disk_failure_blocks_handoff) ... ok
+test_real_worker_handoff_uses_cloud_checkpoint_and_second_account (test_credit_completion_recovery.CreditRecoveryTests.test_real_worker_handoff_uses_cloud_checkpoint_and_second_account) ... ok
+test_real_worker_unconfirmed_credit_does_not_cooldown_or_retry (test_credit_completion_recovery.CreditRecoveryTests.test_real_worker_unconfirmed_credit_does_not_cooldown_or_retry) ... ok
+test_sentinel_cannot_become_success_from_a_stale_finished_reply (test_credit_completion_recovery.CreditRecoveryTests.test_sentinel_cannot_become_success_from_a_stale_finished_reply) ... ok
 test_successful_fast_mode_still_skips_archive_and_final_fetch (test_credit_completion_recovery.CreditRecoveryTests.test_successful_fast_mode_still_skips_archive_and_final_fetch) ... ok
+test_unconfirmed_credit_and_network_failure_are_not_success (test_credit_completion_recovery.CreditRecoveryTests.test_unconfirmed_credit_and_network_failure_are_not_success) ... ok
 test_docs_integrity_no_broken_links (test_p10_docs_integrity.TestDocsIntegrityP10.test_docs_integrity_no_broken_links)
 التحقق من عدم وجود أي روابط مكسورة في منظومة docs بأكملها ... ok
 test_01_whitelist_exact_official_values (test_p11_button_styles.TestButtonStylesWhitelist.test_01_whitelist_exact_official_values)
@@ -1276,7 +1289,7 @@ test_all_toplevel_defs_present (test_refactor_parity.TestSymbolParity.test_all_t
 test_critical_features_present (test_refactor_parity.TestSymbolParity.test_critical_features_present) ... ok
 
 ----------------------------------------------------------------------
-Ran 988 tests in 1.418s
+Ran 1001 tests in 1.499s
 
 OK
 ```
