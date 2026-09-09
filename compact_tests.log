@@ -1,0 +1,58 @@
+............................................................ [  5%]
+........................................................................ [ 13%]
+........................................................................ [ 20%]
+........................................................................ [ 27%]
+..................................................................... [ 34%]
+........................................................................ [ 41%]
+........................................................................ [ 48%]
+........................................................................ [ 56%]
+........................................................................ [ 63%]
+........................................................................ [ 70%]
+............................................................... [ 76%]
+........................................................................ [ 83%]
+........................................................................ [ 91%]
+........................................................................ [ 98%]
+......FF.........                                                        [100%]
+=================================== FAILURES ===================================
+_______________ TestByteParity.test_parts_reassemble_to_original _______________
+
+self = <test_refactor_parity.TestByteParity testMethod=test_parts_reassemble_to_original>
+
+    def test_parts_reassemble_to_original(self):
+        src = SRC.read_text(encoding="utf-8")
+        recon = ""
+        for part in sorted(PARTS_DIR.glob("p*.py")):
+            text = part.read_text(encoding="utf-8")
+            self.assertTrue(text.startswith('"""[VERBATIM SLICE]'), part.name)
+            end = text.index('"""', 3) + 4
+            recon += text[end:]
+>       self.assertEqual(
+            hashlib.sha256(src.encode()).hexdigest(),
+            hashlib.sha256(recon.encode()).hexdigest(),
+            "إعادة تجميع الأجزاء لا تطابق الملف المرجعي بايت-بايت",
+        )
+E       AssertionError: '589c6c603856457855e72a77f262082ca0c583a04dd79ee4d3f88638ec943b33' != '93f6666515d0cb10a535b41bdace04cab7da55c981584b2cd0023c74ccca579c'
+E       - 589c6c603856457855e72a77f262082ca0c583a04dd79ee4d3f88638ec943b33
+E       + 93f6666515d0cb10a535b41bdace04cab7da55c981584b2cd0023c74ccca579c
+E        : إعادة تجميع الأجزاء لا تطابق الملف المرجعي بايت-بايت
+
+tests/test_refactor_parity.py:39: AssertionError
+_______________ TestSymbolParity.test_all_toplevel_defs_present ________________
+
+self = <test_refactor_parity.TestSymbolParity testMethod=test_all_toplevel_defs_present>
+
+    def test_all_toplevel_defs_present(self):
+        tree = ast.parse(SRC.read_text(encoding="utf-8"))
+        original = {
+            n.name for n in tree.body
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        }
+        missing = {name for name in original if not hasattr(ns, name)}
+>       self.assertFalse(missing, f"رموز مفقودة من الـ runtime: {sorted(missing)}")
+E       AssertionError: {'current_account_duration', 'run_verified_compact', 'compact_summary_context'} is not false : رموز مفقودة من الـ runtime: ['compact_summary_context', 'current_account_duration', 'run_verified_compact']
+
+tests/test_refactor_parity.py:54: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_refactor_parity.py::TestByteParity::test_parts_reassemble_to_original
+FAILED tests/test_refactor_parity.py::TestSymbolParity::test_all_toplevel_defs_present
+2 failed, 999 passed, 24 subtests passed in 3.62s
