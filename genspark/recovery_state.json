@@ -1,21 +1,17 @@
 {
-  "task": "Credit exhaustion must not become false completion or block recoverable continuation",
+  "task": "Fast-mode credit continuation with ZERO archive downloads",
   "branch": "genspark_ai_developer",
-  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/1",
-  "status": "implementation_verified",
-  "verification": {"tests_passed": 988, "subtests_passed": 15, "quality_gate_exit": 0, "parity_tests_passed": 11, "syntax_check": "passed", "live_e2e": "not_run"},
-  "baseline": {"tests_passed": 976, "subtests_passed": 12, "quality_gate_exit": 0},
-  "confirmed_code_paths": [
-    "Final fetch replaces reply text without reclassifying COMPLETED",
-    "Fast mode skips archive download but credit continuation requires preserved artifacts"
-  ],
+  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/2",
+  "status": "implementing_followup",
+  "supersedes": "PR #1 recovery-archive exception; owner explicitly rejected any fast-mode download",
+  "baseline": {"tests_passed": 988, "subtests_passed": 15, "quality_gate_exit": 0},
   "plan": [
-    "Add offline regression tests reproducing both paths",
-    "Reclassify structured failures after final fetch without modifying detect_response_status or polling stop rules",
-    "Require recovery archive on credit exhaustion even in fast mode; keep normal fast completion unchanged",
-    "Regenerate faithful split, run full tests and quality gate, squash and publish PR"
+    "Remove recovery archive exception; fast mode never snapshots, diffs or downloads automatically",
+    "Persist metadata-only cloud resume record with project URL, root/latest IDs, account and public resume context; verify durable checksum before handoff",
+    "Use platform action/session-state credit flags, not text mentions alone; unconfirmed credit errors must not silently rotate accounts",
+    "Keep normal artifact mode and GitHub-enabled download contract unchanged",
+    "Test real worker callbacks and multi-account handoff plus persistence failure and false positives; regenerate split and run full gates"
   ],
-  "safety": ["Keep checkpoint failure blocking", "Keep cancellation priority", "Keep finite continuation/account limits", "Do not store credentials"],
-  "completed": ["regression_tests", "final_reply_reclassification", "credit_recovery_archive", "faithful_split", "full_quality_gates"],
-  "next_action": "Review and merge PR #1, then validate on a real owner-controlled run; do not repeat implementation"
+  "safety": ["Cloud resume metadata is not a file backup", "Never mark existing files deleted", "No upload job for metadata checkpoints", "Preserve cancellation and finite limits", "No stored credentials"],
+  "next_action": "Implement archive-free preservation and credit evidence, then update regression tests"
 }
