@@ -3194,7 +3194,7 @@ def send_message_with_auto_account_failover(
             if status == "CREDIT_EXHAUSTED" or (
                     status == "COMPLETED" and not is_model_decline_response(last_text)):
                 duration = current_account_duration(bridge_cfg, curr_email)
-                due = duration >= COMPACT_TRIGGER_SECONDS
+                due = duration <= COMPACT_TRIGGER_SECONDS
                 if status == "CREDIT_EXHAUSTED" and due:
                     bridge_cfg.compact_before_send = True
                 schedule = getattr(bridge_cfg, "compact_schedule_callback", None)
