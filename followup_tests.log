@@ -1,0 +1,152 @@
+FF..FFFF............................................................. [  6%]
+..............................................................F......... [ 14%]
+........................................................................ [ 21%]
+........................................................................ [ 28%]
+..................................................................... [ 35%]
+........................................................................ [ 43%]
+........................................................................ [ 50%]
+........................................................................ [ 57%]
+........................................................................ [ 64%]
+........................................................................ [ 72%]
+............................................................... [ 78%]
+........................................................................ [ 85%]
+........................................................................ [ 93%]
+........................................................FF.........      [100%]
+=================================== FAILURES ===================================
+________ CreditRecoveryTests.test_continuation_limit_is_still_enforced _________
+
+self = <test_credit_completion_recovery.CreditRecoveryTests testMethod=test_continuation_limit_is_still_enforced>
+
+    def test_continuation_limit_is_still_enforced(self):
+        result, _, _ = self.run_failover(limit=1)
+>       self.assertEqual(result[1], "CREDIT_EXHAUSTED")
+E       AssertionError: 'CREDIT_UNCONFIRMED' != 'CREDIT_EXHAUSTED'
+E       - CREDIT_UNCONFIRMED
+E       + CREDIT_EXHAUSTED
+
+tests/test_credit_completion_recovery.py:215: AssertionError
+__ CreditRecoveryTests.test_credit_in_fast_mode_downloads_recovery_checkpoint __
+
+self = <test_credit_completion_recovery.CreditRecoveryTests testMethod=test_credit_in_fast_mode_downloads_recovery_checkpoint>
+
+    def test_credit_in_fast_mode_downloads_recovery_checkpoint(self):
+        self.cfg.project_fast_lean_skip = True
+        self.engine.send_chat.return_value = (CREDIT, PID, "assistant")
+        result = self.run_pipeline()
+>       self.assertEqual(result[1], "CREDIT_EXHAUSTED")
+E       AssertionError: 'CREDIT_UNCONFIRMED' != 'CREDIT_EXHAUSTED'
+E       - CREDIT_UNCONFIRMED
+E       + CREDIT_EXHAUSTED
+
+tests/test_credit_completion_recovery.py:122: AssertionError
+_ CreditRecoveryTests.test_failed_preservation_does_not_send_on_another_account _
+
+self = <test_credit_completion_recovery.CreditRecoveryTests testMethod=test_failed_preservation_does_not_send_on_another_account>
+
+    def test_failed_preservation_does_not_send_on_another_account(self):
+        result, _, _ = self.run_failover(allow_checkpoint=False)
+>       self.assertEqual(result[1], "CREDIT_EXHAUSTED")
+E       AssertionError: 'CREDIT_UNCONFIRMED' != 'CREDIT_EXHAUSTED'
+E       - CREDIT_UNCONFIRMED
+E       + CREDIT_EXHAUSTED
+
+tests/test_credit_completion_recovery.py:209: AssertionError
+_ CreditRecoveryTests.test_fast_credit_handoff_preserves_checkpoint_before_second_account _
+
+self = <test_credit_completion_recovery.CreditRecoveryTests testMethod=test_fast_credit_handoff_preserves_checkpoint_before_second_account>
+
+    def test_fast_credit_handoff_preserves_checkpoint_before_second_account(self):
+        result, checkpoints, release = self.run_failover()
+>       self.assertEqual(result[1], "COMPLETED")
+E       AssertionError: 'CREDIT_UNCONFIRMED' != 'COMPLETED'
+E       - CREDIT_UNCONFIRMED
+E       + COMPLETED
+
+tests/test_credit_completion_recovery.py:189: AssertionError
+_ CreditRecoveryTests.test_final_fetch_credit_overrides_activity_stop_completion _
+
+self = <test_credit_completion_recovery.CreditRecoveryTests testMethod=test_final_fetch_credit_overrides_activity_stop_completion>
+
+    def test_final_fetch_credit_overrides_activity_stop_completion(self):
+        self.interrupted_then_activity_stop()
+        result = self.run_pipeline()
+>       self.assertEqual(result[1], "CREDIT_EXHAUSTED")
+E       AssertionError: 'CREDIT_UNCONFIRMED' != 'CREDIT_EXHAUSTED'
+E       - CREDIT_UNCONFIRMED
+E       + CREDIT_EXHAUSTED
+
+tests/test_credit_completion_recovery.py:91: AssertionError
+_ CreditRecoveryTests.test_final_fetch_credit_reaches_real_failover_in_fast_mode _
+
+self = <test_credit_completion_recovery.CreditRecoveryTests testMethod=test_final_fetch_credit_reaches_real_failover_in_fast_mode>
+
+    def test_final_fetch_credit_reaches_real_failover_in_fast_mode(self):
+        result, checkpoints, _ = self.run_failover(interrupted=True)
+>       self.assertEqual(result[1], "COMPLETED")
+E       AssertionError: 'CREDIT_UNCONFIRMED' != 'COMPLETED'
+E       - CREDIT_UNCONFIRMED
+E       + COMPLETED
+
+tests/test_credit_completion_recovery.py:202: AssertionError
+____ TestPollingLoopIntegration.test_01_monitor_called_inside_polling_loop _____
+
+self = <test_p18_activity_stop.TestPollingLoopIntegration testMethod=test_01_monitor_called_inside_polling_loop>
+
+    def test_01_monitor_called_inside_polling_loop(self):
+        m = re.search(
+            r"while final_status not in \(\"COMPLETED\", \"CREDIT_EXHAUSTED\", \"DATA_RETENTION\", \"SESSION_EXPIRED\", \"FORBIDDEN\"\):(.*?)\n        if is_timeout:",
+            BRIDGE_SRC, re.DOTALL,
+        )
+>       self.assertIsNotNone(m, "لم يتم العثور على حلقة المتابعة")
+E       AssertionError: unexpectedly None : لم يتم العثور على حلقة المتابعة
+
+tests/test_p18_activity_stop.py:146: AssertionError
+_______________ TestByteParity.test_parts_reassemble_to_original _______________
+
+self = <test_refactor_parity.TestByteParity testMethod=test_parts_reassemble_to_original>
+
+    def test_parts_reassemble_to_original(self):
+        src = SRC.read_text(encoding="utf-8")
+        recon = ""
+        for part in sorted(PARTS_DIR.glob("p*.py")):
+            text = part.read_text(encoding="utf-8")
+            self.assertTrue(text.startswith('"""[VERBATIM SLICE]'), part.name)
+            end = text.index('"""', 3) + 4
+            recon += text[end:]
+>       self.assertEqual(
+            hashlib.sha256(src.encode()).hexdigest(),
+            hashlib.sha256(recon.encode()).hexdigest(),
+            "إعادة تجميع الأجزاء لا تطابق الملف المرجعي بايت-بايت",
+        )
+E       AssertionError: '9361e36bf9469164b6f739ab94bc2a9349e8fe58e3aff450c0856d4f284e2c7f' != '91fd09a6dbc40a6fa7a4b8b4507dbf85f08c59cbda3e29051efaa925d10a4e17'
+E       - 9361e36bf9469164b6f739ab94bc2a9349e8fe58e3aff450c0856d4f284e2c7f
+E       + 91fd09a6dbc40a6fa7a4b8b4507dbf85f08c59cbda3e29051efaa925d10a4e17
+E        : إعادة تجميع الأجزاء لا تطابق الملف المرجعي بايت-بايت
+
+tests/test_refactor_parity.py:39: AssertionError
+_______________ TestSymbolParity.test_all_toplevel_defs_present ________________
+
+self = <test_refactor_parity.TestSymbolParity testMethod=test_all_toplevel_defs_present>
+
+    def test_all_toplevel_defs_present(self):
+        tree = ast.parse(SRC.read_text(encoding="utf-8"))
+        original = {
+            n.name for n in tree.body
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        }
+        missing = {name for name in original if not hasattr(ns, name)}
+>       self.assertFalse(missing, f"رموز مفقودة من الـ runtime: {sorted(missing)}")
+E       AssertionError: {'resolve_runtime_credit_status', 'has_platform_credit_signal'} is not false : رموز مفقودة من الـ runtime: ['has_platform_credit_signal', 'resolve_runtime_credit_status']
+
+tests/test_refactor_parity.py:54: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_credit_completion_recovery.py::CreditRecoveryTests::test_continuation_limit_is_still_enforced
+FAILED tests/test_credit_completion_recovery.py::CreditRecoveryTests::test_credit_in_fast_mode_downloads_recovery_checkpoint
+FAILED tests/test_credit_completion_recovery.py::CreditRecoveryTests::test_failed_preservation_does_not_send_on_another_account
+FAILED tests/test_credit_completion_recovery.py::CreditRecoveryTests::test_fast_credit_handoff_preserves_checkpoint_before_second_account
+FAILED tests/test_credit_completion_recovery.py::CreditRecoveryTests::test_final_fetch_credit_overrides_activity_stop_completion
+FAILED tests/test_credit_completion_recovery.py::CreditRecoveryTests::test_final_fetch_credit_reaches_real_failover_in_fast_mode
+FAILED tests/test_p18_activity_stop.py::TestPollingLoopIntegration::test_01_monitor_called_inside_polling_loop
+FAILED tests/test_refactor_parity.py::TestByteParity::test_parts_reassemble_to_original
+FAILED tests/test_refactor_parity.py::TestSymbolParity::test_all_toplevel_defs_present
+9 failed, 979 passed, 15 subtests passed in 3.69s
