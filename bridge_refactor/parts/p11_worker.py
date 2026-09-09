@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6666..7052
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6793..7204
 المحتوى: P43-X7: fast_mode_line في كارت الإكمال — إعلان التخطي صراحةً بلا Diff مزيف + format_active_account_line (P38: سطر 📧 الحساب الموحد — مصدر واحد للحقيقة: تفريغ آمن + fallback غير محدد + html_escape مركزي) + process_user_task_async (المشغل الكامل للمهمة | P39: بطاقة الاكتمال المبسطة — حذف 6 عناصر حشو من res_msg (latest_line/resume_line/fork_line/مسار الساندبوكس/علم الانتهاء+استدعاء is_finished اليتيم/حقن journey_block) مع بقاء دوال P29/P30/P38 كاملة + التسجيل الجنائي: القائمة الكاملة غير المفلترة تُسجَّل في اللوج قبل الإرسال (best-effort) | P38: حقن السطر الموحد في بطاقات اللايف الفوري/handoff الرصيد/اللقطة (stage_email المهمل صار مستخدماً + fallback لـ cfg)/اللايف المكتملة + توحيد تسمية بطاقة الاكتمال «📧 الحساب:» بلا تهريب مزدوج لـ acc_email | P35: إعادة تصنيف COMPLETED+is_model_decline_response ← MODEL_DECLINED + تصفير final_pid (مؤشر الاستئناف لا يتقدم لنقطة الرفض) + كيبورد build_model_decline_keyboard بدل كيبورد الاكتمال | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -99,6 +99,31 @@ def process_user_task_async(
 
         def on_project_update(stage_url, stage_status, stage_dir, stage_text, stage_email, stage_query):
             nonlocal runtime_identity
+            if bool(getattr(cfg, "project_fast_lean_skip", False)):
+                if stage_status != "CREDIT_EXHAUSTED":
+                    return {"allow_continuation": True, "project_update_preserved": False,
+                            "reason": "fast mode: artifacts intentionally skipped", "checkpoint_id": ""}
+                root_pid = (runtime_identity or {}).get("root_genspark_pid") or requested_pid
+                update = registry.preserve_cloud_resume(
+                    stage_url, root_pid, stage_email,
+                    get_bridge_cfg_public_resume_prompt(cfg), stage_text)
+                pid = update["summary"]["latest_pid"]
+                runtime_identity = remember_registry_identity(
+                    registry, root_pid=update["summary"]["root_pid"], latest_pid=pid,
+                    project_name=project_name, chat_id=chat_id, status=stage_status,
+                ) or runtime_identity
+                try:
+                    send_telegram_message(
+                        chat_id,
+                        "<b>تم حفظ نقطة استئناف سحابية للوضع السريع.</b>\n"
+                        "بدون تنزيل أرشيف أو ملفات أو حساب Diff. هذه بيانات استئناف وليست نسخة احتياطية للملفات.\n"
+                        f"<b>Project ID:</b> <code>{html_escape(pid)}</code>\n"
+                        f"<b>Checkpoint:</b> <code>{html_escape(update['checkpoint'])}</code>")
+                except Exception:
+                    pass  # Notification failure must not discard a durable resume record.
+                return {"allow_continuation": True, "project_update_preserved": True,
+                        "reason": "cloud resume metadata preserved; no artifact backup",
+                        "checkpoint_id": update["checkpoint"], "resume_url": update["url"]}
             actionable, stage_meta = should_capture_project_update(stage_url, stage_status, stage_dir, min_mtime=task_started_at)
             if not actionable:
                 log_event("warning", f"تم تخطي checkpoint/report للحالة {stage_status}: {stage_meta['reason']}", extra=stage_meta)
