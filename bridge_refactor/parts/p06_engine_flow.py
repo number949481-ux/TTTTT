@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2157..3280
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2162..3432
 المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -314,6 +314,123 @@ def get_public_forked_pid(
     return None
 
 
+COMPACT_TRIGGER_SECONDS = 180
+COMPACT_VERIFY_READS = 6
+
+
+def current_account_duration(bridge_cfg, email="") -> float:
+    """Read existing monotonic account spans, never wall-clock elapsed time."""
+    for span in reversed(getattr(bridge_cfg, "account_journey_spans", None) or []):
+        if not isinstance(span, dict) or (email and span.get("email") != email):
+            continue
+        try:
+            seconds = (float(span.get("duration_seconds") or 0) if span.get("closed") else
+                       time.monotonic() - float(span["started_monotonic"]))
+            return seconds if 0 <= seconds < float("inf") else 0.0
+        except (KeyError, TypeError, ValueError):
+            return 0.0
+    return 0.0
+
+
+def compact_summary_context(messages):
+    """Return the newest typed summary and only the history following it."""
+    if not isinstance(messages, list):
+        return None, []
+    for index in range(len(messages) - 1, -1, -1):
+        message = messages[index]
+        if not isinstance(message, dict) or message.get("role") != "assistant":
+            continue
+        state = message.get("session_state")
+        if (isinstance(state, dict) and state.get("is_compact_summary") is True
+                and str(message.get("content") or "").strip()):
+            key = hashlib.sha256(json.dumps(
+                [message.get("id"), message.get("content")], ensure_ascii=False,
+                sort_keys=True).encode("utf-8")).hexdigest()
+            return key, messages[index:]
+    return None, []
+
+
+def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_start=None):
+    """Send a normal chat command, then require fresh summary + real session ID.
+
+    No archive/snapshot/diff, no recursive failover, no success from text alone.
+    The verified context is pinned only for the immediately following send.
+    """
+    event = getattr(bridge_cfg, "cancel_event", None)
+    current_pid = project_id
+    def cancelled():
+        return event is not None and event.is_set()
+    def started(pid):
+        nonlocal current_pid
+        if extract_project_id(pid):
+            current_pid = extract_project_id(pid)
+            if on_start:
+                on_start(current_pid)
+    bridge_cfg.compact_in_progress = True
+    try:
+        if cancelled():
+            return CANCELLED_STATUS, current_pid, None
+        if not project_id or not getattr(mod, "VERIFIED_COMPACT_CONTEXT_SUPPORTED", False):
+            raise RuntimeError("Engine/project does not support verified compact context")
+        cfg._verified_compact_context = None
+        cfg._last_chat_session_id = ""
+        baseline = mod.fetch_project_messages(current_pid, cookies, cfg)
+        if getattr(cfg, "_last_fetch_status", 200) != 200:
+            raise RuntimeError("Cannot establish pre-compact history")
+        old_key, _ = compact_summary_context(baseline)
+        if cancelled():
+            return CANCELLED_STATUS, current_pid, None
+        started(current_pid)
+        answer, returned_pid, _ = mod.send_chat(
+            cookies, "/compact", email, project_id=current_pid, history=baseline,
+            cfg=cfg, on_project_start_callback=started)
+        if cancelled() or answer == USER_CANCELLED_MARKER:
+            return CANCELLED_STATUS, current_pid, None
+        if returned_pid and not extract_project_id(returned_pid):
+            raise RuntimeError("Invalid project returned from compact")
+        if returned_pid:
+            started(returned_pid)
+        raw_status = detect_response_status(answer)
+        if raw_status in ("DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
+            raise RuntimeError("Compact request rejected: " + raw_status)
+        for read in range(COMPACT_VERIFY_READS):
+            if cancelled():
+                return CANCELLED_STATUS, current_pid, None
+            cfg._last_chat_session_id = ""
+            messages = mod.fetch_project_messages(current_pid, cookies, cfg)
+            if cancelled():
+                return CANCELLED_STATUS, current_pid, None
+            if getattr(cfg, "_last_fetch_status", 200) != 200:
+                raise RuntimeError("Compact verification fetch failed")
+            latest = next((m for m in reversed(messages or [])
+                           if isinstance(m, dict) and m.get("role") in ("assistant", "user")), None)
+            if has_platform_credit_signal(latest):
+                return "CREDIT_EXHAUSTED", current_pid, None
+            key, history = compact_summary_context(messages)
+            session_id = str(getattr(cfg, "_last_chat_session_id", "") or "").strip()
+            if key and key != old_key and session_id:
+                context = {"project_id": current_pid, "chat_session_id": session_id,
+                           "messages": history, "summary_key": key}
+                save = getattr(bridge_cfg, "compact_verified_callback", None)
+                if callable(save):
+                    save(context)
+                bridge_cfg.compact_before_send = False
+                bridge_cfg.compact_latest_pid = current_pid
+                log_event("info", f"[COMPACT] VERIFIED pid={current_pid} summary={key[:12]}", email=email)
+                return "COMPACT_VERIFIED", current_pid, context
+            if read + 1 < COMPACT_VERIFY_READS:
+                if event is not None:
+                    event.wait(timeout=1)
+                else:
+                    time.sleep(1)
+        raise RuntimeError("No fresh compact summary and current chat session confirmed")
+    except Exception as err:
+        log_event("warning", f"[COMPACT] FAILED: {type(err).__name__}", email=email)
+        return CANCELLED_STATUS if cancelled() else "COMPACT_FAILED", current_pid, None
+    finally:
+        bridge_cfg.compact_in_progress = False
+
+
 def send_message_and_make_public(
     url: str | None,
     email: str,
@@ -335,6 +452,7 @@ def send_message_and_make_public(
     # ⚡ [P12] carry_pid: أي project_id يُلتقط (من project_start أو من رجوع send_chat)
     # يُحفظ هنا ويُستأنف عليه في أي محاولة تالية — ممنوع إنشاء شات/ID جديد بعد الانقطاع.
     carry_pid = None
+    verified_compact_context = None
 
     # 🌐 [P16] Early Make-Public: بمجرد التقاط project_id حي — نحوّل المشروع إلى Public
     # فوراً في خيط خلفي (Fire-and-Forget) قبل/مع إرسال زر المعاينة الفورية،
@@ -496,6 +614,18 @@ def send_message_and_make_public(
                     except Exception:
                         pass
 
+        if bool(getattr(bridge_cfg, "compact_before_send", False)):
+            compact_status, compact_pid, verified_compact_context = run_verified_compact(
+                mod, cookies, cfg, bridge_cfg, project_id, email, _pid_capture_callback)
+            carry_pid = project_id = compact_pid
+            if compact_status != "COMPACT_VERIFIED":
+                return build_genspark_viewer_url(compact_pid), compact_status, None, "", None
+            history = verified_compact_context["messages"]
+            if _cancel_event is not None and _cancel_event.is_set():
+                return build_genspark_viewer_url(compact_pid), CANCELLED_STATUS, None, "", None
+            if on_project_start_callback:
+                on_project_start_callback(project_id)
+
         start_time = time.time()
         answer, pid, asst_id = None, None, None
         last_chat_err = None
@@ -510,7 +640,11 @@ def send_message_and_make_public(
                     # [P12] دائماً نمرر ملتقط الـ pid — حتى لو انقطع البث لاحقاً نعرف المشروع ونستأنف عليه
                     "on_project_start_callback": _pid_capture_callback,
                 }
-                answer, pid, asst_id = mod.send_chat(cookies, query, email, **send_chat_kwargs)
+                cfg._verified_compact_context = verified_compact_context
+                try:
+                    answer, pid, asst_id = mod.send_chat(cookies, query, email, **send_chat_kwargs)
+                finally:
+                    cfg._verified_compact_context = None  # Subsequent polling must see live replies.
                 break
 
             except Exception as chat_err:
@@ -862,7 +996,7 @@ def send_message_with_auto_account_failover(
             # 💰 [P13] رصيد منخفض مكتشف قبل الإرسال → الحساب مُبرَّد 29h بالفعل داخل
             # send_message_and_make_public — تخطٍ صامت فوري للحساب التالي:
             # لا progress_callback، لا إشعار للمستخدم، لا حظر auth_failed خاطئ.
-            if status == "CREDIT_UNCONFIRMED":
+            if status in ("CREDIT_UNCONFIRMED", "COMPACT_FAILED"):
                 return pub_url, status, curr_acc, ext_dir, last_text
 
             if status == "LOW_BALANCE":
@@ -900,6 +1034,19 @@ def send_message_with_auto_account_failover(
                     email=curr_email,
                 )
                 continue
+
+            if status == "CREDIT_EXHAUSTED" or (
+                    status == "COMPLETED" and not is_model_decline_response(last_text)):
+                duration = current_account_duration(bridge_cfg, curr_email)
+                due = duration >= COMPACT_TRIGGER_SECONDS
+                if status == "CREDIT_EXHAUSTED" and due:
+                    bridge_cfg.compact_before_send = True
+                schedule = getattr(bridge_cfg, "compact_schedule_callback", None)
+                if callable(schedule) and (due or status == "COMPLETED"):
+                    try:
+                        schedule(status, pub_url, duration)
+                    except Exception:
+                        return pub_url, "COMPACT_FAILED", curr_acc, ext_dir, last_text
 
             if status == "CREDIT_EXHAUSTED":
                 credit_continuations += 1
