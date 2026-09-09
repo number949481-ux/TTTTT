@@ -1,0 +1,6 @@
+# Core HTTP & Network
+requests>=2.28.0
+curl_cffi>=0.5.0
+
+# Terminal UI & Colors
+colorama>=0.4.6
