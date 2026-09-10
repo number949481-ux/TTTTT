@@ -4418,7 +4418,7 @@ class ProjectRegistry:
                 raise IOError("Compact state was not durably preserved")
         return state
 
-    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message):
+    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message, *, allow_non_fast=False):
         """Durable cloud locator/context only; not an artifact backup or a diff."""
         locator = parse_project_locator(public_url)
         if locator.get("kind") != "pid":
@@ -4426,7 +4426,7 @@ class ProjectRegistry:
         pid = locator["pid"]
         with self.lock:
             data = self._read()
-            if not should_skip_artifacts_download(data.get("project_settings")):
+            if not allow_non_fast and not should_skip_artifacts_download(data.get("project_settings")):
                 raise ValueError("Metadata-only resume requires fast mode with GitHub disabled")
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             summary = {
@@ -7244,6 +7244,36 @@ def process_user_task_async(
                         "checkpoint_id": update["checkpoint"], "resume_url": update["url"]}
             actionable, stage_meta = should_capture_project_update(stage_url, stage_status, stage_dir, min_mtime=task_started_at)
             if not actionable:
+                if stage_status == "CREDIT_EXHAUSTED" and (stage_meta.get("pid") or extract_project_id(stage_url)):
+                    try:
+                        root_pid = (runtime_identity or {}).get("root_genspark_pid") or requested_pid
+                        update = registry.preserve_cloud_resume(
+                            stage_url, root_pid, stage_email,
+                            get_bridge_cfg_public_resume_prompt(cfg), stage_text,
+                            allow_non_fast=True)
+                        pid = update["summary"]["latest_pid"]
+                        runtime_identity = remember_registry_identity(
+                            registry, root_pid=update["summary"]["root_pid"], latest_pid=pid,
+                            project_name=project_name, chat_id=chat_id, status=stage_status,
+                        ) or runtime_identity
+                        try:
+                            send_telegram_message(
+                                chat_id,
+                                "<b>تم حفظ نقطة استئناف سحابية مؤقتة لنفاد الرصيد.</b>\n"
+                                "لم تكتمل تنزيلات الأرشيف المحلي قبل نفاد الرصيد، ولكن تم حفظ مرجع المشروع السحابي للاستئناف التلقائي بالحساب التالي.\n"
+                                f"<b>Project ID:</b> <code>{html_escape(pid)}</code>\n"
+                                f"<b>Checkpoint:</b> <code>{html_escape(update['checkpoint'])}</code>")
+                        except Exception:
+                            pass
+                        return {
+                            "allow_continuation": True,
+                            "project_update_preserved": True,
+                            "reason": "cloud resume metadata preserved; local artifacts pending next turn",
+                            "checkpoint_id": update["checkpoint"],
+                            "resume_url": update["url"],
+                        }
+                    except Exception as exc:
+                        log_event("warning", f"فشل حفظ نقطة الاستئناف السحابية لنفاد الرصيد: {exc}")
                 log_event("warning", f"تم تخطي checkpoint/report للحالة {stage_status}: {stage_meta['reason']}", extra=stage_meta)
                 return {
                     "allow_continuation": stage_status != "CREDIT_EXHAUSTED",
