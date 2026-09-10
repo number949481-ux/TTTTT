@@ -2494,7 +2494,7 @@ def compact_summary_context(messages):
         return None, []
     for index in range(len(messages) - 1, -1, -1):
         message = messages[index]
-        if not isinstance(message, dict) or message.get("role") != "assistant":
+        if not isinstance(message, dict) or message.get("role") not in ("assistant", "user"):
             continue
         state = message.get("session_state")
         if (isinstance(state, dict) and state.get("is_compact_summary") is True
@@ -2812,22 +2812,55 @@ def send_message_and_make_public(
                 if not isinstance(history, list) or not history:
                     raise RuntimeError("No current history")
                 latest = history[-1]
-                if not isinstance(latest, dict) or latest.get("role") != "assistant":
-                    raise RuntimeError("Current turn is not finished")
-                content = latest.get("content", "")
-                status = resolve_runtime_credit_status(
-                    detect_response_status(content), content, mod, project_id, cookies, cfg, message=latest)
-                if status in P44_STRUCTURED_STATUSES or status == "CREDIT_UNCONFIRMED":
-                    bypass_status = status
-                else:
-                    state = latest.get("session_state")
-                    if (not isinstance(state, dict) or state.get("_finish_reason") != "stop"
-                            or latest.get("pending") is True):
-                        raise RuntimeError("Current turn has no terminal evidence")
-                    activity = fetch_project_activity_signature(project_id, cookies)
-                    if isinstance(activity, dict) and activity.get("active"):
-                        raise RuntimeError("Current generation is still active")
-                    bypass_status = "COMPACT_BYPASSED"
+                if not isinstance(latest, dict):
+                    raise RuntimeError("No current history")
+                if latest.get("role") != "assistant":
+                    if latest.get("role") == "user" and str(latest.get("content", "")).strip() == "/compact":
+                        prev_asst = None
+                        for msg in reversed(history[:-1]):
+                            if isinstance(msg, dict) and msg.get("role") == "assistant":
+                                prev_asst = msg
+                                break
+                        if prev_asst is not None:
+                            latest = prev_asst
+                            history = [m for m in history if not (isinstance(m, dict) and m.get("role") == "user" and str(m.get("content", "")).strip() == "/compact")]
+                        else:
+                            activity = fetch_project_activity_signature(project_id, cookies)
+                            if isinstance(activity, dict) and activity.get("active"):
+                                raise RuntimeError("Current generation is still active")
+                            bypass_status = "COMPACT_BYPASSED"
+                    else:
+                        raise RuntimeError("Current turn is not finished")
+                if bypass_status != "COMPACT_BYPASSED":
+                    content = latest.get("content", "")
+                    status = resolve_runtime_credit_status(
+                        detect_response_status(content), content, mod, project_id, cookies, cfg, message=latest)
+                    if status in P44_STRUCTURED_STATUSES or status == "CREDIT_UNCONFIRMED":
+                        bypass_status = status
+                    else:
+                        activity = fetch_project_activity_signature(project_id, cookies)
+                        if isinstance(activity, dict) and activity.get("active"):
+                            for _wait in range(3):
+                                if _cancel_event is not None and _cancel_event.wait(0.5):
+                                    break
+                                time.sleep(0.5)
+                                activity = fetch_project_activity_signature(project_id, cookies)
+                                if not (isinstance(activity, dict) and activity.get("active")):
+                                    history = mod.fetch_project_messages(project_id, cookies, cfg) or history
+                                    if history and isinstance(history[-1], dict) and history[-1].get("role") == "assistant":
+                                        latest = history[-1]
+                                    break
+                        state = latest.get("session_state")
+                        if (not isinstance(state, dict) or state.get("_finish_reason") != "stop"
+                                or latest.get("pending") is True):
+                            if (isinstance(activity, dict) and not activity.get("active")
+                                    and latest.get("pending") is not True):
+                                pass
+                            else:
+                                raise RuntimeError("Current turn has no terminal evidence")
+                        if isinstance(activity, dict) and activity.get("active"):
+                            raise RuntimeError("Current generation is still active")
+                        bypass_status = "COMPACT_BYPASSED"
             except Exception as err:
                 log_event("warning", f"[COMPACT] BYPASS_BLOCKED: {type(err).__name__}", email=email)
             if _cancel_event is not None and _cancel_event.is_set():
@@ -3010,11 +3043,12 @@ def send_message_and_make_public(
                             raw_status = detect_response_status(last_c)
                             raw_status = resolve_runtime_credit_status(
                                 raw_status, last_c, mod, pid, cookies, cfg, message=last_asst)
-                            if raw_status == "CREDIT_UNCONFIRMED":
+                            gated_status = detect_response_status_gated(
+                                raw_status, curr_activity, inactive_streak, stable_streak, email=email)
+                            if gated_status != "RUNNING" and raw_status == "CREDIT_UNCONFIRMED":
                                 final_status = raw_status
                                 break
-                            final_status = detect_response_status_gated(
-                                raw_status, curr_activity, inactive_streak, stable_streak, email=email)
+                            final_status = gated_status
             except Exception:
                 pass
 
@@ -4384,7 +4418,7 @@ class ProjectRegistry:
                 raise IOError("Compact state was not durably preserved")
         return state
 
-    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message):
+    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message, *, allow_non_fast=False):
         """Durable cloud locator/context only; not an artifact backup or a diff."""
         locator = parse_project_locator(public_url)
         if locator.get("kind") != "pid":
@@ -4392,7 +4426,7 @@ class ProjectRegistry:
         pid = locator["pid"]
         with self.lock:
             data = self._read()
-            if not should_skip_artifacts_download(data.get("project_settings")):
+            if not allow_non_fast and not should_skip_artifacts_download(data.get("project_settings")):
                 raise ValueError("Metadata-only resume requires fast mode with GitHub disabled")
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             summary = {
@@ -7210,6 +7244,36 @@ def process_user_task_async(
                         "checkpoint_id": update["checkpoint"], "resume_url": update["url"]}
             actionable, stage_meta = should_capture_project_update(stage_url, stage_status, stage_dir, min_mtime=task_started_at)
             if not actionable:
+                if stage_status == "CREDIT_EXHAUSTED" and (stage_meta.get("pid") or extract_project_id(stage_url)):
+                    try:
+                        root_pid = (runtime_identity or {}).get("root_genspark_pid") or requested_pid
+                        update = registry.preserve_cloud_resume(
+                            stage_url, root_pid, stage_email,
+                            get_bridge_cfg_public_resume_prompt(cfg), stage_text,
+                            allow_non_fast=True)
+                        pid = update["summary"]["latest_pid"]
+                        runtime_identity = remember_registry_identity(
+                            registry, root_pid=update["summary"]["root_pid"], latest_pid=pid,
+                            project_name=project_name, chat_id=chat_id, status=stage_status,
+                        ) or runtime_identity
+                        try:
+                            send_telegram_message(
+                                chat_id,
+                                "<b>تم حفظ نقطة استئناف سحابية مؤقتة لنفاد الرصيد.</b>\n"
+                                "لم تكتمل تنزيلات الأرشيف المحلي قبل نفاد الرصيد، ولكن تم حفظ مرجع المشروع السحابي للاستئناف التلقائي بالحساب التالي.\n"
+                                f"<b>Project ID:</b> <code>{html_escape(pid)}</code>\n"
+                                f"<b>Checkpoint:</b> <code>{html_escape(update['checkpoint'])}</code>")
+                        except Exception:
+                            pass
+                        return {
+                            "allow_continuation": True,
+                            "project_update_preserved": True,
+                            "reason": "cloud resume metadata preserved; local artifacts pending next turn",
+                            "checkpoint_id": update["checkpoint"],
+                            "resume_url": update["url"],
+                        }
+                    except Exception as exc:
+                        log_event("warning", f"فشل حفظ نقطة الاستئناف السحابية لنفاد الرصيد: {exc}")
                 log_event("warning", f"تم تخطي checkpoint/report للحالة {stage_status}: {stage_meta['reason']}", extra=stage_meta)
                 return {
                     "allow_continuation": stage_status != "CREDIT_EXHAUSTED",

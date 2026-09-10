@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3508..4571
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3542..4605
 المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -882,7 +882,7 @@ class ProjectRegistry:
                 raise IOError("Compact state was not durably preserved")
         return state
 
-    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message):
+    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message, *, allow_non_fast=False):
         """Durable cloud locator/context only; not an artifact backup or a diff."""
         locator = parse_project_locator(public_url)
         if locator.get("kind") != "pid":
@@ -890,7 +890,7 @@ class ProjectRegistry:
         pid = locator["pid"]
         with self.lock:
             data = self._read()
-            if not should_skip_artifacts_download(data.get("project_settings")):
+            if not allow_non_fast and not should_skip_artifacts_download(data.get("project_settings")):
                 raise ValueError("Metadata-only resume requires fast mode with GitHub disabled")
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             summary = {

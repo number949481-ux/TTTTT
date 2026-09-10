@@ -190,6 +190,8 @@ class CompactTests(unittest.TestCase):
                     return [OLD_SUMMARY]
                 if failure == "user_last":
                     return [ordinary, {"role": "user", "content": "Still waiting"}]
+                if failure == "compact_last":
+                    return [ordinary, {"role": "user", "content": "/compact"}]
                 if failure == "unconfirmed_credit":
                     return [{"role": "assistant", "content": "__CREDIT_EXHAUSTED__"}]
                 if failure == "cancel_fetch":
@@ -488,6 +490,54 @@ class CompactTests(unittest.TestCase):
         self.assertEqual([c[0] for c in calls], ["/compact"])
         self.assertEqual(result[1], bridge.CANCELLED_STATUS)
         self.cooldown.assert_not_called()
+
+    def test_collapsed_compact_user_turn_resolves_to_prior_assistant_and_dispatches(self):
+        # When /compact was recorded as role=user without assistant reply,
+        # bypass resolves to the prior assistant message and dispatches pending work.
+        calls, result, _, reg, sends = self.worker_scenario(initial_due=True, failure="compact_last")
+        self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertFalse(reg.get_compact_state()["due"])
+        self.assertTrue(reg.get_compact_state()["bypass_ready"])
+        self.assertIn("تم التوليد بنجاح", str(sends.call_args_list))
+        self.cooldown.assert_not_called()
+
+
+    def test_har_user_role_compact_summary_is_verified_and_accepted_by_engine(self):
+        # HAR entry 70 line 36: Genspark returns summary as role="user" with is_compact_summary: True
+        user_summary = {
+            "role": "user",
+            "id": "har-user-summary-70",
+            "content": "Full compact summary content from Genspark SSE",
+            "session_state": {"is_compact_summary": True},
+        }
+        self.fetch_count = 0
+        def fetch(pid, cookies, cfg):
+            self.fetch_count += 1
+            cfg._last_fetch_status = 200
+            cfg._last_chat_session_id = "har-session-123"
+            return [OLD_SUMMARY] if self.fetch_count == 1 else [user_summary]
+        self.engine.fetch_project_messages.side_effect = fetch
+        self.cfg.compact_before_send = True
+        status, pid, context = self.compact()
+        self.assertEqual(status, "COMPACT_VERIFIED")
+        self.assertEqual(pid, PID)
+        self.assertEqual(context["chat_session_id"], "har-session-123")
+        self.assertEqual(context["messages"], [user_summary])
+
+        # Test engine monolith acceptance via fetch_project_messages
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("engine_monolith", ROOT / "01.03Genspark_claude-opus-5-code.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        verified_ctx = {
+            "project_id": PID,
+            "chat_session_id": "har-session-123",
+            "messages": [user_summary],
+        }
+        self.cfg._verified_compact_context = verified_ctx
+        resolved = mod.fetch_project_messages(PID, {}, self.cfg)
+        self.assertEqual(resolved, [user_summary])
 
 
 if __name__ == "__main__":
