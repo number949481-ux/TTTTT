@@ -1674,7 +1674,7 @@ def fetch_project_messages(project_id: str, cookies: dict, cfg: "Config" = None)
             raise RuntimeError("Invalid verified compact context")
         messages = verified["messages"]
         first = messages[0] if isinstance(messages, list) else None
-        if (not isinstance(first, dict) or first.get("role") != "assistant"
+        if (not isinstance(first, dict) or first.get("role") not in ("assistant", "user")
                 or not isinstance(first.get("session_state"), dict)
                 or first["session_state"].get("is_compact_summary") is not True):
             raise RuntimeError("Verified compact context has no typed summary")
@@ -2334,8 +2334,7 @@ def send_chat(
                                 or (isinstance(s_state, dict) and s_state.get("consume_usage_quota_exceeded") is True)
                                 or "used all your credits" in c_text
                                 or "fromurl=credit_exhausted" in c_text
-                                or "genspark.ai/pricing" in c_text
-                                or "pricing?fromurl=" in c_text
+                                # [REPAIR-T07] text pricing mentions do not abort SSE stream
                                 or "kindly visit this page to add more" in c_text
                                 or "credit balance is negative" in c_text
                                 or "insufficient for this request" in c_text

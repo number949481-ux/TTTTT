@@ -503,5 +503,42 @@ class CompactTests(unittest.TestCase):
         self.cooldown.assert_not_called()
 
 
+    def test_har_user_role_compact_summary_is_verified_and_accepted_by_engine(self):
+        # HAR entry 70 line 36: Genspark returns summary as role="user" with is_compact_summary: True
+        user_summary = {
+            "role": "user",
+            "id": "har-user-summary-70",
+            "content": "Full compact summary content from Genspark SSE",
+            "session_state": {"is_compact_summary": True},
+        }
+        self.fetch_count = 0
+        def fetch(pid, cookies, cfg):
+            self.fetch_count += 1
+            cfg._last_fetch_status = 200
+            cfg._last_chat_session_id = "har-session-123"
+            return [OLD_SUMMARY] if self.fetch_count == 1 else [user_summary]
+        self.engine.fetch_project_messages.side_effect = fetch
+        self.cfg.compact_before_send = True
+        status, pid, context = self.compact()
+        self.assertEqual(status, "COMPACT_VERIFIED")
+        self.assertEqual(pid, PID)
+        self.assertEqual(context["chat_session_id"], "har-session-123")
+        self.assertEqual(context["messages"], [user_summary])
+
+        # Test engine monolith acceptance via fetch_project_messages
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("engine_monolith", ROOT / "01.03Genspark_claude-opus-5-code.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        verified_ctx = {
+            "project_id": PID,
+            "chat_session_id": "har-session-123",
+            "messages": [user_summary],
+        }
+        self.cfg._verified_compact_context = verified_ctx
+        resolved = mod.fetch_project_messages(PID, {}, self.cfg)
+        self.assertEqual(resolved, [user_summary])
+
+
 if __name__ == "__main__":
     unittest.main()
