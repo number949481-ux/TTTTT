@@ -190,6 +190,8 @@ class CompactTests(unittest.TestCase):
                     return [OLD_SUMMARY]
                 if failure == "user_last":
                     return [ordinary, {"role": "user", "content": "Still waiting"}]
+                if failure == "compact_last":
+                    return [ordinary, {"role": "user", "content": "/compact"}]
                 if failure == "unconfirmed_credit":
                     return [{"role": "assistant", "content": "__CREDIT_EXHAUSTED__"}]
                 if failure == "cancel_fetch":
@@ -487,6 +489,17 @@ class CompactTests(unittest.TestCase):
         calls, result, _, _, _ = self.worker_scenario(initial_due=True, cancel=True)
         self.assertEqual([c[0] for c in calls], ["/compact"])
         self.assertEqual(result[1], bridge.CANCELLED_STATUS)
+        self.cooldown.assert_not_called()
+
+    def test_collapsed_compact_user_turn_resolves_to_prior_assistant_and_dispatches(self):
+        # When /compact was recorded as role=user without assistant reply,
+        # bypass resolves to the prior assistant message and dispatches pending work.
+        calls, result, _, reg, sends = self.worker_scenario(initial_due=True, failure="compact_last")
+        self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
+        self.assertEqual(result[1], "COMPLETED")
+        self.assertFalse(reg.get_compact_state()["due"])
+        self.assertTrue(reg.get_compact_state()["bypass_ready"])
+        self.assertIn("تم التوليد بنجاح", str(sends.call_args_list))
         self.cooldown.assert_not_called()
 
 
