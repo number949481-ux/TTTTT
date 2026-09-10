@@ -74,7 +74,7 @@ class TestP15EngineCompleteness(unittest.TestCase):
     def test_03_constants_values(self):
         self.assertEqual(QE.AI_MAX_DIFF_CHARS, 15000)
         self.assertEqual(QE.AI_MIN_VALID_CHARS, 20)
-        self.assertEqual(QE.AI_RACE_ACCOUNTS, 0)
+        self.assertEqual(QE.AI_RACE_ACCOUNTS, 2)  # Owner: only two accounts race.
         self.assertTrue(QE.QWEN_ACCOUNTS_FILE.endswith("accounts_qwen.json"))
         self.assertGreaterEqual(len(QE.DEFAULT_QWEN_ACCOUNTS), 3)
 

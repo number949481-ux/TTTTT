@@ -8,7 +8,7 @@ tests/test_p18_activity_stop.py
 1. extract_activity_signature: كشف Deep Thinking و Tasks Remaining (بأرقام وبدون).
 2. should_stop_on_activity_change: وقف فوري عند اختفاء المؤشر أو أي تغيّر في المهام (زيادة أو نقصان).
 3. عدم الوقف: baseline غير نشط، ثبات المهام، فشل الجلب (None).
-4. تكامل: حلقة المتابعة في send_message_and_make_public تستدعي المراقب وتكسر فوراً.
+4. تكامل: حلقة monitor_chat_completion المشتركة تستدعي المراقب وتكسر فوراً.
 """
 
 import sys
@@ -140,10 +140,11 @@ class TestPollingLoopIntegration(unittest.TestCase):
 
     def test_01_monitor_called_inside_polling_loop(self):
         m = re.search(
-            r"while final_status not in \(\"COMPLETED\", \"CREDIT_EXHAUSTED\", \"DATA_RETENTION\", \"SESSION_EXPIRED\", \"FORBIDDEN\"\):(.*?)\n        if is_timeout:",
-            BRIDGE_SRC, re.DOTALL,
+            r"while final_status not in \(\"COMPLETED\", \"CREDIT_EXHAUSTED\", \"DATA_RETENTION\", \"SESSION_EXPIRED\", \"FORBIDDEN\"\):(.*?)\n    if polled_any and final_status",
+            BRIDGE_SRC[BRIDGE_SRC.index("def monitor_chat_completion("):
+                       BRIDGE_SRC.index("\ndef run_verified_compact(")], re.DOTALL,
         )
-        self.assertIsNotNone(m, "لم يتم العثور على حلقة المتابعة")
+        self.assertIsNotNone(m, "لم يتم العثور على حلقة المتابعة المشتركة")
         loop_body = m.group(1)
         self.assertIn("fetch_project_activity_signature", loop_body)
         self.assertIn("should_stop_on_activity_change", loop_body)

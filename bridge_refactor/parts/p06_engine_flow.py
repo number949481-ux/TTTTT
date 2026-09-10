@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2162..3541
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2197..3491
 المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -315,7 +315,6 @@ def get_public_forked_pid(
 
 
 COMPACT_TRIGGER_SECONDS = 180
-COMPACT_VERIFY_READS = 6
 
 
 def current_account_duration(bridge_cfg, email="") -> float:
@@ -350,12 +349,130 @@ def compact_summary_context(messages):
     return None, []
 
 
-def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_start=None):
-    """Send a normal chat command, then require fresh summary + real session ID.
+def monitor_chat_completion(mod, cookies, cfg, bridge_cfg, pid, answer, start_time,
+                            email="", maintenance=False, readiness=False):
+    """One bounded, cancellable lifecycle for both maintenance and business turns.
 
-    No archive/snapshot/diff, no recursive failover, no success from text alone.
-    The verified context is pinned only for the immediately following send.
+    EOF and partial text are not terminal evidence. A readiness-only invocation
+    observes the current project without sending anything or trusting old latches.
     """
+    _cancel_event = getattr(bridge_cfg, "cancel_event", None)
+    session_timeout = getattr(bridge_cfg, "session_timeout", 1000)
+    evidence = getattr(cfg, "_chat_attempt", None)
+    evidence = evidence if isinstance(evidence, dict) and evidence.get("project_id") == pid else None
+    strict = bool(getattr(mod, "CHAT_ATTEMPT_EVIDENCE_SUPPORTED", False)) or maintenance or readiness
+    last_resp_text = "" if answer in (None, "__STREAM_INTERRUPTED__", "__CREDIT_EXHAUSTED__") else str(answer)
+    final_status = resolve_runtime_credit_status(detect_response_status(answer), answer, mod, pid, cookies, cfg)
+    if answer == "__STREAM_INTERRUPTED__":
+        final_status = "RUNNING"
+    unconfirmed = final_status == "CREDIT_UNCONFIRMED"
+    strict = strict or unconfirmed
+    if evidence and evidence.get("deadline_reached"):
+        return "TIMEOUT", last_resp_text
+    if evidence and evidence.get("finished") and not unconfirmed and final_status not in P44_STRUCTURED_STATUSES:
+        final_status = "COMPLETED"
+    elif strict and final_status not in P44_STRUCTURED_STATUSES:
+        final_status = "RUNNING"
+    if readiness:
+        final_status = "RUNNING"
+    prev_activity = fetch_project_activity_signature(pid, cookies)
+    inactive_streak = stable_streak = 0
+    prev_reply_fp = None
+    polled_any = False
+    p18_stopped = False
+    while final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
+        # Cancellation always precedes waiting and network reads.
+        if _cancel_event is not None and _cancel_event.is_set():
+            return CANCELLED_STATUS, last_resp_text
+        if time.time() - start_time >= session_timeout:
+            return ("CREDIT_UNCONFIRMED" if unconfirmed else "TIMEOUT"), last_resp_text
+        if polled_any:
+            remaining = max(0, session_timeout - (time.time() - start_time))
+            if _cancel_event is not None:
+                if _cancel_event.wait(timeout=min(5, remaining)):
+                    return CANCELLED_STATUS, last_resp_text
+            else:
+                time.sleep(min(5, remaining))
+        polled_any = True
+        if time.time() - start_time >= session_timeout:
+            return ("CREDIT_UNCONFIRMED" if unconfirmed else "TIMEOUT"), last_resp_text
+        curr_activity = fetch_project_activity_signature(pid, cookies)
+        if curr_activity is not None:
+            stop_now, stop_reason = should_stop_on_activity_change(prev_activity, curr_activity)
+            if stop_now:
+                log_event("warning", f"[P18] Activity changed: {stop_reason}", email=email)
+                p18_stopped = True
+                final_status = "COMPLETED"
+                break
+            prev_activity = curr_activity
+            inactive_streak = 0 if curr_activity.get("active") else inactive_streak + 1
+        try:
+            messages = mod.fetch_project_messages(pid, cookies, cfg)
+            if _cancel_event is not None and _cancel_event.is_set():
+                return CANCELLED_STATUS, last_resp_text
+            http_status = getattr(cfg, "_last_fetch_status", 200)
+            if http_status in (401, 403):
+                return ("SESSION_EXPIRED" if http_status == 401 else "FORBIDDEN"), last_resp_text
+            if http_status != 200:
+                continue
+            message = current_attempt_reply(messages, evidence)
+            if message:
+                text = message.get("content", "")
+                if text:
+                    last_resp_text = text
+                raw = resolve_runtime_credit_status(detect_response_status(text), text, mod, pid, cookies, cfg, message)
+                if raw == "CREDIT_UNCONFIRMED":
+                    unconfirmed = True
+                if raw in P44_STRUCTURED_STATUSES:
+                    return raw, last_resp_text
+                state = message.get("session_state") or {}
+                terminal = (isinstance(state, dict) and state.get("_finish_reason") == "stop"
+                            and message.get("pending") is not True and not message.get("tool_calls"))
+                if unconfirmed and evidence is None and text != answer:
+                    terminal = False  # Old history cannot validate an ambiguous sentinel.
+                fp = compute_reply_fingerprint(text)
+                stable_streak = stable_streak + 1 if fp == prev_reply_fp else 1
+                prev_reply_fp = fp
+            else:
+                raw, terminal = "RUNNING", False
+            # Fresh authoritative project status supports collapsed compact turns
+            # and restart readiness. Never reuse a previous request's SSE evidence.
+            snapshot_finished = (getattr(cfg, "_last_fetch_authoritative", False)
+                                 and getattr(cfg, "_last_fetch_project_id", None) == pid
+                                 and getattr(cfg, "_last_project_status", None) == "FINISHED"
+                                 and bool(getattr(cfg, "_last_chat_session_id", "")))
+            if evidence:
+                snapshot_finished = snapshot_finished and any(
+                    (m.get("id") == evidence.get("request_id") or m.get("id") in evidence.get("summary_ids", ()))
+                    for m in messages or [] if isinstance(m, dict))
+            active = isinstance(curr_activity, dict) and curr_activity.get("active")
+            if (terminal or snapshot_finished) and not active:
+                # Text-only suspicion in a finished real reply is ordinary content.
+                if last_resp_text != "__CREDIT_EXHAUSTED__" or snapshot_finished:
+                    final_status = "COMPLETED"
+                    unconfirmed = False
+            elif not strict:
+                final_status = detect_response_status_gated(raw, curr_activity, inactive_streak, stable_streak, email=email)
+        except Exception as err:
+            log_event("warning", f"[CHAT_MONITOR] Read failed: {type(err).__name__}", email=email)
+    if polled_any and final_status == "COMPLETED" and not readiness:
+        last_resp_text = fetch_final_reply_text(mod, pid, cookies, cfg, last_resp_text, email=email)
+        message = getattr(cfg, "_final_reply_message", None)
+        refreshed = resolve_runtime_credit_status(detect_response_status(last_resp_text), last_resp_text,
+                                                  mod, pid, cookies, cfg, message)
+        if refreshed in P44_STRUCTURED_STATUSES or refreshed == "CREDIT_UNCONFIRMED":
+            final_status = refreshed
+    if _cancel_event is not None and _cancel_event.is_set():
+        return CANCELLED_STATUS, last_resp_text
+    # P18 still stops immediately, but stopping maintenance is not permission to
+    # send another turn, nor proof that a suspected/partial business reply finished.
+    if p18_stopped and final_status == "COMPLETED" and (strict or unconfirmed):
+        return "ACTIVITY_STOPPED", last_resp_text
+    return final_status, last_resp_text
+
+
+def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_start=None):
+    """Maintenance completion is internal; caller MUST still send pending work."""
     event = getattr(bridge_cfg, "cancel_event", None)
     current_pid = project_id
     def cancelled():
@@ -370,63 +487,58 @@ def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_st
     try:
         if cancelled():
             return CANCELLED_STATUS, current_pid, None
-        if not project_id or not getattr(mod, "VERIFIED_COMPACT_CONTEXT_SUPPORTED", False):
-            raise RuntimeError("Engine/project does not support verified compact context")
-        cfg._verified_compact_context = None
-        cfg._last_chat_session_id = ""
+        cfg._verified_compact_context = cfg._resume_context = cfg._chat_attempt = None
         baseline = mod.fetch_project_messages(current_pid, cookies, cfg)
-        if getattr(cfg, "_last_fetch_status", 200) != 200:
-            raise RuntimeError("Cannot establish pre-compact history")
+        if getattr(cfg, "_last_fetch_status", 0) != 200:
+            return "READ_FAILED", current_pid, None
         old_key, _ = compact_summary_context(baseline)
         if cancelled():
             return CANCELLED_STATUS, current_pid, None
         started(current_pid)
+        start_time = time.time()
+        cfg._chat_deadline = time.monotonic() + getattr(bridge_cfg, "session_timeout", 1000)
         answer, returned_pid, _ = mod.send_chat(
             cookies, "/compact", email, project_id=current_pid, history=baseline,
             cfg=cfg, on_project_start_callback=started)
         if cancelled() or answer == USER_CANCELLED_MARKER:
             return CANCELLED_STATUS, current_pid, None
-        if returned_pid and not extract_project_id(returned_pid):
-            raise RuntimeError("Invalid project returned from compact")
         if returned_pid:
+            if not extract_project_id(returned_pid):
+                return "READ_FAILED", current_pid, None
             started(returned_pid)
-        raw_status = detect_response_status(answer)
-        if raw_status in ("DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
-            raise RuntimeError("Compact request rejected: " + raw_status)
-        for read in range(COMPACT_VERIFY_READS):
-            if cancelled():
-                return CANCELLED_STATUS, current_pid, None
-            cfg._last_chat_session_id = ""
-            messages = mod.fetch_project_messages(current_pid, cookies, cfg)
-            if cancelled():
-                return CANCELLED_STATUS, current_pid, None
-            if getattr(cfg, "_last_fetch_status", 200) != 200:
-                raise RuntimeError("Compact verification fetch failed")
-            latest = next((m for m in reversed(messages or [])
-                           if isinstance(m, dict) and m.get("role") in ("assistant", "user")), None)
-            if has_platform_credit_signal(latest):
-                return "CREDIT_EXHAUSTED", current_pid, None
-            key, history = compact_summary_context(messages)
-            session_id = str(getattr(cfg, "_last_chat_session_id", "") or "").strip()
-            if key and key != old_key and session_id:
-                context = {"project_id": current_pid, "chat_session_id": session_id,
-                           "messages": history, "summary_key": key}
-                save = getattr(bridge_cfg, "compact_verified_callback", None)
-                if callable(save):
-                    save(context)
-                bridge_cfg.compact_before_send = False
-                bridge_cfg.compact_latest_pid = current_pid
-                log_event("info", f"[COMPACT] VERIFIED pid={current_pid} summary={key[:12]}", email=email)
-                return "COMPACT_VERIFIED", current_pid, context
-            if read + 1 < COMPACT_VERIFY_READS:
-                if event is not None:
-                    event.wait(timeout=1)
-                else:
-                    time.sleep(1)
-        raise RuntimeError("No fresh compact summary and current chat session confirmed")
+        status, _ = monitor_chat_completion(mod, cookies, cfg, bridge_cfg, current_pid,
+                                            answer, start_time, email, maintenance=True)
+        if status != "COMPLETED":
+            return status, current_pid, None
+        # No second compact-success gate: this read supplies the next payload,
+        # exactly as an ordinary continuation, not a six-read summary verifier.
+        cfg._last_chat_session_id = ""
+        messages = mod.fetch_project_messages(current_pid, cookies, cfg)
+        if cancelled():
+            return CANCELLED_STATUS, current_pid, None
+        session_id = str(getattr(cfg, "_last_chat_session_id", "") or "")
+        if getattr(cfg, "_last_fetch_status", 0) != 200 or not session_id or not isinstance(messages, list):
+            return "READ_FAILED", current_pid, None
+        key, compact_history = compact_summary_context(messages)
+        context = {"project_id": current_pid, "chat_session_id": session_id,
+                   "messages": compact_history if key else messages, "summary_key": key if key != old_key else None}
+        bridge_cfg.compact_before_send = False
+        bridge_cfg.compact_latest_pid = current_pid
+        if not context["summary_key"]:
+            # A finished no-op needs no more verification, but do not repeatedly
+            # schedule optional maintenance on the same uncompactable session.
+            bridge_cfg.compact_deferred = bridge_cfg.compact_deferred_this_run = True
+            context["deferred"] = True
+        save = getattr(bridge_cfg, "compact_verified_callback", None)
+        if callable(save):
+            try:
+                save(context)
+            except Exception as err:
+                log_event("warning", f"[COMPACT] Optional state save failed: {type(err).__name__}", email=email)
+        return "COMPACT_COMPLETED", current_pid, context
     except Exception as err:
-        log_event("warning", f"[COMPACT] FAILED: {type(err).__name__}", email=email)
-        return CANCELLED_STATUS if cancelled() else "COMPACT_FAILED", current_pid, None
+        log_event("warning", f"[COMPACT] Read/transport failure: {type(err).__name__}", email=email)
+        return CANCELLED_STATUS if cancelled() else "READ_FAILED", current_pid, None
     finally:
         bridge_cfg.compact_in_progress = False
 
@@ -615,117 +727,39 @@ def send_message_and_make_public(
                         pass
 
         compact_deferred = bool(getattr(bridge_cfg, "compact_deferred", False))
-        check_compact_bypass = bool(getattr(bridge_cfg, "compact_bypass_blocked", False))
         if bool(getattr(bridge_cfg, "compact_before_send", False)) and not compact_deferred:
             compact_status, compact_pid, verified_compact_context = run_verified_compact(
                 mod, cookies, cfg, bridge_cfg, project_id, email, _pid_capture_callback)
             carry_pid = project_id = compact_pid
-            if compact_status == "COMPACT_FAILED":
-                # Maintenance failure is not business-prompt failure. Never pretend
-                # it produced a verified summary, or rotate an otherwise valid account.
-                verified_compact_context = None
+            if compact_status != "COMPACT_COMPLETED":
                 bridge_cfg.compact_before_send = False
-                bridge_cfg.compact_deferred = compact_deferred = True
+                bridge_cfg.compact_deferred = True
                 bridge_cfg.compact_deferred_this_run = True
-                check_compact_bypass = True
-            elif compact_status != "COMPACT_VERIFIED":
-                return build_genspark_viewer_url(compact_pid), compact_status, None, "", None
-            else:
-                history = verified_compact_context["messages"]
-            if _cancel_event is not None and _cancel_event.is_set():
-                return build_genspark_viewer_url(compact_pid), CANCELLED_STATUS, None, "", None
+                defer = getattr(bridge_cfg, "compact_deferred_callback", None)
+                if callable(defer):
+                    try:
+                        defer(project_id, str(getattr(cfg, "_last_chat_session_id", "") or ""), False)
+                    except Exception as err:
+                        log_event("warning", f"[COMPACT] Optional deferral save failed: {type(err).__name__}", email=email)
+                return build_genspark_viewer_url(project_id), compact_status, None, "", None
+            history = verified_compact_context["messages"]
+            # COMPLETED above was maintenance only. Keep the live project/card,
+            # fall through to the ONE ordinary send below with the original query.
             if on_project_start_callback:
                 on_project_start_callback(project_id)
-
-        if check_compact_bypass:
-            # Also guard resumed blocked sessions: no repeated /compact, stale
-            # pre-maintenance history, active generation or fabricated session ID.
-            cfg._verified_compact_context = None
-            cfg._last_chat_session_id = ""
-            cfg._last_fetch_status = 0
-            history = []
-            bypass_status = "COMPACT_BLOCKED"
-            session_id = ""
-            try:
-                if not extract_project_id(project_id):
-                    raise ValueError("No current project for compact bypass")
-                history = mod.fetch_project_messages(project_id, cookies, cfg)
-                session_id = str(getattr(cfg, "_last_chat_session_id", "") or "").strip()
-                if getattr(cfg, "_last_fetch_status", 0) != 200 or not session_id:
-                    raise RuntimeError("No readable current chat session")
-                if not isinstance(history, list) or not history:
-                    raise RuntimeError("No current history")
-                latest = history[-1]
-                if not isinstance(latest, dict):
-                    raise RuntimeError("No current history")
-                if latest.get("role") != "assistant":
-                    if latest.get("role") == "user" and str(latest.get("content", "")).strip() == "/compact":
-                        prev_asst = None
-                        for msg in reversed(history[:-1]):
-                            if isinstance(msg, dict) and msg.get("role") == "assistant":
-                                prev_asst = msg
-                                break
-                        if prev_asst is not None:
-                            latest = prev_asst
-                            history = [m for m in history if not (isinstance(m, dict) and m.get("role") == "user" and str(m.get("content", "")).strip() == "/compact")]
-                        else:
-                            activity = fetch_project_activity_signature(project_id, cookies)
-                            if isinstance(activity, dict) and activity.get("active"):
-                                raise RuntimeError("Current generation is still active")
-                            bypass_status = "COMPACT_BYPASSED"
-                    else:
-                        raise RuntimeError("Current turn is not finished")
-                if bypass_status != "COMPACT_BYPASSED":
-                    content = latest.get("content", "")
-                    status = resolve_runtime_credit_status(
-                        detect_response_status(content), content, mod, project_id, cookies, cfg, message=latest)
-                    if status in P44_STRUCTURED_STATUSES or status == "CREDIT_UNCONFIRMED":
-                        bypass_status = status
-                    else:
-                        activity = fetch_project_activity_signature(project_id, cookies)
-                        if isinstance(activity, dict) and activity.get("active"):
-                            for _wait in range(3):
-                                if _cancel_event is not None and _cancel_event.wait(0.5):
-                                    break
-                                time.sleep(0.5)
-                                activity = fetch_project_activity_signature(project_id, cookies)
-                                if not (isinstance(activity, dict) and activity.get("active")):
-                                    history = mod.fetch_project_messages(project_id, cookies, cfg) or history
-                                    if history and isinstance(history[-1], dict) and history[-1].get("role") == "assistant":
-                                        latest = history[-1]
-                                    break
-                        state = latest.get("session_state")
-                        if (not isinstance(state, dict) or state.get("_finish_reason") != "stop"
-                                or latest.get("pending") is True):
-                            if (isinstance(activity, dict) and not activity.get("active")
-                                    and latest.get("pending") is not True):
-                                pass
-                            else:
-                                raise RuntimeError("Current turn has no terminal evidence")
-                        if isinstance(activity, dict) and activity.get("active"):
-                            raise RuntimeError("Current generation is still active")
-                        bypass_status = "COMPACT_BYPASSED"
-            except Exception as err:
-                log_event("warning", f"[COMPACT] BYPASS_BLOCKED: {type(err).__name__}", email=email)
-            if _cancel_event is not None and _cancel_event.is_set():
-                return build_genspark_viewer_url(project_id), CANCELLED_STATUS, None, "", None
-            bridge_cfg.compact_current_session_id = session_id
-            bypass_ready = bypass_status in ("COMPACT_BYPASSED", "CREDIT_EXHAUSTED", "DATA_RETENTION")
-            bridge_cfg.compact_bypass_blocked = not bypass_ready
-            defer = getattr(bridge_cfg, "compact_deferred_callback", None)
-            try:
-                if callable(defer):
-                    defer(project_id, session_id, bypass_ready)
-            except Exception as err:
-                log_event("warning", f"[COMPACT] DEFER_SAVE_FAILED: {type(err).__name__}", email=email)
-                bypass_status = "COMPACT_BLOCKED"
-            if bypass_status != "COMPACT_BYPASSED":
-                return build_genspark_viewer_url(project_id), bypass_status, None, "", None
-            log_event("warning", "[COMPACT] BYPASSED: unverified compact; sending pending work prompt", email=email)
-            if _cancel_event is not None and _cancel_event.is_set():
-                return build_genspark_viewer_url(project_id), CANCELLED_STATUS, None, "", None
+        elif compact_deferred and getattr(bridge_cfg, "compact_bypass_blocked", False):
+            cfg._chat_attempt = None
+            ready_status, ready_text = monitor_chat_completion(
+                mod, cookies, cfg, bridge_cfg, project_id, None, time.time(), email, readiness=True)
+            if ready_status != "COMPLETED":
+                return build_genspark_viewer_url(project_id), ready_status, None, ready_text, None
+            # This flag requests a fresh observation only, never a persistent veto.
+            bridge_cfg.compact_bypass_blocked = False
+        if _cancel_event is not None and _cancel_event.is_set():
+            return build_genspark_viewer_url(project_id), CANCELLED_STATUS, None, "", None
 
         start_time = time.time()
+        cfg._chat_deadline = time.monotonic() + session_timeout
         answer, pid, asst_id = None, None, None
         last_chat_err = None
         chat_failed = False
@@ -739,11 +773,13 @@ def send_message_and_make_public(
                     # [P12] دائماً نمرر ملتقط الـ pid — حتى لو انقطع البث لاحقاً نعرف المشروع ونستأنف عليه
                     "on_project_start_callback": _pid_capture_callback,
                 }
-                cfg._verified_compact_context = verified_compact_context
+                cfg._chat_attempt = None
+                cfg._verified_compact_context = None
+                cfg._resume_context = verified_compact_context
                 try:
                     answer, pid, asst_id = mod.send_chat(cookies, query, email, **send_chat_kwargs)
                 finally:
-                    cfg._verified_compact_context = None  # Subsequent polling must see live replies.
+                    cfg._verified_compact_context = cfg._resume_context = None  # Polling sees live replies.
                     bridge_cfg.compact_current_session_id = str(getattr(cfg, "_last_chat_session_id", "") or "")
                 break
 
@@ -800,131 +836,10 @@ def send_message_and_make_public(
             last_resp_text = ""
         else:
             final_status = detect_response_status(answer)
-            final_status = resolve_runtime_credit_status(final_status, answer, mod, pid, cookies, cfg)
             last_resp_text = str(answer) if answer else ""
-        if final_status == "CREDIT_UNCONFIRMED":
-            return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
-        is_timeout = False
-
-        # ⛳ [P18] بصمة مؤشر النشاط (Deep Thinking / Tasks Remaining) — baseline قبل المتابعة
-        prev_activity = fetch_project_activity_signature(pid, cookies)
-        # 🚪 [P44-D6] عدّاد القراءات المتتالية بـ active=False — من قراءة P18
-        # القائمة نفسها (صفر طلبات شبكة إضافية). فشل الشبكة (None) لا يُحتسب
-        # قراءة ولا يُصفّر العداد (حياد Fail-Open).
-        inactive_streak = 0
-        # 🫆 [P44-D7] بصمة استقرار الرد (len+hash): قراءتان متطابقتان مطلوبتان
-        # لاعتماد المحتوى نهائياً — المتغيرة بين قراءتين = RUNNING (REPLY_UNSTABLE_HOLD).
-        prev_reply_fp = None
-        stable_streak = 0
-        # 🎣 [P44-D8] علم دخول المتابعة فعلياً — يُحسم قبل الحلقة من نفس شرطها
-        # (مكافئ دلالياً لـ «دخلنا الحلقة مرة على الأقل» — بلا لمس أول سطر فيها:
-        # عقد P25 يلزم فحص الإلغاء أول كل دورة). الجلبة النهائية تعمل فقط عند
-        # polling حقيقي (الرد المكتمل مباشرة من البث لا يحتاج جلبة — صفر شبكة).
-        _P44_TERMINAL_STATUSES = ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN")
-        polled_any = final_status not in _P44_TERMINAL_STATUSES
-
-        while final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
-            # 🛑 [P25] فحص الإلغاء أول كل دورة متابعة — استجابة شبه فورية للزر
-            if _cancel_event is not None and _cancel_event.is_set():
-                log_event("warning", f"🛑 [P25] إلغاء المستخدم أثناء متابعة المشروع {str(pid)[:16]} — وقف فوري", email=email)
-                return None, CANCELLED_STATUS, None, None, None
-            elapsed = time.time() - start_time
-            if elapsed > session_timeout:
-                is_timeout = True
-                break
-            # 🛑 [P25] النوم متقطع على حدث الإلغاء نفسه بدل sleep أصم —
-            # الضغط على «نعم، إلغاء فوري» يوقظنا خلال < 0.1s بدل انتظار 5s كاملة.
-            if _cancel_event is not None:
-                if _cancel_event.wait(timeout=5):
-                    log_event("warning", f"🛑 [P25] إلغاء المستخدم أثناء الانتظار — وقف فوري (pid={str(pid)[:16]})", email=email)
-                    return None, CANCELLED_STATUS, None, None, None
-            else:
-                time.sleep(5)
-
-            # ⛳ [P18] أهم فحص: لو مؤشر Deep Thinking / Tasks Remaining اتغيّر
-            # (اختفى أو دخل مهام جديدة) → وقف فوري — مفيش أي تكملة على مهام اتغيرت.
-            curr_activity = fetch_project_activity_signature(pid, cookies)
-            if curr_activity is not None:
-                stop_now, stop_reason = should_stop_on_activity_change(prev_activity, curr_activity)
-                if stop_now:
-                    log_event(
-                        "warning",
-                        f"⛳ [P18] مؤشر النشاط اتغيّر ({stop_reason}) — وقف فوري للمتابعة على المشروع {str(pid)[:16]}",
-                        email=email,
-                    )
-                    final_status = "COMPLETED"
-                    break
-                prev_activity = curr_activity
-                # 🚪 [P44-D6] تحديث عدّاد الخمول من نفس القراءة — active يصفّره
-                inactive_streak = 0 if curr_activity.get("active") else inactive_streak + 1
-
-            try:
-                if hasattr(mod, "fetch_project_messages"):
-                    latest_msgs = mod.fetch_project_messages(pid, cookies, cfg)
-                    if latest_msgs:
-                        # [P12-E] نأخذ آخر رسالة "assistant" فقط — آخر عنصر قد يكون
-                        # رسالة المستخدم نفسها بعد انقطاع البث فيُحتسب COMPLETED كاذب
-                        # ويعود نص السؤال كأنه الرد!
-                        last_asst = next(
-                            (m for m in reversed(latest_msgs)
-                             if isinstance(m, dict) and m.get("role") == "assistant"),
-                            None,
-                        )
-                        if last_asst:
-                            last_c = last_asst.get("content", "")
-                            if last_c:
-                                last_resp_text = last_c
-                            # 🫆 [P44-D7] تحديث بصمة الاستقرار من نفس القراءة —
-                            # تطابُق مع السابقة يزيد العداد، أي تغيّر يعيده لـ 1.
-                            curr_reply_fp = compute_reply_fingerprint(last_c)
-                            stable_streak = stable_streak + 1 if curr_reply_fp == prev_reply_fp else 1
-                            prev_reply_fp = curr_reply_fp
-                            # 🚪 [P44-D9] البوابة تغلّف الكشف القائم — جسمه لا يُلمس:
-                            # المهيكلة تخترق فوراً / active=True → RUNNING (D5) /
-                            # debounce قراءتين (D6) / بصمة مستقرة قراءتين (D7/D8) /
-                            # None → حياد Fail-Open /
-                            # سقف session_timeout فوق الكل (D12 — فحص elapsed أعلاه).
-                            raw_status = detect_response_status(last_c)
-                            raw_status = resolve_runtime_credit_status(
-                                raw_status, last_c, mod, pid, cookies, cfg, message=last_asst)
-                            gated_status = detect_response_status_gated(
-                                raw_status, curr_activity, inactive_streak, stable_streak, email=email)
-                            if gated_status != "RUNNING" and raw_status == "CREDIT_UNCONFIRMED":
-                                final_status = raw_status
-                                break
-                            final_status = gated_status
-            except Exception:
-                pass
-
-        if is_timeout:
-            # إصلاح: لو انتهت المهلة ومعانا نص رد فعلي، نعتبره مكتملاً بدل TIMEOUT
-            # (كشف الحالة الجديد لن يعلق على كلمات عامة، لكن يبقى هذا شبكة أمان أخيرة)
-            if last_resp_text and str(last_resp_text).strip():
-                log_event("warning", "انتهت مهلة الانتظار مع وجود نص رد — سيتم اعتباره مكتملاً", email=email)
-                final_status = "COMPLETED"
-            else:
-                if attempt < max_retries:
-                    continue
-                return None, "TIMEOUT", None, None, None
-
-        # 🎣 [P44-D8] الجلبة النهائية بعد خروج الحلقة بأي سبب — خصوصاً وقف P18
-        # الذي يكسر الحلقة قبل قراءة الرسائل (last_resp_text وسطي قديم حينها).
-        # تعمل فقط عند polling فعلي وحالة COMPLETED (المهيكلة تحتاج نصها الأصلي
-        # لمسار الـ failover). فشلها = FINAL_FETCH_FALLBACK بالنص القديم كما هو.
-        if polled_any and final_status == "COMPLETED":
-            last_resp_text = fetch_final_reply_text(mod, pid, cookies, cfg, last_resp_text, email=email)
-            # The final fetch may reveal a credit error after polling stopped.
-            # Preserve P18's immediate stop and P44's fallback, but never keep
-            # a success label over a structured failure in the authoritative reply.
-            refreshed_status = detect_response_status(last_resp_text)
-            refreshed_status = resolve_runtime_credit_status(
-                refreshed_status, last_resp_text, mod, pid, cookies, cfg,
-                message=getattr(cfg, "_final_reply_message", None))
-            if refreshed_status in P44_STRUCTURED_STATUSES or refreshed_status == "CREDIT_UNCONFIRMED":
-                log_event("warning", f"[CREDIT_RECOVERY] FINAL_STATUS_RECONCILED status={refreshed_status}", email=email)
-                final_status = refreshed_status
-
-        if final_status == "CREDIT_UNCONFIRMED":
+        final_status, last_resp_text = monitor_chat_completion(
+            mod, cookies, cfg, bridge_cfg, pid, answer, start_time, email)
+        if final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
             return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
 
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
@@ -1099,7 +1014,7 @@ def send_message_with_auto_account_failover(
             # لا progress_callback، لا إشعار للمستخدم، لا حظر auth_failed خاطئ.
             # Unconfirmed compact is handled before the business send. Only an
             # unsafe/unreadable session or failed durable deferral blocks that send.
-            if status in ("CREDIT_UNCONFIRMED", "COMPACT_BLOCKED"):
+            if status in ("CREDIT_UNCONFIRMED", "TIMEOUT", "READ_FAILED", "ACTIVITY_STOPPED"):
                 return pub_url, status, curr_acc, ext_dir, last_text
 
             if status == "LOW_BALANCE":

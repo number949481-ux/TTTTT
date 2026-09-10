@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p05_project_tree
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1666..2161
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1666..2196
 المحتوى: projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P35: MODEL_DECLINE_MARKERS/MODEL_DECLINE_MAX_RESPONSE_CHARS/MODEL_DECLINED_STATUS + is_model_decline_response (كشف رفض الموديل — ردود قصيرة ≤300 حرف فقط منعاً للـ False Positive) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + P44: compute_reply_fingerprint (بصمة len+hash للاستقرار D7) + fetch_final_reply_text (الجلبة النهائية D8 — FINAL_FETCH_OK/FALLBACK) + extract_project_id + P41: parse_project_locator (التصنيف المركزي SSOT: pid/malformed/none) + detect_context_collision (كشف تصادم السياق النشط مع رابط مشروع آخر)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -184,6 +184,33 @@ def has_platform_credit_signal(message) -> bool:
             or state.get("consume_usage_quota_exceeded") is True)
 
 
+def current_attempt_reply(messages, evidence=None):
+    """Select within the latest user turn; never cross a pending /compact."""
+    candidate = None
+    scoped_user = False
+    for message in reversed(messages or []):
+        if not isinstance(message, dict):
+            continue
+        if message.get("role") == "user":
+            if evidence:
+                state = message.get("session_state") or {}
+                fresh_summary = (isinstance(state, dict) and state.get("is_compact_summary") is True
+                                 and message.get("id") in evidence.get("summary_ids", ()))
+                if message.get("id") != evidence.get("request_id") and not fresh_summary:
+                    return None
+                scoped_user = True
+            break
+        if candidate is None and message.get("role") == "assistant":
+            candidate = message
+    if candidate and evidence:
+        if not scoped_user and candidate.get("id") not in evidence.get("message_ids", ()):
+            return None
+        if (not candidate.get("id") or candidate["id"] in evidence.get("old_message_ids", ())
+                or (candidate.get("project_id") and candidate["project_id"] != evidence.get("project_id"))):
+            return None
+    return candidate
+
+
 def resolve_runtime_credit_status(raw_status, response, mod, pid, cookies, cfg, message=None):
     """Confirm credit errors from current platform metadata, not engine text heuristics.
 
@@ -191,6 +218,17 @@ def resolve_runtime_credit_status(raw_status, response, mod, pid, cookies, cfg, 
     Unavailable/ambiguous evidence must not cool down accounts or claim success.
     Non-credit responses do not incur any additional network request.
     """
+    evidence = getattr(cfg, "_chat_attempt", None)
+    if isinstance(evidence, dict) and evidence.get("project_id") == pid:
+        if evidence.get("credit_exhausted") is True:
+            return "CREDIT_EXHAUSTED"
+        if message is None:
+            message = evidence.get("reply")
+        if (raw_status == "CREDIT_EXHAUSTED" and evidence.get("finished") is True
+                and not has_platform_credit_signal(message)
+                and (str(response) != "__CREDIT_EXHAUSTED__" or
+                     (isinstance(message, dict) and message.get("content") == response))):
+            return "COMPLETED"
     if has_platform_credit_signal(message):
         return "CREDIT_EXHAUSTED"
     if raw_status != "CREDIT_EXHAUSTED":
@@ -198,15 +236,7 @@ def resolve_runtime_credit_status(raw_status, response, mod, pid, cookies, cfg, 
     if message is None:
         try:
             messages = mod.fetch_project_messages(pid, cookies, cfg)
-            # Inspect only the current turn, never an exhausted earlier turn.
-            for item in reversed(messages or []):
-                if not isinstance(item, dict):
-                    continue
-                if item.get("role") == "user":
-                    break
-                if item.get("role") == "assistant":
-                    message = item
-                    break
+            message = current_attempt_reply(messages, evidence)
         except Exception:
             message = None
     if isinstance(message, dict):
@@ -248,6 +278,8 @@ def detect_response_status_gated(
       - D12: سقف session_timeout القائم يعمل فوق كل ذلك في الحلقة نفسها
         (فحص elapsed قبل هذا الاستدعاء) — شبكة أمان محفوظة بلا تغيير.
     """
+    if raw_status == "CREDIT_UNCONFIRMED":
+        return "RUNNING"
     if raw_status in P44_STRUCTURED_STATUSES:
         return raw_status
     if raw_status != "COMPLETED":
@@ -298,6 +330,9 @@ def fetch_final_reply_text(mod, pid, cookies, cfg, old_text, email: str = ""):
              if isinstance(m, dict) and m.get("role") == "assistant"),
             None,
         )
+        evidence = getattr(cfg, "_chat_attempt", None)
+        if isinstance(evidence, dict):
+            last_asst = current_attempt_reply(msgs, evidence)
         final_c = (last_asst or {}).get("content", "")
         if (final_c and str(final_c).strip()) or has_platform_credit_signal(last_asst):
             try:
