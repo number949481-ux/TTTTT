@@ -882,7 +882,7 @@ class ProjectRegistry:
                 raise IOError("Compact state was not durably preserved")
         return state
 
-    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message):
+    def preserve_cloud_resume(self, public_url, root_pid, email, resume_prompt, message, *, allow_non_fast=False):
         """Durable cloud locator/context only; not an artifact backup or a diff."""
         locator = parse_project_locator(public_url)
         if locator.get("kind") != "pid":
@@ -890,7 +890,7 @@ class ProjectRegistry:
         pid = locator["pid"]
         with self.lock:
             data = self._read()
-            if not should_skip_artifacts_download(data.get("project_settings")):
+            if not allow_non_fast and not should_skip_artifacts_download(data.get("project_settings")):
                 raise ValueError("Metadata-only resume requires fast mode with GitHub disabled")
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             summary = {

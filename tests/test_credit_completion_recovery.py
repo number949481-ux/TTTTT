@@ -422,6 +422,35 @@ class CreditRecoveryTests(unittest.TestCase):
         self.cooldown.assert_not_called()
         self.assertIn("تعذر تأكيد", str(sends.call_args_list))
 
+    def test_credit_exhausted_preserves_cloud_resume_in_normal_mode_without_artifacts(self):
+        reg = self.isolated_registry()
+        reg.update_project_settings({"fast_mode": False})
+        # Verifying preserve_cloud_resume with allow_non_fast=True succeeds in normal mode
+        update = reg.preserve_cloud_resume(
+            URL, PID, "owner@test.invalid", "Continue", CREDIT, allow_non_fast=True
+        )
+        self.assertEqual(update["summary"]["latest_pid"], PID)
+        self.assertEqual(update["status"], "CREDIT_EXHAUSTED")
+        data = reg._read()
+        self.assertEqual(len(data["updates"]), 1)
+        self.assertEqual(data["updates"][0]["artifact_state"], "cloud_resume_only")
+
+        # Verifying evaluate_credit_checkpoint_gate returns allow_continuation=True
+        b_cfg = bridge.BridgeConfig()
+        gate = bridge.evaluate_credit_checkpoint_gate(
+            b_cfg,
+            callback_result={
+                "allow_continuation": True,
+                "project_update_preserved": True,
+                "reason": "cloud resume metadata preserved; local artifacts pending next turn",
+                "checkpoint_id": update["checkpoint"],
+                "resume_url": update["url"],
+            },
+            progress_callback_present=True,
+        )
+        self.assertTrue(gate["allow_continuation"])
+        self.assertEqual(b_cfg.last_credit_checkpoint_state, "PRESERVED")
+
 
 if __name__ == "__main__":
     unittest.main()
