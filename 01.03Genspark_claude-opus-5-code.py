@@ -1654,6 +1654,7 @@ def filter_messages_after_compact(messages: list) -> list:
 
 
 VERIFIED_COMPACT_CONTEXT_SUPPORTED = True
+CHAT_ATTEMPT_EVIDENCE_SUPPORTED = True
 
 
 def fetch_project_messages(project_id: str, cookies: dict, cfg: "Config" = None) -> list:
@@ -1683,6 +1684,10 @@ def fetch_project_messages(project_id: str, cookies: dict, cfg: "Config" = None)
         return copy.deepcopy(messages)
     if cfg is not None:
         setattr(cfg, "_last_fetch_status", 0)   # B1: تصفير قبل كل جلب
+        cfg._last_chat_session_id = ""
+        cfg._last_project_status = None
+        cfg._last_fetch_project_id = project_id
+        cfg._last_fetch_authoritative = False
     try:
         from curl_cffi import requests as cffi
         import re, json
@@ -1707,6 +1712,9 @@ def fetch_project_messages(project_id: str, cookies: dict, cfg: "Config" = None)
                 ss = p_data.get("session_state", {}) if isinstance(p_data, dict) else {}
                 msgs = ss.get("messages", []) if isinstance(ss, dict) else []
                 s_chat_id = ss.get("current_chat_session_id")
+                if cfg is not None and isinstance(p_data, dict) and isinstance(ss, dict):
+                    cfg._last_project_status = p_data.get("status")
+                    cfg._last_fetch_authoritative = isinstance(msgs, list)
                 if cfg and s_chat_id:
                     setattr(cfg, "_last_chat_session_id", s_chat_id)
 
@@ -1909,7 +1917,24 @@ def send_chat(
     لو ticket_file موجود → الرد بيتكتب لحظي في الملف + Terminal
     """
     cfg = cfg or Config()
+    # Per-request evidence, never shared between accounts, projects or sends.
+    cfg._chat_attempt = None
+    resume_context = getattr(cfg, "_resume_context", None)
+    cfg._resume_context = None  # one-shot even when payload building raises
     from curl_cffi import requests as cffi
+
+    def request_history(target):
+        if resume_context is None:
+            return fetch_project_messages(target, cookies, cfg)
+        import copy
+        if (not isinstance(resume_context, dict)
+                or resume_context.get("project_id") != target
+                or not resume_context.get("chat_session_id")
+                or not isinstance(resume_context.get("messages"), list)):
+            raise RuntimeError("Invalid current-session handoff")
+        cfg._last_chat_session_id = resume_context["chat_session_id"]
+        cfg._last_fetch_status = 200
+        return copy.deepcopy(resume_context["messages"])
 
     hr()
     p(Fore.CYAN, f"  📧 {email or 'unknown'}")
@@ -2032,7 +2057,7 @@ def send_chat(
         
         if _is_continue:
             target_fetch_id = project_id or fork_project_id
-            old_msgs = fetch_project_messages(target_fetch_id, cookies, cfg)
+            old_msgs = request_history(target_fetch_id)
             # ── B1: مصدر الـ Fork محذوف (404/410 على /api/project) → بلّغ المستدعي بدل project فاضي بصمت ──
             if (fork_project_id and not project_id and not old_msgs
                     and getattr(cfg, "_last_fetch_status", 0) in (404, 410)):
@@ -2111,7 +2136,7 @@ def send_chat(
                 payload["force"] = True
             
             target_fetch_id = project_id or fork_project_id
-            old_msgs = fetch_project_messages(target_fetch_id, cookies, cfg)
+            old_msgs = request_history(target_fetch_id)
             # ── B1: مصدر الـ Fork محذوف (404/410 على /api/project) → بلّغ المستدعي بدل project فاضي بصمت ──
             if (fork_project_id and not project_id and not old_msgs
                     and getattr(cfg, "_last_fetch_status", 0) in (404, 410)):
@@ -2160,6 +2185,19 @@ def send_chat(
             payload["session_state"] = {"steps": [], "messages": all_messages}
 
     # ── [P12] حالة البث مهيأة قبل try — حتى لا يضيع project_id الملتقط عند أي انقطاع ──
+    old_message_ids = {m.get("id") for m in payload["messages"][:-1] if m.get("id")}
+    evidence = {"request_id": user_msg_id, "project_id": project_id,
+                "chat_session_id": payload.get("chat_session_id"),
+                "old_message_ids": old_message_ids, "finished": False,
+                "credit_exhausted": False, "reply": None, "message_ids": set(),
+                "summary_ids": set(), "deadline_reached": False}
+    cfg._chat_attempt = evidence
+
+    def current_event(data):
+        return (not data.get("project_id") or data["project_id"] == evidence["project_id"]) and (
+            not data.get("chat_session_id") or data["chat_session_id"] == evidence["chat_session_id"]) and (
+            not data.get("client_message_id") or data["client_message_id"] == user_msg_id)
+
     full_text = ""
     messages_by_id = {}
     message_order = []
@@ -2182,6 +2220,14 @@ def send_chat(
         _cfg_timeout = int(getattr(cfg, "timeout", 600) or 600)
         _connect_timeout = min(120, _cfg_timeout)
         _read_timeout = max(480, _cfg_timeout)
+        deadline = getattr(cfg, "_chat_deadline", None)
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                evidence["deadline_reached"] = True
+                return "__STREAM_INTERRUPTED__", proj_id_new, None
+            _connect_timeout = min(_connect_timeout, remaining)
+            _read_timeout = min(_read_timeout, remaining)
         r = sess.post(f"{GENSPARK}/api/agent/ask_proxy", json=payload, timeout=(_connect_timeout, _read_timeout), stream=True)
         if cfg.show_debug:
             p(Fore.CYAN, f"  📡 force={payload.get('force', False)} | continue={_is_continue}")
@@ -2233,6 +2279,10 @@ def send_chat(
                     user_cancelled = True
                     p(Fore.YELLOW, "  🛑 [P25] إلغاء من المستخدم — قطع بث ask_proxy فوراً")
                     break
+                if deadline is not None and time.monotonic() >= deadline:
+                    evidence["deadline_reached"] = True
+                    stream_interrupted = True
+                    break
                 if isinstance(_raw_line, (bytes, bytearray)):
                     line = _raw_line.decode("utf-8", errors="replace")
                 else:
@@ -2245,10 +2295,14 @@ def send_chat(
                 try:
                     obj = json.loads(raw)
                     t = obj.get("type", "")
+                    if not current_event(obj):
+                        continue
 
                     # assistant message start & tracking
                     if t == "message_start" and obj.get("id"):
                         active_msg_id = obj["id"]
+                        if active_msg_id not in old_message_ids:
+                            evidence["message_ids"].add(active_msg_id)
                         asst_msg_id = obj["id"]
                         if active_msg_id not in messages_by_id:
                             messages_by_id[active_msg_id] = {
@@ -2302,6 +2356,8 @@ def send_chat(
                         msg_obj = obj.get("message", {})
                         if isinstance(msg_obj, dict):
                             mid = msg_obj.get("id") or active_msg_id
+                            if mid in old_message_ids or not current_event(msg_obj):
+                                continue
                             if mid and mid not in messages_by_id:
                                 messages_by_id[mid] = {
                                     "role": None,
@@ -2311,7 +2367,13 @@ def send_chat(
                                     "is_credit_out": False,
                                 }
                                 message_order.append(mid)
+                            if mid:
+                                evidence["message_ids"].add(mid)
                             role = msg_obj.get("role")
+                            summary_state = msg_obj.get("session_state")
+                            if (mid and isinstance(summary_state, dict)
+                                    and summary_state.get("is_compact_summary") is True):
+                                evidence["summary_ids"].add(mid)
                             c_raw = msg_obj.get("content") or ""
                             if mid:
                                 if role:
@@ -2319,30 +2381,27 @@ def send_chat(
                                 if c_raw:
                                     messages_by_id[mid]["content"] = c_raw
                                 messages_by_id[mid]["tool_calls"] = msg_obj.get("tool_calls")
-                                s_state = msg_obj.get("session_state", {}) or {}
-                                messages_by_id[mid]["finish_reason"] = s_state.get("_finish_reason")
+                                s_state = msg_obj.get("session_state")
+                                messages_by_id[mid]["finish_reason"] = s_state.get("_finish_reason") if isinstance(s_state, dict) else None
 
                             action = msg_obj.get("action", {}) or {}
                             act_params = (action.get("action_params", {}) or {}) if isinstance(action, dict) else {}
                             s_state = msg_obj.get("session_state", {}) or {}
-                            c_text = str(c_raw or (messages_by_id[mid]["content"] if mid else "")).lower()
-
-                            # 🎯 الطبقة 2: كشف نفاد الرصيد الهيكلي الصارم من الـ HAR:
-                            is_credit_out = (
+                            is_credit_out = role == "assistant" and (
                                 (isinstance(action, dict) and action.get("type") == "ACTION_CREDIT_EXHAUSTED")
                                 or (isinstance(act_params, dict) and act_params.get("block_reason") == "balance_drained")
                                 or (isinstance(s_state, dict) and s_state.get("consume_usage_quota_exceeded") is True)
-                                or "used all your credits" in c_text
-                                or "fromurl=credit_exhausted" in c_text
-                                # [REPAIR-T07] text pricing mentions do not abort SSE stream
-                                or "kindly visit this page to add more" in c_text
-                                or "credit balance is negative" in c_text
-                                or "insufficient for this request" in c_text
                             )
+                            if role == "assistant":
+                                evidence["reply"] = dict(msg_obj)
+                                if (isinstance(s_state, dict) and s_state.get("_finish_reason") == "stop"
+                                        and msg_obj.get("pending") is not True and not msg_obj.get("tool_calls")):
+                                    evidence["finished"] = True
                             if is_credit_out:
                                 if mid:
                                     messages_by_id[mid]["is_credit_out"] = True
                                 is_credit_exhausted = True
+                                evidence["credit_exhausted"] = True
                                 full_text = "__CREDIT_EXHAUSTED__"
                                 break
                             elif c_raw and role == "assistant":
@@ -2351,6 +2410,7 @@ def send_chat(
                     # project_id
                     if t == "project_start" and obj.get("id"):
                         proj_id_new = obj["id"]
+                        evidence["project_id"] = proj_id_new
                         if on_project_start_callback and callable(on_project_start_callback):
                             try:
                                 on_project_start_callback(proj_id_new)
@@ -2359,12 +2419,17 @@ def send_chat(
                                     p(Fore.YELLOW, f"  ⚠️ تنبيه الـ Callback غير المؤثر: {cb_err}")
                     if t == "project_field" and obj.get("field_name") == "id":
                         proj_id_new = obj.get("field_value", proj_id_new) or proj_id_new
+                        evidence["project_id"] = proj_id_new
                         if on_project_start_callback and callable(on_project_start_callback) and proj_id_new:
                             try:
                                 on_project_start_callback(proj_id_new)
                             except Exception:
                                 pass
 
+
+                    if (t == "project_field" and obj.get("field_name") == "status"
+                            and obj.get("field_value") == "FINISHED" and evidence["project_id"]):
+                        evidence["finished"] = True
 
                     # اسم المشروع
                     if t == "project_field" and obj.get("field_name") == "name":
@@ -2427,7 +2492,7 @@ def send_chat(
                         break
 
         # كريدت منتهية
-        if full_text == "__CREDIT_EXHAUSTED__" or is_credit_exhausted or "insufficient for this request" in full_text.lower():
+        if is_credit_exhausted:
             p(Fore.RED, "  ❌ كريدت منتهية (من الـ API أو نصاً)!")
             return "__CREDIT_EXHAUSTED__", proj_id_new, None
 
