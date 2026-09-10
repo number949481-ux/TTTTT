@@ -197,13 +197,13 @@ class TestWorkerIntegrationContracts(unittest.TestCase):
 
     def test_08_polling_loop_checks_cancel_first(self):
         m = re.search(
-            r"while final_status not in \([^)]*\):\s*\n\s*# 🛑 \[P25\][^\n]*\n\s*if _cancel_event is not None and _cancel_event\.is_set\(\):",
+            r"while final_status not in \([^)]*\):\s*\n\s*# [^\n]*\n\s*if _cancel_event is not None and _cancel_event\.is_set\(\):",
             BRIDGE_SRC,
         )
         self.assertIsNotNone(m, "فحص الإلغاء يجب أن يكون أول سطر في كل دورة متابعة")
 
     def test_09_polling_sleep_is_interruptible_wait(self):
-        m = re.search(r"_cancel_event\.wait\(timeout=5\)", BRIDGE_SRC)
+        m = re.search(r"_cancel_event\.wait\(timeout=min\(5, remaining\)\)", BRIDGE_SRC)
         self.assertIsNotNone(m, "النوم يجب أن يكون Event.wait متقطعاً — لا sleep أصم أثناء وجود حدث إلغاء")
 
     def test_10_callback_handler_three_actions_isolated(self):
@@ -274,7 +274,7 @@ class TestEngineStreamAbortContract(unittest.TestCase):
 
     def test_04_marker_priority_before_credit_classification(self):
         pos_cancel = ENGINE_SRC.find('if user_cancelled:')
-        pos_credit = ENGINE_SRC.find('if full_text == "__CREDIT_EXHAUSTED__"')
+        pos_credit = ENGINE_SRC.find('if is_credit_exhausted:')
         self.assertGreater(pos_cancel, 0)
         self.assertGreater(pos_credit, pos_cancel, "فحص الإلغاء له الأولوية القصوى قبل تصنيف الرصيد")
 

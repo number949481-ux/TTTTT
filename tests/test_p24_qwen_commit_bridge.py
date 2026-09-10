@@ -11,7 +11,7 @@ tests/test_p24_qwen_commit_bridge.py
    قبل حلقة الـ PUT (mock — بدون أي شبكة).
 3. Fallback حرفي: فشل كوين (None أو Exception) ➔ prefix فارغ ➔ نفس رسالة
    الكوميت القديمة حرفياً f"[{key}] sync {job_id}: {rel}" — الرفع لا ينكسر أبداً.
-4. AI_RACE_ACCOUNTS = 0 مثبّت (قرار المالك: كل الحسابات تتسابق).
+4. AI_RACE_ACCOUNTS = 2 مثبّت (قرار المالك: حسابان فقط يتسابقان).
 """
 
 import os
@@ -172,13 +172,13 @@ class TestUploaderMessageContract(unittest.TestCase):
 
 
 # ═══════════════════════════════════════════════════════════════
-# العقد الثالث: تثبيت قرار المالك AI_RACE_ACCOUNTS = 0
+# العقد الثالث: تثبيت قرار المالك AI_RACE_ACCOUNTS = 2
 # ═══════════════════════════════════════════════════════════════
 
 class TestOwnerDecisions(unittest.TestCase):
-    def test_01_all_accounts_race(self):
-        """قرار (A): 0 = كل الحسابات النشطة تتسابق"""
-        self.assertEqual(qwen_engine.AI_RACE_ACCOUNTS, 0)
+    def test_01_two_accounts_race(self):
+        """قرار المالك الحالي: 2 = حسابان فقط يتسابقان، وليس كل الحسابات."""
+        self.assertEqual(qwen_engine.AI_RACE_ACCOUNTS, 2)
 
     def test_02_engine_timeout_unchanged(self):
         """مهلة المحرك الأصلية 30ث/مرحلة كما هي — بدون اختراع أرقام"""
