@@ -338,7 +338,7 @@ def compact_summary_context(messages):
         return None, []
     for index in range(len(messages) - 1, -1, -1):
         message = messages[index]
-        if not isinstance(message, dict) or message.get("role") != "assistant":
+        if not isinstance(message, dict) or message.get("role") not in ("assistant", "user"):
             continue
         state = message.get("session_state")
         if (isinstance(state, dict) and state.get("is_compact_summary") is True
