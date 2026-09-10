@@ -1,4 +1,78 @@
 {
+  "current_execution": {
+    "base": "eb525bf",
+    "status": "approved_plan_restored_ready_for_implementation",
+    "branch": "genspark_ai_developer",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/5",
+    "plan": "genspark/compact_credit_repair_plan.md",
+    "approval": "Owner GO for bridge and engine including maintenance-only COMPLETED followed by original resume prompt on same published project with live card",
+    "completed": [
+      "restore_remote_plan_a8fb42c",
+      "integrate_main_eb525bf",
+      "reconstruct_lost_local_plan_checkpoint",
+      "validate_new_credential_push_permission"
+    ],
+    "next": "Refresh baseline; add engine protocol regressions, then implement engine and shared bridge lifecycle in pushed chunks",
+    "reset_notice": "Previous unpushed local commits 55a5dad and c3c82b3 lost after reset; only their approved plan content reconstructed, not runtime changes",
+    "current_validation": "Documentation UTF-8/JSON and diff checks only; no new application tests or live calls",
+    "previous_review_baseline": {
+      "pytest_passed": 1046,
+      "subtests": 26,
+      "failed": 2,
+      "focused_passed": 83,
+      "parity_passed": 11,
+      "failure_reason": "Pre-existing Qwen configuration 2 versus expected 0, outside scope"
+    },
+    "invariants": [
+      "compact completion never consumes pending business prompt",
+      "publish same current project and preserve live card",
+      "no persistent maintenance veto",
+      "zero artifacts in effective fast mode",
+      "P18, cancellation, schema v1 and <=180 unchanged",
+      "preserve allow_non_fast cloud resume"
+    ],
+    "secrets": "Never store credentials in repository files or remote URL",
+    "history_notice": "current_review and active_* below are historical, superseded by current_execution",
+    "live": "not_run_separate_approval_required"
+  },
+  "current_review": {
+    "task": "Read-only compact HAR and CREDIT_UNCONFIRMED investigation",
+    "source_revision": "a1ed062",
+    "latest_request": "Owner requests full plan and tasks after supplying both HAR captures; implementation is not approved.",
+    "second_har": "HAR/www.genspar....f....compact.....ai.har",
+    "second_har_findings": ["4356 entries; compact POST /api/agent/ask_proxy at entries[4092], HTTP 200, about 124.549 seconds, 39 SSE JSON records.", "SSE[34] is fresh role=user typed compact summary, 15706 characters. SSE[37] is empty assistant without finish reason or pending. SSE[38] is project status FINISHED.", "Both captures have the same request key set, type and model, each with 116 history messages. chat_session_id equals across captures while project_id differs. Session ID alone cannot scope a terminal proof.", "Both are /compact via ask_proxy. UI button-versus-typing attribution cannot be established from filenames or these network requests alone. No decoded data-wrapped /api/project snapshot was found in the inspected captures; post-compact history/session readback remains a test/live-validation requirement."],
+    "status": "full_plan_complete_awaiting_explicit_GO",
+    "implementation_plan": "genspark/compact_credit_repair_plan.md",
+    "plan_task_status": {"T00": "completed_read_only_evidence_review", "T01": "pending_GO_baseline", "T02": "pending_GO_protocol_regressions", "T03": "pending_GO_request_scoped_evidence", "T04": "pending_GO_summary_verification_and_pin", "T05": "pending_GO_current_readiness", "T06": "pending_GO_deferred_restart_policy", "T07": "pending_GO_engine_text_credit_detection", "T08": "pending_GO_nonterminal_credit_monitoring", "T09": "pending_GO_worker_integration", "T10": "pending_GO_full_quality_gates", "T11": "pending_separate_live_approval", "T12": "pending_delivery_review"},
+    "plan_validation": "Both HARs parsed in memory with sanitized structural output. Source/test diff from 89c2a16 to a1ed062 is empty. Plan contains T00-T12, acceptance matrix, dependencies, rollback, reset checkpoints and scope limits. UTF-8, JSON, git diff --check and credential-prefix checks passed. No implementation tests/build/live calls executed.",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/5",
+    "findings": [
+      "HAR has 286 entries. entries[70] is POST /api/agent/ask_proxy with user_s_input=/compact, HTTP 200, about 135.842 seconds and 41 SSE JSON records. SSE[36]: role=user, content length 18011, session_state.is_compact_summary=true. SSE[39]: empty assistant, no finish reason or pending field. SSE[40]: project_field status FINISHED. No finish_reason occurs in this SSE response.",
+      "Bridge 2497 rejects the observed user-role summary; verification exhausts reads at 2582-2585. Engine normal compact filter 1625-1653 supports the marker regardless of role, but verified context pin 1677-1680 separately rejects user summaries. Fixing only the bridge selector is incomplete.",
+      "Bridge 2824-2826 requires assistant _finish_reason=stop before checking activity. The captured trailing assistant fails that condition despite SSE project FINISHED. SSE evidence does not establish the exact later API history seen by the production bot.",
+      "Bridge 2835-2846 persists blocked bypass readiness and returns before business send at 2867. Worker 7155-7159 restores the block; 7167-7169 saves deferral. This can repeatedly reject ordinary prompts without reissuing compact. This is a logical readiness latch, not proof of a mutex deadlock or a server-side project lock.",
+      "Engine 2331-2348 combines typed evidence with text heuristics (including pricing URLs) on message_result, without an assistant-role guard, then sets the credit sentinel and breaks SSE reading. 2388 closes the stream; 2431-2433 returns sentinel with no assistant ID. This does not prove server generation is cancelled. Detection is on message_result, not every message_field delta.",
+      "Bridge 1847-1885 cannot confirm sentinel without typed credit evidence and returns CREDIT_UNCONFIRMED. 2928-2929 returns before activity baseline at 2933. During polling, 3013-3015 breaks before the activity gate at 3016; 3049-3050 returns. Failover 3224 also treats it as terminal. Thus the anti-false-rotation guard prevents rotation but does not preserve monitoring of an active generation.",
+      "Source mechanism for premature monitoring termination is confirmed. The separate production incident has no supplied stream/log here, so its exact triggering text, turn, revision and timing remain unproven."
+    ],
+    "proposals_not_implemented": [
+      "Align bridge summary selection and engine pin with trusted typed user-role compact summaries, retaining fresh-summary fingerprint, nonempty content, project/current-session verification and immediate next-payload pin. Do not infer success from text alone.",
+      "Track terminal evidence scoped to the actual operation/session, including project FINISHED; reconcile it with freshly read current history and no active generation. Do not substitute an old FINISHED event or compact_chat_session_id for the current chat session.",
+      "Separate deferred optional maintenance from business-send readiness. Re-evaluate current project state on resume so legacy bypass_ready=false cannot permanently veto work. Wait on an active turn; fail explicitly on unreadable/unauthorized state; never blindly clear safety checks or duplicate the pending prompt.",
+      "Keep text-only credit suspicion nonterminal while generation is active: do not break SSE for pricing text; preserve partial output and monitor the same project if disconnected. Confirm real typed exhaustion before rotation. Bound monitoring and keep cancellation and the existing P18 stop contract; do not relabel uncertainty as COMPLETED.",
+      "Add sanitized protocol-shaped regressions for user summary plus empty assistant plus project FINISHED, persisted blocked resume, session identity, pricing text in nonterminal assistant/tool/user messages, later real typed exhaustion, cancellation and original prompt sent once. Preserve schema v1, <=180 and zero-artifact effective fast mode; rebuild faithful split and run full gate only after approved code changes."
+    ],
+    "evidence_gaps": ["Both supplied HARs reviewed at a1ed062. UI initiation attribution and exact post-compact API readback remain unproven; do not request the second HAR again.", "No live Genspark/Telegram calls, production incident replay, or new full-suite run. Prior 1045-test green result used incompatible mocked compact shapes and cannot establish live readiness.", "Owner qwen_engine.py change a193238 is outside this compact/Claude trace and was not audited."],
+    "scope": "Only genspark recovery notes may change. No production fixes, regeneration, live requests or merges authorized.",
+    "gist": "https://gist.github.com/pijsal1-tech/bef6e51f0ab087a279f31509129f5d97",
+    "har": "HAR/www.genspar....2...compact.....ai.har",
+    "plan": ["COMPLETED: restore pushed review and compare both HARs", "COMPLETED: define full Arabic plan with tasks, acceptance gates and recovery procedure", "WAITING: owner GO for bridge plus engine implementation; no second HAR request is needed"],
+    "restored_evidence": ["Both supplied HARs reviewed; compact entries are 70 and 4092", "Both produce fresh user-role typed summaries and empty assistant results, followed by project FINISHED", "Bridge summary verifier and engine verified pin assume assistant role", "Historical single-capture diagnosis is retained above; second_har_findings supersedes the missing-capture limitation"],
+    "next_action": "Await explicit owner GO on genspark/compact_credit_repair_plan.md. Then inspect current remote/main/PR heads and begin T01 only; do not repeat HAR comparison or merged PR #3/#4 work. Source edits need both bridge and engine scope. Live validation, merging and deployment are separate approvals. If reset interrupts final publication, inspect PR #5 to confirm plan and checkpoint are present before retrying.",
+    "validation": "Read-only AST extraction of actual compact_summary_context rejects actual HAR result messages; actual trailing assistant fails the stop predicate. Isolated resolve_runtime_credit_status returns CREDIT_UNCONFIRMED for synthetic unfinished pricing text (not incident replay). No bot imports. JSON parse and single-file scope checks passed. Historical 1045-test offline result is not evidence of live protocol correctness; no full tests rerun.",
+    "history_notice": "All active_* and older fields below are historical PR #4/#3 records; both PRs are merged. Do not repeat their implementation.",
+    "security": "Do not persist credentials or raw HAR messages. Never use captured credentials for live requests."
+  },
   "active_task": "GO: surgical safe compact bypass and durable deferred policy",
   "active_base": "9418697 (PR #3 merged)",
   "active_pr": "https://github.com/number949481-ux/TTTTT/pull/4",
