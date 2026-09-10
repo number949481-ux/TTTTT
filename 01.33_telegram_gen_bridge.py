@@ -2812,22 +2812,55 @@ def send_message_and_make_public(
                 if not isinstance(history, list) or not history:
                     raise RuntimeError("No current history")
                 latest = history[-1]
-                if not isinstance(latest, dict) or latest.get("role") != "assistant":
-                    raise RuntimeError("Current turn is not finished")
-                content = latest.get("content", "")
-                status = resolve_runtime_credit_status(
-                    detect_response_status(content), content, mod, project_id, cookies, cfg, message=latest)
-                if status in P44_STRUCTURED_STATUSES or status == "CREDIT_UNCONFIRMED":
-                    bypass_status = status
-                else:
-                    state = latest.get("session_state")
-                    if (not isinstance(state, dict) or state.get("_finish_reason") != "stop"
-                            or latest.get("pending") is True):
-                        raise RuntimeError("Current turn has no terminal evidence")
-                    activity = fetch_project_activity_signature(project_id, cookies)
-                    if isinstance(activity, dict) and activity.get("active"):
-                        raise RuntimeError("Current generation is still active")
-                    bypass_status = "COMPACT_BYPASSED"
+                if not isinstance(latest, dict):
+                    raise RuntimeError("No current history")
+                if latest.get("role") != "assistant":
+                    if latest.get("role") == "user" and str(latest.get("content", "")).strip() == "/compact":
+                        prev_asst = None
+                        for msg in reversed(history[:-1]):
+                            if isinstance(msg, dict) and msg.get("role") == "assistant":
+                                prev_asst = msg
+                                break
+                        if prev_asst is not None:
+                            latest = prev_asst
+                            history = [m for m in history if not (isinstance(m, dict) and m.get("role") == "user" and str(m.get("content", "")).strip() == "/compact")]
+                        else:
+                            activity = fetch_project_activity_signature(project_id, cookies)
+                            if isinstance(activity, dict) and activity.get("active"):
+                                raise RuntimeError("Current generation is still active")
+                            bypass_status = "COMPACT_BYPASSED"
+                    else:
+                        raise RuntimeError("Current turn is not finished")
+                if bypass_status != "COMPACT_BYPASSED":
+                    content = latest.get("content", "")
+                    status = resolve_runtime_credit_status(
+                        detect_response_status(content), content, mod, project_id, cookies, cfg, message=latest)
+                    if status in P44_STRUCTURED_STATUSES or status == "CREDIT_UNCONFIRMED":
+                        bypass_status = status
+                    else:
+                        activity = fetch_project_activity_signature(project_id, cookies)
+                        if isinstance(activity, dict) and activity.get("active"):
+                            for _wait in range(3):
+                                if _cancel_event is not None and _cancel_event.wait(0.5):
+                                    break
+                                time.sleep(0.5)
+                                activity = fetch_project_activity_signature(project_id, cookies)
+                                if not (isinstance(activity, dict) and activity.get("active")):
+                                    history = mod.fetch_project_messages(project_id, cookies, cfg) or history
+                                    if history and isinstance(history[-1], dict) and history[-1].get("role") == "assistant":
+                                        latest = history[-1]
+                                    break
+                        state = latest.get("session_state")
+                        if (not isinstance(state, dict) or state.get("_finish_reason") != "stop"
+                                or latest.get("pending") is True):
+                            if (isinstance(activity, dict) and not activity.get("active")
+                                    and latest.get("pending") is not True):
+                                pass
+                            else:
+                                raise RuntimeError("Current turn has no terminal evidence")
+                        if isinstance(activity, dict) and activity.get("active"):
+                            raise RuntimeError("Current generation is still active")
+                        bypass_status = "COMPACT_BYPASSED"
             except Exception as err:
                 log_event("warning", f"[COMPACT] BYPASS_BLOCKED: {type(err).__name__}", email=email)
             if _cancel_event is not None and _cancel_event.is_set():
@@ -3010,11 +3043,12 @@ def send_message_and_make_public(
                             raw_status = detect_response_status(last_c)
                             raw_status = resolve_runtime_credit_status(
                                 raw_status, last_c, mod, pid, cookies, cfg, message=last_asst)
-                            if raw_status == "CREDIT_UNCONFIRMED":
+                            gated_status = detect_response_status_gated(
+                                raw_status, curr_activity, inactive_streak, stable_streak, email=email)
+                            if gated_status != "RUNNING" and raw_status == "CREDIT_UNCONFIRMED":
                                 final_status = raw_status
                                 break
-                            final_status = detect_response_status_gated(
-                                raw_status, curr_activity, inactive_streak, stable_streak, email=email)
+                            final_status = gated_status
             except Exception:
                 pass
 
