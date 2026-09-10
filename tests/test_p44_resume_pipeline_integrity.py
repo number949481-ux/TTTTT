@@ -361,12 +361,13 @@ class TestP44ResumePipelineIntegrity(_TempRegistryMixin, unittest.TestCase):
         self.assertEqual(_bridge.should_stop_on_activity_change(None, {"active": True}),
                          (False, ""))
         # D12: سقف session_timeout القائم ما زال قبل البوابة في الحلقة (شبكة أمان)
-        loop_seg = BRIDGE_SRC[BRIDGE_SRC.find("polled_any = final_status"):
-                              BRIDGE_SRC.find("if polled_any and final_status")]
-        self.assertLess(loop_seg.find("elapsed > session_timeout"),
-                        loop_seg.find("detect_response_status_gated("))
+        loop_seg = BRIDGE_SRC[BRIDGE_SRC.index("polled_any = False"):
+                              BRIDGE_SRC.index("if polled_any and final_status")]
+        timeout_pos = loop_seg.index("time.time() - start_time >= session_timeout")
+        gate_pos = loop_seg.index("detect_response_status_gated(")
+        self.assertLess(timeout_pos, gate_pos)
         # D8: الجلبة النهائية محروسة بـ polled_any وCOMPLETED فقط (صفر شبكة للبث المكتمل)
-        self.assertIn('if polled_any and final_status == "COMPLETED":', BRIDGE_SRC)
+        self.assertIn('if polled_any and final_status == "COMPLETED" and not readiness:', BRIDGE_SRC)
 
 
 if __name__ == "__main__":

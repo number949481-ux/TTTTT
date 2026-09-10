@@ -25,9 +25,15 @@ class CompactTests(unittest.TestCase):
         base.CreditRecoveryTests.setUp(self)
         self.engine.VERIFIED_COMPACT_CONTEXT_SUPPORTED = True
         self.cfg.project_fast_lean_skip = True
-        self.patch("COMPACT_VERIFY_READS", new=2)
+        self.cfg.session_timeout = 0.03
         self.runtime = types.SimpleNamespace(cancel_event=None)
+        def completed(*args, **kwargs):
+            kwargs["cfg"]._chat_attempt = {"request_id": "compact-request",
+                "project_id": self.engine.send_chat.return_value[1], "finished": True,
+                "credit_exhausted": False}
+            return self.engine.send_chat.return_value
         self.engine.send_chat.return_value = (DONE, PID, "summary-result")
+        self.engine.send_chat.side_effect = completed
         self.fetch_count = 0
         def fetch(pid, cookies, cfg):
             self.fetch_count += 1
@@ -51,7 +57,7 @@ class CompactTests(unittest.TestCase):
     def test_same_project_new_summary_and_session_are_verified(self):
         self.cfg.compact_before_send = True
         status, pid, context = self.compact()
-        self.assertEqual(status, "COMPACT_VERIFIED")
+        self.assertEqual(status, "COMPACT_COMPLETED")
         self.assertEqual(pid, PID)
         self.assertEqual(context["chat_session_id"], "new-session")
         self.assertEqual(context["messages"], [SUMMARY])
@@ -63,24 +69,31 @@ class CompactTests(unittest.TestCase):
     def test_new_project_result_is_authoritative(self):
         self.engine.send_chat.return_value = (DONE, NEW_PID, "summary-result")
         status, pid, context = self.compact()
-        self.assertEqual(status, "COMPACT_VERIFIED")
+        self.assertEqual(status, "COMPACT_COMPLETED")
         self.assertEqual(pid, NEW_PID)
         self.assertEqual(context["project_id"], NEW_PID)
         self.assertEqual(self.engine.fetch_project_messages.call_args.args[0], NEW_PID)
 
-    def test_plain_reply_or_stale_summary_never_claims_verified_compact(self):
+    def test_finished_noop_does_not_require_a_new_summary(self):
         for messages in [[{"role": "assistant", "content": "Compact complete"}], [OLD_SUMMARY]]:
             with self.subTest(messages=messages):
                 self.engine.fetch_project_messages.side_effect = None
                 self.engine.fetch_project_messages.return_value = messages
-                self.assertEqual(self.compact()[0], "COMPACT_FAILED")
+                def fetch(pid, cookies, cfg):
+                    cfg._last_fetch_status = 200
+                    cfg._last_chat_session_id = "current-session"
+                    return messages
+                self.engine.fetch_project_messages.side_effect = fetch
+                status, _, context = self.compact()
+                self.assertEqual(status, "COMPACT_COMPLETED")
+                self.assertFalse(context["summary_key"])
 
     def test_new_summary_without_current_session_is_not_success(self):
         def no_session(pid, cookies, cfg):
             self.fetch_count += 1
             return [] if self.fetch_count == 1 else [SUMMARY]
         self.engine.fetch_project_messages.side_effect = no_session
-        self.assertEqual(self.compact()[0], "COMPACT_FAILED")
+        self.assertEqual(self.compact()[0], "READ_FAILED")
 
     def test_cancel_before_send_and_during_stream_blocks_next_prompt(self):
         self.cfg.cancel_event = threading.Event()
@@ -95,11 +108,11 @@ class CompactTests(unittest.TestCase):
         self.assertEqual(self.compact()[0], bridge.CANCELLED_STATUS)
         self.assertFalse(self.cfg.compact_in_progress)
 
-    def test_disk_failure_after_verification_blocks_next_prompt(self):
+    def test_optional_save_failure_does_not_block_completed_maintenance(self):
         self.cfg.compact_verified_callback = mock.Mock(side_effect=OSError("disk full"))
         self.cfg.compact_before_send = True
-        self.assertEqual(self.compact()[0], "COMPACT_FAILED")
-        self.assertTrue(self.cfg.compact_before_send)
+        self.assertEqual(self.compact()[0], "COMPACT_COMPLETED")
+        self.assertFalse(self.cfg.compact_before_send)
 
     def test_compact_eligibility_survives_registry_reload(self):
         reg = self.isolated_registry()
@@ -147,6 +160,7 @@ class CompactTests(unittest.TestCase):
         real_failover = bridge.send_message_with_auto_account_failover
         def bind(cfg, *args, **kwargs):
             cfg.project_fast_lean_skip = True
+            cfg.session_timeout = 0.03
             cfg.extracted_webapp_dir = self.root / "extracted"
             return {}
         bridge.apply_project_runtime_binding.side_effect = bind
@@ -210,14 +224,17 @@ class CompactTests(unittest.TestCase):
                 if cancel:
                     cfg.cancel_event.set()
                     return bridge.USER_CANCELLED_MARKER, compact_pid, None
-                return "Compacted", compact_pid, "summary"
+                cfg._chat_attempt = {"request_id": "compact-request", "project_id": compact_pid,
+                    "finished": failure not in ("pending", "stale", "user_last", "active", "unconfirmed_credit"),
+                    "credit_exhausted": False, "old_message_ids": {"old-summary"}}
+                return ("__CREDIT_EXHAUSTED__" if failure == "unconfirmed_credit" else "Compacted"), compact_pid, "summary"
             if not initial_due and len(calls) == 1:
                 return (DONE if complete_only else CREDIT), PID, "first"
             if phase["compacted"] and failure:
                 self.assertIsNone(cfg._verified_compact_context)
                 if phase["work_count"] == 0:
                     self.assertEqual(kwargs["project_id"], compact_pid)
-                    self.assertEqual(kwargs["history"], [ordinary])
+                    self.assertEqual(kwargs["history"], [ordinary] + ([{"role": "user", "content": "/compact"}] if failure == "compact_last" else []))
                     self.assertEqual(cfg._last_chat_session_id, "verified-session")
                     saved = bridge.ProjectRegistry(reg.key).get_compact_state()
                     self.assertFalse(saved["due"])
@@ -225,8 +242,8 @@ class CompactTests(unittest.TestCase):
                     self.assertFalse(saved["verified"])
                     self.assertTrue(saved["bypass_ready"])
                 cfg._last_chat_session_id = "verified-session"
-            elif first_duration <= bridge.COMPACT_TRIGGER_SECONDS or initial_due:
-                pinned = cfg._verified_compact_context
+            elif phase["compacted"] and (first_duration <= bridge.COMPACT_TRIGGER_SECONDS or initial_due):
+                pinned = cfg._resume_context
                 self.assertEqual(kwargs["project_id"], compact_pid)
                 self.assertEqual(pinned["chat_session_id"], "verified-session")
                 self.assertEqual(pinned["messages"], [SUMMARY])
@@ -364,7 +381,7 @@ class CompactTests(unittest.TestCase):
     def assert_bypass_blocked(self, failure):
         calls, result, _, reg, sends = self.worker_scenario(initial_due=True, failure=failure)
         self.assertEqual([c[0] for c in calls], ["/compact"])
-        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.assertEqual(result[1], "READ_FAILED" if failure in ("no_session", "unreadable") else "TIMEOUT")
         self.assertFalse(reg.get_compact_state()["due"])
         self.assertFalse(reg.get_compact_state()["bypass_ready"])
         self.assertNotIn("تم التوليد بنجاح", str(sends.call_args_list))
@@ -388,10 +405,10 @@ class CompactTests(unittest.TestCase):
     def test_active_generation_blocks_bypass(self):
         self.assert_bypass_blocked("active")
 
-    def test_deferred_write_failure_never_sends_business_prompt(self):
+    def test_completed_maintenance_needs_no_deferral_gate(self):
         calls, result, _, _, _ = self.worker_scenario(initial_due=True, failure=True, fail_defer=True)
-        self.assertEqual([c[0] for c in calls], ["/compact"])
-        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
+        self.assertEqual(result[1], "COMPLETED")
         self.cooldown.assert_not_called()
 
     def test_unconfirmed_credit_in_bypass_does_not_rotate_or_send(self):
@@ -427,7 +444,7 @@ class CompactTests(unittest.TestCase):
     def test_blocked_restart_rechecks_readiness_without_repeating_compact(self):
         calls, result, _, reg, _ = self.worker_scenario(initial_due=True, failure="stale", restart=True)
         self.assertEqual([c[0] for c in calls], ["/compact"])
-        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.assertEqual(result[1], "TIMEOUT")
         self.assertFalse(reg.get_compact_state()["due"])
         self.assertFalse(reg.get_compact_state()["bypass_ready"])
 
@@ -436,7 +453,7 @@ class CompactTests(unittest.TestCase):
                  "chat_session_id": "old-session"}
         calls, result, _, reg, _ = self.worker_scenario(initial_due=True, restored_state=state)
         self.assertEqual(calls, [])
-        self.assertEqual(result[1], "COMPACT_BLOCKED")
+        self.assertEqual(result[1], "TIMEOUT")
         self.assertFalse(reg.get_compact_state()["due"])
 
     def test_schedule_write_error_does_not_replace_real_credit_outcome(self):
@@ -477,11 +494,17 @@ class CompactTests(unittest.TestCase):
     def test_platform_credit_during_compact_remains_credit_exhausted(self):
         def fetch(pid, cookies, cfg):
             self.fetch_count += 1
+            cfg._last_fetch_status = 200
             return [OLD_SUMMARY] if self.fetch_count == 1 else [
                 {"role": "assistant", "content": CREDIT,
                  "action": {"type": "ACTION_CREDIT_EXHAUSTED"}}]
         self.engine.fetch_project_messages.side_effect = fetch
         self.cfg.compact_before_send = True
+        def credit(*args, **kwargs):
+            kwargs["cfg"]._chat_attempt = {"request_id": "compact", "project_id": PID,
+                                          "credit_exhausted": True, "finished": False}
+            return "__CREDIT_EXHAUSTED__", PID, None
+        self.engine.send_chat.side_effect = credit
         self.assertEqual(self.compact()[0], "CREDIT_EXHAUSTED")
         self.assertTrue(self.cfg.compact_before_send)
 
@@ -520,7 +543,7 @@ class CompactTests(unittest.TestCase):
         self.engine.fetch_project_messages.side_effect = fetch
         self.cfg.compact_before_send = True
         status, pid, context = self.compact()
-        self.assertEqual(status, "COMPACT_VERIFIED")
+        self.assertEqual(status, "COMPACT_COMPLETED")
         self.assertEqual(pid, PID)
         self.assertEqual(context["chat_session_id"], "har-session-123")
         self.assertEqual(context["messages"], [user_summary])
@@ -542,3 +565,156 @@ class CompactTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SharedCompletionTests(unittest.TestCase):
+    patch = base.CreditRecoveryTests.patch
+    archive = base.CreditRecoveryTests.archive
+    run_pipeline = base.CreditRecoveryTests.run_pipeline
+
+    def setUp(self):
+        base.CreditRecoveryTests.setUp(self)
+        self.cfg.project_fast_lean_skip = True
+        self.engine.CHAT_ATTEMPT_EVIDENCE_SUPPORTED = True
+        self.runtime = types.SimpleNamespace(_chat_attempt={
+            "request_id": "this-request", "project_id": PID, "chat_session_id": "session",
+            "old_message_ids": {"old-reply"}, "message_ids": {"reply"},
+            "finished": False, "credit_exhausted": False})
+        self.count = 0
+
+    def reply(self, text=DONE, **fields):
+        return {"id": "reply", "role": "assistant", "content": text, **fields}
+
+    def monitor(self, answer="__STREAM_INTERRUPTED__", **kwargs):
+        return bridge.monitor_chat_completion(self.engine, {}, self.runtime, self.cfg,
+            PID, answer, bridge.time.time(), **kwargs)
+
+    def test_initial_and_polling_credit_suspicion_keep_monitoring_same_request(self):
+        for initial in ("__CREDIT_EXHAUSTED__", "__STREAM_INTERRUPTED__"):
+            with self.subTest(initial=initial):
+                self.count = 0
+                self.activity.return_value = {"active": True, "deep_thinking": True, "tasks_remaining": 2}
+                def fetch(pid, cookies, cfg):
+                    self.count += 1
+                    return [self.reply("used all your credits", **(
+                        {"action": {"type": "ACTION_CREDIT_EXHAUSTED"}} if self.count >= 4 else {}))]
+                self.engine.fetch_project_messages.side_effect = fetch
+                status, _ = self.monitor(initial)
+                self.assertEqual(status, "CREDIT_EXHAUSTED")
+                self.assertGreaterEqual(self.count, 4)
+                self.engine.send_chat.assert_not_called()
+                self.cooldown.assert_not_called()
+
+    def test_partial_text_cannot_become_completed_at_timeout_or_resend(self):
+        self.cfg.max_timeout_retries = 3
+        def chat(*args, **kwargs):
+            kwargs["cfg"]._chat_attempt = dict(self.runtime._chat_attempt)
+            return "Still working on the files and the requested tests", PID, "reply"
+        self.engine.send_chat.side_effect = chat
+        self.engine.fetch_project_messages.return_value = [self.reply("Still working on the files and the requested tests")]
+        result = self.run_pipeline()
+        self.assertEqual(result[1], "TIMEOUT")
+        self.engine.send_chat.assert_called_once()
+        self.download.assert_not_called()
+        self.saved_branch.assert_not_called()
+
+    def test_unknown_activity_is_not_completion_without_terminal_evidence(self):
+        self.engine.fetch_project_messages.return_value = [self.reply()]
+        self.assertEqual(self.monitor()[0], "TIMEOUT")
+
+    def test_later_current_finished_reply_resolves_text_only_suspicion(self):
+        self.count = 0
+        def fetch(*args):
+            self.count += 1
+            return [self.reply("Documentation: used all your credits", **(
+                {"session_state": {"_finish_reason": "stop"}} if self.count >= 3 else {}))]
+        self.engine.fetch_project_messages.side_effect = fetch
+        self.assertEqual(self.monitor("__CREDIT_EXHAUSTED__")[0], "COMPLETED")
+        self.assertGreaterEqual(self.count, 3)
+        self.cooldown.assert_not_called()
+
+    def test_old_finished_or_credit_reply_and_newer_user_turn_are_not_current(self):
+        old = {"id": "old-reply", "role": "assistant", "content": CREDIT,
+               "action": {"type": "ACTION_CREDIT_EXHAUSTED"}}
+        self.assertIsNone(bridge.current_attempt_reply([old], self.runtime._chat_attempt))
+        self.assertIsNone(bridge.current_attempt_reply([
+            self.reply(), {"id": "another-request", "role": "user", "content": "/compact"}],
+            self.runtime._chat_attempt))
+        self.assertIsNone(bridge.current_attempt_reply([
+            {"id": "unobserved", "role": "assistant", "content": DONE}], self.runtime._chat_attempt))
+
+    def test_fresh_request_identity_allows_polling_after_early_stream_disconnect(self):
+        self.runtime._chat_attempt["message_ids"] = set()
+        self.engine.fetch_project_messages.return_value = [
+            {"role": "user", "id": "this-request", "content": "Work"},
+            self.reply(session_state={"_finish_reason": "stop"})]
+        self.assertEqual(self.monitor()[0], "COMPLETED")
+
+    def test_cancel_during_read_and_wait_returns_without_another_send(self):
+        self.cfg.cancel_event = threading.Event()
+        def fetch(*args):
+            self.cfg.cancel_event.set()
+            return [self.reply()]
+        self.engine.fetch_project_messages.side_effect = fetch
+        self.assertEqual(self.monitor()[0], bridge.CANCELLED_STATUS)
+        self.engine.send_chat.assert_not_called()
+
+    def test_p18_stops_maintenance_without_authorizing_pending_business_send(self):
+        self.activity.side_effect = [{"active": True, "deep_thinking": True, "tasks_remaining": 2},
+                                    {"active": True, "deep_thinking": True, "tasks_remaining": 1}]
+        self.engine.fetch_project_messages.return_value = [self.reply()]
+        self.assertEqual(self.monitor(maintenance=True)[0], "ACTIVITY_STOPPED")
+        self.assertEqual(self.activity.call_count, 2)
+
+    def test_ready_legacy_compact_never_uses_old_credit(self):
+        self.runtime._chat_attempt = None
+        def fetch(pid, cookies, cfg):
+            cfg._last_fetch_status = 200
+            cfg._last_fetch_project_id = pid
+            cfg._last_fetch_authoritative = True
+            cfg._last_project_status = "FINISHED"
+            cfg._last_chat_session_id = "current-session"
+            return [{"role": "assistant", "content": CREDIT, "action": {"type": "ACTION_CREDIT_EXHAUSTED"}},
+                    {"role": "user", "content": "/compact"}]
+        self.engine.fetch_project_messages.side_effect = fetch
+        self.assertEqual(self.monitor(readiness=True)[0], "COMPLETED")
+        self.engine.send_chat.assert_not_called()
+
+    def test_collapsed_summary_and_project_finished_need_no_finish_reason(self):
+        self.runtime._chat_attempt["summary_ids"] = {"new-summary"}
+        def fetch(pid, cookies, cfg):
+            cfg._last_fetch_status = 200
+            cfg._last_fetch_project_id = pid
+            cfg._last_fetch_authoritative = True
+            cfg._last_project_status = "FINISHED"
+            cfg._last_chat_session_id = "new-session"
+            return [{"id": "new-summary", "role": "user", "content": "Summary",
+                     "session_state": {"is_compact_summary": True}}, self.reply("")]
+        self.engine.fetch_project_messages.side_effect = fetch
+        self.assertEqual(self.monitor(maintenance=True)[0], "COMPLETED")
+
+    def test_legacy_bypass_false_ready_project_dispatches_original_once(self):
+        self.cfg.compact_deferred = True
+        self.cfg.compact_bypass_blocked = True
+        self.cfg.compact_before_send = True
+        self.patch("get_public_forked_pid", return_value=PID)
+        self.stack.enter_context(mock.patch.object(bridge.threading, "Thread"))
+        def fetch(pid, cookies, cfg):
+            cfg._last_fetch_status = 200
+            cfg._last_fetch_project_id = pid
+            cfg._last_fetch_authoritative = True
+            cfg._last_project_status = "FINISHED"
+            cfg._last_chat_session_id = "current-session"
+            return [{"role": "user", "content": "/compact"}]
+        self.engine.fetch_project_messages.side_effect = fetch
+        def chat(*args, **kwargs):
+            kwargs["cfg"]._chat_attempt = {**self.runtime._chat_attempt, "finished": True}
+            return DONE, PID, "reply"
+        self.engine.send_chat.side_effect = chat
+        result = bridge.send_message_and_make_public(URL, self.accounts[0]["email"], "test-only",
+                                                      "Original prompt", bridge_cfg=self.cfg)
+        self.assertEqual(result[1], "COMPLETED")
+        self.engine.send_chat.assert_called_once()
+        self.assertEqual(self.engine.send_chat.call_args.args[1], "Original prompt")
+        self.assertEqual(self.engine.send_chat.call_args.kwargs["project_id"], PID)
+        self.download.assert_not_called()

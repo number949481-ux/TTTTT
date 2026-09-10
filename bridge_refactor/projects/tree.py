@@ -20,6 +20,7 @@ __all__ = [
     "P44_GATE_INACTIVE_READS_REQUIRED",
     "P44_GATE_STABLE_READS_REQUIRED",
     "has_platform_credit_signal",
+    "current_attempt_reply",
     "resolve_runtime_credit_status",
     "detect_response_status_gated",
     "compute_reply_fingerprint",

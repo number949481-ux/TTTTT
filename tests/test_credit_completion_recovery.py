@@ -43,6 +43,7 @@ class CreditRecoveryTests(unittest.TestCase):
         )
         self.cfg = bridge.BridgeConfig()
         self.cfg.max_timeout_retries = 1
+        self.cfg.session_timeout = 0.03
         self.cfg.max_account_attempts = 2
         self.cfg.extracted_webapp_dir = str(self.root / "extracted")
         self.patch("get_genspark_engine", return_value=self.engine)
@@ -353,6 +354,7 @@ class CreditRecoveryTests(unittest.TestCase):
         def bind(cfg, *args, **kwargs):
             cfg.project_fast_lean_skip = True
             cfg.extracted_webapp_dir = str(self.root / "extracted")
+            cfg.session_timeout = 0.03
             return {}
         bridge.apply_project_runtime_binding.side_effect = bind
         self.patch("claim_eligible_account_for_owner", side_effect=[
@@ -454,3 +456,126 @@ class CreditRecoveryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EngineProtocolTests(unittest.TestCase):
+    """Execute the real SSE parser and payload builder; transport only is fake."""
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "engine_protocol_repair", ROOT / "01.03Genspark_claude-opus-5-code.py")
+        cls.engine = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = cls.engine
+        spec.loader.exec_module(cls.engine)
+
+    def stream(self, events, cfg=None, history=None, question="Work", model="claude-fable-5-1"):
+        import json
+        cfg = cfg or self.engine.Config()
+        cfg.model = model
+        cfg.cf_cookies_file = ""
+        response = mock.Mock(status_code=200)
+        consumed = []
+        def lines():
+            for event in events:
+                consumed.append(event)
+                yield ("data: " + json.dumps(event)).encode()
+        response.iter_lines.side_effect = lines
+        session = mock.Mock()
+        session.post.return_value = response
+        transport = types.ModuleType("curl_cffi.requests")
+        transport.Session = mock.Mock(return_value=session)
+        package = types.ModuleType("curl_cffi")
+        package.requests = transport
+        def fetch(pid, cookies, runtime):
+            runtime._last_fetch_status = 200
+            runtime._last_chat_session_id = "current-session"
+            return history or []
+        with mock.patch.dict(sys.modules, {"curl_cffi": package, "curl_cffi.requests": transport}), \
+                mock.patch.object(self.engine, "fetch_project_messages", side_effect=fetch), \
+                mock.patch("builtins.print"), mock.patch.object(self.engine, "p"):
+            result = self.engine.send_chat({}, question, project_id=PID, cfg=cfg)
+        response.close.assert_called_once()
+        return result, cfg, consumed, session.post.call_args.kwargs["json"]
+
+    def result_event(self, role="assistant", text=DONE, **fields):
+        return {"type": "message_result", "message": {
+            "id": "current-reply", "role": role, "content": text, **fields}}
+
+    def test_text_mentions_never_abort_any_role(self):
+        phrases = ["used all your credits", "https://www.genspark.ai/pricing?fromurl=credit_exhausted",
+                   "kindly visit this page to add more", "credit balance is negative",
+                   "insufficient for this request", "__CREDIT_EXHAUSTED__"]
+        for role in ("assistant", "user", "tool"):
+            for text in phrases:
+                with self.subTest(role=role, text=text):
+                    events = [self.result_event(role, text), self.result_event(
+                        session_state={"_finish_reason": "stop"})]
+                    result, cfg, consumed, _ = self.stream(events)
+                    self.assertEqual(len(consumed), 2)
+                    self.assertEqual(result[0], DONE)
+                    self.assertFalse(cfg._chat_attempt["credit_exhausted"])
+
+    def test_final_credit_phrase_is_not_a_sentinel(self):
+        result, _, _, _ = self.stream([self.result_event(
+            text="Example: insufficient for this request", session_state={"_finish_reason": "stop"})])
+        self.assertEqual(result[0], "Example: insufficient for this request")
+
+    def test_typed_credit_is_current_assistant_only_and_beats_finished(self):
+        for field in ({"action": {"type": "ACTION_CREDIT_EXHAUSTED"}},
+                      {"action": {"action_params": {"block_reason": "balance_drained"}}},
+                      {"session_state": {"consume_usage_quota_exceeded": True}}):
+            with self.subTest(field=field):
+                events = [{"type": "project_field", "field_name": "status", "field_value": "FINISHED"},
+                          self.result_event(text="", **field)]
+                result, cfg, _, _ = self.stream(events)
+                self.assertEqual(result[0], "__CREDIT_EXHAUSTED__")
+                self.assertTrue(cfg._chat_attempt["credit_exhausted"])
+                for role in ("user", "tool"):
+                    _, cfg, _, _ = self.stream([self.result_event(role=role, **field)])
+                    self.assertFalse(cfg._chat_attempt["credit_exhausted"])
+
+    def test_old_message_and_wrong_project_credit_are_ignored(self):
+        old = self.result_event(action={"type": "ACTION_CREDIT_EXHAUSTED"})
+        _, cfg, _, _ = self.stream([old], history=[old["message"]])
+        self.assertFalse(cfg._chat_attempt["credit_exhausted"])
+        old["message"]["project_id"] = "other-project"
+        _, cfg, _, _ = self.stream([old])
+        self.assertFalse(cfg._chat_attempt["credit_exhausted"])
+
+    def test_finished_is_scoped_to_request_and_reset_between_sends(self):
+        events = [self.result_event(role="user", text="summary", session_state={"is_compact_summary": True}),
+                  self.result_event(text=""),
+                  {"type": "project_field", "field_name": "status", "field_value": "FINISHED"}]
+        _, cfg, _, payload = self.stream(events, question="/compact")
+        first = dict(cfg._chat_attempt)
+        self.assertTrue(first["finished"])
+        self.assertEqual(first["project_id"], PID)
+        self.assertEqual(first["chat_session_id"], payload["chat_session_id"])
+        self.assertEqual(first["request_id"], payload["client_message_id"])
+        _, cfg, _, _ = self.stream([], cfg=cfg)
+        self.assertFalse(cfg._chat_attempt["finished"])
+        self.assertNotEqual(first["request_id"], cfg._chat_attempt["request_id"])
+        for fields in ({"project_id": "other"}, {"chat_session_id": "old-session"}):
+            _, cfg, _, _ = self.stream([{**events[-1], **fields}])
+            self.assertFalse(cfg._chat_attempt["finished"])
+
+    def test_plain_eof_and_pending_or_tool_stop_are_not_terminal(self):
+        for fields in ({}, {"pending": True, "session_state": {"_finish_reason": "stop"}},
+                       {"tool_calls": [{}], "session_state": {"_finish_reason": "stop"}}):
+            _, cfg, _, _ = self.stream([self.result_event(**fields)])
+            self.assertFalse(cfg._chat_attempt["finished"])
+
+    def test_handoff_snapshot_reaches_both_actual_payloads(self):
+        for model in ("claude-fable-5-1", "gpt-5.5"):
+            with self.subTest(model=model):
+                cfg = self.engine.Config()
+                cfg._resume_context = {"project_id": PID, "chat_session_id": "new-session",
+                                       "messages": [{"role": "user", "content": "summary",
+                                                     "session_state": {"is_compact_summary": True}}]}
+                _, cfg, _, payload = self.stream([], cfg=cfg, model=model,
+                    history=[{"role": "user", "content": "/compact"}])
+                self.assertEqual(payload["chat_session_id"], "new-session")
+                self.assertEqual(payload["messages"][0]["content"], "summary")
+                self.assertEqual(payload["session_state"]["messages"], payload["messages"])
+                self.assertEqual(payload["messages"][-1]["content"], "Work")
+                self.assertIsNone(cfg._resume_context)
