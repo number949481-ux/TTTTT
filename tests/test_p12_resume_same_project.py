@@ -115,7 +115,7 @@ class TestBridgeSameProjectResume(unittest.TestCase):
         self.assertIn("on_project_start_callback(project_id)", carry_block,
                       "مسار carry_pid يجب أن يرسل بطاقة المعاينة فوراً")
         fork_idx = SMAP_SRC.index("project_id = forked_pid or orig_pid")
-        fork_block = SMAP_SRC[fork_idx:fork_idx + 500]
+        fork_block = SMAP_SRC[fork_idx:SMAP_SRC.index("compact_deferred =", fork_idx)]
         self.assertIn("on_project_start_callback(project_id)", fork_block,
                       "مسار الاستئناف من URL يجب أن يرسل بطاقة المعاينة فوراً")
 

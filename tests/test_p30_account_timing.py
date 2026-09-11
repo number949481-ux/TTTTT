@@ -314,8 +314,9 @@ class TestSourceContracts(unittest.TestCase):
         """الحارس السلبي: عداد الاستئناف يزداد فقط عند CREDIT_EXHAUSTED — سطر واحد كما كان."""
         self.assertEqual(BRIDGE_SRC.count("credit_continuations += 1"), 1,
                          "الزيادة الوحيدة للعداد تبقى عند CREDIT_EXHAUSTED — P30 لا يلمسها")
-        # فرعا CREDIT_EXHAUSTED الاثنان pre-existing في failover (increment + handling)
-        self.assertEqual(BRIDGE_SRC.count('if status == "CREDIT_EXHAUSTED":'), 2)
+        # V2 adds scheduling/persistence checks; the increment still belongs
+        # exclusively to the typed-credit branch, never compact success.
+        self.assertRegex(BRIDGE_SRC, r'if status == "CREDIT_EXHAUSTED":\s+credit_continuations \+= 1')
 
     def test_monotonic_used_for_duration(self):
         self.assertIn("time.monotonic()", BRIDGE_SRC)

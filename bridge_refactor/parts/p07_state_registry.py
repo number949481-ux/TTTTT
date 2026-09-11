@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3492..4557
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3558..4628
 المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -853,13 +853,17 @@ class ProjectRegistry:
             return dict(self._read().get("compact_state") or {})
 
     def set_compact_state(self, due, source_pid, duration=0.0, context=None, *,
-                          deferred=False, chat_session_id="", bypass_ready=None):
+                          deferred=False, chat_session_id="", bypass_ready=None, trigger_status=None):
         """Persist eligibility/verified locator, without snapshots or chat secrets."""
         pid = extract_project_id(source_pid)
         if not pid:
             raise ValueError("Compact maintenance requires a valid project")
         state = {"due": due is True, "source_pid": pid,
                  "duration_seconds": max(0.0, float(duration)), "updated_at": _utc()}
+        if trigger_status in ("CREDIT_EXHAUSTED", "COMPLETED"):
+            state["trigger_status"] = trigger_status
+            state["due"] = (trigger_status == "CREDIT_EXHAUSTED" and due is True
+                            and 0 <= state["duration_seconds"] <= COMPACT_TRIGGER_SECONDS)
         if context is not None:
             state.update({"chat_session_id": context["chat_session_id"],
                           "summary_key": context["summary_key"], "verified": bool(context["summary_key"])})
@@ -873,7 +877,8 @@ class ProjectRegistry:
             # run must not rearm a deferred session, even after process restart.
             keep_deferred = (previous.get("deferred") is True and
                              (not session_id or session_id == previous.get("chat_session_id")))
-            if context is None and (deferred or keep_deferred):
+            if (context is None and trigger_status not in ("CREDIT_EXHAUSTED", "COMPLETED")
+                    and (deferred or keep_deferred)):
                 state.update({"due": False, "deferred": True, "verified": False,
                               "chat_session_id": session_id or previous.get("chat_session_id", ""),
                               "bypass_ready": (bypass_ready is True if bypass_ready is not None
