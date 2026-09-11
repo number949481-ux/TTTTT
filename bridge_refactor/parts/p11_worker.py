@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7050..7533
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7125..7625
 المحتوى: P43-X7: fast_mode_line في كارت الإكمال — إعلان التخطي صراحةً بلا Diff مزيف + format_active_account_line (P38: سطر 📧 الحساب الموحد — مصدر واحد للحقيقة: تفريغ آمن + fallback غير محدد + html_escape مركزي) + process_user_task_async (المشغل الكامل للمهمة | P39: بطاقة الاكتمال المبسطة — حذف 6 عناصر حشو من res_msg (latest_line/resume_line/fork_line/مسار الساندبوكس/علم الانتهاء+استدعاء is_finished اليتيم/حقن journey_block) مع بقاء دوال P29/P30/P38 كاملة + التسجيل الجنائي: القائمة الكاملة غير المفلترة تُسجَّل في اللوج قبل الإرسال (best-effort) | P38: حقن السطر الموحد في بطاقات اللايف الفوري/handoff الرصيد/اللقطة (stage_email المهمل صار مستخدماً + fallback لـ cfg)/اللايف المكتملة + توحيد تسمية بطاقة الاكتمال «📧 الحساب:» بلا تهريب مزدوج لـ acc_email | P35: إعادة تصنيف COMPLETED+is_model_decline_response ← MODEL_DECLINED + تصفير final_pid (مؤشر الاستئناف لا يتقدم لنقطة الرفض) + كيبورد build_model_decline_keyboard بدل كيبورد الاكتمال | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -101,35 +101,52 @@ def process_user_task_async(
         cfg.compact_deferred = compact_state.get("deferred") is True
         cfg.compact_deferred_this_run = False
         cfg.compact_bypass_blocked = cfg.compact_deferred and compact_state.get("bypass_ready") is not True
+        stored_duration = compact_state.get("duration_seconds")
+        valid_duration = (isinstance(stored_duration, (int, float))
+                          and not isinstance(stored_duration, bool)
+                          and 0 <= stored_duration <= COMPACT_TRIGGER_SECONDS)
         cfg.compact_before_send = bool(requested_pid and compact_state.get("due") is True
-                                       and not cfg.compact_deferred)
+                                       and compact_state.get("trigger_status") == "CREDIT_EXHAUSTED"
+                                       and compact_state.get("source_pid") == requested_pid
+                                       and valid_duration and not cfg.compact_deferred)
+        cfg.compact_state_save_failed = False
+        if compact_state.get("due") is True and not cfg.compact_before_send:
+            try:
+                registry.set_compact_state(False, compact_state.get("source_pid") or requested_pid)
+            except Exception as err:
+                cfg.compact_state_save_failed = True
+                log_event("warning", f"[COMPACT] Legacy due clear failed: {type(err).__name__}")
 
         def schedule_compact(stage_status, stage_url, duration):
-            registry.set_compact_state(
-                duration <= COMPACT_TRIGGER_SECONDS, extract_project_id(stage_url), duration,
-                deferred=cfg.compact_deferred_this_run,
-                chat_session_id=getattr(cfg, "compact_current_session_id", ""))
+            return registry.set_compact_state(
+                stage_status == "CREDIT_EXHAUSTED" and duration <= COMPACT_TRIGGER_SECONDS,
+                extract_project_id(stage_url), duration,
+                chat_session_id=getattr(cfg, "compact_current_session_id", ""),
+                trigger_status=stage_status)
+
+        def clear_compact(stage_url):
+            return registry.set_compact_state(False, extract_project_id(stage_url), trigger_status="COMPLETED")
+
+        cfg.compact_clear_callback = clear_compact
 
         def defer_compact(project_id, session_id, bypass_ready):
             registry.set_compact_state(False, project_id, deferred=True,
                                        chat_session_id=session_id, bypass_ready=bypass_ready)
 
         cfg.compact_deferred_callback = defer_compact
-        if cfg.compact_deferred and compact_state.get("due") is True:
-            try:
-                defer_compact(compact_state.get("source_pid") or requested_pid,
-                              compact_state.get("chat_session_id", ""),
-                              compact_state.get("bypass_ready") is True)
-            except Exception as err:
-                log_event("warning", f"[COMPACT] Legacy state save failed: {type(err).__name__}")
 
         def remember_compact(context):
             nonlocal runtime_identity
             registry.set_compact_state(False, context["project_id"], context=context)
-            runtime_identity = remember_registry_identity(
+            saved_identity = remember_registry_identity(
                 registry, root_pid=(runtime_identity or {}).get("root_genspark_pid") or requested_pid,
                 latest_pid=context["project_id"], project_name=project_name,
-                chat_id=chat_id, status="COMPACT_COMPLETED") or runtime_identity
+                chat_id=chat_id, status="COMPACT_COMPLETED")
+            persisted_identity = get_project_identity_record(project_key) or {}
+            if (not saved_identity or persisted_identity.get("latest_genspark_pid") != context["project_id"]):
+                raise IOError("Compact latest project was not durably preserved")
+            runtime_identity = saved_identity
+            return True
 
         cfg.compact_schedule_callback = schedule_compact
         cfg.compact_verified_callback = remember_compact

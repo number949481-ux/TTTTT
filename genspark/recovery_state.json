@@ -1,5 +1,290 @@
 {
   "current_execution": {
+    "task": "PR8 approved V2 implementation delivered with green offline gates",
+    "base": "08943e6",
+    "restored": "4d5c31d",
+    "lost_unpushed_commit": "0d6aac6",
+    "branch": "genspark_ai_developer",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/8",
+    "plan": "genspark/phantom_viewer_audit_plan.md",
+    "gist": "https://gist.github.com/pijsal1-tech/ca574f7050bc4c92d07d55bbe5d2427c",
+    "status": "implementation_complete_offline_gates_green",
+    "new_rules": [
+      "credit-only compact <=180",
+      "no COMPLETED scheduling",
+      "cool compact account A then work on B",
+      "validated fresh fork bypass inherited readiness only"
+    ],
+    "open_decisions": [],
+    "next": "Owner review/controlled field validation. If reset interrupts final publication, inspect remote PR8 head and draft flag; complete missing push/Ready only. Do not reimplement or rerun completed migration.",
+    "validation_this_turn": {
+      "runtime_modified": true,
+      "pytest_passed": 1085,
+      "pytest_subtests": 60,
+      "pytest_exit": 0,
+      "canonical_tests": 1085,
+      "canonical_exit": 0,
+      "docs_integrity": "34 files, 8 links, zero errors",
+      "syntax_exit": 0,
+      "compact_and_parity_passed": 87,
+      "compact_and_parity_subtests": 13,
+      "parity_passed": 11,
+      "live_calls": false,
+      "engine_modified": false,
+      "qwen_modified": false
+    },
+    "history_notice": "previous_phantom_viewer_review and all earlier execution/review fields are historical",
+    "security": "No secrets in files or origin",
+    "restored_chunks": [
+      "7b391be GO checkpoint",
+      "d66ccc8 three red regressions",
+      "e99276f runtime/rebuild",
+      "859615d restored R-A-B fixture",
+      "371ec29 approved test migration",
+      "5e4b5fa failure/balance/full-budget coverage",
+      "4d5c31d valid PID guard",
+      "54e461f cancellation priority and full timeout tests"
+    ],
+    "official_comment_url": "https://github.com/number949481-ux/TTTTT/pull/8#issuecomment-5634929302",
+    "official_comment_id": 5634929302,
+    "last_pushed_detail_checkpoint": "eedb1fa0f3be33cf72661041b0c3080364f2b466",
+    "publication": "Final report and checkpoint prepared after actual successful gates; publication verifies identical tested Python tree and remote head. No merge/deployment/live validation.",
+    "approval": "Owner explicit GO on 8017af0 and E1-E5",
+    "decisions": {
+      "E1": "existing preflight: <100 skips; -1 no penalty",
+      "E2": "safe stop with public URL on persistence/cooldown failure; no blind B or repeated maintenance",
+      "E3": "full session_timeout for compact; non-credit timeout temporary, no cooldown/rotation",
+      "E4": "clear unknown legacy due",
+      "E5": "standard cooldown helper, 29h"
+    },
+    "baseline": {
+      "pytest": 1066,
+      "subtests": 51,
+      "exit": 0
+    },
+    "tested_revision": "54e461f",
+    "completed": [
+      "owner_GO_E1_E5",
+      "credit_only_schedule_and_completion_clear",
+      "validated_fresh_fork_guard",
+      "legacy_due_migration",
+      "durable_trigger_consumption_before_compact",
+      "maintenance_account_A_cooldown_then_B_unchanged_prompt",
+      "explicit_safe_handoff_failure_and_latest_URL",
+      "R_A_B_worker_and_failure_balance_timeout_regressions",
+      "cancellation_precedence",
+      "faithful_regeneration_parity11",
+      "full_pytest_1085_60_subtests",
+      "canonical_gate_1085_exit0"
+    ]
+  },
+  "current_review": {
+    "task": "Read-only compact HAR and CREDIT_UNCONFIRMED investigation",
+    "source_revision": "a1ed062",
+    "latest_request": "Owner requests full plan and tasks after supplying both HAR captures; implementation is not approved.",
+    "second_har": "HAR/www.genspar....f....compact.....ai.har",
+    "second_har_findings": [
+      "4356 entries; compact POST /api/agent/ask_proxy at entries[4092], HTTP 200, about 124.549 seconds, 39 SSE JSON records.",
+      "SSE[34] is fresh role=user typed compact summary, 15706 characters. SSE[37] is empty assistant without finish reason or pending. SSE[38] is project status FINISHED.",
+      "Both captures have the same request key set, type and model, each with 116 history messages. chat_session_id equals across captures while project_id differs. Session ID alone cannot scope a terminal proof.",
+      "Both are /compact via ask_proxy. UI button-versus-typing attribution cannot be established from filenames or these network requests alone. No decoded data-wrapped /api/project snapshot was found in the inspected captures; post-compact history/session readback remains a test/live-validation requirement."
+    ],
+    "status": "full_plan_complete_awaiting_explicit_GO",
+    "implementation_plan": "genspark/compact_credit_repair_plan.md",
+    "plan_task_status": {
+      "T00": "completed_read_only_evidence_review",
+      "T01": "pending_GO_baseline",
+      "T02": "pending_GO_protocol_regressions",
+      "T03": "pending_GO_request_scoped_evidence",
+      "T04": "pending_GO_summary_verification_and_pin",
+      "T05": "pending_GO_current_readiness",
+      "T06": "pending_GO_deferred_restart_policy",
+      "T07": "pending_GO_engine_text_credit_detection",
+      "T08": "pending_GO_nonterminal_credit_monitoring",
+      "T09": "pending_GO_worker_integration",
+      "T10": "pending_GO_full_quality_gates",
+      "T11": "pending_separate_live_approval",
+      "T12": "pending_delivery_review"
+    },
+    "plan_validation": "Both HARs parsed in memory with sanitized structural output. Source/test diff from 89c2a16 to a1ed062 is empty. Plan contains T00-T12, acceptance matrix, dependencies, rollback, reset checkpoints and scope limits. UTF-8, JSON, git diff --check and credential-prefix checks passed. No implementation tests/build/live calls executed.",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/5",
+    "findings": [
+      "HAR has 286 entries. entries[70] is POST /api/agent/ask_proxy with user_s_input=/compact, HTTP 200, about 135.842 seconds and 41 SSE JSON records. SSE[36]: role=user, content length 18011, session_state.is_compact_summary=true. SSE[39]: empty assistant, no finish reason or pending field. SSE[40]: project_field status FINISHED. No finish_reason occurs in this SSE response.",
+      "Bridge 2497 rejects the observed user-role summary; verification exhausts reads at 2582-2585. Engine normal compact filter 1625-1653 supports the marker regardless of role, but verified context pin 1677-1680 separately rejects user summaries. Fixing only the bridge selector is incomplete.",
+      "Bridge 2824-2826 requires assistant _finish_reason=stop before checking activity. The captured trailing assistant fails that condition despite SSE project FINISHED. SSE evidence does not establish the exact later API history seen by the production bot.",
+      "Bridge 2835-2846 persists blocked bypass readiness and returns before business send at 2867. Worker 7155-7159 restores the block; 7167-7169 saves deferral. This can repeatedly reject ordinary prompts without reissuing compact. This is a logical readiness latch, not proof of a mutex deadlock or a server-side project lock.",
+      "Engine 2331-2348 combines typed evidence with text heuristics (including pricing URLs) on message_result, without an assistant-role guard, then sets the credit sentinel and breaks SSE reading. 2388 closes the stream; 2431-2433 returns sentinel with no assistant ID. This does not prove server generation is cancelled. Detection is on message_result, not every message_field delta.",
+      "Bridge 1847-1885 cannot confirm sentinel without typed credit evidence and returns CREDIT_UNCONFIRMED. 2928-2929 returns before activity baseline at 2933. During polling, 3013-3015 breaks before the activity gate at 3016; 3049-3050 returns. Failover 3224 also treats it as terminal. Thus the anti-false-rotation guard prevents rotation but does not preserve monitoring of an active generation.",
+      "Source mechanism for premature monitoring termination is confirmed. The separate production incident has no supplied stream/log here, so its exact triggering text, turn, revision and timing remain unproven."
+    ],
+    "proposals_not_implemented": [
+      "Align bridge summary selection and engine pin with trusted typed user-role compact summaries, retaining fresh-summary fingerprint, nonempty content, project/current-session verification and immediate next-payload pin. Do not infer success from text alone.",
+      "Track terminal evidence scoped to the actual operation/session, including project FINISHED; reconcile it with freshly read current history and no active generation. Do not substitute an old FINISHED event or compact_chat_session_id for the current chat session.",
+      "Separate deferred optional maintenance from business-send readiness. Re-evaluate current project state on resume so legacy bypass_ready=false cannot permanently veto work. Wait on an active turn; fail explicitly on unreadable/unauthorized state; never blindly clear safety checks or duplicate the pending prompt.",
+      "Keep text-only credit suspicion nonterminal while generation is active: do not break SSE for pricing text; preserve partial output and monitor the same project if disconnected. Confirm real typed exhaustion before rotation. Bound monitoring and keep cancellation and the existing P18 stop contract; do not relabel uncertainty as COMPLETED.",
+      "Add sanitized protocol-shaped regressions for user summary plus empty assistant plus project FINISHED, persisted blocked resume, session identity, pricing text in nonterminal assistant/tool/user messages, later real typed exhaustion, cancellation and original prompt sent once. Preserve schema v1, <=180 and zero-artifact effective fast mode; rebuild faithful split and run full gate only after approved code changes."
+    ],
+    "evidence_gaps": [
+      "Both supplied HARs reviewed at a1ed062. UI initiation attribution and exact post-compact API readback remain unproven; do not request the second HAR again.",
+      "No live Genspark/Telegram calls, production incident replay, or new full-suite run. Prior 1045-test green result used incompatible mocked compact shapes and cannot establish live readiness.",
+      "Owner qwen_engine.py change a193238 is outside this compact/Claude trace and was not audited."
+    ],
+    "scope": "Only genspark recovery notes may change. No production fixes, regeneration, live requests or merges authorized.",
+    "gist": "https://gist.github.com/pijsal1-tech/bef6e51f0ab087a279f31509129f5d97",
+    "har": "HAR/www.genspar....2...compact.....ai.har",
+    "plan": [
+      "COMPLETED: restore pushed review and compare both HARs",
+      "COMPLETED: define full Arabic plan with tasks, acceptance gates and recovery procedure",
+      "WAITING: owner GO for bridge plus engine implementation; no second HAR request is needed"
+    ],
+    "restored_evidence": [
+      "Both supplied HARs reviewed; compact entries are 70 and 4092",
+      "Both produce fresh user-role typed summaries and empty assistant results, followed by project FINISHED",
+      "Bridge summary verifier and engine verified pin assume assistant role",
+      "Historical single-capture diagnosis is retained above; second_har_findings supersedes the missing-capture limitation"
+    ],
+    "next_action": "Await explicit owner GO on genspark/compact_credit_repair_plan.md. Then inspect current remote/main/PR heads and begin T01 only; do not repeat HAR comparison or merged PR #3/#4 work. Source edits need both bridge and engine scope. Live validation, merging and deployment are separate approvals. If reset interrupts final publication, inspect PR #5 to confirm plan and checkpoint are present before retrying.",
+    "validation": "Read-only AST extraction of actual compact_summary_context rejects actual HAR result messages; actual trailing assistant fails the stop predicate. Isolated resolve_runtime_credit_status returns CREDIT_UNCONFIRMED for synthetic unfinished pricing text (not incident replay). No bot imports. JSON parse and single-file scope checks passed. Historical 1045-test offline result is not evidence of live protocol correctness; no full tests rerun.",
+    "history_notice": "All active_* and older fields below are historical PR #4/#3 records; both PRs are merged. Do not repeat their implementation.",
+    "security": "Do not persist credentials or raw HAR messages. Never use captured credentials for live requests."
+  },
+  "active_task": "GO: surgical safe compact bypass and durable deferred policy",
+  "active_base": "9418697 (PR #3 merged)",
+  "active_pr": "https://github.com/number949481-ux/TTTTT/pull/4",
+  "active_status": "implementation_complete_validated",
+  "active_scope": [
+    "send_message_and_make_public safe bypass and fresh-session safety checks",
+    "send_message_with_auto_account_failover compact-only handling, no credit rotation redesign",
+    "compact_state deferral and its worker callbacks; schema_version remains 1",
+    "tests, generated split, progress and execution report"
+  ],
+  "active_plan": [
+    "Unconfirmed compact may continue only with freshly fetched readable current session and finished assistant turn, no active generation; preserve exact pending prompt",
+    "Persist due=false with optional deferred metadata inside existing compact_state; suppress rearm for same session and current failover chain",
+    "Keep verified compact success path, cancellation, structured credit evidence and zero-artifact fast mode unchanged",
+    "Add offline real-worker bypass, restart, safety and failover regressions; rebuild faithful split and run full quality gate",
+    "Push small checkpoints, then synchronize/squash and publish new PR"
+  ],
+  "active_baseline": {
+    "pytest_passed": 1028,
+    "subtests_passed": 26
+  },
+  "active_reset_checkpoint": "Restored remote 4150870 after reset. Source and 69 focused passing tests (+14 subtests) are pushed. Interrupted generator boundary edit was NOT pushed and is absent; reapply only that edit. Main remains 9418697.",
+  "active_completed": [
+    "safe_unverified_compact_bypass",
+    "durable_deferred_session_policy",
+    "original_prompt_and_credit_handoff_regressions",
+    "restart_and_safety_guards",
+    "utf8_rebuild",
+    "parity_11_of_11",
+    "full_suite_and_quality_gate",
+    "scope_and_invariant_audit",
+    "progress_documentation",
+    "push_per_chunk"
+  ],
+  "active_verification": {
+    "pytest_passed": 1045,
+    "subtests_passed": 26,
+    "focused_tests_passed": 69,
+    "focused_subtests_passed": 14,
+    "parity_passed": 11,
+    "source_lines": 9060,
+    "syntax": "passed",
+    "quality_gate_exit": 0,
+    "quality_gate_unittest_count": 1045
+  },
+  "active_invariants": "Manifest schema_version remains 1; default/normalizer unchanged, optional metadata stays inside compact_state. Engine, verification helpers and artifact block byte-identical to main; CREDIT_EXHAUSTED/DATA_RETENTION/LOW_BALANCE rotation branches AST-identical. Only sender, failover compact handling, compact state setter and worker compact callbacks changed.",
+  "active_limits": "No live HAR or live Genspark E2E. Unsafe/unreadable/pending/active sessions or failed deferral writes still block work explicitly; successful bypass is not successful compaction. Same-session deferral prevents automatic reattempt; known distinct sessions may requalify at scheduling.",
+  "active_next_action": "Owner review of PR #4 and live validation after merge. Final delivery squashes checkpoints into one commit and marks the PR ready. If reset interrupts publication, inspect remote head/draft status and complete only missing publication steps; do not redo implementation. Historical fields below describe merged PR #3.",
+  "task": "Approved compact threshold flip: duration <= 180 seconds",
+  "branch": "genspark_ai_developer",
+  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/3",
+  "status": "implementation_complete_validated",
+  "current_scope": "Owner now explicitly authorizes <= in sender and registry callback, matching tests, Windows UTF-8 reads, rebuild and full quality gate. Existing duration measurement and artifact policies stay unchanged.",
+  "last_review": {
+    "gist": "https://gist.github.com/pijsal1-tech/68039140242daedca60ae8eaca6ae02e",
+    "source_revision": "c4225aa",
+    "scope": "Explanation and genspark folder updates only. No project code changes authorized.",
+    "findings": [
+      "current_account_duration reads the account claim span, not pure generation time (bridge lines 2477-2490).",
+      "The span opens at account claim (3111); download and publication run at 3009/3013 before send_message_and_make_public returns; compact eligibility is sampled at 3196/3197.",
+      "Consequently, archive download, setup/login/fork and publication can inflate the 180-second compact trigger even when generation itself lasted 55 seconds.",
+      "The normal GitHub sync callback runs after compact eligibility is sampled (3228 then worker github_sync at 7132). It extends displayed total account duration, but is not included in that already-sampled trigger.",
+      "should_skip_artifacts_download at 476-486 gives enabled GitHub precedence over fast_mode. Actual fast mode skips artifacts irrespective of run duration or changed files.",
+      "The gist is a user-described scenario, not a runtime log: actual deployed revision, effective fast flag and project GitHub settings were not verified."
+    ],
+    "recommendations_not_implemented": [
+      "Keep compact eligibility and artifact delivery as independent decisions; do not skip downloads merely because a response took less than 180 seconds.",
+      "Use a dedicated monotonic generation interval starting at the business prompt send and ending when a terminal response or confirmed credit event is observed, before downloads/publication/sync. Exclude prior compact maintenance and account setup.",
+      "Maintain a separate total operational duration for accounting and UI. Client-observed generation duration is not exact server compute time unless server timestamps are available.",
+      "In effective fast mode, leave changed files in the cloud and preserve only resume metadata; a local diff is not needed when artifact synchronization is intentionally disabled.",
+      "For the current local GitHub sync design, automatic file mirroring requires fetching file content. Zero local downloads plus automatic GitHub sync would require a separately approved cloud-side publishing design.",
+      "Before any approved fix, add a regression with 55 seconds of generation plus 160 seconds of artifact work: compact must remain ineligible under the proposed generation-only policy."
+    ],
+    "validation": "Read-only source trace. No application import, tests, rebuild, deployment or code modification performed. Existing verification figures below are historical."
+  },
+  "previous_verification": {
+    "tests_passed": 1018,
+    "subtests_passed": 26,
+    "compact_tests_passed": 17,
+    "compact_subtests_passed": 2,
+    "parity_tests_passed": 11,
+    "syntax_check": "passed",
+    "quality_gate_exit": 0
+  },
+  "spec": "https://gist.github.com/pijsal1-tech/143bb8bf9a2478451114376123b017f8",
+  "baseline": {
+    "tests_passed": 1001,
+    "subtests_passed": 24
+  },
+  "approved": {
+    "threshold_seconds": 180,
+    "comparison": "<=",
+    "credit_compact_account": "new account before continuation prompt",
+    "completed_trigger": "next user prompt, never at completion itself"
+  },
+  "plan": [
+    "Retain owner change at sender (fac373f); change remaining registry comparator to <=",
+    "Update compact tests for short, exact boundary and long runs in both credit and completion paths; explicitly read source as UTF-8",
+    "Keep unrelated credit tests isolated from auto-compact trigger changes",
+    "Run python -X utf8 scripts/rebuild_refactor.py, parity 11/11, full pytest and hadith_sijil Exit 0",
+    "Push each chunk, update progress and squash final PR"
+  ],
+  "completed": [
+    "sender_and_registry_comparators_le_180",
+    "compact_threshold_tests_and_explicit_utf8",
+    "isolated_credit_recovery_fixtures",
+    "utf8_rebuild_and_byte_parity",
+    "full_pytest_and_syntax",
+    "quality_gate_and_execution_report",
+    "active_threshold_audit",
+    "authoritative_progress_updated",
+    "push_per_chunk"
+  ],
+  "verification": {
+    "tests_passed": 1028,
+    "subtests_passed": 26,
+    "compact_tests_passed": 27,
+    "compact_subtests_passed": 2,
+    "combined_focused_tests_passed": 52,
+    "combined_focused_subtests_passed": 14,
+    "parity_tests_passed": 11,
+    "syntax_check": "passed",
+    "quality_gate_exit": 0,
+    "quality_gate_unittest_count": 1028,
+    "source_lines": 8962
+  },
+  "scope_notes": [
+    "Duration remains the existing monotonic account claim span, not pure generation time.",
+    "Zero duration including invalid/missing duration fallback qualifies under the explicitly approved <= policy.",
+    "Long credit runs do not newly qualify but do not erase pending eligibility from earlier work.",
+    "Typed credit evidence, verified compact history/session, cancellation and zero-download effective fast mode are unchanged."
+  ],
+  "reset_recovery": "Restored d7505bd, reapplied only the missing fixture edits and pushed each validated chunk. Source changes already pushed before reset were not repeated. Rebuild, tests, quality report and progress documentation are now complete.",
+  "next_action": "Owner review of PR #3 and live validation after merge. Delivery uses one squashed commit; if interrupted during final publication, inspect remote head and PR draft status before retrying push/readiness. Do not reimplement completed changes or redesign duration measurement.",
+  "live_e2e": "not_run",
+  "credentials": "Never stored",
+  "completed_compact_credit_execution": {
     "base": "bb6d525",
     "status": "offline_gates_green_delivery",
     "branch": "genspark_ai_developer",
@@ -82,100 +367,49 @@
       ]
     }
   },
-  "current_review": {
-    "task": "Read-only compact HAR and CREDIT_UNCONFIRMED investigation",
-    "source_revision": "a1ed062",
-    "latest_request": "Owner requests full plan and tasks after supplying both HAR captures; implementation is not approved.",
-    "second_har": "HAR/www.genspar....f....compact.....ai.har",
-    "second_har_findings": ["4356 entries; compact POST /api/agent/ask_proxy at entries[4092], HTTP 200, about 124.549 seconds, 39 SSE JSON records.", "SSE[34] is fresh role=user typed compact summary, 15706 characters. SSE[37] is empty assistant without finish reason or pending. SSE[38] is project status FINISHED.", "Both captures have the same request key set, type and model, each with 116 history messages. chat_session_id equals across captures while project_id differs. Session ID alone cannot scope a terminal proof.", "Both are /compact via ask_proxy. UI button-versus-typing attribution cannot be established from filenames or these network requests alone. No decoded data-wrapped /api/project snapshot was found in the inspected captures; post-compact history/session readback remains a test/live-validation requirement."],
-    "status": "full_plan_complete_awaiting_explicit_GO",
-    "implementation_plan": "genspark/compact_credit_repair_plan.md",
-    "plan_task_status": {"T00": "completed_read_only_evidence_review", "T01": "pending_GO_baseline", "T02": "pending_GO_protocol_regressions", "T03": "pending_GO_request_scoped_evidence", "T04": "pending_GO_summary_verification_and_pin", "T05": "pending_GO_current_readiness", "T06": "pending_GO_deferred_restart_policy", "T07": "pending_GO_engine_text_credit_detection", "T08": "pending_GO_nonterminal_credit_monitoring", "T09": "pending_GO_worker_integration", "T10": "pending_GO_full_quality_gates", "T11": "pending_separate_live_approval", "T12": "pending_delivery_review"},
-    "plan_validation": "Both HARs parsed in memory with sanitized structural output. Source/test diff from 89c2a16 to a1ed062 is empty. Plan contains T00-T12, acceptance matrix, dependencies, rollback, reset checkpoints and scope limits. UTF-8, JSON, git diff --check and credential-prefix checks passed. No implementation tests/build/live calls executed.",
-    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/5",
-    "findings": [
-      "HAR has 286 entries. entries[70] is POST /api/agent/ask_proxy with user_s_input=/compact, HTTP 200, about 135.842 seconds and 41 SSE JSON records. SSE[36]: role=user, content length 18011, session_state.is_compact_summary=true. SSE[39]: empty assistant, no finish reason or pending field. SSE[40]: project_field status FINISHED. No finish_reason occurs in this SSE response.",
-      "Bridge 2497 rejects the observed user-role summary; verification exhausts reads at 2582-2585. Engine normal compact filter 1625-1653 supports the marker regardless of role, but verified context pin 1677-1680 separately rejects user summaries. Fixing only the bridge selector is incomplete.",
-      "Bridge 2824-2826 requires assistant _finish_reason=stop before checking activity. The captured trailing assistant fails that condition despite SSE project FINISHED. SSE evidence does not establish the exact later API history seen by the production bot.",
-      "Bridge 2835-2846 persists blocked bypass readiness and returns before business send at 2867. Worker 7155-7159 restores the block; 7167-7169 saves deferral. This can repeatedly reject ordinary prompts without reissuing compact. This is a logical readiness latch, not proof of a mutex deadlock or a server-side project lock.",
-      "Engine 2331-2348 combines typed evidence with text heuristics (including pricing URLs) on message_result, without an assistant-role guard, then sets the credit sentinel and breaks SSE reading. 2388 closes the stream; 2431-2433 returns sentinel with no assistant ID. This does not prove server generation is cancelled. Detection is on message_result, not every message_field delta.",
-      "Bridge 1847-1885 cannot confirm sentinel without typed credit evidence and returns CREDIT_UNCONFIRMED. 2928-2929 returns before activity baseline at 2933. During polling, 3013-3015 breaks before the activity gate at 3016; 3049-3050 returns. Failover 3224 also treats it as terminal. Thus the anti-false-rotation guard prevents rotation but does not preserve monitoring of an active generation.",
-      "Source mechanism for premature monitoring termination is confirmed. The separate production incident has no supplied stream/log here, so its exact triggering text, turn, revision and timing remain unproven."
+  "previous_phantom_viewer_review": {
+    "task": "Phantom viewer and skipped prompt: evidence-first plan",
+    "base": "08943e6",
+    "branch": "genspark_ai_developer",
+    "status": "plan_delivered_waiting_owner_evidence",
+    "plan": "genspark/phantom_viewer_audit_plan.md",
+    "gist": "https://gist.github.com/pijsal1-tech/7972532cfcf3be03c01d83954880dfc5",
+    "previous_delivery": "PR #7 merged at 08943e6; do not reimplement",
+    "completed": [
+      "T00 remote recovery",
+      "T01 raw gist and source trace",
+      "T02 five offline sender scenarios and full baseline",
+      "T03 plan and checkpoint pushed; Draft planning PR #8 created"
     ],
-    "proposals_not_implemented": [
-      "Align bridge summary selection and engine pin with trusted typed user-role compact summaries, retaining fresh-summary fingerprint, nonempty content, project/current-session verification and immediate next-payload pin. Do not infer success from text alone.",
-      "Track terminal evidence scoped to the actual operation/session, including project FINISHED; reconcile it with freshly read current history and no active generation. Do not substitute an old FINISHED event or compact_chat_session_id for the current chat session.",
-      "Separate deferred optional maintenance from business-send readiness. Re-evaluate current project state on resume so legacy bypass_ready=false cannot permanently veto work. Wait on an active turn; fail explicitly on unreadable/unauthorized state; never blindly clear safety checks or duplicate the pending prompt.",
-      "Keep text-only credit suspicion nonterminal while generation is active: do not break SSE for pricing text; preserve partial output and monitor the same project if disconnected. Confirm real typed exhaustion before rotation. Bound monitoring and keep cancellation and the existing P18 stop contract; do not relabel uncertainty as COMPLETED.",
-      "Add sanitized protocol-shaped regressions for user summary plus empty assistant plus project FINISHED, persisted blocked resume, session identity, pricing text in nonterminal assistant/tool/user messages, later real typed exhaustion, cancellation and original prompt sent once. Preserve schema v1, <=180 and zero-artifact effective fast mode; rebuild faithful split and run full gate only after approved code changes."
+    "delivery": "Initial durable push verified at 0abe9a0; PR #8 Draft. Final publication adds this recovery record; inspect remote head before repeating.",
+    "next": "Ask Q1 deployed revision/entrypoint; Q2 duration and full final logs; Q3 sanitized compact_state and actual path; Q4 safe fresh-fork policy and accurate immediate preview wording. No runtime patch before evidence/decision.",
+    "source_findings": [
+      "preview callback precedes business send at 2971",
+      "direct pre-send returns:2935 compact,2946 readiness,2950 cancellation",
+      "worker loads deferred readiness without source PID/session comparison",
+      "readiness can succeed on a fresh fork; not an unconditional veto",
+      "inherited last assistant typed credit can exit readiness before work send"
     ],
-    "evidence_gaps": ["Both supplied HARs reviewed at a1ed062. UI initiation attribution and exact post-compact API readback remain unproven; do not request the second HAR again.", "No live Genspark/Telegram calls, production incident replay, or new full-suite run. Prior 1045-test green result used incompatible mocked compact shapes and cannot establish live readiness.", "Owner qwen_engine.py change a193238 is outside this compact/Claude trace and was not audited."],
-    "scope": "Only genspark recovery notes may change. No production fixes, regeneration, live requests or merges authorized.",
-    "gist": "https://gist.github.com/pijsal1-tech/bef6e51f0ab087a279f31509129f5d97",
-    "har": "HAR/www.genspar....2...compact.....ai.har",
-    "plan": ["COMPLETED: restore pushed review and compare both HARs", "COMPLETED: define full Arabic plan with tasks, acceptance gates and recovery procedure", "WAITING: owner GO for bridge plus engine implementation; no second HAR request is needed"],
-    "restored_evidence": ["Both supplied HARs reviewed; compact entries are 70 and 4092", "Both produce fresh user-role typed summaries and empty assistant results, followed by project FINISHED", "Bridge summary verifier and engine verified pin assume assistant role", "Historical single-capture diagnosis is retained above; second_har_findings supersedes the missing-capture limitation"],
-    "next_action": "Await explicit owner GO on genspark/compact_credit_repair_plan.md. Then inspect current remote/main/PR heads and begin T01 only; do not repeat HAR comparison or merged PR #3/#4 work. Source edits need both bridge and engine scope. Live validation, merging and deployment are separate approvals. If reset interrupts final publication, inspect PR #5 to confirm plan and checkpoint are present before retrying.",
-    "validation": "Read-only AST extraction of actual compact_summary_context rejects actual HAR result messages; actual trailing assistant fails the stop predicate. Isolated resolve_runtime_credit_status returns CREDIT_UNCONFIRMED for synthetic unfinished pricing text (not incident replay). No bot imports. JSON parse and single-file scope checks passed. Historical 1045-test offline result is not evidence of live protocol correctness; no full tests rerun.",
-    "history_notice": "All active_* and older fields below are historical PR #4/#3 records; both PRs are merged. Do not repeat their implementation.",
-    "security": "Do not persist credentials or raw HAR messages. Never use captured credentials for live requests."
-  },
-  "active_task": "GO: surgical safe compact bypass and durable deferred policy",
-  "active_base": "9418697 (PR #3 merged)",
-  "active_pr": "https://github.com/number949481-ux/TTTTT/pull/4",
-  "active_status": "implementation_complete_validated",
-  "active_scope": ["send_message_and_make_public safe bypass and fresh-session safety checks", "send_message_with_auto_account_failover compact-only handling, no credit rotation redesign", "compact_state deferral and its worker callbacks; schema_version remains 1", "tests, generated split, progress and execution report"],
-  "active_plan": ["Unconfirmed compact may continue only with freshly fetched readable current session and finished assistant turn, no active generation; preserve exact pending prompt", "Persist due=false with optional deferred metadata inside existing compact_state; suppress rearm for same session and current failover chain", "Keep verified compact success path, cancellation, structured credit evidence and zero-artifact fast mode unchanged", "Add offline real-worker bypass, restart, safety and failover regressions; rebuild faithful split and run full quality gate", "Push small checkpoints, then synchronize/squash and publish new PR"],
-  "active_baseline": {"pytest_passed": 1028, "subtests_passed": 26},
-  "active_reset_checkpoint": "Restored remote 4150870 after reset. Source and 69 focused passing tests (+14 subtests) are pushed. Interrupted generator boundary edit was NOT pushed and is absent; reapply only that edit. Main remains 9418697.",
-  "active_completed": ["safe_unverified_compact_bypass", "durable_deferred_session_policy", "original_prompt_and_credit_handoff_regressions", "restart_and_safety_guards", "utf8_rebuild", "parity_11_of_11", "full_suite_and_quality_gate", "scope_and_invariant_audit", "progress_documentation", "push_per_chunk"],
-  "active_verification": {"pytest_passed": 1045, "subtests_passed": 26, "focused_tests_passed": 69, "focused_subtests_passed": 14, "parity_passed": 11, "source_lines": 9060, "syntax": "passed", "quality_gate_exit": 0, "quality_gate_unittest_count": 1045},
-  "active_invariants": "Manifest schema_version remains 1; default/normalizer unchanged, optional metadata stays inside compact_state. Engine, verification helpers and artifact block byte-identical to main; CREDIT_EXHAUSTED/DATA_RETENTION/LOW_BALANCE rotation branches AST-identical. Only sender, failover compact handling, compact state setter and worker compact callbacks changed.",
-  "active_limits": "No live HAR or live Genspark E2E. Unsafe/unreadable/pending/active sessions or failed deferral writes still block work explicitly; successful bypass is not successful compaction. Same-session deferral prevents automatic reattempt; known distinct sessions may requalify at scheduling.",
-  "active_next_action": "Owner review of PR #4 and live validation after merge. Final delivery squashes checkpoints into one commit and marks the PR ready. If reset interrupts publication, inspect remote head/draft status and complete only missing publication steps; do not redo implementation. Historical fields below describe merged PR #3.",
-  "task": "Approved compact threshold flip: duration <= 180 seconds",
-  "branch": "genspark_ai_developer",
-  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/3",
-  "status": "implementation_complete_validated",
-  "current_scope": "Owner now explicitly authorizes <= in sender and registry callback, matching tests, Windows UTF-8 reads, rebuild and full quality gate. Existing duration measurement and artifact policies stay unchanged.",
-  "last_review": {
-    "gist": "https://gist.github.com/pijsal1-tech/68039140242daedca60ae8eaca6ae02e",
-    "source_revision": "c4225aa",
-    "scope": "Explanation and genspark folder updates only. No project code changes authorized.",
-    "findings": [
-      "current_account_duration reads the account claim span, not pure generation time (bridge lines 2477-2490).",
-      "The span opens at account claim (3111); download and publication run at 3009/3013 before send_message_and_make_public returns; compact eligibility is sampled at 3196/3197.",
-      "Consequently, archive download, setup/login/fork and publication can inflate the 180-second compact trigger even when generation itself lasted 55 seconds.",
-      "The normal GitHub sync callback runs after compact eligibility is sampled (3228 then worker github_sync at 7132). It extends displayed total account duration, but is not included in that already-sampled trigger.",
-      "should_skip_artifacts_download at 476-486 gives enabled GitHub precedence over fast_mode. Actual fast mode skips artifacts irrespective of run duration or changed files.",
-      "The gist is a user-described scenario, not a runtime log: actual deployed revision, effective fast flag and project GitHub settings were not verified."
+    "incident_root_cause": "NOT_PROVEN: supplied log ends at asynchronous early-public message; no production state or request trace",
+    "validation": {
+      "full_pytest_passed": 1066,
+      "subtests_passed": 51,
+      "exit": 0,
+      "offline_scenarios": 5,
+      "canonical_gate_this_session": "not_run",
+      "runtime_modified": false,
+      "live_calls": false
+    },
+    "invariants": [
+      "P16 immediate publication and preview",
+      "maintenance completion then original work prompt",
+      "no blind overlapping send or false completion",
+      "effective fast zero artifacts",
+      "P18 cancellation schema-v1 threshold<=180 Qwen=2 unchanged"
     ],
-    "recommendations_not_implemented": [
-      "Keep compact eligibility and artifact delivery as independent decisions; do not skip downloads merely because a response took less than 180 seconds.",
-      "Use a dedicated monotonic generation interval starting at the business prompt send and ending when a terminal response or confirmed credit event is observed, before downloads/publication/sync. Exclude prior compact maintenance and account setup.",
-      "Maintain a separate total operational duration for accounting and UI. Client-observed generation duration is not exact server compute time unless server timestamps are available.",
-      "In effective fast mode, leave changed files in the cloud and preserve only resume metadata; a local diff is not needed when artifact synchronization is intentionally disabled.",
-      "For the current local GitHub sync design, automatic file mirroring requires fetching file content. Zero local downloads plus automatic GitHub sync would require a separately approved cloud-side publishing design.",
-      "Before any approved fix, add a regression with 55 seconds of generation plus 160 seconds of artifact work: compact must remain ineligible under the proposed generation-only policy."
-    ],
-    "validation": "Read-only source trace. No application import, tests, rebuild, deployment or code modification performed. Existing verification figures below are historical."
-  },
-  "previous_verification": {"tests_passed": 1018, "subtests_passed": 26, "compact_tests_passed": 17, "compact_subtests_passed": 2, "parity_tests_passed": 11, "syntax_check": "passed", "quality_gate_exit": 0},
-  "spec": "https://gist.github.com/pijsal1-tech/143bb8bf9a2478451114376123b017f8",
-  "baseline": {"tests_passed": 1001, "subtests_passed": 24},
-  "approved": {"threshold_seconds": 180, "comparison": "<=", "credit_compact_account": "new account before continuation prompt", "completed_trigger": "next user prompt, never at completion itself"},
-  "plan": [
-    "Retain owner change at sender (fac373f); change remaining registry comparator to <=",
-    "Update compact tests for short, exact boundary and long runs in both credit and completion paths; explicitly read source as UTF-8",
-    "Keep unrelated credit tests isolated from auto-compact trigger changes",
-    "Run python -X utf8 scripts/rebuild_refactor.py, parity 11/11, full pytest and hadith_sijil Exit 0",
-    "Push each chunk, update progress and squash final PR"
-  ],
-  "completed": ["sender_and_registry_comparators_le_180", "compact_threshold_tests_and_explicit_utf8", "isolated_credit_recovery_fixtures", "utf8_rebuild_and_byte_parity", "full_pytest_and_syntax", "quality_gate_and_execution_report", "active_threshold_audit", "authoritative_progress_updated", "push_per_chunk"],
-  "verification": {"tests_passed": 1028, "subtests_passed": 26, "compact_tests_passed": 27, "compact_subtests_passed": 2, "combined_focused_tests_passed": 52, "combined_focused_subtests_passed": 14, "parity_tests_passed": 11, "syntax_check": "passed", "quality_gate_exit": 0, "quality_gate_unittest_count": 1028, "source_lines": 8962},
-  "scope_notes": ["Duration remains the existing monotonic account claim span, not pure generation time.", "Zero duration including invalid/missing duration fallback qualifies under the explicitly approved <= policy.", "Long credit runs do not newly qualify but do not erase pending eligibility from earlier work.", "Typed credit evidence, verified compact history/session, cancellation and zero-download effective fast mode are unchanged."],
-  "reset_recovery": "Restored d7505bd, reapplied only the missing fixture edits and pushed each validated chunk. Source changes already pushed before reset were not repeated. Rebuild, tests, quality report and progress documentation are now complete.",
-  "next_action": "Owner review of PR #3 and live validation after merge. Delivery uses one squashed commit; if interrupted during final publication, inspect remote head and PR draft status before retrying push/readiness. Do not reimplement completed changes or redesign duration measurement.",
-  "live_e2e": "not_run",
-  "credentials": "Never stored"
+    "reset": "Fetch remote first. Restore this plan; do not repeat PR #7 or T00-T02. If publication interrupted complete only missing commit/push/PR.",
+    "history_notice": "completed_compact_credit_execution and older review/active fields are historical",
+    "secrets": "Never persist credentials in repository or remote URL",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/8"
+  }
 }
