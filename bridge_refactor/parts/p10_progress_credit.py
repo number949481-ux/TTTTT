@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6743..7049
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6814..7124
 المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer (P35: فرع MODEL_DECLINED مخصص بـ allow_preview=True — نص الرفض القصير يُعرض للمستخدم)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -233,6 +233,10 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
         }
 
     mapping = {
+        "COMPACT_HANDOFF_BLOCKED": (
+            "<b>توقف تسليم المهمة بأمان.</b>",
+            "تعذر تثبيت حالة الصيانة أو رابطها أو تبريد الحساب. تم الاحتفاظ بالرابط دون إرسال عشوائي لحساب آخر أو تكرار الصيانة في هذه المحاولة. راجع حالة الحفظ قبل الاستئناف.",
+        ),
         "READ_FAILED": (
             "<b>تعذرت قراءة جلسة المشروع الحالية.</b>",
             "لم يُرسل برومبت العمل. تعذر تجهيز سياق الاستئناف بسبب قراءة الشبكة؛ لا يوجد حجب صيانة دائم. راجع المشروع قبل إعادة المحاولة.",
