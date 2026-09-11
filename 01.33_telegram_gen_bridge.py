@@ -2675,6 +2675,8 @@ def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_st
             if on_start:
                 on_start(current_pid)
     bridge_cfg.compact_in_progress = True
+    bridge_cfg.compact_completed_this_attempt = False
+    bridge_cfg.compact_handoff_saved = False
     try:
         if cancelled():
             return CANCELLED_STATUS, current_pid, None
@@ -2683,6 +2685,17 @@ def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_st
         if getattr(cfg, "_last_fetch_status", 0) != 200:
             return "READ_FAILED", current_pid, None
         old_key, _ = compact_summary_context(baseline)
+        if cancelled():
+            return CANCELLED_STATUS, current_pid, None
+        # Consume the durable trigger before dispatch, so a failed post-compact
+        # save cannot replay maintenance on restart. No file artifacts involved.
+        consume = getattr(bridge_cfg, "compact_deferred_callback", None)
+        if callable(consume):
+            try:
+                consume(current_pid, str(getattr(cfg, "_last_chat_session_id", "") or ""), False)
+            except Exception as err:
+                log_event("warning", f"[COMPACT] Trigger save failed: {type(err).__name__}", email=email)
+                return "COMPACT_HANDOFF_BLOCKED", current_pid, None
         if cancelled():
             return CANCELLED_STATUS, current_pid, None
         started(current_pid)
@@ -2701,6 +2714,9 @@ def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_st
                                             answer, start_time, email, maintenance=True)
         if status != "COMPLETED":
             return status, current_pid, None
+        bridge_cfg.compact_completed_this_attempt = True
+        bridge_cfg.compact_before_send = False
+        bridge_cfg.compact_latest_pid = current_pid
         # No second compact-success gate: this read supplies the next payload,
         # exactly as an ordinary continuation, not a six-read summary verifier.
         cfg._last_chat_session_id = ""
@@ -2723,9 +2739,9 @@ def run_verified_compact(mod, cookies, cfg, bridge_cfg, project_id, email, on_st
         save = getattr(bridge_cfg, "compact_verified_callback", None)
         if callable(save):
             try:
-                save(context)
+                bridge_cfg.compact_handoff_saved = save(context) is not False
             except Exception as err:
-                log_event("warning", f"[COMPACT] Optional state save failed: {type(err).__name__}", email=email)
+                log_event("warning", f"[COMPACT] Handoff save failed: {type(err).__name__}", email=email)
         return "COMPACT_COMPLETED", current_pid, context
     except Exception as err:
         log_event("warning", f"[COMPACT] Read/transport failure: {type(err).__name__}", email=email)
@@ -2745,6 +2761,7 @@ def send_message_and_make_public(
 ) -> tuple[str | None, str, str | None, str | None, str | None]:
     if bridge_cfg is None:
         bridge_cfg = BridgeConfig()
+    bridge_cfg.compact_completed_this_attempt = False
     max_retries = max(1, getattr(bridge_cfg, "max_timeout_retries", 2))
     session_timeout = getattr(bridge_cfg, "session_timeout", 1000)
 
@@ -2824,7 +2841,10 @@ def send_message_and_make_public(
         if _cancel_event is not None and _cancel_event.is_set():
             log_event("warning", "🛑 [P25] إلغاء المستخدم قبل بدء المحاولة — خروج فوري بدون إرسال", email=email)
             return None, CANCELLED_STATUS, None, None, None
+        if getattr(bridge_cfg, "compact_state_save_failed", False):
+            return build_genspark_viewer_url(extract_project_id(url)), "COMPACT_HANDOFF_BLOCKED", None, "", None
         project_id, history = None, []
+        is_new_fork = False
 
         accounts = read_accounts_safe(json_path)
         acc = next((a for a in accounts if isinstance(a, dict) and a.get("email") == email), None)
@@ -2907,6 +2927,9 @@ def send_message_and_make_public(
                     history = []
                 forked_pid = get_public_forked_pid(orig_pid, cookies, mod=mod, cfg=cfg, email=email, bridge_cfg=bridge_cfg)
                 project_id = forked_pid or orig_pid
+                is_new_fork = bool(is_probable_project_id(forked_pid)
+                                   and extract_project_id(forked_pid) == forked_pid
+                                   and project_id != orig_pid)
                 # [P12-C] زر المعاينة الحية فور معرفة مشروع الاستئناف/الفورك (لا انتظار لـ project_start)
                 # [P16] النشر العام المبكر قبل/مع إرسال زر المعاينة — الرابط يعمل من أول ضغطة
                 if project_id:
@@ -2933,12 +2956,14 @@ def send_message_and_make_public(
                     except Exception as err:
                         log_event("warning", f"[COMPACT] Optional deferral save failed: {type(err).__name__}", email=email)
                 return build_genspark_viewer_url(project_id), compact_status, None, "", None
-            history = verified_compact_context["messages"]
-            # COMPLETED above was maintenance only. Keep the live project/card,
-            # fall through to the ONE ordinary send below with the original query.
-            if on_project_start_callback:
-                on_project_start_callback(project_id)
-        elif compact_deferred and getattr(bridge_cfg, "compact_bypass_blocked", False):
+            if _cancel_event is not None and _cancel_event.is_set():
+                return build_genspark_viewer_url(project_id), CANCELLED_STATUS, None, "", None
+            bridge_cfg.compact_before_send = False
+            bridge_cfg.compact_bypass_blocked = False
+            # Internal transition: failover cools A and sends the pending query on B.
+            return build_genspark_viewer_url(project_id), "COMPACT_COMPLETED", None, "", None
+        elif (compact_deferred and getattr(bridge_cfg, "compact_bypass_blocked", False)
+              and not is_new_fork):
             cfg._chat_attempt = None
             ready_status, ready_text = monitor_chat_completion(
                 mod, cookies, cfg, bridge_cfg, project_id, None, time.time(), email, readiness=True)
@@ -2968,6 +2993,7 @@ def send_message_and_make_public(
                 cfg._verified_compact_context = None
                 cfg._resume_context = verified_compact_context
                 try:
+                    bridge_cfg.compact_handoff_pending = False
                     answer, pid, asst_id = mod.send_chat(cookies, query, email, **send_chat_kwargs)
                 finally:
                     cfg._verified_compact_context = cfg._resume_context = None  # Polling sees live replies.
@@ -3120,8 +3146,12 @@ def send_message_with_auto_account_failover(
     _set_credit_checkpoint_state(bridge_cfg, "", "")
     active_url = url
     active_query = query
+    bridge_cfg.compact_handoff_pending = False
 
     while attempt < max_attempts:
+        cancel = getattr(bridge_cfg, "cancel_event", None)
+        if cancel is not None and cancel.is_set():
+            return active_url, CANCELLED_STATUS, None, None, None
         attempt += 1
         curr_acc, ready_accounts, claim_reason = claim_eligible_account_for_owner(
             all_accounts,
@@ -3139,7 +3169,7 @@ def send_message_with_auto_account_failover(
                 max_attempts=max_attempts,
             )
             log_event("error", "كافة الحسابات المصرح بها حالياً في مهلة الـ 29h أو الحظر!")
-            return None, "ALL_ACCOUNTS_IN_COOLDOWN", None, None, None
+            return (active_url if bridge_cfg.compact_handoff_pending else None), "ALL_ACCOUNTS_IN_COOLDOWN", None, None, None
         if claim_reason == "busy":
             bridge_cfg.selected_account_claim_state = "busy"
             notify_account_selection_observer(
@@ -3149,7 +3179,7 @@ def send_message_with_auto_account_failover(
                 max_attempts=max_attempts,
             )
             log_event("warning", "كل الحسابات المؤهلة الحالية محجوزة لمهمات أخرى؛ لا يوجد حساب حر الآن لهذه المهمة")
-            return None, "ALL_ACCOUNTS_BUSY", None, None, None
+            return (active_url if bridge_cfg.compact_handoff_pending else None), "ALL_ACCOUNTS_BUSY", None, None, None
 
         curr_acc = reactivate_account_if_due(curr_acc, json_path=json_path)
         curr_email = curr_acc.get("email")
@@ -3205,7 +3235,27 @@ def send_message_with_auto_account_failover(
             # لا progress_callback، لا إشعار للمستخدم، لا حظر auth_failed خاطئ.
             # Unconfirmed compact is handled before the business send. Only an
             # unsafe/unreadable session or failed durable deferral blocks that send.
-            if status in ("CREDIT_UNCONFIRMED", "TIMEOUT", "READ_FAILED", "ACTIVITY_STOPPED"):
+            if status == "COMPACT_COMPLETED" or getattr(bridge_cfg, "compact_completed_this_attempt", False):
+                bridge_cfg.compact_before_send = False
+                bridge_cfg.compact_handoff_pending = True
+                active_url = pub_url or active_url
+                bridge_cfg.last_credit_resume_target_url = active_url or ""
+                bridge_cfg.last_credit_resume_project_id = extract_project_id(active_url)
+                try:
+                    cooled = mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours,
+                                                   json_path=json_path)
+                except Exception as err:
+                    cooled = False
+                    log_event("warning", f"[COMPACT] Cooldown save failed: {type(err).__name__}", email=curr_email)
+                if (not cooled or status != "COMPACT_COMPLETED"
+                        or not getattr(bridge_cfg, "compact_handoff_saved", False)
+                        or not extract_project_id(active_url)):
+                    return active_url, "COMPACT_HANDOFF_BLOCKED", curr_acc, None, last_text
+                bridge_cfg.compact_bypass_blocked = False
+                log_event("info", "[COMPACT] Maintenance complete; cooled account, handing pending work to next account", email=curr_email)
+                continue  # active_query unchanged; no credit increment/progress success.
+
+            if status in ("CREDIT_UNCONFIRMED", "TIMEOUT", "READ_FAILED", "ACTIVITY_STOPPED", "COMPACT_HANDOFF_BLOCKED"):
                 return pub_url, status, curr_acc, ext_dir, last_text
 
             if status == "LOW_BALANCE":
@@ -3244,24 +3294,30 @@ def send_message_with_auto_account_failover(
                 )
                 continue
 
-            if status == "CREDIT_EXHAUSTED" or (
-                    status == "COMPLETED" and not is_model_decline_response(last_text)):
+            bridge_cfg.compact_state_save_failed = False
+            if status == "CREDIT_EXHAUSTED":
                 duration = current_account_duration(bridge_cfg, curr_email)
-                due = (duration <= COMPACT_TRIGGER_SECONDS
-                       and not getattr(bridge_cfg, "compact_deferred", False))
-                if status == "CREDIT_EXHAUSTED" and due:
-                    bridge_cfg.compact_before_send = True
+                bridge_cfg.compact_before_send = duration <= COMPACT_TRIGGER_SECONDS
+                bridge_cfg.compact_deferred = bridge_cfg.compact_deferred_this_run = False
                 schedule = getattr(bridge_cfg, "compact_schedule_callback", None)
-                if callable(schedule) and (due or status == "COMPLETED"):
+                if callable(schedule):
                     try:
-                        schedule(status, pub_url, duration)
+                        if schedule(status, pub_url, duration) is False:
+                            raise IOError("Compact schedule was not preserved")
                     except Exception as err:
-                        # Optional maintenance scheduling cannot override a real
-                        # business outcome or skip the credit preservation callback.
                         bridge_cfg.compact_before_send = False
-                        bridge_cfg.compact_deferred = True
-                        bridge_cfg.compact_deferred_this_run = True
-                        log_event("warning", f"[COMPACT] SCHEDULE_DEFERRED: {type(err).__name__}", email=curr_email)
+                        bridge_cfg.compact_state_save_failed = True
+                        log_event("warning", f"[COMPACT] Schedule save failed: {type(err).__name__}", email=curr_email)
+            elif status == "COMPLETED":
+                bridge_cfg.compact_before_send = False
+                clear = getattr(bridge_cfg, "compact_clear_callback", None)
+                if callable(clear):
+                    try:
+                        if clear(pub_url) is False:
+                            raise IOError("Compact state was not cleared")
+                    except Exception as err:
+                        bridge_cfg.compact_state_save_failed = True
+                        log_event("warning", f"[COMPACT] Clear save failed: {type(err).__name__}", email=curr_email)
 
             if status == "CREDIT_EXHAUSTED":
                 credit_continuations += 1
@@ -3295,6 +3351,16 @@ def send_message_with_auto_account_failover(
                         email=curr_email,
                         extra=event_meta,
                     )
+
+            if bridge_cfg.compact_state_save_failed:
+                # Preserve the business checkpoint above even when maintenance
+                # metadata fails. E2 forbids advancing to another account.
+                if status == "CREDIT_EXHAUSTED":
+                    try:
+                        mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
+                    except Exception as err:
+                        log_event("warning", f"[COMPACT] Credit cooldown save failed: {type(err).__name__}", email=curr_email)
+                return pub_url or active_url, "COMPACT_HANDOFF_BLOCKED", curr_acc, ext_dir, last_text
 
             is_401 = status in ("SESSION_EXPIRED", "LOGIN_FAILED")
             if is_401:
@@ -3486,7 +3552,7 @@ def send_message_with_auto_account_failover(
             close_account_timing_span(bridge_cfg, curr_email)  # ⏱️ [P30] إغلاق حتمي للـ span في كل المسارات
             release_account_selection(curr_email, owner_token)
             bridge_cfg.selected_account_claim_state = "released"
-    return None, "MAX_ATTEMPTS_EXHAUSTED", None, None, None
+    return (active_url if bridge_cfg.compact_handoff_pending else None), "MAX_ATTEMPTS_EXHAUSTED", None, None, None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -4339,13 +4405,17 @@ class ProjectRegistry:
             return dict(self._read().get("compact_state") or {})
 
     def set_compact_state(self, due, source_pid, duration=0.0, context=None, *,
-                          deferred=False, chat_session_id="", bypass_ready=None):
+                          deferred=False, chat_session_id="", bypass_ready=None, trigger_status=None):
         """Persist eligibility/verified locator, without snapshots or chat secrets."""
         pid = extract_project_id(source_pid)
         if not pid:
             raise ValueError("Compact maintenance requires a valid project")
         state = {"due": due is True, "source_pid": pid,
                  "duration_seconds": max(0.0, float(duration)), "updated_at": _utc()}
+        if trigger_status in ("CREDIT_EXHAUSTED", "COMPLETED"):
+            state["trigger_status"] = trigger_status
+            state["due"] = (trigger_status == "CREDIT_EXHAUSTED" and due is True
+                            and 0 <= state["duration_seconds"] <= COMPACT_TRIGGER_SECONDS)
         if context is not None:
             state.update({"chat_session_id": context["chat_session_id"],
                           "summary_key": context["summary_key"], "verified": bool(context["summary_key"])})
@@ -4359,7 +4429,8 @@ class ProjectRegistry:
             # run must not rearm a deferred session, even after process restart.
             keep_deferred = (previous.get("deferred") is True and
                              (not session_id or session_id == previous.get("chat_session_id")))
-            if context is None and (deferred or keep_deferred):
+            if (context is None and trigger_status not in ("CREDIT_EXHAUSTED", "COMPLETED")
+                    and (deferred or keep_deferred)):
                 state.update({"due": False, "deferred": True, "verified": False,
                               "chat_session_id": session_id or previous.get("chat_session_id", ""),
                               "bypass_ready": (bypass_ready is True if bypass_ready is not None
@@ -6970,6 +7041,10 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
         }
 
     mapping = {
+        "COMPACT_HANDOFF_BLOCKED": (
+            "<b>توقف تسليم المهمة بأمان.</b>",
+            "تعذر تثبيت حالة الصيانة أو رابطها أو تبريد الحساب. تم الاحتفاظ بالرابط دون إرسال عشوائي لحساب آخر أو تكرار الصيانة في هذه المحاولة. راجع حالة الحفظ قبل الاستئناف.",
+        ),
         "READ_FAILED": (
             "<b>تعذرت قراءة جلسة المشروع الحالية.</b>",
             "لم يُرسل برومبت العمل. تعذر تجهيز سياق الاستئناف بسبب قراءة الشبكة؛ لا يوجد حجب صيانة دائم. راجع المشروع قبل إعادة المحاولة.",
@@ -7145,35 +7220,52 @@ def process_user_task_async(
         cfg.compact_deferred = compact_state.get("deferred") is True
         cfg.compact_deferred_this_run = False
         cfg.compact_bypass_blocked = cfg.compact_deferred and compact_state.get("bypass_ready") is not True
+        stored_duration = compact_state.get("duration_seconds")
+        valid_duration = (isinstance(stored_duration, (int, float))
+                          and not isinstance(stored_duration, bool)
+                          and 0 <= stored_duration <= COMPACT_TRIGGER_SECONDS)
         cfg.compact_before_send = bool(requested_pid and compact_state.get("due") is True
-                                       and not cfg.compact_deferred)
+                                       and compact_state.get("trigger_status") == "CREDIT_EXHAUSTED"
+                                       and compact_state.get("source_pid") == requested_pid
+                                       and valid_duration and not cfg.compact_deferred)
+        cfg.compact_state_save_failed = False
+        if compact_state.get("due") is True and not cfg.compact_before_send:
+            try:
+                registry.set_compact_state(False, compact_state.get("source_pid") or requested_pid)
+            except Exception as err:
+                cfg.compact_state_save_failed = True
+                log_event("warning", f"[COMPACT] Legacy due clear failed: {type(err).__name__}")
 
         def schedule_compact(stage_status, stage_url, duration):
-            registry.set_compact_state(
-                duration <= COMPACT_TRIGGER_SECONDS, extract_project_id(stage_url), duration,
-                deferred=cfg.compact_deferred_this_run,
-                chat_session_id=getattr(cfg, "compact_current_session_id", ""))
+            return registry.set_compact_state(
+                stage_status == "CREDIT_EXHAUSTED" and duration <= COMPACT_TRIGGER_SECONDS,
+                extract_project_id(stage_url), duration,
+                chat_session_id=getattr(cfg, "compact_current_session_id", ""),
+                trigger_status=stage_status)
+
+        def clear_compact(stage_url):
+            return registry.set_compact_state(False, extract_project_id(stage_url), trigger_status="COMPLETED")
+
+        cfg.compact_clear_callback = clear_compact
 
         def defer_compact(project_id, session_id, bypass_ready):
             registry.set_compact_state(False, project_id, deferred=True,
                                        chat_session_id=session_id, bypass_ready=bypass_ready)
 
         cfg.compact_deferred_callback = defer_compact
-        if cfg.compact_deferred and compact_state.get("due") is True:
-            try:
-                defer_compact(compact_state.get("source_pid") or requested_pid,
-                              compact_state.get("chat_session_id", ""),
-                              compact_state.get("bypass_ready") is True)
-            except Exception as err:
-                log_event("warning", f"[COMPACT] Legacy state save failed: {type(err).__name__}")
 
         def remember_compact(context):
             nonlocal runtime_identity
             registry.set_compact_state(False, context["project_id"], context=context)
-            runtime_identity = remember_registry_identity(
+            saved_identity = remember_registry_identity(
                 registry, root_pid=(runtime_identity or {}).get("root_genspark_pid") or requested_pid,
                 latest_pid=context["project_id"], project_name=project_name,
-                chat_id=chat_id, status="COMPACT_COMPLETED") or runtime_identity
+                chat_id=chat_id, status="COMPACT_COMPLETED")
+            persisted_identity = get_project_identity_record(project_key) or {}
+            if (not saved_identity or persisted_identity.get("latest_genspark_pid") != context["project_id"]):
+                raise IOError("Compact latest project was not durably preserved")
+            runtime_identity = saved_identity
+            return True
 
         cfg.compact_schedule_callback = schedule_compact
         cfg.compact_verified_callback = remember_compact
