@@ -225,7 +225,7 @@ CONTRACT_VERSION = "v15"
 
 AVAILABLE_MODELS = [
     "claude-fable-5-1",
-    "claude-opus-5",
+    "claude-opus-5-5",
     "claude-sonnet-5",
     "gpt-6-astra",
     "gpt-5.6-sol",
@@ -236,7 +236,7 @@ PROTECTED_MODELS = frozenset({"gpt-5.5", "claude-opus-4-8"})
 
 MODEL_DISPLAY_NAMES = {
     "claude-fable-5-1": "🧠 Claude Fable 5.1",
-    "claude-opus-5": "👑 Claude Opus 5",
+    "claude-opus-5-5": "👑 Claude Opus 5.5",
     "claude-sonnet-5": "🎭 Claude Sonnet 5",
     "gpt-6-astra": "⚡ GPT-6 Astra",
     "gpt-5.6-sol": "☀️ GPT-5.6 Sol",
@@ -246,7 +246,8 @@ MODEL_DISPLAY_NAMES = {
 MODEL_ALIASES = {
     "claude-fable-5-1": "claude-fable-5-1", "claude-fable-5.1": "claude-fable-5-1", "claude fable 5.1": "claude-fable-5-1", "claude-fable-5": "claude-fable-5-1", "claude fable 5": "claude-fable-5-1",
     "fable 5.1": "claude-fable-5-1", "fable 5": "claude-fable-5-1", "🧠 claude fable 5.1": "claude-fable-5-1",
-    "claude-opus-5": "claude-opus-5", "claude opus 5": "claude-opus-5", "opus 5": "claude-opus-5", "👑 claude opus 5": "claude-opus-5",
+    "claude-opus-5-5": "claude-opus-5-5", "claude-opus-5.5": "claude-opus-5-5", "claude opus 5.5": "claude-opus-5-5", "opus 5.5": "claude-opus-5-5", "👑 claude opus 5.5": "claude-opus-5-5",
+    "claude-opus-5": "claude-opus-5-5", "claude opus 5": "claude-opus-5-5", "opus 5": "claude-opus-5-5", "👑 claude opus 5": "claude-opus-5-5",
     "claude-sonnet-5": "claude-sonnet-5", "claude sonnet 5": "claude-sonnet-5", "sonnet 5": "claude-sonnet-5", "🎭 claude sonnet 5": "claude-sonnet-5",
     "gpt-6-astra": "gpt-6-astra", "gpt-6 astra": "gpt-6-astra", "gpt 6 astra": "gpt-6-astra", "astra": "gpt-6-astra", "⚡ gpt-6 astra": "gpt-6-astra", "⚡ gpt-6-astra": "gpt-6-astra",
     "gpt-5.6-sol": "gpt-5.6-sol", "gpt 5.6 sol": "gpt-5.6-sol", "gpt 5.6": "gpt-5.6-sol", "☀️ gpt-5.6 sol": "gpt-5.6-sol",
@@ -259,7 +260,8 @@ MODEL_ALIASES = {
 # model_slug → (models_list, use_model, ai_chat_model, inject_msg_id)
 CONTRACTS = {
     "claude-fable-5-1":  (["gpt-4.1"],          "claude-fable-5-1",  None,              True),
-    "claude-opus-5":   (["claude-opus-5"],    "claude-opus-5",   None,              True),
+    "claude-opus-5-5": (["gpt-4.1"],          "claude-opus-5-5", None,              True),
+    "claude-opus-5":   (["gpt-4.1"],          "claude-opus-5-5", None,              True),
     "claude-sonnet-5": (["claude-sonnet-5"],  "claude-sonnet-5", "claude-sonnet-5", True),
     "gpt-6-astra":     (["gpt-4.1"],          "gpt-6-astra",     None,              True),
     "gpt-5.6-sol":     (["gpt-5.6-sol"],      "gpt-5.6-sol",     "gpt-5.6-sol",     True),
@@ -905,10 +907,10 @@ def needs_web_search(query: str) -> bool:
 class BridgeConfig:
     model: str = "claude-fable-5-1"
     agent_type: str = "code_sandbox"
-    session_timeout: int = 1000          # ⏱️ المهلة القصوى لانتظار الجلسة الواحدة (1000 ثانية)
+    session_timeout: int = 2000          # ⏱️ المهلة القصوى لانتظار الجلسة الواحدة (1000 ثانية)
     max_timeout_retries: int = 2         # 🔄 عدد محاولات إعادة الطلب تلقائياً عند التايم أوت
     max_account_attempts: int = 50       # 🛡️ حد أقصى للمحاولات لمنع الحلقات المفرغة
-    max_credit_continuations: int = 10   # عدد مرات نقل الاستئناف عند نفاد الرصيد
+    max_credit_continuations: int = 19   # عدد مرات نقل الاستئناف عند نفاد الرصيد
     cooldown_hours: float = 29.0         # ⏱️ مهلة الـ 29 ساعة للحسابات المنتهية بـ cooldown_until
     min_preflight_balance: int = 100     # 💰 [P13] الحد الأدنى للرصيد قبل أي إرسال — أقل منه = تبريد 29h وتخطٍ صامت
     user_agent: str = USER_AGENTS[0]
@@ -2505,7 +2507,7 @@ def get_public_forked_pid(
     return None
 
 
-COMPACT_TRIGGER_SECONDS = 180
+COMPACT_TRIGGER_SECONDS = 300
 
 
 def current_account_duration(bridge_cfg, email="") -> float:
@@ -6905,7 +6907,7 @@ def describe_archive_delivery(ext_dir: str | None) -> tuple[pathlib.Path | None,
 
 def get_credit_continuation_limit(bridge_cfg: BridgeConfig | None) -> int:
     try:
-        return max(1, int(getattr(bridge_cfg, "max_credit_continuations", 10) or 10))
+        return max(1, int(getattr(bridge_cfg, "max_credit_continuations", 19) or 19))
     except Exception:
         return 10
 
