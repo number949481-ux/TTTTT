@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p02_config_contracts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 156..487
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 156..489
 المحتوى: Global config + models + CONTRACTS + resume-prompt utils + project settings (P17: ALLOWED_GROUP_IDS + is_chat_allowed لدعم الجروبات | P41: MALFORMED_PROJECT_LINK_MESSAGE — رسالة الرفض الصريحة للرابط المشوّه | P43: حقل fast_mode في default_project_settings + الدالة الحاكمة should_skip_artifacts_download (D3: GitHub مفعّل يفرض التنزيل، وإلا التخطي عند fast_mode=True فقط))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -75,7 +75,7 @@ CONTRACT_VERSION = "v15"
 
 AVAILABLE_MODELS = [
     "claude-fable-5-1",
-    "claude-opus-5",
+    "claude-opus-5-5",
     "claude-sonnet-5",
     "gpt-6-astra",
     "gpt-5.6-sol",
@@ -86,7 +86,7 @@ PROTECTED_MODELS = frozenset({"gpt-5.5", "claude-opus-4-8"})
 
 MODEL_DISPLAY_NAMES = {
     "claude-fable-5-1": "🧠 Claude Fable 5.1",
-    "claude-opus-5": "👑 Claude Opus 5",
+    "claude-opus-5-5": "👑 Claude Opus 5.5",
     "claude-sonnet-5": "🎭 Claude Sonnet 5",
     "gpt-6-astra": "⚡ GPT-6 Astra",
     "gpt-5.6-sol": "☀️ GPT-5.6 Sol",
@@ -96,7 +96,8 @@ MODEL_DISPLAY_NAMES = {
 MODEL_ALIASES = {
     "claude-fable-5-1": "claude-fable-5-1", "claude-fable-5.1": "claude-fable-5-1", "claude fable 5.1": "claude-fable-5-1", "claude-fable-5": "claude-fable-5-1", "claude fable 5": "claude-fable-5-1",
     "fable 5.1": "claude-fable-5-1", "fable 5": "claude-fable-5-1", "🧠 claude fable 5.1": "claude-fable-5-1",
-    "claude-opus-5": "claude-opus-5", "claude opus 5": "claude-opus-5", "opus 5": "claude-opus-5", "👑 claude opus 5": "claude-opus-5",
+    "claude-opus-5-5": "claude-opus-5-5", "claude-opus-5.5": "claude-opus-5-5", "claude opus 5.5": "claude-opus-5-5", "opus 5.5": "claude-opus-5-5", "👑 claude opus 5.5": "claude-opus-5-5",
+    "claude-opus-5": "claude-opus-5-5", "claude opus 5": "claude-opus-5-5", "opus 5": "claude-opus-5-5", "👑 claude opus 5": "claude-opus-5-5",
     "claude-sonnet-5": "claude-sonnet-5", "claude sonnet 5": "claude-sonnet-5", "sonnet 5": "claude-sonnet-5", "🎭 claude sonnet 5": "claude-sonnet-5",
     "gpt-6-astra": "gpt-6-astra", "gpt-6 astra": "gpt-6-astra", "gpt 6 astra": "gpt-6-astra", "astra": "gpt-6-astra", "⚡ gpt-6 astra": "gpt-6-astra", "⚡ gpt-6-astra": "gpt-6-astra",
     "gpt-5.6-sol": "gpt-5.6-sol", "gpt 5.6 sol": "gpt-5.6-sol", "gpt 5.6": "gpt-5.6-sol", "☀️ gpt-5.6 sol": "gpt-5.6-sol",
@@ -109,7 +110,8 @@ MODEL_ALIASES = {
 # model_slug → (models_list, use_model, ai_chat_model, inject_msg_id)
 CONTRACTS = {
     "claude-fable-5-1":  (["gpt-4.1"],          "claude-fable-5-1",  None,              True),
-    "claude-opus-5":   (["claude-opus-5"],    "claude-opus-5",   None,              True),
+    "claude-opus-5-5": (["gpt-4.1"],          "claude-opus-5-5", None,              True),
+    "claude-opus-5":   (["gpt-4.1"],          "claude-opus-5-5", None,              True),
     "claude-sonnet-5": (["claude-sonnet-5"],  "claude-sonnet-5", "claude-sonnet-5", True),
     "gpt-6-astra":     (["gpt-4.1"],          "gpt-6-astra",     None,              True),
     "gpt-5.6-sol":     (["gpt-5.6-sol"],      "gpt-5.6-sol",     "gpt-5.6-sol",     True),

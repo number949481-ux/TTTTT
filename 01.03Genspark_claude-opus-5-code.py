@@ -177,7 +177,7 @@ class Config:
     refreshed_balance: int = 100     # الرصيد المفترض بعد التجديد
 
     # ── الموديل + API ──
-    model: str = "claude-opus-5"
+    model: str = "claude-opus-5-5"
     use_ultra: bool = False              # True = تفعيل مود Ultra اللي بيسحب رصيد أعلى (1M Context)
     agent_type: str = "code_sandbox"
     timeout: int = 600
@@ -1851,9 +1851,9 @@ def apply_model_contract(payload: dict, model: str | None, msg_id: str | None = 
         payload["use_model"] = "gpt-6-astra"
         if msg_id:
             payload["client_message_id"] = msg_id
-    elif m in ("claude-opus-5", "claude opus 5", "opus 5"):
-        payload["models"] = ["claude-opus-5"]
-        payload["use_model"] = "claude-opus-5"
+    elif m in ("claude-opus-5-5", "claude-opus-5.5", "claude opus 5.5", "opus 5.5", "claude-opus-5", "claude opus 5", "opus 5"):
+        payload["models"] = ["gpt-4.1"]
+        payload["use_model"] = "claude-opus-5-5"
         if msg_id:
             payload["client_message_id"] = msg_id
     elif m in ("claude-sonnet-5", "claude sonnet 5", "sonnet 5"):
@@ -2100,7 +2100,7 @@ def send_chat(
     else:
         # ── الـ payload التقليدي لـ super_agent ──
         payload = {
-            "models":                  ["gpt-4.1"] if cfg.model in ("claude-fable-5-1", "gpt-6-astra") else [cfg.model],
+            "models":                  ["gpt-4.1"] if cfg.model in ("claude-fable-5-1", "gpt-6-astra", "claude-opus-5-5", "claude-opus-5") else [cfg.model],
             "run_with_another_model":  False,
             "request_web_knowledge":   cfg.request_web_knowledge,
             "speed_mode":              False if _is_continue else True,                 # مطابق لملفات الـ HAR: في الاستكمال دايماً False
@@ -3835,7 +3835,7 @@ def main():
 import concurrent.futures
 
 ACTIVE_MODELS = [
-    {"name": "Claude Opus 5 (Code Sandbox)", "ultra": True, "model": "claude-opus-5"}
+    {"name": "Claude Opus 5.5 (Code Sandbox)", "ultra": True, "model": "claude-opus-5-5"}
 ]
 
 def _do_ask_parallel_worker(model_dict: dict, email: str, cookies: dict, query: str, cfg: Config, accounts: list, skip_emails: set):
