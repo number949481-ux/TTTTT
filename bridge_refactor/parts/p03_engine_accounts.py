@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 488..1141
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 490..1143
 المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -423,10 +423,10 @@ def needs_web_search(query: str) -> bool:
 class BridgeConfig:
     model: str = "claude-fable-5-1"
     agent_type: str = "code_sandbox"
-    session_timeout: int = 1000          # ⏱️ المهلة القصوى لانتظار الجلسة الواحدة (1000 ثانية)
+    session_timeout: int = 2000          # ⏱️ المهلة القصوى لانتظار الجلسة الواحدة (1000 ثانية)
     max_timeout_retries: int = 2         # 🔄 عدد محاولات إعادة الطلب تلقائياً عند التايم أوت
     max_account_attempts: int = 50       # 🛡️ حد أقصى للمحاولات لمنع الحلقات المفرغة
-    max_credit_continuations: int = 10   # عدد مرات نقل الاستئناف عند نفاد الرصيد
+    max_credit_continuations: int = 19   # عدد مرات نقل الاستئناف عند نفاد الرصيد
     cooldown_hours: float = 29.0         # ⏱️ مهلة الـ 29 ساعة للحسابات المنتهية بـ cooldown_until
     min_preflight_balance: int = 100     # 💰 [P13] الحد الأدنى للرصيد قبل أي إرسال — أقل منه = تبريد 29h وتخطٍ صامت
     user_agent: str = USER_AGENTS[0]

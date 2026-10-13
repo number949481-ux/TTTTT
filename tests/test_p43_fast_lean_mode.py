@@ -48,11 +48,11 @@ _spec.loader.exec_module(_bridge)
 # 1) Schema — الحقل الواحد fast_mode (D5/R1) + Backward-Compat (F9)
 # ═══════════════════════════════════════════════════════════════
 class TestFastModeSchema(unittest.TestCase):
-    def test_default_settings_include_fast_mode_false(self):
-        """[1] D5: الحقل موجود في الافتراضيات وقيمته False حرفياً."""
+    def test_default_settings_include_fast_mode_true(self):
+        """[1] D5: الحقل موجود في الافتراضيات وقيمته True حرفياً (الوضع السريع الافتراضي)."""
         settings = _bridge.default_project_settings()
         self.assertIn("fast_mode", settings)
-        self.assertIs(settings["fast_mode"], False)
+        self.assertIs(settings["fast_mode"], True)
         # R1: لا حقل ثانٍ ولا Invariant — download_artifacts شبح محظور
         self.assertNotIn("download_artifacts", settings)
         self.assertNotIn("download_artifacts", BRIDGE_SRC)
@@ -73,9 +73,9 @@ class TestFastModeSchema(unittest.TestCase):
                 old = {"model": "claude-opus-5-code", "github": {"enabled": False}}
                 normalized = reg._normalize_project_settings(old)
                 self.assertIn("fast_mode", normalized)
-                self.assertIs(normalized["fast_mode"], False)
-                # None / أنواع فاسدة ➔ False بلا Crash (الحدية 3/15)
-                self.assertIs(reg._normalize_project_settings(None)["fast_mode"], False)
+                self.assertIs(normalized["fast_mode"], True)
+                # None / أنواع فاسدة ➔ True بلا Crash (الحدية 3/15)
+                self.assertIs(reg._normalize_project_settings(None)["fast_mode"], True)
                 self.assertIs(reg._normalize_project_settings({"fast_mode": "yes"})["fast_mode"], True)
                 self.assertIs(reg._normalize_project_settings({"fast_mode": 0})["fast_mode"], False)
                 # True يُحفظ ويعود True عبر جولة كتابة/قراءة كاملة (الحدية 15)
@@ -106,8 +106,8 @@ class TestGoverningHelper(unittest.TestCase):
         """[4] D3: fast_mode=False (أو غائب/فاسد) ⇒ لا تخطي — Zero Regression."""
         self.assertFalse(_bridge.should_skip_artifacts_download(
             {"fast_mode": False, "github": {"enabled": False}}))
-        self.assertFalse(_bridge.should_skip_artifacts_download({}))
-        self.assertFalse(_bridge.should_skip_artifacts_download({"github": None}))
+        self.assertTrue(_bridge.should_skip_artifacts_download({}))
+        self.assertTrue(_bridge.should_skip_artifacts_download({"github": None}))
         # الحالة الوحيدة الموجبة: fast=True + GitHub معطل
         self.assertTrue(_bridge.should_skip_artifacts_download(
             {"fast_mode": True, "github": {"enabled": False}}))
@@ -164,30 +164,27 @@ class TestFastModeToggleButton(_IsolatedRegistryMixin, unittest.TestCase):
     def test_toggle_fastmode_callback_flips_and_persists(self):
         """[5] pset:fastmode يعكس القيمة ويحفظها ويعيد اللوحة بالكيبورد المحدّث."""
         reg = _bridge.ProjectRegistry(self.KEY)
-        self.assertIs(reg.get_project_settings()["fast_mode"], False)
+        self.assertIs(reg.get_project_settings()["fast_mode"], True)
 
-        # الضغطة الأولى: False ➔ True + حفظ على القرص
+        # الضغطة الأولى: True ➔ False (تعطيل الوضع السريع والعودة لحفظ الساندبوكس)
         _bridge.handle_telegram_update(_cb_update(f"pset:fastmode:{self.KEY}"))
         self.assertIs(
-            _bridge.ProjectRegistry(self.KEY).get_project_settings()["fast_mode"], True)
-        # اللوحة أُعيد إرسالها بالكيبورد المحدّث (زر مفعّل 🔵)
+            _bridge.ProjectRegistry(self.KEY).get_project_settings()["fast_mode"], False)
+        # اللوحة أُعيد إرسالها بالكيبورد المحدّث
         self.assertTrue(self.send.called)
         args, kwargs = self.send.call_args
         markup = str(kwargs.get("reply_markup") or (args[2] if len(args) > 2 else ""))
         self.assertIn(f"pset:fastmode:{self.KEY}", markup)
-        self.assertIn("الوضع السريع: مفعّل", markup)
-        # رسالة التفعيل شفافة وتذكر التخطي وأولوية GitHub (D3)
-        body = str(args[1]) if len(args) > 1 else str(kwargs.get("text") or "")
-        self.assertIn("تم تفعيل الوضع السريع", body)
+        self.assertIn("تنزيل الملفات: مفعّل", markup)
 
-        # الضغطة الثانية: True ➔ False (Toggle حقيقي لا one-way)
+        # الضغطة الثانية: False ➔ True (إعادة التفعيل)
         self.send.reset_mock()
         _bridge.handle_telegram_update(_cb_update(f"pset:fastmode:{self.KEY}"))
         self.assertIs(
-            _bridge.ProjectRegistry(self.KEY).get_project_settings()["fast_mode"], False)
+            _bridge.ProjectRegistry(self.KEY).get_project_settings()["fast_mode"], True)
         args2, kwargs2 = self.send.call_args
         markup2 = str(kwargs2.get("reply_markup") or (args2[2] if len(args2) > 2 else ""))
-        self.assertIn("تنزيل الملفات: مفعّل", markup2)
+        self.assertIn("الوضع السريع: مفعّل", markup2)
         # الحالة صُفّرت — لا state معلّقة بعد الضغط
         self.assertNotIn("action", _bridge.get_user_state(CHAT))
 
@@ -203,18 +200,18 @@ class TestFastModeToggleButton(_IsolatedRegistryMixin, unittest.TestCase):
         # style نجا من فلترة make_inline_keyboard لأنه ضمن الـ Whitelist
         self.assertEqual(btn.get("style"), "primary")
         self.assertIn(btn["style"], _bridge.ALLOWED_BUTTON_STYLES)
-        # الافتراضي (fast_mode=False) ➔ ليبل التنزيل ⚪📦
-        self.assertIn("📦", btn["text"])
+        # الافتراضي (fast_mode=True) ➔ ليبل الوضع السريع 🔵⚡
+        self.assertIn("⚡", btn["text"])
+        self.assertIn("مفعّل", btn["text"])
         # الحدية 9: حد 64 بايت لـ callback_data
         self.assertLessEqual(len(btn["callback_data"].encode("utf-8")), 64)
-        # عند التفعيل ينقلب الليبل لـ 🔵⚡ والزر يبقى primary
-        _bridge.ProjectRegistry(self.KEY).update_project_settings({"fast_mode": True})
+        # عند التبديل لـ False ينقلب الليبل لـ ⚪📦 والزر يبقى primary
+        _bridge.ProjectRegistry(self.KEY).update_project_settings({"fast_mode": False})
         keyboard_on = _bridge.build_project_settings_keyboard(self.KEY)
         flat_on = [b for row in keyboard_on["inline_keyboard"] for b in row]
         btn_on = next(b for b in flat_on
                       if b.get("callback_data") == f"pset:fastmode:{self.KEY}")
-        self.assertIn("⚡", btn_on["text"])
-        self.assertIn("مفعّل", btn_on["text"])
+        self.assertIn("📦", btn_on["text"])
         self.assertEqual(btn_on.get("style"), "primary")
 
 
@@ -369,14 +366,14 @@ class TestWizardFastModeStep(_IsolatedRegistryMixin, unittest.TestCase):
         _bridge.handle_telegram_update(_cb_update("cmd:new_proj_github_no"))
         state = _bridge.get_user_state(CHAT)
         self.assertEqual(state.get("action"), "AWAITING_NEW_PROJECT_FAST_MODE")
-        self.assertIs(state.get("pending_fast_mode"), False)
-        # الكيبورد المعروض يحمل الزرين والافتراضي 📦 بستايل primary (D1)
+        self.assertIs(state.get("pending_fast_mode"), True)
+        # الكيبورد المعروض يحمل الزرين والافتراضي ⚡ بستايل primary (الافتراضي المعماري الجديد)
         markup = str(self.send.call_args.kwargs.get("reply_markup") or "")
         self.assertIn("cmd:new_proj_fast_no", markup)
         self.assertIn("cmd:new_proj_fast_yes", markup)
         kb = _bridge.build_new_project_fast_mode_keyboard()
         flat = [b for row in kb["inline_keyboard"] for b in row]
-        default_btn = next(b for b in flat if b.get("callback_data") == "cmd:new_proj_fast_no")
+        default_btn = next(b for b in flat if b.get("callback_data") == "cmd:new_proj_fast_yes")
         self.assertEqual(default_btn.get("style"), "primary")
         # (ب) مسار GitHub-yes (اختيار فرع) ➔ مباشرة RESUME_PROMPT_DECISION بلا خطوة fast
         _bridge.set_user_state(CHAT, self._base_state(

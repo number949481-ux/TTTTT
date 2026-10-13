@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p09_github_dashboard
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5194..6813
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5196..6815
 المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات) + P33: build_completed_message_keyboard (كيبورد الاكتمال المركزي: الأزرار الخمسة القديمة + ▶️ كمل الآن cont:{pid} بصف مستقل + ⬅️ رجوع للوحة التحكم cmd:dashboard أسفل الكيبورد) + P35: build_model_decline_keyboard (كيبورد رسالة الرفض: ✒️ أعد صياغة البرومبت primary + ⬅️ رجوع danger فوق أزرار الاكتمال المعتادة عبر build_completed_message_keyboard بلا نسخ | P37: الزر الأزرق يحمل مفتاح المشروع cmd:decline_retry:{project_key} مع تعقيم وحد 64 بايت وfallback للحرفية القديمة | P43: زر ⚡/📦 pset:fastmode:{key} في لوحة إعدادات المشروع (D4) + سطر حالة الوضع السريع في الداشبورد والكارت + زر ⬇️ تنزيل الساندبوكس الآن pctl:fetch:{key} في كارت المشروع (D6 — التنزيل المتأخر بالدوال القائمة بلا نسخ) + build_new_project_fast_mode_keyboard (خطوة Wizard اختيار وضع الملفات — الافتراضي 📦 متكامل D5/R2) + معامل fast_mode في finalize_new_project_setup + pending_fast_mode لا يسري إلا مع GitHub معطل (D3))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -1190,11 +1190,11 @@ def build_new_project_resume_prompt_keyboard() -> dict:
 def build_new_project_fast_mode_keyboard() -> dict:
     """⚡ [P43-D4] خطوة Wizard الوضع السريع — تُعرض فقط عند GitHub معطل (D3).
 
-    الافتراضي (style=primary): 📦 مشروع متكامل — fast_mode=False (D5/R2).
+    الافتراضي (style=primary): ⚡ توليد فائق السرعة — fast_mode=True (الافتراضي المعماري الجديد).
     """
     return make_inline_keyboard([
-        [{"text": "📦 مشروع متكامل — حفظ الساندبوكس والـ Diff", "callback_data": "cmd:new_proj_fast_no", "style": "primary"}],
-        [{"text": "⚡ توليد فائق السرعة — تخطي تنزيل الملفات", "callback_data": "cmd:new_proj_fast_yes"}],
+        [{"text": "⚡ توليد فائق السرعة — تخطي تنزيل الملفات", "callback_data": "cmd:new_proj_fast_yes", "style": "primary"}],
+        [{"text": "📦 مشروع متكامل — حفظ الساندبوكس والـ Diff", "callback_data": "cmd:new_proj_fast_no"}],
         [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:show_dashboard"}],
     ])
 
@@ -1221,7 +1221,7 @@ def finalize_new_project_setup(
     available_branches: list[str] | None = None,
     repo_check_status: str = "",
     token: str | None = None,
-    fast_mode: bool = False,
+    fast_mode: bool = True,
 ) -> dict:
     upsert_project_identity(project_key, project_name=project_name, chat_id=chat_id, status="DRAFT")
     registry = ProjectRegistry(project_key)
@@ -1256,7 +1256,7 @@ def finalize_new_project_from_state(state: dict, chat_id: int, resume_prompt: st
     available_branches = list(state.get("pending_github_branches") or [])
     repo_check_status = str(state.get("pending_github_repo_check_status") or ("disabled" if not github_enabled else "checked"))
     # ⚡ [P43-D4] مسار GitHub-yes لا يرى خطوة fast ➔ False ضمنياً (D3 يفوز دائماً)
-    pending_fast_mode = bool(state.get("pending_fast_mode", False)) and not github_enabled
+    pending_fast_mode = bool(state.get("pending_fast_mode", True)) and not github_enabled
     effective_resume = normalize_project_resume_prompt(resume_prompt if resume_prompt is not None else state.get("pending_resume_prompt"))
     settings = finalize_new_project_setup(
         project_key,

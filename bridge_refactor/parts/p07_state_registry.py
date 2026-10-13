@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3558..4628
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3560..4630
 المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -120,7 +120,7 @@ class ProjectRegistry:
         base = default_project_settings()
         payload = settings if isinstance(settings, dict) else {}
         base["model"] = normalize_project_model(payload.get("model"))
-        base["fast_mode"] = bool(payload.get("fast_mode", False))
+        base["fast_mode"] = bool(payload.get("fast_mode", True))
         continuation = payload.get("continuation") if isinstance(payload.get("continuation"), dict) else {}
         prompt = normalize_project_resume_prompt(continuation.get("prompt"))
         base["continuation"] = {
@@ -253,7 +253,7 @@ class ProjectRegistry:
                 current["model"] = normalize_project_model(patch.get("model"))
             if "fast_mode" in patch:
                 # ⚡ [P43] حقل واحد bool حصراً (D5/R1) — أي قيمة تُطبع bool
-                current["fast_mode"] = bool(patch.get("fast_mode", False))
+                current["fast_mode"] = bool(patch.get("fast_mode", True))
             if isinstance(patch.get("continuation"), dict):
                 continuation_patch = patch.get("continuation") or {}
                 prompt = current["continuation"]["prompt"]

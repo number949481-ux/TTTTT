@@ -248,7 +248,7 @@ def resolve_project_runtime_binding(
             "resume_prompt_public": public_resume_prompt,
             "resume_prompt_runtime": public_resume_prompt,
             "github_enabled": False,
-            "fast_lean_skip": False,
+            "fast_lean_skip": True,
             "source": "request",
         }
     reg = registry or ProjectRegistry(key)
@@ -304,7 +304,7 @@ def apply_project_runtime_binding(
 def default_project_settings() -> dict:
     return {
         "model": DEFAULT_PROJECT_MODEL,
-        "fast_mode": False,
+        "fast_mode": True,
         "continuation": {
             "prompt": DEFAULT_PROJECT_RESUME_PROMPT,
             "mode": "default",
@@ -335,5 +335,5 @@ def should_skip_artifacts_download(project_settings: dict) -> bool:
     gh = project_settings.get("github") or {}
     if bool(gh.get("enabled", False)):
         return False
-    return bool(project_settings.get("fast_mode", False))
+    return bool(project_settings.get("fast_mode", True))
 

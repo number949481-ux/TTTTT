@@ -398,7 +398,7 @@ def resolve_project_runtime_binding(
             "resume_prompt_public": public_resume_prompt,
             "resume_prompt_runtime": public_resume_prompt,
             "github_enabled": False,
-            "fast_lean_skip": False,
+            "fast_lean_skip": True,
             "source": "request",
         }
     reg = registry or ProjectRegistry(key)
@@ -454,7 +454,7 @@ def apply_project_runtime_binding(
 def default_project_settings() -> dict:
     return {
         "model": DEFAULT_PROJECT_MODEL,
-        "fast_mode": False,
+        "fast_mode": True,
         "continuation": {
             "prompt": DEFAULT_PROJECT_RESUME_PROMPT,
             "mode": "default",
@@ -485,7 +485,7 @@ def should_skip_artifacts_download(project_settings: dict) -> bool:
     gh = project_settings.get("github") or {}
     if bool(gh.get("enabled", False)):
         return False
-    return bool(project_settings.get("fast_mode", False))
+    return bool(project_settings.get("fast_mode", True))
 
 _ENGINE_CACHE = {"mod": None, "path": None}
 _ENGINE_LOCK = threading.Lock()
@@ -1000,7 +1000,13 @@ def update_account_data(email: str, updates: dict, json_path: str | None = None)
             found = False
             for acc in accounts:
                 if isinstance(acc, dict) and acc.get("email") == email:
-                    acc.update(updates)
+                    # 🛡️ [IMMUNE-GUARD] منع أي تحديث يمسح حالة العزل أو يضع كول داون لحساب معزول
+                    is_quarantined = acc.get("quarantined") is True or str(acc.get("status", "")).lower().strip() in ("suspended", "banned")
+                    if is_quarantined and "quarantined" not in updates:
+                        safe_updates = {k: v for k, v in updates.items() if k not in ("status", "active", "cooldown_until")}
+                        acc.update(safe_updates)
+                    else:
+                        acc.update(updates)
                     acc["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                     found = True
                     break
@@ -1034,7 +1040,8 @@ def is_account_ready(acc: dict) -> bool:
     status = str(acc.get("status", "active")).lower().strip()
     now = time.time()
 
-    if status in ("banned", "blocked"):
+    # 🛡️ [IMMUNE-ENGINE] استبعاد قطعي ودائم لأي حساب معزول أو محظور أو مفقود في قاعدة البيانات
+    if status in ("banned", "blocked", "suspended", "user_not_found", "invalid_credentials") or acc.get("quarantined") is True:
         return False
 
     cooldown_until = 0
@@ -1113,11 +1120,82 @@ def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: s
 
 
 def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None = None) -> dict | None:
-    """تجديد الكوكيز بقفل محكوم منفرد لكل إيميل يمنع التضارب بين الثريدات الموازية"""
+    """تجديد الكوكيز مع العزل الفوري للحسابات الميتة وفحص كاش AI Data Retention الذكي دون هدر الشبكة"""
     lock = get_account_lock(email)
     with lock:
         try:
-            log_event("warning", "جاري تجديد كوكيز الجلسة...", email=email)
+            log_event("warning", "جاري فحص وتجديد كوكيز الجلسة عبر المحرك الحصين...", email=email)
+            
+            # استيراد محرك الفحص الموحد بأمان
+            try:
+                import genspark_verifier_engine as gve
+            except ImportError:
+                gve = None
+
+            # جلب كائن الحساب الحالي من الـ JSON للتحقق من كاش Data Retention المسبق
+            current_accounts = read_accounts_safe(json_path)
+            acc_entry = next((a for a in current_accounts if isinstance(a, dict) and a.get("email") == email), {})
+
+            if gve is not None:
+                # تشغيل الفاحص الشامل
+                report = gve.master_inspect_and_heal_account(
+                    email=email,
+                    password=password,
+                    existing_cookies=acc_entry.get("cookies"),
+                    account_dict=acc_entry,
+                    min_required_balance=1,
+                    timeout=25
+                )
+
+                # 1. لو الحساب ميت (محظور نهائياً / غير موجود / خطأ باسورد قطعي) -> عزل ذري فوري
+                if report.get("is_dead") is True:
+                    verdict = report.get("verdict", "SUSPENDED")
+                    detail = report.get("detail", "")
+                    
+                    # استخراج المجلد الحقيقي لملف الحسابات بدقة متناهية
+                    acc_file = get_accounts_file_path(json_path)
+                    base_dir = acc_file.parent if acc_file else SCRIPT_DIR
+                    
+                    # عزل ذري في ملف العزل المخصص
+                    gve.quarantine_account_atomic(acc_entry, verdict=verdict, base_dir=base_dir, detail=detail)
+                    
+                    # وسم الحساب في accounts_genspark.json كمحظور دائم وتصفير الكوكيز
+                    update_account_data(email, {
+                        "status": "suspended",
+                        "active": False,
+                        "quarantined": True,
+                        "cooldown_until": 0,
+                        "cookies": {},
+                        "quarantine_reason": verdict,
+                        "quarantined_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                    }, json_path=json_path)
+                    log_event("error", f"[🚫 عزل دائم]: الحساب {email} محظور نهائياً ({verdict}) — تم نقله لملف العزل واستبعاده للأبد", email=email)
+                    return None
+
+                # 2. الحساب سليم وجدد الكوكيز بنجاح
+                new_cookies = report.get("cookies")
+                if new_cookies and isinstance(new_cookies, dict) and len(new_cookies) > 0:
+                    updates = {
+                        "cookies": new_cookies,
+                        "status": "active",
+                        "active": True,
+                        "balance": report.get("balance", acc_entry.get("balance", 0)),
+                        "is_plus": report.get("is_plus", False),
+                        "last_refresh": time.time(),
+                        "last_refresh_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                    }
+                    if report.get("needs_json_retention_save") is True:
+                        updates["data_retention_enabled"] = True
+                        updates["data_retention_activated_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                        log_event("success", "🧬 تم تفعيل AI Data Retention وتوثيقها كاش في الـ JSON للحساب بنجاح", email=email)
+                    elif report.get("data_retention_source") == "cached_in_json":
+                        log_event("info", "⚡ تم تخطي فحص Data Retention بالشبكة (موثقة ومفعلة مسبقاً في الـ JSON)", email=email)
+
+                    update_account_data(email, updates, json_path=json_path)
+                    log_event("success", f"تم تجديد الكوكيز وتحديث الرصيد ({updates['balance']}) بنجاح!", email=email)
+                    return new_cookies
+
+            # Fallback في حالة عدم توفر المحرك مؤقتاً
             new_cookies = mod.do_login(email, password) if hasattr(mod, "do_login") else None
             if new_cookies and isinstance(new_cookies, dict) and len(new_cookies) > 0:
                 update_account_data(email, {
@@ -1127,14 +1205,14 @@ def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None
                     "last_refresh": time.time(),
                     "last_refresh_at": time.strftime("%Y-%m-%dT%H:%M:%S")
                 }, json_path=json_path)
-                log_event("success", "تم تجديد الكوكيز والجلسة بنجاح!", email=email)
                 return new_cookies
+
         except Exception as e:
             log_event("error", f"فشل تجديد كوكيز الجلسة: {e}", email=email)
             update_account_data(email, {
                 "status": "auth_failed",
                 "active": False,
-                "cooldown_until": time.time() + 1800,  # حظر مؤقت 30 دقيقة فقط ثم يُعاد تلقائياً
+                "cooldown_until": time.time() + 1800,
                 "last_auth_error": str(e),
                 "last_auth_error_at": time.strftime("%Y-%m-%dT%H:%M:%S")
             }, json_path=json_path)
@@ -2901,6 +2979,12 @@ def send_message_and_make_public(
                         mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                         return None, "LOW_BALANCE", None, None, None
             else:
+                # 🛡️ التحقق أولاً هل الحساب معزول نهائياً لتفادي مسح حالة العزل بالخطأ
+                latest_accs = read_accounts_safe(json_path)
+                acc_chk = next((a for a in latest_accs if isinstance(a, dict) and a.get("email") == email), {})
+                if acc_chk.get("quarantined") is True or acc_chk.get("status") == "suspended":
+                    log_event("warning", f"الحساب {email} معزول نهائياً — لن يتم تعيين كول داون مؤقت", email=email)
+                    return None, "ACCOUNT_QUARANTINED", None, None, None
                 update_account_data(email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 1800}, json_path=json_path)
                 return None, "LOGIN_FAILED", None, None, None
 
@@ -3388,6 +3472,13 @@ def send_message_with_auto_account_failover(
                 state_refresh[curr_email] = refresh_count + 1
                 log_event("warning", "401 session منتهية! جاري التجديد مع راندوم Backoff...", email=curr_email)
                 time.sleep(1 + random.uniform(0.5, 1.5))
+                # 🛡️ فحص هل الحساب معزول قبل مسح حالته بـ SESSION_EXPIRED
+                latest_accs_pre = read_accounts_safe(json_path)
+                acc_chk_pre = next((a for a in latest_accs_pre if isinstance(a, dict) and a.get("email") == curr_email), {})
+                if acc_chk_pre.get("quarantined") is True or acc_chk_pre.get("status") == "suspended":
+                    log_event("warning", f"الحساب {curr_email} معزول نهائياً — تخطٍ فوري", email=curr_email)
+                    tried_emails.add(curr_email)
+                    continue
                 update_account_data(curr_email, {"cookies": {}, "status": "SESSION_EXPIRED"}, json_path=json_path)
                 try:
                     mod = get_genspark_engine()
@@ -3403,6 +3494,15 @@ def send_message_with_auto_account_failover(
                         continue
                 except Exception as e:
                     log_event("error", f"فشل تجديد كوكيز الحساب: {e}", email=curr_email)
+                
+                # 🛡️ فحص هل تم عزل الحساب بالفعل في الخطوة السابقة؟
+                latest_accs = read_accounts_safe(json_path)
+                check_acc = next((a for a in latest_accs if isinstance(a, dict) and a.get("email") == curr_email), {})
+                if check_acc.get("quarantined") is True or check_acc.get("status") == "suspended":
+                    log_event("warning", f"الحساب {curr_email} تم عزله نهائياً — تخطٍ فوري للحساب التالي بدون أي كول داون 30 دقيقة", email=curr_email)
+                    tried_emails.add(curr_email)
+                    continue
+
                 notify_account_selection_observer(
                     bridge_cfg,
                     "session-refresh-failed",
@@ -3548,7 +3648,11 @@ def send_message_with_auto_account_failover(
                 "attempt-failed-continue",
                 status=str(status or "FAILED"),
             )
-            update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
+            # 🛡️ عدم تعيين كول داون 5 دقائق لو الحساب معزول نهائياً
+            latest_accs_end = read_accounts_safe(json_path)
+            acc_chk_end = next((a for a in latest_accs_end if isinstance(a, dict) and a.get("email") == curr_email), {})
+            if not (acc_chk_end.get("quarantined") is True or str(acc_chk_end.get("status", "")).lower().strip() == "suspended"):
+                update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
             continue
         finally:
             close_account_timing_span(bridge_cfg, curr_email)  # ⏱️ [P30] إغلاق حتمي للـ span في كل المسارات
@@ -3674,7 +3778,7 @@ class ProjectRegistry:
         base = default_project_settings()
         payload = settings if isinstance(settings, dict) else {}
         base["model"] = normalize_project_model(payload.get("model"))
-        base["fast_mode"] = bool(payload.get("fast_mode", False))
+        base["fast_mode"] = bool(payload.get("fast_mode", True))
         continuation = payload.get("continuation") if isinstance(payload.get("continuation"), dict) else {}
         prompt = normalize_project_resume_prompt(continuation.get("prompt"))
         base["continuation"] = {
@@ -3807,7 +3911,7 @@ class ProjectRegistry:
                 current["model"] = normalize_project_model(patch.get("model"))
             if "fast_mode" in patch:
                 # ⚡ [P43] حقل واحد bool حصراً (D5/R1) — أي قيمة تُطبع bool
-                current["fast_mode"] = bool(patch.get("fast_mode", False))
+                current["fast_mode"] = bool(patch.get("fast_mode", True))
             if isinstance(patch.get("continuation"), dict):
                 continuation_patch = patch.get("continuation") or {}
                 prompt = current["continuation"]["prompt"]
@@ -6171,8 +6275,8 @@ def describe_account_state(acc: dict) -> str:
     if not isinstance(acc, dict):
         return "غير معروفة"
     status = str(acc.get("status") or "active").lower().strip()
-    if status in ("banned", "blocked"):
-        return "محظور نهائياً (BANNED)"
+    if status in ("banned", "blocked", "suspended", "user_not_found") or acc.get("quarantined") is True:
+        return "معزول نهائياً (QUARANTINED)"
     if is_account_ready(acc):
         return "نشط (ACTIVE)"
     if status == "cooldown":
@@ -6380,11 +6484,11 @@ def build_new_project_resume_prompt_keyboard() -> dict:
 def build_new_project_fast_mode_keyboard() -> dict:
     """⚡ [P43-D4] خطوة Wizard الوضع السريع — تُعرض فقط عند GitHub معطل (D3).
 
-    الافتراضي (style=primary): 📦 مشروع متكامل — fast_mode=False (D5/R2).
+    الافتراضي (style=primary): ⚡ توليد فائق السرعة — fast_mode=True (الافتراضي المعماري الجديد).
     """
     return make_inline_keyboard([
-        [{"text": "📦 مشروع متكامل — حفظ الساندبوكس والـ Diff", "callback_data": "cmd:new_proj_fast_no", "style": "primary"}],
-        [{"text": "⚡ توليد فائق السرعة — تخطي تنزيل الملفات", "callback_data": "cmd:new_proj_fast_yes"}],
+        [{"text": "⚡ توليد فائق السرعة — تخطي تنزيل الملفات", "callback_data": "cmd:new_proj_fast_yes", "style": "primary"}],
+        [{"text": "📦 مشروع متكامل — حفظ الساندبوكس والـ Diff", "callback_data": "cmd:new_proj_fast_no"}],
         [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "cmd:show_dashboard"}],
     ])
 
@@ -6411,7 +6515,7 @@ def finalize_new_project_setup(
     available_branches: list[str] | None = None,
     repo_check_status: str = "",
     token: str | None = None,
-    fast_mode: bool = False,
+    fast_mode: bool = True,
 ) -> dict:
     upsert_project_identity(project_key, project_name=project_name, chat_id=chat_id, status="DRAFT")
     registry = ProjectRegistry(project_key)
@@ -6446,7 +6550,7 @@ def finalize_new_project_from_state(state: dict, chat_id: int, resume_prompt: st
     available_branches = list(state.get("pending_github_branches") or [])
     repo_check_status = str(state.get("pending_github_repo_check_status") or ("disabled" if not github_enabled else "checked"))
     # ⚡ [P43-D4] مسار GitHub-yes لا يرى خطوة fast ➔ False ضمنياً (D3 يفوز دائماً)
-    pending_fast_mode = bool(state.get("pending_fast_mode", False)) and not github_enabled
+    pending_fast_mode = bool(state.get("pending_fast_mode", True)) and not github_enabled
     effective_resume = normalize_project_resume_prompt(resume_prompt if resume_prompt is not None else state.get("pending_resume_prompt"))
     settings = finalize_new_project_setup(
         project_key,
@@ -8058,9 +8162,9 @@ def handle_telegram_update(update: dict):
                     "pending_github_default_branch": "",
                     "pending_github_branches": [],
                     "pending_github_repo_check_status": "disabled",
-                    "pending_fast_mode": False,
+                    "pending_fast_mode": True,
                 })
-                send_telegram_message(chat_id, f"✅ <b>سيتم إعداد المشروع بدون GitHub حالياً.</b>\n<b>الاسم:</b> {html_escape(project_name)}\n<b>المفتاح:</b> <code>{html_escape(project_key)}</code>\n<b>الموديل:</b> <code>{html_escape(format_model_display_label(project_model))}</code>\n\n⚡ <b>اختر وضع الملفات لهذا المشروع:</b>\n📦 <b>مشروع متكامل</b> — تنزيل الساندبوكس وحفظ الـ Diff بعد كل مهمة (الافتراضي).\n⚡ <b>توليد فائق السرعة</b> — تخطي تنزيل الملفات (يبقى الرابط العام والاستئناف، ويمكن التنزيل لاحقاً بزر ⬇️).", reply_markup=build_new_project_fast_mode_keyboard())
+                send_telegram_message(chat_id, f"✅ <b>سيتم إعداد المشروع بدون GitHub حالياً.</b>\n<b>الاسم:</b> {html_escape(project_name)}\n<b>المفتاح:</b> <code>{html_escape(project_key)}</code>\n<b>الموديل:</b> <code>{html_escape(format_model_display_label(project_model))}</code>\n\n⚡ <b>اختر وضع الملفات لهذا المشروع:</b>\n⚡ <b>توليد فائق السرعة</b> — تخطي تنزيل الملفات وتوفير مساحة القرص (الافتراضي).\n📦 <b>مشروع متكامل</b> — تنزيل الساندبوكس وحفظ الـ Diff بعد كل مهمة.", reply_markup=build_new_project_fast_mode_keyboard())
         elif data in {"cmd:new_proj_fast_no", "cmd:new_proj_fast_yes"}:
             # ⚡ [P43-D4] اختيار الوضع السريع — نجاة pending_prompt عبر **state (نمط 7113)
             state = get_user_state(chat_id)
