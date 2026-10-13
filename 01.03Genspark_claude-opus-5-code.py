@@ -111,7 +111,7 @@ AUTO_SHARE    = True
 SHOW_DEBUG    = False
 
 # ── 📦 Auto-Download Sandbox — التنزيل والفك التلقائي المرن للمشاريع ──
-AUTO_DOWNLOAD_SANDBOX        = True               # True = تفعيل محرك التنزيل الذاتي
+AUTO_DOWNLOAD_SANDBOX        = False              # False = تخطي التنزيل التلقائي (الوضع السريع)
 AUTO_DOWNLOAD_TRIGGER_MODE  = "always"           # "always" | "on_code_change" | "manual"
 AUTO_DOWNLOAD_BASE_DIR       = "downloaded_projects" # مجلد حفظ المشاريع محلياً
 AUTO_DOWNLOAD_REMOTE_PATH    = "/home/user/webapp"  # المسار المستهدف داخل الساندبوكس

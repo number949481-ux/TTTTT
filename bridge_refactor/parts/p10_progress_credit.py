@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6814..7124
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6816..7126
 المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer (P35: فرع MODEL_DECLINED مخصص بـ allow_preview=True — نص الرفض القصير يُعرض للمستخدم)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -97,7 +97,7 @@ def describe_archive_delivery(ext_dir: str | None) -> tuple[pathlib.Path | None,
 
 def get_credit_continuation_limit(bridge_cfg: BridgeConfig | None) -> int:
     try:
-        return max(1, int(getattr(bridge_cfg, "max_credit_continuations", 10) or 10))
+        return max(1, int(getattr(bridge_cfg, "max_credit_continuations", 19) or 19))
     except Exception:
         return 10
 
