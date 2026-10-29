@@ -2,7 +2,7 @@
   "current_execution": {
     "task": "Independent from-scratch second review requested by owner after Arena update",
     "date": "2026-10-29",
-    "restored": "3111f8f2b50d39da115b89cac7d54283f40447c0",
+    "restored": "2b03cb0deec2dc9da0ab02bf23c17ab3eff3a532",
     "synced_main": "d16475814bebf7379b097e26587698194582941c",
     "branch": "genspark_ai_developer",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
@@ -10,14 +10,16 @@
     "status": "review_in_progress_reset_restored_V1_V2_partial",
     "request": "Owner explicitly asks review from beginning, new file, updated references including Arena. Supersedes prior do-not-repeat-review instruction, NOT runtime GO.",
     "scope": "New review + PROGRESS + recovery only. Previous report and original sources read-only; no Python/tests/generated/accounts/live/migration/merge/deploy.",
-    "reference_update": "Arena d164758 adds1446 lines; original1884-line prefix identical. Runtime unchanged.",
-    "next": "Push evidence chunk and verify remote/PR9. Then sender/failover/claim isolated diagnostics and remaining reference/provenance reading; report still incomplete.",
+    "reference_update": "Refetched after renewed request: main remainsd164758, Arena SHA unchanged. Permanent reference retained.",
+    "next": "Publish saved bridge diagnostics; complete source adjudication/security/writer review and comprehensive before-after/task/test plan. Scope still documentation only.",
     "validation": "Fresh after reset: syntax0; pytest1072pass/13fail/+60subtests in5.41s Exit1; canonical1085/13 in3.003s Exit1. AST115/115; main203 files; HAR286/4356 and no credit_audit URL. D01-D11 documented in section6.",
     "history_notice": "completed_pr9_arena_addendum and all other existing fields preserve prior records; not active instructions.",
     "publication": "Commit/push checkpoint and verify remote/PR9. Do not claim publication before verification.",
     "inherited_diagnostic_blocker": "Previous diagnostic stopped at missing curl_cffi after generator cases. Sender/failover/verifier/HAR/inventory cases were NOT executed.",
-    "last_verified_checkpoint": "b1cf1a08977b3b8349c9bddbc9bc9289f79491f6",
-    "diagnostics": "Generator normal marker retained, optimize1/end-only delete temporary marker then p03 failure; real generated hashes unchanged. AST-extracted fake502 -> DEAD/zero/invalid; corrupt vault overwritten (correct verdict signature rerun); explicit missing path falls back. Initial quoted-name inventory corrected with -z."
+    "last_verified_checkpoint": "2b03cb0deec2dc9da0ab02bf23c17ab3eff3a532",
+    "diagnostics": "Generator normal marker retained, optimize1/end-only delete temporary marker then p03 failure; real generated hashes unchanged. AST-extracted fake502 -> DEAD/zero/invalid; corrupt vault overwritten (correct verdict signature rerun); explicit missing path falls back. Initial quoted-name inventory corrected with -z.",
+    "bridge_diagnostics": "D12-D20 executed after2b03 before interruption; tool outputs retained, local logs lost after reset. -1/NaN/inf reach fake send, unknown after refresh and401 too. Corrected failover matrix with proper bridge_cfg keyword: TIMEOUT writes last_used; injected UNKNOWN/TRANSIENT/AUTH_FAILED withoutURL ->300s cooldown, withURL ->success metadata. Pre-try fingerprint exception leaves claim. Fixtures mocked, sockets/requests blocked.",
+    "threshold_provenance": "Planning preference >=14 full UTC days, following owner answer quoted at Arena555; not independently heard, not runtime GO. Reject UTC-implies-strictly-greater reasoning."
   },
   "completed_pr9_arena_addendum": {
     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",

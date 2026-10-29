@@ -116,3 +116,40 @@ tests/test_refactor_parity.py::TestByteParity::test_parts_reassemble_to_original
 - BEFORE path:957–970 يسمحfallback. AFTER التصميمي: حارس نقل موضعي يثبت المسارات الصريحة ويحظر fallback عند خطأ؛ **لا تعديلresolve_shared_path/P23**.
 - استُكملت قراءةArena2490–2809 و3090–3330 في هذه الجلسة؛ سطور التفريغ الطويلة2497/2500 عُرضت مبتورة بالأداة، لذلك لا نسميها قراءة كاملة. الملحق الأخير جرد آلي مرجعي عندd2eb49d، لا claim مراجعة دلالية لكل سطر. بقية إعادة قراءة المصادر لم تكتمل بعد.
 - التالي: تشخيص sender/failover/claim ثم استكمال provenance لحد14 وكتّاب التخزين والأمن، وصياغة الخطة التفصيلية. لا نتائج جديدة حتى الآن لتلك المسارات في هذه الدفعة.
+
+## 7. نتائج الجسر المحفوظة من الفحوص السابقة مباشرة للمقاطعة
+
+عند إعادة تأكيد التكليف استعيد2b03cb0 منGitHub، وأعيدfetch فعليًا؛ main ما زالd164758 وArena بنفس البصمة. لم تظهر نسخة أحدث فيremote حتى هذه النقطة. فُقدت`.tmp` بعدreset، لكن **نتائج الأدوات المسجلة في المحادثة** التالية نُفذت فعلًا بعد2b03cb0 وقبل المقاطعة؛ لم نعدها في دفعة حفظها هذه.
+
+### 7.1 المنهج وحدوده
+
+استُعمل fixture القائم `tests/test_credit_completion_recovery.py:25–63` دون تعديله: engine/send/read/update/refresh والواجهات الجانبية mocks، مجلدات اصطناعية داخلworkspace. حُظرتsocket.connect وsocket.create_connection وrequests.Session.request؛ curl_cffi غير مثبت وتم تجاوز استيراده الشرطي دون تثبيت. لاHTTP حقيقي. القياس هنا لاستدعاءات writers وsend mocks، **ليس byte-diff لملفات حسابات فعلية** ولااختبار نظام إنتاج كامل.
+
+| المعرف | المدخل الاصطناعي | النتيجة المثبتة |
+|---|---|---|
+| D12 | balance=-1 معlast_refresh حديث | send_chat مرة،COMPLETED منfake،لاcooldown |
+| D13 | balance=NaN معlast_refresh حديث | send_chat مرة،COMPLETED منfake،لاcooldown |
+| D14 | balance=+Infinity | send_chat مرة،COMPLETED منfake،لاcooldown |
+| D15 | balance sequence[-2,-1] معrefresh mocked ناجح | send_chat مرة بعدunknown،COMPLETED |
+| D16 | balance sequence[100,-1]؛ أولsend يرمي401 ثمrefresh mocked | send_chat مرتان،COMPLETED؛ حارس ما بعد401 يسمحunknown |
+| D17 | sender محقونTIMEOUT،بلاURL أو معURL،max_account_attempts=1 | TIMEOUT؛last_used writer استُدعي؛لاcooldown ولاlast_success؛claim محرر |
+| D18 | sender محقونUNKNOWN أوTRANSIENT أوAUTH_FAILED **بلاURL** | MAX_ATTEMPTS_EXHAUSTED؛last_used وcooldown_until>0 استُدعيا؛claim محرر |
+| D19 | الحالات الثلاث نفسها **معURL** | تعودالحالةنفسها؛last_used وlast_success_at/status active/cooldown0؛claim محرر |
+| D20 | get_account_fingerprint يرميRuntimeError بعدclaim | الاستثناءيصعد ويبقىclaimواحد؛ نُظّفsynthetic claim يدويًا بعدassert |
+
+D18–D19 حقن لعقود حالات مقترحة، لا ادعاء أنsender الحالي ينتج هذه الأسماء بنفسه. D19 يثبت أن إضافةstatus جديد دونdispatch صريح قد تجعل وجودURL دليل نجاح زائفًا. التصحيح: ليس كلUNKNOWN يبرد5دقائق؛ النتيجة تتوقف علىURL ومسارdispatch.
+
+**تصحيح أدواتنا:** أولmock أعاد4عناصر بدل5 فتوقف بـValueError. ثم توقع المختبرmark_account_cooldown بينماgeneric branch يكتبcooldown مباشرة عبرupdate_account_data، ومررcfg كوسيطemail الثالث بدلbridge_cfg keyword. أُلغيت استنتاجات تلك المحاولات، وأعيدت المصفوفة كاملة بالتوقيع الصحيح `bridge_cfg=case.cfg`،tuple ذي5عناصر،وفحصwriter نفسه. آخر تشغيل أعاد `FINAL_FAILOVER_MATRIX_ALL_ASSERTIONS_PASSED` وExit0. أرقامD17–D20 تخص هذا التشغيل المصحح فقط.
+
+### 7.2 BEFORE الحقيقي وAFTER المطلوب، لا patch منفذ
+
+- **رصيد:** `01.33:2954–2967,2973–2978,3098–3106`: الحارسان بعدrefresh يوقفانlow فقط؛-1/NaN ليستاlow. AFTER: نتيجةtyped مؤكدة finite/nonbool/nonnegative، وحارسواحد يعادفيالبواباتالثلاث،بلاsend عندUNKNOWN. الحسابالذيبلغه100 يقفزعنهدية؛الثابتالافتراضي100 لايلغيالحاجةلتوثيقoverride.
+- **claim:** claim عند3242،reactivate3270،fingerprint3280،last_used3296،try3298،finally3657–3660. AFTER: تبدأمنطقةcleanup فورنجاحclaim وقبلأيعمليةقدترمي؛release داخلfinally محمية حتىإنفشلإغلاقspan. لاdouble release غيرمالك،ولاHTTPداخلقفلملفطويل.
+- **dispatch:** `if pub_url or status == "COMPLETED"` عند3630؛generic cooldown3655. AFTER: dispatch صريح للحالاتالمؤكدة/المؤقتة/فشلحفظ/uncertain-send قبلsuccess أوfallback؛URL وسيلةاسترجاعوليسدليلنجاح. TIMEOUT قبلbusiness-send يمكنتخطيه؛بعدsendمحتمل يوقفأويستعلمبعقدidempotency،ولاblind resend.
+- **zero-mutation:** last_used يكتبقبلprobe؛reactivateقديكتبأيضًا. AFTER: لاكتابةمنسوبةلمحاولةprobeمجهولة؛عرّفنقطةcommit للكوكيزوالرصيدوالاستخدام. ثباتhash الملفكلهيختبرفيعزل؛تحتالتزامننفحصالأثرالسببيوسجلالwrites كيلايحسبwriteمشروعآخرمخالفة. لايعالجذلكبحبسمُلْكملفطوالHTTP.
+
+### 7.3 اتجاهحد14: تصحيحمنهجالتحكيم
+
+Arena:555 ينقلنصجوابالمالك «مش فارقه زي سكربت بتاع05.02»، و1988/2010 يؤكد>=14. هذا **نقل موثق في مرجع طلب المالك إدراجه**،ليسسماعًامنهولاGOجديدًا. الترجيحالتخطيطيالآن: **elapsed>=14×24ساعة** عندأدلةهديةصحيحةوكافية،اتباعًاللجوابالمنقول؛لااستفتاءجديدتلقائيعلىمساواةحسمهاالمرجع. يوضعهذاالافتراضصريحًافيطلباعتمادالنسخة،وللمالكتصحيحهإنكانالنقلغيردقيق.
+
+نقدنالسابق: دقةUTC لا تختار `>` بدل`>=`؛مدح00/012345 لاقتراحنا>14 كأنهقرارمالكغيرمبرر. إبقاءالسؤالقديمًاكأنهلاحللهأهملprovenance المنقول. فيالمددغيرالسالبة،`.days>=14` يكافئelapsed>=timedelta(days=14)؛floor وحدهليسعيبحد>=. العيوبالفعليةفي05.02 تشملالوقتالمجمد،التاريخغيرالواعي/التالف/المستقبلي،فرزالنص،واكتمالالتاريخ. لا تستنسخأخطاءالمديرمعاعتمادحده.
