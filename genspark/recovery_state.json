@@ -1,31 +1,29 @@
 {
   "current_execution": {
-    "task": "Restore verified v2 archive after another reset; deliver bounded recovery receipt, no new review",
+    "task": "Platform GitHub connection verified; v4 restored and published; bounded source review resumes",
     "date": "2026-10-29",
     "restored": "6a42a05a9a70604f8a61394f2e332ea566c39fbf",
     "synced_main": "adaf586c043c08315c4c958020b54caab8013961",
     "branch": "genspark_ai_developer",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "plan": "genspark/tri_state_gift_independent_review_v2.md",
-    "status": "verified_v2_restored_git_publication_blocked",
+    "status": "review_resumed_remote_verified",
     "request": "Read Gist and PROGRESS, independently review workflow until specific plan approval; resume is not runtime GO.",
     "scope": "New review + PROGRESS + recovery only. Previous report and original sources read-only; no Python/tests/generated/accounts/live/migration/merge/deploy.",
     "reference_update": "Merged six upstream documents locally from main@adaf586; no runtime changes. Current fingerprints in V2 section15.",
-    "next": "Deliver v4 receipt snapshot and verify its download; then await safe GitHub authentication. Do not accumulate review or rerun runtime tests.",
+    "next": "LINK-R2: read chat4277-5059 and compare important claims with source/V2; then LINK-R3 docs validation and push/PR verification. No runtime GO.",
     "validation": "Historical runtime results in section6: syntax0; pytest1072pass/13fail/+60; canonical1085/13. NOT rerun after latest reset.",
     "history_notice": "completed_pr9_arena_addendum and all other existing fields preserve prior records; not active instructions.",
     "publication": {
-      "push_exit": 128,
-      "reason": "No safe GitHub authentication available; gh not logged in; could not read Username",
-      "comment_exit": 1,
-      "comment_error": "free_plan_block",
-      "remote_pr_head": "6a42a05a9a70604f8a61394f2e332ea566c39fbf",
+      "push_exit": 0,
+      "remote_pr_head": "bfa3b7ad828c32ec17d5e14dd12eb81703ee4fb2",
       "pr_draft": true,
-      "new_push_or_comment_succeeded": false,
-      "comment_provenance": "free_plan_block belongs to previous session; comment not retried now"
+      "comment_url": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6505621840",
+      "authentication": "Existing platform-linked gh session; no chat PAT used or persisted",
+      "verification": "Initial immediate equality assertion failed; subsequent read verified local=remote=PR9 Draft; no duplicate push"
     },
     "inherited_diagnostic_blocker": "Historical only: missing curl_cffi blocked an earlier lab; later AST and mocked fixtures completed D01-D22. Not a current blocker.",
-    "last_verified_checkpoint": "6a42a05a9a70604f8a61394f2e332ea566c39fbf",
+    "last_verified_checkpoint": "bfa3b7ad828c32ec17d5e14dd12eb81703ee4fb2",
     "diagnostics": "Generator normal marker retained, optimize1/end-only delete temporary marker then p03 failure; real generated hashes unchanged. AST-extracted fake502 -> DEAD/zero/invalid; corrupt vault overwritten (correct verdict signature rerun); explicit missing path falls back. Initial quoted-name inventory corrected with -z.",
     "bridge_diagnostics": "D12-D20 executed after2b03 before interruption; tool outputs retained, local logs lost after reset. -1/NaN/inf reach fake send, unknown after refresh and401 too. Corrected failover matrix with proper bridge_cfg keyword: TIMEOUT writes last_used; injected UNKNOWN/TRANSIENT/AUTH_FAILED withoutURL ->300s cooldown, withURL ->success metadata. Pre-try fingerprint exception leaves claim. Fixtures mocked, sockets/requests blocked.",
     "threshold_provenance": "Planning preference >=14 full UTC days, following owner answer quoted at Arena555; not independently heard, not runtime GO. Reject UTC-implies-strictly-greater reasoning.",
@@ -34,16 +32,11 @@
     "latest_source_review": "Section15 source reads belong to the session that created v2. This session read governance, root PROGRESS, V2 section15, recovery, docs verifier and unchanged Gist; no new runtime-source review.",
     "adjudication": "Section15 reconstructs workflow review, self-criticism, corrected tri-state/filter, remaining dispatch/threshold/-O gaps and resume prompt; source versions explicit.",
     "plan_progress": "Sections0-15 restored byte-for-byte from v2 before this receipt update; not reconstructed again. Semantic coverage and sections10-13 consistency still open; no GO.",
-    "validation_this_chunk": "Verified v2 size/SHA256/CRC/member hashes/allowlist; patch forward-check/apply/byte equality/reverse-check. Docs34/links13 Exit0; V2 links and F/D/V2T/V2X markers, unchecked tasks, PROGRESS archive, master/Arena bytes and non-current_execution history preserved. No runtime tests.",
+    "validation_this_chunk": "v4 download size/SHA256/CRC/member hashes/allowlist, patch forward/reverse-check and restored document byte equality passed. Root status update pending docs check. No runtime tests.",
     "reset_evidence": {
       "fresh_clone": true,
-      "missing_objects": [
-        "61eb03a582023c7704c65b41fe5ec4d553efcbd0"
-      ],
-      "tmp_present_at_start": false,
-      "prior_v3_upload": "Interrupted with no receipt; outcome remains unknown, not retried blindly",
-      "restoration": "Exact v2 document snapshot recovered from verified wrapper download; original commit identity not restored",
-      "local_restore_commit": "ce4de6eccce44439789b04ce018dbea6ec868b6b"
+      "initial_branch": "main",
+      "restoration": "Verified v4 archive; not a reconstruction. Commit identity is new."
     },
     "gist": {
       "revision": "d6a0088582d51999e141b5846e8e8f784a262c7d",
@@ -52,21 +45,13 @@
     },
     "progress_authority": "Root PROGRESS is entry point; V2 evidence/plan; current_execution mirror only",
     "artifact": {
-      "status": "v2_download_reverified_and_restored",
-      "url": "https://www.genspark.ai/api/files/s/MzrJmlub",
-      "filename": "TTTTT_review_recovery_2026-10-29_v2.zip",
-      "bytes": 114453,
-      "sha256": "cf675b3e5a0c77c7713e5daac162d7fc5aff493032697b081454cfb6b4403d84",
-      "snapshot_checkpoint": "02abf301efe927a59753819845b2dbe92eb152de",
-      "verified_now": [
-        "download_size_sha256",
-        "zip_crc",
-        "member_hashes",
-        "patch_forward_reverse",
-        "restored_document_byte_equality"
-      ],
-      "next_snapshot": "v4 planned: new receipt snapshot, not retry of unknown v3 upload. Final upload/download receipt will be in response; no recursive repackaging.",
-      "scope": "Three authorized documents, patch and manifest only"
+      "status": "v4_download_verified_restored_and_published",
+      "url": "https://www.genspark.ai/api/files/s/WEB5Wa4Z",
+      "bytes": 116758,
+      "sha256": "efa20666ae73db6684a4b7ab06ee6fe399ead644c55c5aca4e63c9cd66ed21ee",
+      "snapshot_checkpoint": "c3dc53f7e1958eda539809e2e9cb5f56f68d4778",
+      "prior_v3_upload": "Unknown; not retried",
+      "scope": "Three authorized docs, patch and manifest"
     },
     "security": "Exposed PAT not used or stored; revoke it in GitHub; no replacement in chat"
   },
