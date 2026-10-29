@@ -1,0 +1,25 @@
+{
+  "version": 5,
+  "repository": "number949481-ux/TTTTT",
+  "branch": "genspark_ai_developer",
+  "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
+  "published_base": "d6e09f38567cb13b3012a119ce58795be5a10328",
+  "local_checkpoint": "96a0da286913d50b933f91cb2487d8a79165ffdf",
+  "synced_main": "adaf586c043c08315c4c958020b54caab8013961",
+  "publication": "BLOCKED; local commit is not pushed. PR9 remains Draft at published_base.",
+  "provenance": "Section16 reconstructed from recorded source reads after lost9ba5feb; not byte-identical restoration of that commit. No prior v5 archive/upload.",
+  "files": {
+    "PROGRESS.md": "3b8802aa8c8d1eed39e9ff77820e6a8812347aa7677e547c518a6c513d1fc801",
+    "genspark/recovery_state.json": "93e30f29099fa101ffc2c1cdb0d99fbd83e34cd7340fde44ef4807c2629baf5b",
+    "genspark/tri_state_gift_independent_review_v2.md": "4edc9fd7b853d4e36d275670d23d3b970fae2de38b804d5634a121c46288691e",
+    "review_recovery.patch": "9deefe80960a69df9fab523889bb46b73f5fc479dff7235bd5829b5f45bb9717"
+  },
+  "restore": [
+    "Read root PROGRESS and fetch/status/remote/PR before any edit.",
+    "Check archive and member SHA256. Patch base is d6e09f3, not6a42a05.",
+    "If document hashes already match do not apply again. Otherwise git apply --check before applying only missing changes; never overwrite newer records.",
+    "Only three authorized documents; current_execution only inside recovery JSON. No runtime/manager imports, feature GO, merge or deploy.",
+    "Patch restores document bytes, not original Git commit identity. Commit and push using safe authentication then verify HEAD=remote=PR9 Draft.",
+    "This archive predates its own upload receipt; final response supplies verified URL and SHA256. Do not repackage just to include its own receipt."
+  ]
+}
