@@ -7,7 +7,8 @@
 
 - استعيد `ea9ab278d4b938cf1815ade4f9919d3daf01740f` من remote؛ main ثابت `d164758`، وبصمتا Arena والتقرير السابق مطابقتان. [التقرير الجديد، §8](genspark/tri_state_gift_independent_review_v2.md) يوثق الاستعادة.
 - الخطة V0–V4 لم تتغير؛ V1/V2 غير مكتملتين. D01–D20 والبوابات الحمراء محفوظة من قبل reset، ولم تعَد في دفعة الاستعادة الحالية.
-- التالي: التشخيص المنقطع للفلتر/huge-int ثم scripts/security/writers، ثم التحكيم وBEFORE/AFTER وخطة المهام والاختبارات والمخاطر.
+- نُشرت دفعة الاستعادة `fef72ea` وتحقق HEAD=remote=PR9 وDraft. اكتملت الآن D21–D22: مقارنة15 اسمًا تكشف9 استثناءات مفقودة في الفلتر المقترح؛huge-int يكسر مثالC1 القديم. تفاصيل تصحيح المختبر وقراءةsnapshot/REST/password-card/scripts/writers في [§9](genspark/tri_state_gift_independent_review_v2.md).
+- التالي: استكمال التحكيم وBEFORE/AFTER وخطة المهام والاختبارات والمخاطر؛V1/V2 غير مكتملتين. لا إعادة للبوابات التشغيلية في هذه الدفعة.
 - ثلاثة ملفات توثيق فقط؛ لا runtime/tests/generated/accounts أو التقرير السابق أو المراجع الأصلية؛ لا live/migration/merge/deploy. كل دفعة صغيرة تُدفع ويُتحقق remote وPR9 Draft بعدها.
 
 ## أرشيف استعادة 2b03cb0 — حالة سابقة لا قياس جديد
