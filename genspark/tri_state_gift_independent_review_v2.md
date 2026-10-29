@@ -436,3 +436,59 @@ single-writer شرط **لم يثبت**؛RLock وحده ليسدليلًا. إن�
 | V2X22 | normal/-O/end-only/invalid part/swap fail | فشل آمن قبل حذف بناء صالح؛ فحص الأجزاء والfacades وparity | 21,22 |
 | V2X23 | regressions و01.03 freeze وfull gates | hashes المجمد مطابقة؛ baseline fix منفصل؛ البوابات Exit0 قبلجاهزية runtime | 06,07,23 |
 | V2X24 | reset قبلcommit/قبلpush/بعدpush؛ code rollback معpending | لا ادعاء نشر محلي؛ استعادة remote متحقق؛ لا بيانات قديمة تعيد المعزول | 24 |
+
+
+## 13. خريطة التصحيح والمخاطر والتراجع
+
+### 13.1 BEFORE/AFTER مرتبط بالموضع والقبول
+
+AFTER هنا تصميم مطلوب بعد GO، وليس تعديلًا منفذًا. الأرقام تخص المصادر عندmain@d164758؛ تتغير بعد أي تعديل ويجب إعادة تثبيتها.
+
+| الموضع | BEFORE الفعلي | AFTER المقترح | القبول |
+|---|---|---|---|
+| bridge957–970 | path صريح مفقود قد ينتهي إلىfallback | حارس نقل موضعي يثبت المصدر والمجلد؛ لا تعديلP23 | V2X13 |
+| bridge989–1022؛ verifier396–430 | writers مستقلة وbool مهمل؛ فساد الخزنة يتحول[] | strict read ونتائج تخزين صريحة، وقفل موحد مثبت وtemp/readback | V2X14–18 |
+| bridge3214/3242/3270–3298/3657 | snapshot قديم وعمليات قبلtry | cleanup فورclaim، وre-read/version check وrelease محمي | V2X10–12 |
+| bridge2951–2989/3098–3106 | unknown/nonfinite قد يمر؛low يبرد دونgift | حارسtyped واحد في البوابات الثلاث وgift عندlow فقط | V2X01–04 |
+| bridge1122–1219 | refresh يكتب ويعزل وقدfallback بعدtransient | auth صريح وdeferred commit وإعادة فحص الجلسة، مع حفظP20 | V2X03/05/11 |
+| verifier83–165/257–372 | النص يسبقHTTP؛balance0 افتراضي وunknown status قديموت | HTTP-first وschema/evidence؛gift probe بلاآثار جانبية؛إذنverifier لازم | V2X05–09 |
+| bridge3344–3345/3630–3655 | URL أوCOMPLETED ثمgeneric cooldown | dispatch شامل للنتائج وحدuncertain-send مع حفظURL/checkpoint | V2X19–20 |
+| bridge2324–2331/4592–4699/4275–4356/4462–4475 | حجب ناقص ومخارج تعتمد علىupstream | جمع الاستثناءات وحارسالمخرج وسياسةupload/delete/old queue | V2X21 |
+| generator191–199 وما بعدها | assert ثمdelete ثمAST للأجزاء | تحققexplicit فيstaging لكلالأجزاء ثمswap قابل للاسترداد | V2X22 |
+| engine1093/1298 | تخمينcached في مسارات مستقلة | **لاedit**؛تطويق الجسر لايصلحCLI،والمخاطر موثقة | V2X23 |
+| bridge196–216/8721/8801؛Qwen/uploader مستقل | مخاطرأسرار خارجدمجالهدية | إصلاحأمني منفصل بعدإذن،لا توسيعخفي للنطاق | V2X21 عنداعتمادالنطاق |
+
+### 13.2 سجل المخاطر وبوابات التوقف
+
+| الخطر | الكشف/الإيقاف | التخفيف والتراجع |
+|---|---|---|
+| عزل خاطئ منHTTP/schema/time | UNKNOWN أوعدم اكتمال الدليل | لاsource-cut قبل الإثبات؛النقل ليس أداةتشخيص |
+| فقد حساب بينملفين | fault injection وعدّالهويات وreadback | target-first،وpending يمنعالاستخدام حتىتسويةمعتمدة |
+| كاتب آخر أوnamespace أخرى | جرد واختباركاتبثانٍ اصطناعي | RLock ليسإثباتًا؛توقفالحلالدنيا حتىمنعالتوازيأواعتمادحلأوسع |
+| حفظ فوقsnapshot قديم | revision/identity/session mismatch | CONFLICT؛لاoverwrite ولاresurrection |
+| timeout بعدعملمحتمل | حدbusiness-send وروابطcheckpoint | لاblind resend؛استعلامبعقدموثقأووقفآمن |
+| أسرار فيarchive/queue/logs/card | fixtures اصطناعية وفحصالمخارج | حجبمتعددالطبقات؛صلاحياتخاصة؛security UX بإذنمنفصل؛إلغاءPAT المكشوفمنGitHub |
+| baseline أحمر أوgenerated جزئي | مقارنة13failure وstaged parity | لاجاهزيةruntime؛رجوعtree موحدةلاanchors مختلطة |
+| Windows/busy-file/diskfull | حقنفشل وبيئةWindows عنداعتمادها | retries محدودة وحفظالنسخةالمثبتة؛لاوعد100% منLinux mocks |
+| reset يفقددفعةمحلية | HEAD/remote/PRhead بعدكلpush | chunks صغيرةوسجلnext؛Tool بلاresult ليسإنجازًا |
+| توسيعscope | diffallowlist وhashes للمجمد | وقففوري؛لاverifier/engine/tests/securityUX دونإذنمحدد |
+
+### 13.3 runbook تراجع بعد تنفيذ مستقبلي معتمد فقط
+
+1. أوقفdispatch والكتّاب بطريقة معتمدة واحفظ حالة الأعمالin-flight وروابطها. لاkill/retry عمياني يعيدprompt.
+2. اقرأPRIMARY والوجهتين وlegacy وأيpending metadata قراءة خاصة؛خذنسخةخاصةموثقة قبلأيإصلاح،ولا تضع بياناتحسابات فيGit.
+3. **رجوع الكود:** استعدrevision موحدة سبقفحصها تشملsource/generator/generated/tests المتوافقة. لاCopy-Item منanchors غيرمضمونة ولاrebuild مباشرة بمولدغيرصالح.
+4. **رجوع البيانات:** ليسgit reset ولاcopy لملفPRIMARY قديم. راجعالهويات والتعارضات وpending؛حفظالهدفالمثبت ومنعاستخدامالمكرر أولوية. لاrevival تلقائي.
+5. إذا كانتنسخةالكودالسابقةلاتفهمpending الجديد،ابق فيوقفآمن حتىتسويةمعتمدة؛لا تشغلهافوقالبيانات بلااختبارتوافق. أعدالبوابات واختباراتالاسترداد.
+6. سجل مااستعيد وما بقيغيرمؤكد،ثمcommit/push للملفاتالمصرحبها فقط. استئنافlive خطوةمنفصلة بإذن. هذاrunbook **لم ينفذ**.
+
+### 13.4 استئناف المراجعة الحالية بعدreset
+
+- pwd ثمداخلworkspace: status/log/fetch/ls-remote؛استعدآخررأسمتحقق،لاmain افتراضيًا.
+- اقرأرأسPROGRESS وcurrent_execution وآخرأقسامالتقرير؛طابقHEAD/remote/PR9 وDraft. قدينجحpush وينقطعالتعليق؛استكملالناقص فقط.
+- إذا تغيرupstream،احفظه وافحصdiff وأثرهعلىالأدلة. نتائجD والبوابات السابقةتحتفظبزمنها؛لا تعادلمجردفقد`.tmp` ولا تُعرضكقياسجديد.
+- الأداةالمنقطعةيفحصأثرها قبلإعادةالكتابة. استأنفnext بدفعةصغيرة؛«تابع» ليسGO لتعديلالتشغيل.
+
+### 13.5 حالة التقدم وحدود التسليم
+
+§0–§13 تشملالمراجعوالتشخيصات والتحكيم وBEFORE/AFTER وعقودالدمج والمهام والقبول والمخاطر. **هذا اكتمال مسودة هيكل الخطة، لا إعلان اكتمال المراجعة الشاملة أوتنفيذ الميزة.** تبقى مراجعةالتغطية والإحالات والتحرير،خصوصًا الكلماتالعربيةالمتصلة فيدفعاتالحفظالسريعة. لمتُعدقراءةكلchat أوArena1–1884 دلاليًا،وجردAST ليسبديلًا لذلك. schema الهدية وallowlist failed وsingle-writer التشغيلي والأدلةالخارجيةغيرمتاحةبشكلحاسم. هذهحدودمعلنة،لااختباراتناجحةمفترضة.
