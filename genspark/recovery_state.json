@@ -2,19 +2,20 @@
   "current_execution": {
     "task": "Independent from-scratch second review requested by owner after Arena update",
     "date": "2026-10-29",
-    "restored": "f3eef4b3a55cdf6ed321b76a7e6eb3a53ae2159c",
+    "restored": "3111f8f2b50d39da115b89cac7d54283f40447c0",
     "synced_main": "d16475814bebf7379b097e26587698194582941c",
     "branch": "genspark_ai_developer",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "plan": "genspark/tri_state_gift_independent_review_v2.md",
-    "status": "review_in_progress_V0_complete_V1_active",
+    "status": "review_in_progress_reset_restored_V1_V2_partial",
     "request": "Owner explicitly asks review from beginning, new file, updated references including Arena. Supersedes prior do-not-repeat-review instruction, NOT runtime GO.",
     "scope": "New review + PROGRESS + recovery only. Previous report and original sources read-only; no Python/tests/generated/accounts/live/migration/merge/deploy.",
     "reference_update": "Arena d164758 adds1446 lines; original1884-line prefix identical. Runtime unchanged.",
-    "next": "Read and adjudicate all relevant source content, including Arena1979 onward; segregate unrelated OSRS block1915-1969. Check -O generator, verifier edit scope, concurrent zero-mutation and historical-vs-current criticism. Then independent tests and new full plan.",
-    "validation": "Reference fingerprints and Git source comparison only so far; no new runtime tests yet.",
+    "next": "Persist restoration, verify remote/PR9; AST-only diagnostics avoiding missing curl_cffi; finish remaining reference reading and evidence/plan. No runtime edits.",
+    "validation": "Current chunk: Git restoration and documentation only. Pre-reset summary reports syntax0, pytest1072/13/+60, canonical1085/13 and isolated generator -O defect; local logs lost, not rerun yet.",
     "history_notice": "completed_pr9_arena_addendum and all other existing fields preserve prior records; not active instructions.",
-    "publication": "Commit/push checkpoint and verify remote/PR9. Do not claim publication before verification."
+    "publication": "Commit/push checkpoint and verify remote/PR9. Do not claim publication before verification.",
+    "inherited_diagnostic_blocker": "Previous diagnostic stopped at missing curl_cffi after generator cases. Sender/failover/verifier/HAR/inventory cases were NOT executed."
   },
   "completed_pr9_arena_addendum": {
     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
