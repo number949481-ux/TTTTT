@@ -311,3 +311,51 @@ Arena:555 ينقلنصجوابالمالك «مش فارقه زي سكربت ب�
 ### 10.4 ما لم يثبت بعد، وما لا يحتاج إعادة سؤال
 
 لا نعيد طلب إذنrevival/startupcleanup/TTL أو رفع تجميد01.03؛ هذه مستبعدة. اتجاه>=14 لهprovenance واضح،ويذكر فينسخةالاعتمادلا كاستفتاءجديد. يبقىقبلأيimplementation: GO محددبالrevisionوالملفات؛schema منقح للهدية واكتمالpagination؛allowlist أدلةfailed؛إثباتsingle-writer أوإذنحلأوسع؛عقودbaselineالأحمر؛سياسةcredit-in-flight. الترتيبالافتراضييبقىكماهو،فلايتوقفالمسارالأساسيعلىاختيارفرزجديد. migration/security UX/live/merge/deploy كلمنهاخارجGO الضمني. اكتمالمصفوفة34معرفًالا يحولهذهالأمورإلىمحسومة.
+
+
+## 11. استعادة 4fea565 وعقد الدمج المقترح
+
+### 11.1 حالة الاستعادة والنطاق
+
+بعد reset التالي، بدأ workspace على main. جرى fetch واستعيد `4fea56561a5e0895146278d2e4d2fed1b253e3f9` من remote؛ main بقي `d164758`. فُحص التقرير فعليًا: ينتهي عند§10، ولا يحتوي§11–§13 من الأداة المنقطعة. لذلك لا تُحسب تلك الدفعة محفوظة، ويُعاد فقط الجزء المفقود في دفعات أصغر. D01–D22 ومصفوفة F01–F34 محفوظة ولا تعاد لمجرد reset.
+
+الخطة V0–V4 والنطاق مجمدان: ثلاثة ملفات توثيق فقط؛ لا Python/tests/generated/accounts، ولا تعديل التقرير السابق أو مراجع00/012345/Arena؛ لا live أو migration أو merge/deploy.01.03 مجمد، وتعديلverifier مستقبلًا يتطلب إذن نطاق صريح. الأقسام التالية **تصميم مقترح لا تنفيذ**، ولا أسماء API موجودة تلقائيًا. لم تعَد بوابات runtime بعد هذا reset.
+
+### 11.2 ثلاثة محاور مستقلة
+
+| المحور | العقد المقترح |
+|---|---|
+| مكان التخزين | PRIMARY=`accounts_genspark.json` المحسوم؛ FAILED=`accounts_failed.json`؛ DELAYED=`accounts_delayed_gifts_credits.json`. الوجهتان بجوارPRIMARY المحسوم، لاcwd اعتباطي. حارس النقل يرفضfallback لمسار صريح مفقود؛ لا تعديلP23/resolver العام |
+| نتيجة الفحص | balance: KNOWN(value)/UNKNOWN؛ auth: مؤكدة/NEEDS_CREDENTIALS/TRANSIENT/CONFIRMED_FAILED بدليل موثق؛ gift: RECENT/STALE/UNKNOWN. نقص كلمة المرور ليس موتًا؛UNKNOWN ليس0 |
+| نتيجة الحفظ | COMMITTED أوMOVED بعدreadback؛ ALREADY_PRESENT بعد تحقق التطابق الآمن؛ PENDING_SOURCE_CLEANUP؛ CONFLICT؛ STORAGE_ERROR. bool واحد لا يكفي، ونتيجة الحفظ لا تختلط بحكم الحساب |
+
+الهوية المطبّعة تكشفduplicates ولا تدمج السجلات المتعارضة تلقائيًا. نتائج الفحص الداخلية تحملrevision ووقتًا ومصدر دليل واكتماله وجيل الجلسة؛ لاcookies/password فيlogs أوrepr أوالنتيجة العامة. أسماء الحالات هنا تصميمية، وتحتاجتعريفadapter يحفظtuple العامة ذات5عناصر. legacy يقرأ لمنع الاستخدام والتعارض؛ لاmigration تلقائية. success/dead خارج دورةالجسر لكن حمايتهما منالنسخ واجبة.
+
+### 11.3 lifecycle منclaim إلىdispatch
+
+1. اختر بالسياسة القائمة، ثمclaim بمالك محدد؛ **ابدأcleanup فورنجاحclaim** قبلreactivate/fingerprint/span أوغيرها مماقديرمي.
+2. أعدقراءةPRIMARY والمعازل وlegacy. غيابالحساب أوتعارضنسخته يمنعاستخدامsnapshot قديم. gift HTTP خارجقفلملف طويل.
+3. نفذlive balance للجلسة الحالية؛تجديد محدود عنددليلانتهاءصلاحيتها ثمإعادةفحص. نفسحارسالقيم عندالبوابةالأولى وبعدrefresh وبعد401؛لاREADY منcached أوcookie generation قديم.
+4. الرصيدالمؤكد>=threshold يعطيREADY دونgift query. الافتراضي100 منإعدادواحد؛أيoverride موثق ومختبر.
+5. low+RECENT موثوق: cooldown افتراضي29h معحفظمتحقق،لاsend. low+STALE مثبت: نقلDELAYED. CONFIRMED_FAILED بدليل مسموح: نقلFAILED.
+6. UNKNOWN/TRANSIENT/NEEDS_CREDENTIALS: تخطيمحاولةبلاsend أونقل أوعقوبة أوكتابةحسابمنسوبةللمحاولة. لااستدعاءrefresh القديمكماهو ثمادعاءzero-mutation: cookies الجديدة تبقىمؤقتًا فيالذاكرة وlast_used/reactivate يؤجلان إلىنقطةcommit معتمدة.
+7. قبلcommit: re-read/version check تحتقفل writers المشترك القصير. فشلحفظأوتعارضأوpending يمنعsend؛لاsuccess log كاذب.
+8. dispatch صريح قبلURL-success وgeneric cooldown. URL للاسترجاعوليسدليلنجاح؛TIMEOUT قبلbusiness-send يختلفعنهبعدإرسالمحتمل. لاإعادةإرسال عمياء،ولاخلطgiftpreflight بنفادالرصيدأثناءالعمل أوDATA_RETENTION/compact.
+9. افحصالإلغاء قبلHTTP وبعده وقبلcommit وقبلsend. الإلغاءبعدثبوتالهدفلايرجعهإلىPRIMARY. أخيرًاclose_span معضمانrelease حتىعندفشلالإغلاق.
+
+zero-mutation تقاس سببيًا: لاwrite منسوبللمحاولةالمجهولة. hash للملفكله صالحفيعزل؛تحتالتزامن قدتكتبمحاولةمشروعةأخرى. لا نفرضثباته بحبسfilelock طوالHTTP. أثرtelemetry المنقح مستقلعنملفاتالحسابات.
+
+### 11.4 عقد الوقت والدليل
+
+- الاتجاهالتخطيطي `elapsed >= timedelta(days=14)` وفقجوابالمالك **المنقول** فيArena555؛ليسسماعًا مباشرًا ولاGO. لااستفتاءجديدتلقائي علىالمساواة.
+- الساعةUTC-aware حديثة لكلقرار؛Cairo عبرZoneInfo للعرضفقط. future/naive/malformed ليستSTALE999. `.days>=14` ليسخطأحدبذاته للمددغيرالسالبة.
+- latest daily gift يختار بعدparseUTC لاsort نصي. recent موثوقينفيالتأخر؛إثباتSTALE يحتاجhistory/window/pagination كافية. missing/emptylist يبقىUNKNOWN دونعقداكتمال مثبت؛HAR الحالي لايثبتواجهةالهدية.
+- giftprobe قرائي: لاretention POST أوsignal/CLI/revival. فصلآثارauth/retention القائمة عنبوابةالهدية يحتاجاختبارات تحفظP20،لا حذفهاخلسة. سياسةcredit-in-flight تبقىمحفوظةحتىاعتمادعقدمحدد معcheckpoint/URL/prompt-once.
+
+### 11.5 نقل قابل للاسترداد، لاtransaction كاملة لملفين
+
+strict read للملفات والهوية والrevision؛corrupt/non-list ليس[]. قبلأولmutation: backup خاص موثق،ومنعنسخه إلىGit أوsnapshot. temp فريد علىfilesystem الوجهة،flush/fsync وفققدرةالنظام،ثمreplace وreadback للهدف. لاsource-cut قبلثبوتالهدف؛readback فاشل بعدreplace يعنيحفظًا غيرمؤكد لا«لم يكتب» بالضرورة.
+
+بعدثبوتالهدف،أعدالتحقق منالمصدر ثمقصه واحفظه واقرأه. الفشل يتركPENDING_SOURCE_CLEANUP،والهدفالمثبت يمنعاختيارنسخةPRIMARY المتبقية. retry مطابقidempotent بعدالتحقق؛duplicate مختلفCONFLICT. metadata الاسترداد يمكنأن تكونفيالسجلالخاصبالهدف؛لاخزنةحساباترابعةضمنيًا. لاrevival ولاstartup sanitizer. طريقةالتسويةاليدوية أوالأداةالمحدودة تحتاجاعتمادًا.
+
+single-writer شرط **لم يثبت**؛RLock وحده ليسدليلًا. إنلميثبتاستبعادwriter آخر/namespace آخر/CLI،توقفالخطةالدنيا واطلبإذنحل بينالعمليات. Windows busy-file وdiskfull وفشلالfsync تحتاجاختبارات،لا ضمان100% منLinux mocks.
