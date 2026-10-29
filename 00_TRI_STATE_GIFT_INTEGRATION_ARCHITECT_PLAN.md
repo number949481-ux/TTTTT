@@ -108,24 +108,26 @@
 - [ ] `TASK-202`: ترقية القفل ليكون متكرراً وآمناً للتداخل: `VAULT_LOCK = threading.RLock()`.
 - [ ] `TASK-203`: إضافة الحكم `STALE_GIFT = "STALE_GIFT"` و `UNKNOWN_BALANCE = "UNKNOWN_BALANCE"` داخل فئة التشخيص `AccountVerdict`.
 - [ ] `TASK-204`: دمج دالة فحص الهدية وسجل الشحن `inspect_account_gift_status` كـ Pure HTTP Requests مستقلة تماماً (بدون أي استيراد لـ 05.02 أو تبعياته المفقودة `genspark_master_account_manager`) مع تحويل UTC الصارم وتوقيت القاهرة.
-- [ ] `TASK-205`: بناء دالة العزل والقص الآمنة بالخطوتين `quarantine_failed_account_atomic` (حفظ ملف `accounts_failed.json` أولاً بملف مؤقت ثم replace والتأكد من نجاحه، ثم فقط قص الحساب من `accounts_genspark.json`).
+- [ ] `TASK-205`: بناء دالة العزل والقص الآمنة بالخطوتين `quarantine_failed_account_atomic` (حفظ ملف `accounts_failed.json` أولاً بملف مؤقت ثم replace والتأكد من نجاحه قراءة وكتابة، مع حماية الخزائن التالفة ورفض استبدال الملف المعطوب بـ `[]` وفق تشخيص D08، ثم فقط قص الحساب من `accounts_genspark.json`).
 - [ ] `TASK-206`: بناء دالة عزل الهدية المتأخرة والقص الآمنة `quarantine_delayed_gift_atomic` بنفس بروتوكول الخطوتين لحماية الحسابات من الضياع.
 - [ ] `TASK-207`: فحص سلامة بناء البايثون بـ `python -m py_compile genspark_verifier_engine.py`.
 
 ---
 
 ### 🔹 المرحلة 3: دمج الفحص الحي وسحب الحسابات بالجسر (`01.33_telegram_gen_bridge.py`)
-- [ ] `TASK-301`: التحقق غير الحذفي عند المطالبة (Read-Only Claim-Time Verification): التأكد لحظياً عند اختيار الحساب (`claim`) أنه غير مدرج في ملفات العزل، بدون أي تنظيف حذفي عند الإقلاع (تطبيقاً لفويس 8).
+- [ ] `TASK-301`: التحقق غير الحذفي عند المطالبة (Read-Only Claim-Time Verification): التأكد لحظياً عند اختيار الحساب (`claim`) أنه غير مدرج في ملفات العزل، بدون أي تنظيف حذفي عند الإقلاع (تطبيقاً لفويس 8)، مع **بدء كتلة `try...finally` فور نجاح الحجز مباشرة** لضمان تحرير الحساب ومنع تسريبه معلقاً إذا حدث استثناء لاحق (تشخيص D20).
 - [ ] `TASK-302`: تصحيح معادلة فرز الحسابات في `get_eligible_accounts` لضمان تصدير الحسابات الجاهزة ($\ge 100$) أولاً دون انعكاس:
   `key=lambda x: (-(1 if isinstance(x.get('balance'), (int, float)) and x.get('balance', 0) >= 100 else 0), -(x.get('balance', 0) if isinstance(x.get('balance'), (int, float)) else 0), x.get('last_used', 0))`
 - [ ] `TASK-303`: تحصين فجوة فحص الرصيد المسبق (L2943-L2963):
-  - لو الرصيد رجع `-1` أو غير رقمي $\to$ يُصنف كـ `UNKNOWN` ويتخطى الحساب فوراً دون إرسال شات ودون اعتباره صفراً ودون اعتباره ميتاً.
-  - لو الرصيد $\ge 100$ $\to$ تنفيذ الشات فوراً.
-  - لو الرصيد مؤكد $< 100$ $\to$ فحص سجل الهدايا:
+  - فحص الرصيد للأعداد الصحيحة `isinstance(bal_check, int)` مباشرة لحمايتها من انهيار `OverflowError` (تشخيص D22).
+  - لو الرصيد رجع `-1` أو `NaN` أو غير رقمي $\to$ يُصنف كـ `UNKNOWN` ويتخطى الحساب فوراً دون إرسال شات ودون اعتباره صفراً ودون اعتباره ميتاً ودون تبريد 29h (تشخيص D12–D16).
+  - لو الرصيد $\ge 100$ $\to$ تنفيذ الشات فوراً (Fast-path).
+  - لو الرصيد مؤكد $< 100$ $\to$ فحص سجل الهدايا بفرع ثلاثي صارم (Finding M03 / D18–D19):
     - لو $\ge 14$ يوماً $\to$ عزل وقص إلى `accounts_delayed_gifts_credits.json`.
-    - لو طبيعية $\to$ تبريد 29 ساعة.
+    - لو منتظمة $\to$ تبريد 29 ساعة.
+    - لو تعذر الفحص أو خطأ شبكة $\to$ تخطٍ صامت لهذه المحاولة فقط بدون تبريد 29h وبدون عزل.
 - [ ] `TASK-304`: ترقية دالة `refresh_cookies_on_401` (L1122-L1175) لتطبيق بروتوكول الخطوتين الآمن للحسابات الميتة وتوجيه متأخري الهدية لمعزلهم.
-- [ ] `TASK-305`: تحصين مرشح المزامنة مع GitHub (`_is_never_copy_file` L2324-L2331) لإضافة ملفات العزل الجديدة (`accounts_failed.json` و `accounts_delayed_gifts_credits.json` وملفات الـ `.bak`) لحماية الخصوصية ومنع تسريب أي حسابات.
+- [ ] `TASK-305`: تحصين مرشح المزامنة مع GitHub (`_is_never_copy_file` L2324-L2331) بالإبقاء الكامل على القائمة القائمة الـ 9 لحظر تسريب الملفات الحساسة (تشخيص D21) وإضافة ملفات العزل الجديدة (`accounts_failed.json` و `accounts_delayed_gifts_credits.json` و `telegram_bot_token.txt` وملفات `.bak` و `.lock` و `.tmp_*`).
 - [ ] `TASK-306`: فحص سلامة البناء النحوي بـ `python -m py_compile 01.33_telegram_gen_bridge.py`.
 
 ---
@@ -139,7 +141,7 @@
 ### 🔹 المرحلة 5: إعادة معايرة وضبط حدود أجزاء "المترجم" (`scripts/rebuild_refactor.py`)
 - [ ] `TASK-501`: تحديد وضبط جميع حدود الأجزاء الـ 12 (`p01` إلى `p12`) عند بدايات الـ Top-level functions الحقيقية في `01.33_telegram_gen_bridge.py` لمنع أي خطأ نحوي في `p03` أو `p12`.
 - [ ] `TASK-502`: تحديث خريطة الأجزاء `PARTS` في سكريبت المترجم [`scripts/rebuild_refactor.py`](file:///d:/SMS/.hRhRhRhRhRhR/..............................................................................................................%D8%B4%D8%BA%D9%84%20%D9%81%D8%B1%D9%8A%D9%82/Genspark/W___webapp/bridge_refactor_31/scripts/rebuild_refactor.py#L26-L39) لاحتواء كامل السطور الفعلية (~9285 سطراً).
-- [ ] `TASK-503`: تشغيل "المترجم" في مسار مرحلي معزول أولاً، والتحقق من نجاح الـ Assertion: `assert expected - 1 == total`.
+- [ ] `TASK-503`: تشغيل "المترجم" في مسار مرحلي معزول (Staging)، واستبدال عبارات `assert` بفحوص استثناء صريحة `if expected - 1 != total: raise SystemExit(...)` لحمايته من التجاهل تحت بيئة بايثون المُحسّنة `-O` (تشخيص D01–D04).
 - [ ] `TASK-504`: تأكيد تطابق واجهات حزمة `bridge_refactor/` (100% Feature Parity بايت-بايت) ونقلها للمسار النهائي بعد التأكد.
 
 
@@ -251,19 +253,24 @@
           mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
           return None, "LOW_BALANCE", None, None, None
   ```
-* **AFTER (الكود الجراحي المقترح):**
+* **AFTER (الكود الجراحي المقترح — الفرع الثلاثي الصارم M03):**
   ```python
   if isinstance(bal_check, (int, float)) and bal_check >= 0:
       if bal_check < _min_balance:
-          # فحص سجل الهدية لمعرفة هل انقطعت > 14 يوم أم مستمرة طبيعياً
+          # فحص سجل الهدية لمعرفة هل انقطعت >= 14 يوم أم مستمرة طبيعياً
           gift_status, days_without_gift, last_gift_cairo = check_gift_status_for_account(acc, cookies)
           if gift_status == "STALE":
-              log_event("warning", f"📦 هدية متأخرة ({days_without_gift} يوم) — عزل الحساب في accounts_delayed_gifts_credits.json", email=email)
+              log_event("warning", f"📦 هدية متأخرة ({days_without_gift} يوم >= 14) — عزل الحساب في accounts_delayed_gifts_credits.json", email=email)
               isolate_stale_gift_account(acc, days_without_gift, last_gift_cairo, json_path=json_path)
-          else:
-              log_event("warning", f"💰 رصيد منخفض وهدية منتظمة — تبريد 29h وتخطٍ صامت", email=email)
+              return None, "LOW_BALANCE", None, None, None
+          elif gift_status == "HEALTHY":
+              log_event("warning", f"💰 رصيد منخفض وهدية منتظمة (آخر هدية: {last_gift_cairo}) — تبريد 29h وتخطٍ صامت", email=email)
               mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
-          return None, "LOW_BALANCE", None, None, None
+              return None, "LOW_BALANCE", None, None, None
+          else:
+              # UNKNOWN أو خطأ شبكة مؤقت: تخطٍ صامت لهذه المحاولة فقط بدون تبريد 29h وبدون عزل!
+              log_event("warning", f"⚠️ تعذر التحقق من سجل الهدية للحساب ({email}) — تخطٍ مؤقت بدون تبريد أو عزل", email=email)
+              return None, "LOW_BALANCE_UNKNOWN_GIFT", None, None, None
   ```
 
 ---
@@ -330,6 +337,27 @@
    - إلغاء فكرة الـ Revival أو استرجاع الحسابات آلياً داخل الجسر (تطبيقاً لفويس 6).
    - إلغاء كاش الـ TTL وشاشات الانتظار والتنظيف الحذفي عند الإقلاع (تطبيقاً لفويس 8).
    - حماية الأسرار واستثناء ملفات العزل والتوكن من مزامنة Git عبر `_is_never_copy_file`.
+
+## 🤝 نموذج تنفيذ وإدارة العمليات الميدانية: ميثاق "ملف الأم" (`PROGRESS.md`)
+
+تنفيذاً لتوجيهات الباشمهندس الاستراتيجية في التسجيلات 21 و 22 و 23:
+1. **استقلالية المنفذ عبر GitHub (Decoupled Workflow):**
+   - نحن في جلستنا نصوغ المواصفات المعمارية الدقيقة في ملفات جلستنا المعتمدة `00_PLAN.md` و `00_NOTES.md`.
+   - الباشمهندس يرفع هذه الملفات مباشرة إلى GitHub.
+   - جينيوس يقرأ التقرير من GitHub ويقوم ببناء وتنفيذ خطته داخل فرعه `genspark_ai_developer`، دون الحاجة لبرومبت توجيه يدوي من طرفنا.
+
+2. **دستور "ملف الأم" (`PROGRESS.md` — The Mother File):**
+   - في بيئة فرع جينيوس، يُعتبر ملف `PROGRESS.md` هو **أم البيت وأب البيت (Single Source of Truth)** ولا يوجد ملف استئناف غيره.
+   - **قاعدة الاستئذان الميكانيكية:** قبل أن يتحرك جينيوس لفحص أي كود أو تعديل أي سطر، يضع في `PROGRESS.md` مربعاً فاضياً `[ ]` للمهمة.
+   - **قاعدة الإثبات والتوثيق:** بعد إنجاز المهمة، يعود لـ `PROGRESS.md` ليدون الكومنت والدليل بالأرقام ويضع علامة الصح `[x]`.
+   - **مفتاح الاستئناف الدائم:** عند انقطاع الجلسة لأي سبب، الرسالة الحاكمة له هي:  
+     👉 **`"راجع نقطة الاستئناف من ملف PROGRESS.md"`**  
+     ليفتح الملف فوراً ويستأنف من آخر مربع مفتوح `[ ]` دون البدء من الصفر.
+
+3. **صمامات منع العمي والتخمين:**
+   - حظر التخمين أو التعديل العمياني.
+   - حظر تغيير هيكل المشروع أو المنظومة القائمة أو لمس ملف `01.03` (READ-ONLY 100%).
+   - تطبيق الإضافات الجراحية المحددة للهدية فقط دون إفساد أي ميزة قائمة.
 
 ---
 
