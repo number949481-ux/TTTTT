@@ -1,167 +1,186 @@
 diff --git a/PROGRESS.md b/PROGRESS.md
-index 0a10649..b0f6ed1 100644
+index b0f6ed1..4dee05c 100644
 --- a/PROGRESS.md
 +++ b/PROGRESS.md
 @@ -3,7 +3,18 @@
  > ⚠️ **قاعدة إلزامية**: هذا الملف يُحدَّث بعد **كل** جلسة عمل — أول قسم فيه هو دائماً
  > نقطة الاستئناف المعتمدة للجلسة التالية. لا تبدأ أي عمل جديد قبل قراءته.
  
--## نقطة الاستئناف الحالية — زال عائق المصادقة؛ استعيدت v4 ونُشرت
-+## نقطة الاستئناف الحالية — d6e09f3 محفوظ بعيداً؛ تثبيت نتائج القراءة المفقودة
+-## نقطة الاستئناف الحالية — d6e09f3 محفوظ بعيداً؛ تثبيت نتائج القراءة المفقودة
++## نقطة الاستئناف الحالية — 04d9584 منشور برفع المالك اليدوي؛ Full Review جارٍ بدفعات
 +
-+- استعيد `d6e09f38567cb13b3012a119ce58795be5a10328` من Git؛ PR9 OPEN/Draft مطابق، main ثابتadaf586. Gist لم يتغير. لا إعادة تطبيقv4 أوإعادة بناء§15.
-+- commit9ba5feb غير موجود بعدreset، وآخر تحديثPROGRESS/recovery قوطع بلا نتيجة؛ لا ندعي نجاحه. §16 أعيد تثبيته من قراءات الأدوات السابقة، لا استرداداً بايتياً. لم تُنشأ أوتُرفعv5 قبل هذه الجلسة بحسب سجل الأدوات.
-+- [x] LINK-R2: قراءة الشات4277–5059 تمت قبل المقاطعة؛ النتائج وحدودها فيV2§16. تصحيح صفelse التاريخي ومعيارhuge-int؛ لا إعادةD01–D22/GF01 أوruntime gates، ولا ادعاء إغلاق التغطية الشاملة.
-+- [x] DOC-CHECK: docs34/links13 Exit0 وUTF8/JSON وروابطV2 والمعرفات و24 مهمةV2T غيرمنفذة، وحفظالأرشيف والتقريرالسابق وArena والنطاقالثلاثي وفحصأنماطالأسرار؛ نجحت دونruntime tests.
-+- [ ] LINK-R3: النشر ومطابقةHEAD=remote=PR9Draft محجوبان. push الحالي فشلExit128 لتعذرUsername؛ gh غيرمسجل. تعليقgsk السابق فشلfree_plan_block ولم يُعد الآن. لا نستنتج إلغاءربط المنصة؛ نجاحجلسةسابقة لايضمنمصادقةالجديدة.
-+- [ ] RECOVERY-V5: عند استمرار العائق، تسليم ZIP بالوثائق الثلاث وpatch وmanifest وفحص تنزيلها. إيصالURL/SHA فيالرد عندتحققه؛ لا ادعاءرفع الآن ولا دورةحزم لإيصال ذاتي.
-+- النطاق ثابت: PROGRESS وV2 وcurrent_execution فقط. لاPython/tests/generated/accounts أو01.03/verifier/التقرير السابق/مراجع00/012345/Arena، ولاتشغيل05.02/live/migration/merge إلىmain/deploy. التوكن المكشوف لم يستخدم أو يحفظ ويجب إلغاؤه.
-+- التالي: تأمين تسليم هذه الدفعة فقط؛ ثم استكمال النشر بمصادقة آمنة. بعدالنشر تبقى تغطيةالشات/Arena السابقة وإحالات وتحرير§10–§13 وschema/pagination/failed evidence/writers وعقودbaseline. المراجعة غير مكتملة، و13failure تاريخية غير مصلحة، والميزة وكلV2T/V2X غير منفذة. الاستئناف ليسGO.
++- بعد reset جديد: fresh clone على main@adaf586؛ أُعيد بناء `genspark_ai_developer` من remote عند `04d9584a743e9194118b1e27e49f7ab9c8d2583d` (رفعه المالك يدوياً من محتوى حزمة v5 [IFc2FGG8](https://www.genspark.ai/api/files/s/IFc2FGG8) SHA256 `6f9425f5a7bd4dd0e737a9aedb88771b68fd0da6a55c85bcdb83c544d54bfab5`)؛ main مدموج داخله (Already up to date)؛ PR9 OPEN/Draft head=04d9584. Gist لم يتغير (revision d6a0088؛ ليس GO).
++- [x] LINK-R3 (مغلق بمسار بديل): النشر تحقق عبر الرفع اليدوي لا عبر push الوكيل. وُجد في جذر المستودع `manifest.json` و`review_recovery.patch` (artifacts v5) خارج allowlist الثلاثي؛ لا حذف تلقائي — قرار المالك (حذفهما أو نقلهما إلى `genspark/recovery/`).
++- [x] RECOVERY-V5: مكتمل ومستهلك. لا إعادة تطبيق.
++- تشخيص المصادقة: في الجلسة السابقة مرر ربط المنصة توكن حساب `Tifo123lord` (pull=True, push=False → 403). في هذه الجلسة لا توكن على الإطلاق (setup_github_environment: No Valid GitHub Authorization؛ gh غير مسجل؛ push dry-run Exit128 «could not read Username»). الحل بيد المالك: منح `Tifo123lord` صلاحية write أو ربط حساب `number949481-ux` بالمنصة؛ وإلا يستمر مسار الحزمة المتحققة + الرفع اليدوي. ظهرت توكنات إضافية في الدردشة (المجموع 5) — لم يُستخدم أيٌّ منها؛ يجب إلغاؤها جميعاً.
++- [x] FR-0: هذا الرأس + `current_execution`؛ فحوص الوثائق؛ commit محلي؛ محاولة push؛ حزمة v6 عند الفشل.
++- [x] FR-1/FR-2 (V2 §17.1–17.4 مكتوبة): تثبيت نتائج القراءة الدلالية (الشات 1–4276 وArena 2490–3330، مقروءة بالكامل قبل reset) في V2 §17: محاسبة ادعاءات 00/012345/Arena ضد المصدر الحالي، أوامر المالك المنقولة (أصوات 6–10)، تعارض docstring/code في 05.02 (307 `>` مقابل 408 `>=`)، D3 «single-writer+RLock» خاطئ تقنياً، نتائج المختبرات الاصطناعية version-dependent (COPY_FILTER).
++- [~] FR-3: الشروط قبل GO مجمّعة S1–S10 وخطة اعتماد في V2 §17.5؛ بقي مرور اتساق/إحالات §10–§13 وربط كل Sx بـV2T المقابلة. لا تنفيذ V2T/V2X.
++- النطاق ثابت: PROGRESS وV2 وcurrent_execution فقط. لا Python/tests/generated/accounts أو01.03/verifier/التقرير السابق/مراجع00/012345/Arena؛ لا تشغيل05.02/live/migration/merge إلى main/deploy. المراجعة غير مكتملة؛ 13 failure تاريخية غير مصلحة؛ الميزة غير منفذة. الاستئناف ليس GO.
 +
-+## أرشيف نجاح الربط والنشر في جلسة سابقة — لا يضمن مصادقة البيئة الجديدة
++## أرشيف نقطة d6e09f3 — تثبيت نتائج القراءة المفقودة (نُشر لاحقاً ضمن 04d9584)
  
- - ربط GitHub بالمنصة أصبح متاحاً فعلياً عبر gh؛ استخدمت المصادقة المرتبطة دون استخدام PAT الدردشة أو كتابته. ألغِ التوكن المكشوف من GitHub. Gist لم يتغير: revision d6a0088582d51999e141b5846e8e8f784a262c7d؛ ليس GO لتنفيذ الميزة.
- - [x] LINK-R0: استعادة [v4](https://www.genspark.ai/api/files/s/WEB5Wa4Z) بعد fresh clone؛ 116758 بايت وSHA256 `efa20666ae73db6684a4b7ab06ee6fe399ead644c55c5aca4e63c9cd66ed21ee` وCRC/member hashes وforward/reverse-check ومطابقة الوثائق الثلاث. لا إعادة كتابة §15، ولا استعادة هوية commit c3dc53f.
+ - استعيد `d6e09f38567cb13b3012a119ce58795be5a10328` من Git؛ PR9 OPEN/Draft مطابق، main ثابتadaf586. Gist لم يتغير. لا إعادة تطبيقv4 أوإعادة بناء§15.
+ - commit9ba5feb غير موجود بعدreset، وآخر تحديثPROGRESS/recovery قوطع بلا نتيجة؛ لا ندعي نجاحه. §16 أعيد تثبيته من قراءات الأدوات السابقة، لا استرداداً بايتياً. لم تُنشأ أوتُرفعv5 قبل هذه الجلسة بحسب سجل الأدوات.
 diff --git a/genspark/recovery_state.json b/genspark/recovery_state.json
-index c65454f..fc9ded8 100644
+index fc9ded8..2174b53 100644
 --- a/genspark/recovery_state.json
 +++ b/genspark/recovery_state.json
-@@ -1,42 +1,47 @@
+@@ -1,32 +1,42 @@
  {
    "current_execution": {
--    "task": "Platform GitHub connection verified; v4 restored and published; bounded source review resumes",
-+    "task": "Reconstruct only lost section16 findings from recorded source reads; deliver bounded recovery",
+-    "task": "Reconstruct only lost section16 findings from recorded source reads; deliver bounded recovery",
++    "task": "Full Review after owner manual upload of v5 content; FR-0 docs state, FR-1/2 section17 evidence, FR-3 pre-GO conditions",
      "date": "2026-10-29",
--    "restored": "6a42a05a9a70604f8a61394f2e332ea566c39fbf",
-+    "restored": "d6e09f38567cb13b3012a119ce58795be5a10328",
+-    "restored": "d6e09f38567cb13b3012a119ce58795be5a10328",
++    "restored": "04d9584a743e9194118b1e27e49f7ab9c8d2583d",
      "synced_main": "adaf586c043c08315c4c958020b54caab8013961",
      "branch": "genspark_ai_developer",
      "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
      "plan": "genspark/tri_state_gift_independent_review_v2.md",
--    "status": "review_resumed_remote_verified",
-+    "status": "review_docs_validated_local_commit_git_publication_blocked",
+-    "status": "review_docs_validated_local_commit_git_publication_blocked",
++    "status": "published_base_04d9584_full_review_section17_written_local_commit_push_blocked",
      "request": "Read Gist and PROGRESS, independently review workflow until specific plan approval; resume is not runtime GO.",
      "scope": "New review + PROGRESS + recovery only. Previous report and original sources read-only; no Python/tests/generated/accounts/live/migration/merge/deploy.",
      "reference_update": "Merged six upstream documents locally from main@adaf586; no runtime changes. Current fingerprints in V2 section15.",
--    "next": "LINK-R2: read chat4277-5059 and compare important claims with source/V2; then LINK-R3 docs validation and push/PR verification. No runtime GO.",
-+    "next": "Deliver and download-verify v5 archive; final receipt in response. Then wait for safe sandbox GitHub auth, publish missing docs and verify PR9 Draft; do not accumulate new review.",
+-    "next": "Deliver and download-verify v5 archive; final receipt in response. Then wait for safe sandbox GitHub auth, publish missing docs and verify PR9 Draft; do not accumulate new review.",
++    "next": "FR-3 remainder: section10-13 consistency pass and map S1-S10 to V2T ids. Publish via owner (grant write / link account / manual upload of v6).",
      "validation": "Historical runtime results in section6: syntax0; pytest1072pass/13fail/+60; canonical1085/13. NOT rerun after latest reset.",
      "history_notice": "completed_pr9_arena_addendum and all other existing fields preserve prior records; not active instructions.",
      "publication": {
--      "push_exit": 0,
--      "remote_pr_head": "bfa3b7ad828c32ec17d5e14dd12eb81703ee4fb2",
-+      "remote_pr_head": "d6e09f38567cb13b3012a119ce58795be5a10328",
+-      "remote_pr_head": "d6e09f38567cb13b3012a119ce58795be5a10328",
++      "remote_pr_head": "04d9584a743e9194118b1e27e49f7ab9c8d2583d",
        "pr_draft": true,
--      "comment_url": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6505621840",
--      "authentication": "Existing platform-linked gh session; no chat PAT used or persisted",
--      "verification": "Initial immediate equality assertion failed; subsequent read verified local=remote=PR9 Draft; no duplicate push"
-+      "current_auth": "gh not logged in",
-+      "prior_push_exit": 128,
-+      "prior_comment_error": "free_plan_block",
-+      "last_verified_comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6505635136",
-+      "new_push_or_comment_succeeded": false,
+-      "current_auth": "gh not logged in",
+-      "prior_push_exit": 128,
+-      "prior_comment_error": "free_plan_block",
++      "published_via": "owner manual upload of v5 archive content (IFc2FGG8, sha256 6f9425f5a7bd4dd0e737a9aedb88771b68fd0da6a55c85bcdb83c544d54bfab5)",
++      "root_artifacts_out_of_allowlist": [
++        "manifest.json",
++        "review_recovery.patch"
++      ],
++      "root_artifacts_action": "owner decision; no automatic deletion",
++      "prior_session_auth": "platform token belonged to Tifo123lord: push=False pull=True; push denied 403",
++      "current_auth": "no GitHub authorization in sandbox (setup_github_environment none; gh not logged in)",
 +      "push_exit": 128,
-+      "push_reason": "Current attempt: could not read Username; gh unregistered in this sandbox"
++      "push_reason": "could not read Username; terminal prompts disabled",
+       "last_verified_comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6505635136",
+       "new_push_or_comment_succeeded": false,
+-      "push_exit": 128,
+-      "push_reason": "Current attempt: could not read Username; gh unregistered in this sandbox"
++      "owner_options": [
++        "grant Tifo123lord write access",
++        "link number949481-ux account to platform",
++        "continue manual upload of verified archives"
++      ]
      },
      "inherited_diagnostic_blocker": "Historical only: missing curl_cffi blocked an earlier lab; later AST and mocked fixtures completed D01-D22. Not a current blocker.",
--    "last_verified_checkpoint": "bfa3b7ad828c32ec17d5e14dd12eb81703ee4fb2",
-+    "last_verified_checkpoint": "d6e09f38567cb13b3012a119ce58795be5a10328",
+-    "last_verified_checkpoint": "d6e09f38567cb13b3012a119ce58795be5a10328",
++    "last_verified_checkpoint": "04d9584a743e9194118b1e27e49f7ab9c8d2583d",
      "diagnostics": "Generator normal marker retained, optimize1/end-only delete temporary marker then p03 failure; real generated hashes unchanged. AST-extracted fake502 -> DEAD/zero/invalid; corrupt vault overwritten (correct verdict signature rerun); explicit missing path falls back. Initial quoted-name inventory corrected with -z.",
      "bridge_diagnostics": "D12-D20 executed after2b03 before interruption; tool outputs retained, local logs lost after reset. -1/NaN/inf reach fake send, unknown after refresh and401 too. Corrected failover matrix with proper bridge_cfg keyword: TIMEOUT writes last_used; injected UNKNOWN/TRANSIENT/AUTH_FAILED withoutURL ->300s cooldown, withURL ->success metadata. Pre-try fingerprint exception leaves claim. Fixtures mocked, sockets/requests blocked.",
      "threshold_provenance": "Planning preference >=14 full UTC days, following owner answer quoted at Arena555; not independently heard, not runtime GO. Reject UTC-implies-strictly-greater reasoning.",
-     "validation_provenance": "D01-D22 retained from previous sessions; no runtime gates or live calls rerun in this recovery chunk.",
-     "latest_diagnostics": "D21 is historical old proposal; GF01 15 synthetic names LOST0/PROPOSED_BLOCKED15 inherited from user summary, NOT rerun; current filter has path/suffix gaps and token substring overblocking.",
--    "latest_source_review": "Section15 source reads belong to the session that created v2. This session read governance, root PROGRESS, V2 section15, recovery, docs verifier and unchanged Gist; no new runtime-source review.",
--    "adjudication": "Section15 reconstructs workflow review, self-criticism, corrected tri-state/filter, remaining dispatch/threshold/-O gaps and resume prompt; source versions explicit.",
--    "plan_progress": "Sections0-15 restored byte-for-byte from v2 before this receipt update; not reconstructed again. Semantic coverage and sections10-13 consistency still open; no GO.",
--    "validation_this_chunk": "v4 download size/SHA256/CRC/member hashes/allowlist, patch forward/reverse-check and restored document byte equality passed. Root status update pending docs check. No runtime tests.",
-+    "latest_source_review": "Completed chat4277-5059 and code/document ranges in section16.1 before prior interruptions; reconstructed results from actual tool outputs, not rerun labs. No new runtime tests.",
-+    "adjudication": "Section16 adjudicates workflow and overclaims; corrects historical else attribution and huge-int acceptance wording. No implementation.",
-+    "plan_progress": "LINK-R2 completed; remaining semantic coverage/editorial consistency and all V2T/V2X still open.",
-+    "validation_this_chunk": "Passed docs34/links13 Exit0; UTF8/JSON, V2 links/F/D/T/X, 24 unchecked tasks, history preservation, master/Arena bytes, three-document scope and secret-pattern scan. No runtime tests.",
-     "reset_evidence": {
-       "fresh_clone": true,
--      "initial_branch": "main",
--      "restoration": "Verified v4 archive; not a reconstruction. Commit identity is new."
-+      "missing_local_commit": "9ba5feb",
-+      "last_record_update": "Interrupted; outcome unknown, current files are published d6e09f3",
-+      "prior_v5": "No creation/upload call before current session",
-+      "restoration": "Published d6e09f3 restored directly; section16 newly reconstructed from recorded reads, not original commit bytes"
+@@ -50,16 +60,14 @@
      },
-     "gist": {
-       "revision": "d6a0088582d51999e141b5846e8e8f784a262c7d",
-@@ -51,7 +56,8 @@
-       "sha256": "efa20666ae73db6684a4b7ab06ee6fe399ead644c55c5aca4e63c9cd66ed21ee",
-       "snapshot_checkpoint": "c3dc53f7e1958eda539809e2e9cb5f56f68d4778",
-       "prior_v3_upload": "Unknown; not retried",
--      "scope": "Three authorized docs, patch and manifest"
-+      "scope": "Three authorized docs, patch and manifest",
-+      "next_snapshot": "v5 planned; final verified receipt in response. No prior v5 upload."
+     "progress_authority": "Root PROGRESS is entry point; V2 evidence/plan; current_execution mirror only",
+     "artifact": {
+-      "status": "v4_download_verified_restored_and_published",
+-      "url": "https://www.genspark.ai/api/files/s/WEB5Wa4Z",
+-      "bytes": 116758,
+-      "sha256": "efa20666ae73db6684a4b7ab06ee6fe399ead644c55c5aca4e63c9cd66ed21ee",
+-      "snapshot_checkpoint": "c3dc53f7e1958eda539809e2e9cb5f56f68d4778",
+-      "prior_v3_upload": "Unknown; not retried",
+-      "scope": "Three authorized docs, patch and manifest",
+-      "next_snapshot": "v5 planned; final verified receipt in response. No prior v5 upload."
++      "status": "v5_consumed_by_owner_manual_upload",
++      "url": "https://www.genspark.ai/api/files/s/IFc2FGG8",
++      "sha256": "6f9425f5a7bd4dd0e737a9aedb88771b68fd0da6a55c85bcdb83c544d54bfab5",
++      "size": 117495,
++      "next_snapshot": "v6 with published_base=04d9584 only if push stays blocked"
      },
-     "security": "Exposed PAT not used or stored; revoke it in GitHub; no replacement in chat"
+-    "security": "Exposed PAT not used or stored; revoke it in GitHub; no replacement in chat"
++    "security": "Five PATs appeared in chat across sessions (two new this session); none used, copied, or stored. Owner must revoke all. No token printed.",
++    "semantic_coverage": "chat 1-5059 and Arena 1-3330 read and accounted in V2 section16-17 (no runtime)."
    },
+   "completed_pr9_arena_addendum": {
+     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
 diff --git a/genspark/tri_state_gift_independent_review_v2.md b/genspark/tri_state_gift_independent_review_v2.md
-index 3334d52..b89fad8 100644
+index b89fad8..b8bf6c4 100644
 --- a/genspark/tri_state_gift_independent_review_v2.md
 +++ b/genspark/tri_state_gift_independent_review_v2.md
-@@ -245,7 +245,7 @@ Arena:555 ينقل نص جواب المالك «مش فارقه زي سكربت
- | tier=1 للمؤهل؛ 012345 NOTES453 | خطأ في المثال القديم؛ صححته 535–537 و 00 PLAN120 | نعترف بالتصحيح، لكن bool/NaN/mixed last_used و random-first-five ليست محلولة بذلك |
- | لا startup cleanup ولا revival، والمحركمجمد | صحيح في أحدث 00 PLAN118/133–135/325–331 و 012345 NOTES538–540 | اتهام أحدث الخطة بإبقائها خطأ؛ المقاطع القديمة أرشيف تعارض، لا تكليف حالي |
- | >=14 في TASK103/303 مقابل>14 في D1؛ 00 PLAN96/125/301–305 | تناقض داخل نفس الخطة؛ UTC لا يحسمعامل المقارنة | اتجاه>=14 بحسب جواب المالك المنقول Arena555؛ لا إعادة استفتاء تلقائية ولا GO |
--| غير STALE يعني هدية طبيعية؛ 00 PLAN263 و 012345 NOTES483 | خطأ باقٍ في pseudo-code؛ UNKNOWN يندرج تحته | فرع RECENT موثوق فقط للتبريد؛ UNKNOWN منفصل |
-+| غير STALE يعني هدية طبيعية؛ 00 PLAN263 و 012345 NOTES483 عند d164758 | خطأ تاريخي؛ صحح الفرع الثلاثي لاحقاً كما في §15.3 و§16 | نعترف بالتصحيح؛ يبقى dispatch الخارجي وكتابات المحاولة بحاجة إلى معالجة |
- | RLock + replace = نقل ذري 100%؛ 00 PLAN108/200/234 | ضمان زائد؛ قفل العملية لا يوحدكتّابًا آخرين ولا transaction لملفين | target-first/readback ثم source-cut، pending/conflict ومنع اختيار النسخة المكررة |
- | 13failure قديمة فلا baseline أحمر؛ 012345 NOTES555–556 | خطأ منطقي: قدم الفشل يفسرسببه ولا يغير نتيجة القياس؛ §6 | لا نسبتها للهدية غيرالمنفذة، ولاادعاءأخضر. أسبابها ليست compact/model فقط: password UX و parity ضمنالقائمة |
- | مطابقة 05.02 في DEAD كافية؛ 012345 NOTES733–737 | غير مثبت، والمديرنفسه يصنف missing password كـ DEAD عند 364 | HTTP-first ثم schema/code موثق؛ 403 عام واسم domain_banned وحدهما ليساعقددليل |
-@@ -415,7 +415,7 @@ single-writer شرط **لم يثبت**؛ RLock وحده ليس دليلًا. إ
- | المعرف | الحالات | معيار القبول | المهام V2T |
- |---|---|---|---|
- | V2X01 | balance0/99.9/100/250 و override | >=threshold READY دون gift؛ low لا send قبل تصنيف gift | 02,09,17 |
--| V2X02 | -1/missing/bool/text/NaN/Inf/huge-int | UNKNOWN أو invalid موثق؛ لا crash أوصفر مزيف أو send/عقوبة | 08,09,17 |
-+| V2X02 | -1/missing/bool/text/NaN/Inf؛ وhuge-int داخل/خارج المجال المعتمد | غير الصالح UNKNOWN بلا send/عقوبة؛ int دون تحويل float؛ المقبول وفق schema يواصل التصنيف، وغير المدعوم UNKNOWN صريح. لا حد أقصى اعتباطي أو crash/صفر مزيف | 08,09,17 |
- | V2X03 | initial/refresh/401 وتغير cookies | حارس واحد للثلاث؛ لا READY بإثبات جلسة قديمة ولا login غير محدود | 11,17 |
- | V2X04 | cached و random pool و last_used شاذ | السياسة القائمة افتراضيًا؛ cached لا يجيز send؛ الفرز إن اعتُمد له عقد مستقل | 09,16 |
- | V2X05 | 429/5xx/timeout/HTML/403 مع password/suspended | لا DEAD اعتمادًا على النص؛ reason منقح و retry محدود | 03,11 |
-@@ -581,6 +581,41 @@ AFTER هنا تصميم مطلوب بعد GO، وليس تعديلًا منفذ
- لا تعد D01–D22/GF01 أو البوابات لمجردreset ولا تدّعِ إعادة تشغيلها. تابع المراجعة حتى اعتماد خطة محددة؛ الاستئناف ليس GO لتنفيذ الميزة أو الدمج أو النشر الحي.
- ```
+@@ -619,3 +619,75 @@ PR9 OPEN/Draft ورأسه6a42a05 في آخر تحققAPI. `gh auth status` غي
+ صُحح صف§10.1 الذي نسب else القديم إلى أحدث نسخة؛ تحسن الفرع الثلاثي يجب الاعتراف به. وصُححV2X02: كان يجمع huge-int مع المدخل الباطل ويطلبUNKNOWN للجميع، بينما§9.1 يمنع الحد الأقصى الاعتباطي. int المقبول بحسبschema يواصل التصنيف دون تحويلfloat؛ غير المدعومUNKNOWN صريح. لا حد جديد ولا حارس منفذ. صارت§15.6 موسومة كتاريخ لا حالة نشر حالية.
  
--### 15.6 حالة التحقق والنشر
-+### 15.6 حالة التحقق والنشر التاريخية — الأحدث في PROGRESS و§16
- 
- PR9 OPEN/Draft ورأسه6a42a05 في آخر تحققAPI. `gh auth status` غير مسجل؛ push Exit128 لتعذرUsername. محاولة تعليق عبرgsk فشلتExit1 بـfree_plan_block؛ لا تعليق ناجح، ولا برهان من ذلك على حالة ربطGitHub خارجCLI. لم يستخدم التوكن المكشوف ويجب إلغاؤه. إنشاء/رفع/تنزيل الحزمة الجديدة يسجل في رأسPROGRESS وcurrent_execution عند تحققه، لا مقدماً. المراجعة الشاملة غير مكتملة والميزة غير منفذة؛13failure وD01–D22/GF01 تاريخية، لاruntime gates جديدة.
+ أُغلقت فجوة قراءة4277–5059 وتحكيم الادعاءات الأساسية أعلاه فقط؛ ليست شهادة لكل الشات/Arena1–1884 أوجردwriters. بقي التحرير العربي والإحالات والاتساق الشامل، وschema/pagination وأدلةfailed ونموذجwriters وعقودbaseline قبلGO محدد. كلV2T/V2X غير منفذة. لا شهادة لدستور/skills خارجية غير متاحة، ولا تشغيل05.02 أوخدمات حية.
 +
++## 17. Full Review بعد النشر اليدوي — محاسبة الشات 1–4276 وArena 2490–3330 ضد المصدر
 +
-+## 16. نتيجة قراءة الشات وبروتوكول العمل — إعادة تثبيت الدفعة المفقودة
++### 17.1 المصدر والحالة
 +
-+### 16.1 المصدر وحدود الاسترداد
++- القاعدة المنشورة: `04d9584a743e9194118b1e27e49f7ab9c8d2583d` (رفع المالك اليدوي لمحتوى حزمة v5؛ PR9 OPEN/Draft). main@adaf586 مدموج داخل الفرع. Gist revision d6a0088 لم يتغير وليس GO.
++- المصادقة: الجلسة السابقة مررت توكن `Tifo123lord` (push=False → 403)؛ الجلسة الحالية بلا أي ربط. النشر يعتمد على المالك (منح write أو ربط `number949481-ux` أو رفع يدوي لحزمة متحققة).
++- ملفا `manifest.json` و`review_recovery.patch` في جذر المستودع أثر جانبي للرفع اليدوي؛ خارج allowlist؛ قرار المالك.
++- القراءة أدناه تمت على بصمة الشات `265125393d331aa0c9978e7f47d8cc0c38f600f29c0cff4c7d3b4c56d86658c1` (5299 سطراً) وArena 3330 سطراً، وتحققت كل الإحالات السطرية أدناه على شجرة 04d9584 مباشرة.
 +
-+استعيد d6e09f3 من Git بعد reset؛ commit المحلي9ba5feb غير موجود، وآخر أمر تحديث PROGRESS/recovery قوطع بلا نتيجة. §16 ليس في الرأس المنشور، ولم تكن حزمةv5 قد أُنشئت أو رُفعت في سجل الأدوات. النص هنا إعادة تثبيت محدودة من نتائج القراءة الظاهرة في المحادثة، لا استرداد بايتي لـ9ba5feb ولا ادعاء اكتمال أمره اللاحق. Gist لم يتغير عن revision/SHA في§15.1. PR9 OPEN/Draft ورأسهd6e09f3؛ نجاح الربط والدفع السابق لا يثبت بقاء مصادقة gh بعد reset.
++### 17.2 محاسبة ادعاءات الشات 1–4276 ضد المصدر الحالي
 +
-+قبل المقاطعات قُرئ الشات4277–5059 متصلاً في ثلاث دفعات4277–4546/4547–4816/4817–5059. وقُرئت V2:212–509 ثم175–206؛ bridge2318–2349/3240–3300/3625–3675؛ 012345 NOTES803–824؛ 00 PLAN200–294 وNOTES260–294؛ manager385–416؛ generator190–268؛ parity test1–65؛ Arena1908–1977. القراءات موثقة بمخرجات الأدوات وليست إعادة تشغيل مختبر. بصمة الشات5299 سطراً ما زالت `265125393d331aa0c9978e7f47d8cc0c38f600f29c0cff4c7d3b4c56d86658c1`. لا D01–D22/GF01 أو runtime gates جديدة.
++| نطاق الشات | الادعاء | الحكم بعد التحقق من المصدر |
++|---|---|---|
++| 1–330 | خطة 00: نقل فحص الهدية من 05.02:376–412 والمعزل الثلاثي 98–104 والفرز 112–114؛ مواضع bridge `is_account_ready` L1025 / `get_eligible_accounts` L1092 / `refresh_cookies_on_401` L1140 | المواضع صحيحة إلا 1140 (الدالة في 1122). الدوال الفعلية: 973 `read_accounts_safe`، 989 `update_account_data`، 1025، 1092، 1108 `mark_account_cooldown`، 1122، 2324 `_is_never_copy_file`. ادعاء «التزام دستور بولا» غير قابل للشهادة (الدستور غير متاح لنا). |
++| 444–447، 1216 | 01.03 L170–177: `check_balance_before=False`, `balance_refresh_hours=29`, `refreshed_balance=100` | **صحيح حرفياً** (01.03:170/176/177، مع 167 `prefer_balance=100`، 171 `check_unknown_balance=True`، 172 `tie_break="random"`). 01.03 READ-ONLY بالحوكمة؛ هذه القيم هي مصدر «29h/100» في عقودنا. |
++| ~470 | «verifier L39 اسم ملف وهمي غير موجود» | **خطأ**: verifier:39 `QUARANTINE_FILENAME = "accounts_genspark_blocked_failed__block_failed.json"` موجود، و`quarantine_account_atomic` (376–406) تنشئ `records=[]` عند الغياب/التلف. Arena محق. الأرقام الحية 185/130/279 غير قابلة للتحقق (ملفات الحسابات متجاهلة بـgitignore). |
++| 693–760 | شجرة القرار: ≥100 يرسل؛ <100 فحص هدية؛ >14 معزل؛ ≤14 تبريد 29h؛ 401→B2C؛ فشل→failed | «فحص الهدية فقط عند <100» يتسق مع عقودنا (§10). الشجرة **تخلو من فرع UNKNOWN/TRANSIENT**؛ وعتبتها `>` تخالف المصدر 05.02:408 `>=` (انظر 17.4). |
++| 884–1000 | «8 زوايا» + خريطة BEFORE/AFTER + اختبارات مقترحة | مقترحات تصميم؛ revival/TTL cache/startup sanitizer أُلغيت لاحقاً بأوامر المالك (أصوات 6–8). لا تُحتسب كقرارات. |
++| 1059–1104 | sort مقترح `(1 if balance>=100 else 0, -balance, last_used)` تصاعدي | خطأ اتجاه tuple (F18 عند Arena). المصدر الحالي 1104 يفرز بـ`last_used` فقط؛ والاختيار الفعلي 585–596 `candidate_pool = ready_accounts[:5]` ثم `random.choice`، فالفرز وحده لا يفرض الأعلى رصيداً (Arena `SORT_ONLY_DOES_NOT_FORCE_TOP_BALANCE`). |
++| 1145–1160 (أصوات 6–10) | أوامر المالك نصاً: لا استرجاع (6)؛ كل BEFORE/AFTER «باللي موجود فعلاً… مش استنتاج» (7)؛ لا TTL ولا تنظيف إقلاع ولا تعقيد، التحديث فقط لما يؤخذ من 5.2 (8)؛ 502/504 ليست failed، اتبع رد 5.2 والانتقال للحساب التالي (9) | **هذه هي المرجعية الحاكمة للعقود** (§10–§12): no revival، no cache، transient≠dead، UNKNOWN ليس 0/DEAD. أي خطة وكيل تخالفها مرفوضة بغض النظر عن «الدستور». |
++| 1199–1460 | 012345 BEFORE/AFTER: verifier 38–41 + `STALE_GIFT`؛ `inspect_account_gift_status` ينسخ 05.02 بما فيه `STALE,999` و`except: pass`→AUTH_FAILED؛ bridge 2954–2958 AFTER يستدعي `check_gift_status_for_account`/`isolate_stale_gift_account`؛ «L3270–3303» AFTER يستخدم `gve.check_live_balance` و`sess` غير معرّف و`release_account_selection(curr_email, owner_token)`+`continue` | BEFORE لـ2954–2958 **مطابق** للمصدر الحالي (LOW_BALANCE → cooldown → return None). AFTER **غير قابل للنسخ**: الدوال غير موجودة، `sess` غير معرّف، وفرع else يصنف AUTH_FAILED كهدية منتظمة (F17). يبقى تصميماً لا كوداً. |
++| 1461–1629 | «المترجم» rebuild_refactor PARTS 9181 مقابل 9286/9285 | Arena صحح إلى 9285؛ rebuild_refactor 190–216 assert ثم rmtree؛ مختبر Arena: `ONLY_LAST_BOUNDARY_CHANGED exit=1 … p03 '(' was never closed line 652` — أي تعديل حدود PARTS يكسر المولد؛ **شرط قبل GO**. |
++| 1630–3513 | تقرير Arena مضمّن | مطابق Arena 1–1884؛ ليس شاهداً مستقلاً؛ لا يُحتسب مرتين. |
++| 3535–3850 | «Peer Review Audit» من 00: يقر F02/F05/F13/F18؛ يتهم Arena بـ«Paralysis» وبمخالفة T0/T1/T2؛ «7 مكاسب»؛ «محصنة 100%» | الإقرارات مقبولة؛ الاتهامات الدستورية لا نشهد لها؛ «100%» ادعاء بلا دليل اختباري (لا اختبار واحد نُفذ للميزة). |
++| 3849–3940 | الوكيل عدّل الملف الخطأ (00 بدل 012345) ثم نقل | يؤكد ملكية الملفات: 00 لجلسة 00، 012345 للأخرى؛ تقريرنا وحده قابل للتعديل. |
++| 3941–4276 | Voice 16: «مش هننفذ عمياني»؛ D1–D6 «محسومة»: D1 `timedelta(days=14)`؛ D2 -1 UNKNOWN بلا إرسال/تبريد/عزل؛ D3 single-writer+RLock؛ D4 zero mutation on transient؛ D5 عزل 13 فشل + المترجم؛ D6 01.03 READ-ONLY؛ «جاهزة للتنفيذ في انتظار GO» | D1/D2/D4/D6 متسقة مع عقودنا. **D3 خاطئ تقنياً**: `threading.RLock` يحمي داخل عملية واحدة فقط؛ Arena `SYNTHETIC_TWO_PROCESS_RLOCK expected 2 actual 1`؛ single-writer يحتاج جرد writers (05.02 + bridge + verifier + أي CLI) وقفل ملف أو مالك وحيد. D5 «عزل» 13 فشل ليس إصلاحاً. **لا GO صادر** حتى آخر الشات. |
 +
-+### 16.2 محاسبة الادعاءات والمقارنة بالمصدر
++### 17.3 Arena 2490–3330: التفريغات والمختبرات والجرد
 +
-+| ادعاء الشات | الحكم المحدد والأثر على V2 |
-+|---|---|
-+| الفرع الثلاثي يغلق UNKNOWN؛4344–4355/4464–4466 | التحسن صحيح في00 PLAN256–273. لكنه يعيد LOW_BALANCE_UNKNOWN_GIFT؛ bridge3630–3655 ما زال يحتوي URL-success والتبريد العام، و3296 يكتب last_used قبل try3298. لا يكفي إصلاح else الداخلي؛ V2T16–19/V2X11/19 تشمل المسار الكامل. status المقترح ليس منفذاً الآن |
-+| الفلتر يغطي كل .bak* و.tmp*؛4467–4469/4732 | أحدث012345 NOTES805–819 حفظ الاستثناءات الأصلية؛ D21 يخص المثال القديم. suffix .bak/.tmp وsubstring .bak_/.tmp_ لا يشملان كل .bak1/.tmp1234؛ token قد يحجب tokenizer. snapshot يستدعي basename كما في§9.2، فلا ننسب مشكلة nested paths لهذا الاستدعاء عميانياً؛ يلزم عقد كل مخرج وV2X21 |
-+| إجماع>=14؛4470–4471/4756 | اتجاهV2 محفوظ بلا إعادة استفتاء. manager408 يقارن threshold و402 يحسب delta. 00 NOTES264 يؤيد>= لكن287–289 ما زال>. لا إجماع نصي كامل ولا نسخ لـSTALE999 عند غياب التاريخ فيmanager388–400 |
-+| كل الثغرات مغلقة ولا مفاجآت؛4370–4377/4504–4512/4624–4626 | يناقض الجزم كون العمل PLANNING في4514/4757. الإجابات4423–4424/4523/4765/5035 تستبدل الاختبار المنفذ بوضع خطة أو عدم تعديل؛ ذلك لا يثبت انعدام regression. لا شهادة100% أو قبول runtime معbaseline أحمر |
-+| 13failure مجرد compact/models؛4339/4367/4619 | التصنيف الموثق يشمل password UX وparity أيضاً. سبق الفشل للهدية غير المنفذة لا يثبت عدم أثره عند الدمج. الاختباران المقترحان4885–4887 لا يغنيان عن full gates فيM5، وإصلاحB يحتاج عقوداً معتمدة |
-+| try/finally يحل claim دائماً؛4604–4606/4872 | البدء فورclaim صحيح، لكن close_account_timing_span3658 يسبق release3659؛ فشل الإغلاق قد يمنع التحرير. V2X10 يجب أن يشمل فشلcleanup نفسه إضافة إلى الاستثناءات قبل العمل |
-+| anchor والبصمة تضمن rollback100%؛4479–4480 | البصمة هوية بايتات وليست ضمان توافق revisions أو رجوع بيانات ملفين. parity test32–41 يستخدم read_text ثمencode؛ ليس دليلاً مستقلاً علىraw bytes. §13.3 يفصل code rollback عن reconciliation/pending |
-+| تجميد01.03 يعني حماية كاملة؛4620/4734 | التجميد حد نطاق صحيح؛ CLI والكتّاب المستقلون في§9.4 لا يصلحهم guard الجسر. RLock ليس إثباتsingle-writer بين العمليات، وverifier يحتاج إذن نطاق صريح |
-+| وجودOSRS يبطلArena ويثبت خلو عملنا من الهلوسة؛4475–4478/4837–4840/4973–4980 | Arena1915–1969 فعلاً مادة مشروع آخر؛ تُستبعد و75tests ليست نتائجTTTTT. النص لا يثبت سبب إدخاله أو بطلان بقية الأدلة. خطؤناC1/D22 وفقد الحفظ السابق يمنعان تزكية عملنا100%. Arena مرجع دائم تُحاكم ادعاءاته منفردة |
++- 2490–2552 تفريغات الأصوات 1–17 مطابقة لما في الشات (بما فيه صوت 17: التعديل في 012345 فقط).
++- 2553–2612 نتائج المختبرات الاصطناعية (stubs، بلا شبكة) — ما يُحتسب دليلاً وما لا:
++  - `exact_14_days / 14_days_and_one_hour → STALE days=14`: يثبت `>=` في 05.02:408 ويؤيد الاختيار `>=`.
++  - `network_error_and_no_password → DEAD expired_session_no_password` و`simulated_b2c_502_with_password_text → INVALID_CREDENTIALS` و`simulated_balance_502_user_200 → EMPTY_BALANCE balance=0` و`FAKE_502_WITH_SUSPENDED_TEXT → SUSPENDED is_dead=True`: **تناقض مباشر مع أمر المالك صوت 9** (502/504 ليست failed). هذه هي الفجوة الأولى التي يجب أن يغلقها أي عقد: transient → UNKNOWN بلا كتابة.
++  - `bridge_balance_minus_one_recent_refresh → send_chat_called=True`: -1 يصل للإرسال؛ يؤيد D2 وعقد «UNKNOWN لا يُرسل business».
++  - `INJECTED_FAILOVER_{TIMEOUT,UNKNOWN,TRANSIENT,AUTH_FAILED,LOGIN_FAILED} → primary_changed=True last_used_written=True`: الجسر يكتب في كل مسار فشل؛ ينقض D4 «zero mutation on transient» **بحالة الكود الحالية** — D4 هدف لا واقع.
++  - `write_failed_destination: primary=[] destination_exists=False` و`FAIL_VAULT_WRITE: source_quarantined=True vault_exists=False`: target-first/readback غير مطبق؛ فقدان حساب ممكن؛ يؤيد §11 (source-cut بعد readback فقط).
++  - `CORRUPT_VAULT overwritten=True`: الملف التالف يُستبدل بصمت؛ يحتاج نسخة `.corrupt-<ts>` قبل الاستبدال.
++  - `INJECTED_PRE_TRY_EXCEPTION: claim_still_held`: تسرب claim؛ يحتاج try/finally.
++  - `COPY_FILTER` (نسخة d2eb49d من 012345 NOTES): لا يحجب `accounts_genspark.json`/`.env.production`/`telegram_bot_token.txt`. **version-dependent**: النسخة الحالية من 012345 NOTES (803–824) تضم `accounts_genspark.json` و`"token" in f` و`.tmp_`؛ فالنتيجة تاريخية وليست تناقضاً مع قراءتنا. يبقى فحص الفلتر الحالي مطلوباً قبل أي GO يمس النسخ (GF01 غير معاد).
++  - `SYNTHETIC_TWO_PROCESS_RLOCK expected 2 actual 1` و`STANDALONE_ENGINE_PICKER live_probe_calls=0`: الأول ينقض D3؛ الثاني يثبت أن picker المحرك المستقل لا يفحص حياً.
++  - مختبر المترجم: `CURRENT_MAP exit=1 sentinel_survived=True` (الخريطة الحالية تعمل)؛ أي تغيير حدود يكسر p03 عند السطر 652.
++- 2613–3095 كود المختبرات: stubs؛ لم نشغلها (خارج النطاق) ولا نحتاج ذلك لأن استنتاجاتها البنيوية تحققت بقراءة المصدر.
++- 3096–3330 جرد SHA256 عند d2eb49d (01.33 `4d0bd7e65fe8…` 542683 B؛ 05.02 `192d3a344…`): 01.33 الحالي 542683 B متطابق الحجم؛ لا إعادة حساب كاملة هنا — راجع §15 لبصمات adaf586.
 +
-+### 16.3 طريقة العمل المختارة، لا التنفيذ العمياني
++### 17.4 ما ثبت ضد المصدر وما لا يثبت
 +
-+في4848–4859/4893–4898 اقتراح انتظار GO Commit بعد تعديل الملفات، بينما4992–5009 يقترح commit/push ثم فحصdiff. الانتظار مع تغييرات غير محفوظة بعيداً لا يناسب reset المتكرر. و«اعتمدنا تقريرك»4893 رسالة **مقترحة** كتبها وكيل، ليست GO مستقلاً من المالك. اختيار المنفذ4809–4825 لا يوسع النطاق.
++ثبت:
++1. تعارض داخلي في 05.02: docstring 305 و430 «> threshold_days» بينما الكود 408 `>=`. خطة 00 (PLAN/NOTES) تبنت `>` من الـdocstring. **القرار**: `>=` وفق الكود الحي وجواب المالك (Arena:555)؛ ويُسجل التعارض كملاحظة توثيق لا كتعديل (05.02 خارج النطاق).
++2. الجسر لا يملك مسار UNKNOWN: `bal_check >= 0` فقط (2954)؛ -1/None يسقط إلى الإرسال.
++3. لا وجود لأي من دوال AFTER المقترحة في 012345؛ الفرق بين «موجود» و«مقترح» لم يُلتزم به (مخالفة صوت 7).
++4. RLock ≠ single-writer عبر العمليات.
++5. 13 failure تاريخية ما زالت غير مصلحة ولا معاد قياسها؛ «محصنة 100%» بلا أساس.
 +
-+العقد المختار: **revision المصدر → هدف وBEFORE/AFTER → allowlist وحدود النطاق → معيار الفحص ونتيجته → المخاطر والتراجع → commit/remote/PR Draft → التالي**. اعتماد المالك للنطاق يسبق أي تنفيذ مستقبلي؛ المراجعة الوثائقية وحدها مأذون بها حالياً. بعد فحوص الدفعة المصرح بها تُحفظ وتُدفع إلىDraft ثم يراجع المراجع commit ثابتاً؛ تصحيح الخطأ فيcommit لاحق دون إعادة كتابة checkpoints المنشورة. commit/push ليس قبولاً للميزة أو إذناً بالدمج/live أو الجزء التنفيذي التالي. لا تكفي py_compile/parity وحدهما، ولا TDD أحمر دون إثبات سبب الفشل وإذنtests. عند فقد المصادقة: حزمة محدودة متحققة ثم توقف التكديس. لاPAT فيبرومبت الاستئناف ولا وعد بمنعreset100%.
++لا يثبت (ولا ندعيه):
++- أي شيء عن الأرقام الحية (185/130/279) أو حالة الحسابات أو سلوك Genspark/B2C الفعلي؛ أي شهادة لدستور/skills خارجية؛ أي نتيجة runtime جديدة.
 +
-+### 16.4 تصحيحنا وما بقي
++### 17.5 الشروط قبل GO (مجمّعة) وخطة الاعتماد
 +
-+صُحح صف§10.1 الذي نسب else القديم إلى أحدث نسخة؛ تحسن الفرع الثلاثي يجب الاعتراف به. وصُححV2X02: كان يجمع huge-int مع المدخل الباطل ويطلبUNKNOWN للجميع، بينما§9.1 يمنع الحد الأقصى الاعتباطي. int المقبول بحسبschema يواصل التصنيف دون تحويلfloat؛ غير المدعومUNKNOWN صريح. لا حد جديد ولا حارس منفذ. صارت§15.6 موسومة كتاريخ لا حالة نشر حالية.
++شروط لا يُمنح GO قبل إغلاقها (كل بند يحتاج دليلاً revision-scoped على HEAD محدد):
++- S1 عقد UNKNOWN/TRANSIENT في الجسر: 502/504/timeout/-1/None → لا إرسال business، لا cooldown، لا عزل، لا كتابة؛ الانتقال للحساب التالي. (صوت 9، D2، D4)
++- S2 عتبة `>=14` يوماً UTC موحدة في الكود والوثائق؛ تسجيل تعارض docstring 05.02.
++- S3 جرد writers لملفات الحسابات (05.02، bridge 989/1108/1122، verifier 376، أي CLI) ونموذج single-writer أو قفل ملف حقيقي؛ RLock وحده مرفوض.
++- S4 حفظ ذري target-first → readback → source-cut؛ نسخة `.corrupt-<ts>` قبل أي استبدال؛ try/finally على claim.
++- S5 schema/pagination لاستجابة الهدية (ما الذي يُعد «هدية حديثة»؛ ctime؛ حدود الصفحة) مثبتة من مصدر حي أو HAR منقّح، لا من ذاكرة الوكلاء.
++- S6 أدلة allowlist لملف failed (ما الذي يدخله ولماذا؛ لا جمع المعزل القديم فيه إلا بقرار المالك الموثق).
++- S7 baseline أحمر: 13 failure إما مصلحة أو مقبولة صراحة من المالك بقائمة أسماء؛ لا «عزل».
++- S8 المترجم: أي تغيير PARTS يخضع لمختبر Arena (sentinel + p03 compile) قبل الدمج.
++- S9 إذن المالك الصريح لأي لمس لـverifier (AGENTS:22)؛ 01.03 READ-ONLY مطلقاً.
++- S10 سياسة credit-in-flight: ما يحدث لرصيد محجوز أثناء العزل/التبريد.
 +
-+أُغلقت فجوة قراءة4277–5059 وتحكيم الادعاءات الأساسية أعلاه فقط؛ ليست شهادة لكل الشات/Arena1–1884 أوجردwriters. بقي التحرير العربي والإحالات والاتساق الشامل، وschema/pagination وأدلةfailed ونموذجwriters وعقودbaseline قبلGO محدد. كلV2T/V2X غير منفذة. لا شهادة لدستور/skills خارجية غير متاحة، ولا تشغيل05.02 أوخدمات حية.
++خطة الاعتماد (لا تنفيذ): المالك يراجع §10–§13 و§17.5 ويعتمد/يعدّل كل Sx كتابةً؛ عندها فقط تُحوَّل V2T إلى مهام تنفيذ بفرع منفصل واختبارات قبول لكل Sx؛ GO يُمنح لكل مرحلة على حدة لا للميزة كلها.
