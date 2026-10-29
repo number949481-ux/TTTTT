@@ -1,5 +1,114 @@
 {
   "current_execution": {
+    "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
+    "date": "2026-10-29",
+    "audit_base": "92f658ebd575407d0bba8e3a682cadd0fc248404",
+    "synced_main": "d2eb49d9e72ac18f213c48e432ecdab765583b16",
+    "restored": "58676b9d4fecc9655262e8998257db618552d6cc",
+    "last_verified_detail_checkpoint": "13db50fa90aeff280a18d4933e3d5771ba7facb9",
+    "branch": "genspark_ai_developer",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
+    "pull_request_state": "OPEN_DRAFT_verified_before_final_documentation_push",
+    "plan": "genspark/tri_state_gift_master_review.md",
+    "governing_sections": [
+      "15.5 decisions",
+      "15.7 M0-M4 plan",
+      "13 rollback and recovery"
+    ],
+    "status": "addendum_review_complete_runtime_not_implemented_awaiting_revision_scoped_GO",
+    "scope": "Only master review, root PROGRESS and this record. No Python/tests/generated/account or original-agent-document changes; no live Genspark/Telegram/Qwen, manager run, migration, merge or deployment.",
+    "completed": [
+      "restored_verified_remote_58676b9_without_repeating_review",
+      "Arena_and_chat_tail_review_completed_in_previous_session",
+      "latest_00_012345_comparison_and_source_evidence",
+      "independent_filter_random_rebuild_and_memory_threshold_diagnostics_recorded",
+      "redacted_Qwen_uploader_password_card_call_path_review",
+      "section15_readability_and_historical_cross_references_corrected",
+      "optional_sorting_X01_unresolved_X08_frozen_engine_X24_security_X28_clarified",
+      "34_findings_40_unchecked_tasks_30_planned_acceptance_cases_preserved",
+      "root_progress_updated_and_initial_PR9_record_archived_without_history_loss"
+    ],
+    "decisions": {
+      "D1": "UNRESOLVED: at exactly 14 days, >=14 stale versus >14 stale; Arena and latest task predicates conflict with latest D1 summaries. UTC arithmetic does not choose policy.",
+      "D2_D4": "Planning constraint: UNKNOWN/transient skip without send, quarantine or cooldown; propose zero account-file mutation. New GO must explicitly cover minus-one behavior differing from old PR8 and deferred last_used/reactivate writes.",
+      "D3": "Declared single-writer plus shared in-process locking is the minimal proposal, not an established fact. Inventory all writers/namespaces/CLI; stop and request broader OS-lock scope if exclusion cannot be proved.",
+      "D5": "Existing 13 failures remain unresolved. Compact 180/300, model routing/payload and banned UX require agreed contracts. Red TDD design can proceed after GO; runtime acceptance requires green gates.",
+      "D6": "01.03 READ-ONLY by default. E6/T29-T31 deferred outside base plan. Bridge guards do not repair independent CLI or establish all-writer safety.",
+      "sorting": "Retain current choice policy by default. Cached-balance sorting optional; random first-five must be addressed separately if strict highest-first is approved.",
+      "failed_evidence": "Reviewed structured evidence/allowlist required. Missing credentials, generic403 and unknown INACTIVE do not prove death; absence of evidence remains UNKNOWN.",
+      "legacy": "Record Arena-reported direction toward failed while retaining old files; read-only inventory and conflict review first, separate migration approval required.",
+      "in_flight": "Define credit-in-flight boundary without changing retention/maintenance cooldown blindly or breaking checkpoint/URL/prompt-once.",
+      "GO": "Not granted by resume request. Require explicit approval of updated report revision and scope; live/migration/merge/deploy remain separate."
+    },
+    "validation_from_previous_session": {
+      "provenance": "Executed after restoring d072816, recorded in report section15.3 and pushed at58676b9 before current reset. NOT rerun during current documentation session.",
+      "runtime_modified": false,
+      "tests_modified": false,
+      "syntax_exit": 0,
+      "pytest_passed": 1072,
+      "pytest_failed": 13,
+      "pytest_subtests": 60,
+      "pytest_seconds": 9.37,
+      "pytest_exit": 1,
+      "parity_passed": 10,
+      "parity_failed": 1,
+      "parity_seconds": 0.36,
+      "parity_exit": 1,
+      "canonical_tests": 1085,
+      "canonical_failures": 13,
+      "canonical_seconds": 3.064,
+      "canonical_exit": 1,
+      "live_calls": false,
+      "diagnostics": {
+        "filter": "Proposed replacement loses seven current exclusions; both versions miss dead_accounts, Telegram token and tmp_1234 examples.",
+        "random": "Actual AST-extracted claim function can choose50 from sorted500/400/300/200/50 with injected choice; no preflight/send executed.",
+        "rebuild": "Original coverage failure preserves temporary marker; end-only9285 removes marker then fails p03 syntax after three partial parts. Real generated tree hashes unchanged.",
+        "compact": "Same eight tests:300 gives8 failures/0 errors; memory-only180 gives8 passes/0 errors; constant restored300. No policy approval or source edit.",
+        "Qwen": "Four nonempty literal credential records; values not printed, validity not tested. signin consumes password_hash as password.",
+        "password_card": "Call paths allow card destination to be an allowed group; possible exposure path, not evidence of an actual leak."
+      },
+      "note": "Local ignored .tmp logs may be lost after reset. X01-X30 are planned, not implemented acceptance tests."
+    },
+    "validation_this_session": {
+      "kind": "Documentation integrity and Git scope only; no runtime gates rerun",
+      "runtime_modified": false,
+      "tests_modified": false,
+      "generated_modified": false,
+      "live_calls": false,
+      "checks": [
+        "UTF8_JSON",
+        "report_local_links",
+        "F01_F34",
+        "T00_T39_all_unchecked",
+        "X01_X30_planned",
+        "all_legacy_recovery_values_unchanged",
+        "PROGRESS_history_suffix_unchanged",
+        "only_three_docs_differ_from_main",
+        "no_new_PAT_or_credential_URL",
+        "git_diff_check"
+      ],
+      "gate_status": "Historical baseline remains red; documentation validation is not production readiness."
+    },
+    "verified_checkpoints": [
+      {
+        "sha": "166afc4bbd38409ad24a0ec99159fdd20ac50c5b",
+        "comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6493591902"
+      },
+      {
+        "sha": "58676b9d4fecc9655262e8998257db618552d6cc",
+        "comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6493651587"
+      },
+      {
+        "sha": "13db50fa90aeff280a18d4933e3d5771ba7facb9",
+        "comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6493751270"
+      }
+    ],
+    "publication": "Report checkpoint13db50f pushed and remote verified. Commit/push this final record and verify local HEAD=remote=PR9 head with Draft true. Current commit cannot embed its own hash; inspect remote before retrying publication.",
+    "next": "Verify current docs-only delivery on remote and PR9; finish only missing publication. Otherwise await exact-14 decision and revision-scoped GO on section15.5 plus baseline/evidence contracts. Do not repeat review, diagnostics or PR8; do not implement runtime.",
+    "history_notice": "completed_pr9_initial_review preserves the previous current_execution exactly; completed_pr8_execution and ALL other pre-existing top-level fields remain unchanged historical records, not active tasks.",
+    "security": "Newly supplied GitHub PAT used only in process environment for authorized publication; not saved to project files, Git config, remote URLs or commits. Revoke exposed PAT in GitHub, not BotFather. Pre-existing credential risks are documented without values; no validity tests."
+  },
+  "completed_pr9_initial_review": {
     "task": "PR9 tri-state gift comprehensive audit and corrected implementation plan",
     "date": "2026-10-29",
     "audit_base": "92f658ebd575407d0bba8e3a682cadd0fc248404",
