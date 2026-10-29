@@ -619,3 +619,75 @@ PR9 OPEN/Draft ورأسه6a42a05 في آخر تحققAPI. `gh auth status` غي�
 صُحح صف§10.1 الذي نسب else القديم إلى أحدث نسخة؛ تحسن الفرع الثلاثي يجب الاعتراف به. وصُححV2X02: كان يجمع huge-int مع المدخل الباطل ويطلبUNKNOWN للجميع، بينما§9.1 يمنع الحد الأقصى الاعتباطي. int المقبول بحسبschema يواصل التصنيف دون تحويلfloat؛ غير المدعومUNKNOWN صريح. لا حد جديد ولا حارس منفذ. صارت§15.6 موسومة كتاريخ لا حالة نشر حالية.
 
 أُغلقت فجوة قراءة4277–5059 وتحكيم الادعاءات الأساسية أعلاه فقط؛ ليست شهادة لكل الشات/Arena1–1884 أوجردwriters. بقي التحرير العربي والإحالات والاتساق الشامل، وschema/pagination وأدلةfailed ونموذجwriters وعقودbaseline قبلGO محدد. كلV2T/V2X غير منفذة. لا شهادة لدستور/skills خارجية غير متاحة، ولا تشغيل05.02 أوخدمات حية.
+
+## 17. Full Review بعد النشر اليدوي — محاسبة الشات 1–4276 وArena 2490–3330 ضد المصدر
+
+### 17.1 المصدر والحالة
+
+- القاعدة المنشورة: `04d9584a743e9194118b1e27e49f7ab9c8d2583d` (رفع المالك اليدوي لمحتوى حزمة v5؛ PR9 OPEN/Draft). main@adaf586 مدموج داخل الفرع. Gist revision d6a0088 لم يتغير وليس GO.
+- المصادقة: الجلسة السابقة مررت توكن `Tifo123lord` (push=False → 403)؛ الجلسة الحالية بلا أي ربط. النشر يعتمد على المالك (منح write أو ربط `number949481-ux` أو رفع يدوي لحزمة متحققة).
+- ملفا `manifest.json` و`review_recovery.patch` في جذر المستودع أثر جانبي للرفع اليدوي؛ خارج allowlist؛ قرار المالك.
+- القراءة أدناه تمت على بصمة الشات `265125393d331aa0c9978e7f47d8cc0c38f600f29c0cff4c7d3b4c56d86658c1` (5299 سطراً) وArena 3330 سطراً، وتحققت كل الإحالات السطرية أدناه على شجرة 04d9584 مباشرة.
+
+### 17.2 محاسبة ادعاءات الشات 1–4276 ضد المصدر الحالي
+
+| نطاق الشات | الادعاء | الحكم بعد التحقق من المصدر |
+|---|---|---|
+| 1–330 | خطة 00: نقل فحص الهدية من 05.02:376–412 والمعزل الثلاثي 98–104 والفرز 112–114؛ مواضع bridge `is_account_ready` L1025 / `get_eligible_accounts` L1092 / `refresh_cookies_on_401` L1140 | المواضع صحيحة إلا 1140 (الدالة في 1122). الدوال الفعلية: 973 `read_accounts_safe`، 989 `update_account_data`، 1025، 1092، 1108 `mark_account_cooldown`، 1122، 2324 `_is_never_copy_file`. ادعاء «التزام دستور بولا» غير قابل للشهادة (الدستور غير متاح لنا). |
+| 444–447، 1216 | 01.03 L170–177: `check_balance_before=False`, `balance_refresh_hours=29`, `refreshed_balance=100` | **صحيح حرفياً** (01.03:170/176/177، مع 167 `prefer_balance=100`، 171 `check_unknown_balance=True`، 172 `tie_break="random"`). 01.03 READ-ONLY بالحوكمة؛ هذه القيم هي مصدر «29h/100» في عقودنا. |
+| ~470 | «verifier L39 اسم ملف وهمي غير موجود» | **خطأ**: verifier:39 `QUARANTINE_FILENAME = "accounts_genspark_blocked_failed__block_failed.json"` موجود، و`quarantine_account_atomic` (376–406) تنشئ `records=[]` عند الغياب/التلف. Arena محق. الأرقام الحية 185/130/279 غير قابلة للتحقق (ملفات الحسابات متجاهلة بـgitignore). |
+| 693–760 | شجرة القرار: ≥100 يرسل؛ <100 فحص هدية؛ >14 معزل؛ ≤14 تبريد 29h؛ 401→B2C؛ فشل→failed | «فحص الهدية فقط عند <100» يتسق مع عقودنا (§10). الشجرة **تخلو من فرع UNKNOWN/TRANSIENT**؛ وعتبتها `>` تخالف المصدر 05.02:408 `>=` (انظر 17.4). |
+| 884–1000 | «8 زوايا» + خريطة BEFORE/AFTER + اختبارات مقترحة | مقترحات تصميم؛ revival/TTL cache/startup sanitizer أُلغيت لاحقاً بأوامر المالك (أصوات 6–8). لا تُحتسب كقرارات. |
+| 1059–1104 | sort مقترح `(1 if balance>=100 else 0, -balance, last_used)` تصاعدي | خطأ اتجاه tuple (F18 عند Arena). المصدر الحالي 1104 يفرز بـ`last_used` فقط؛ والاختيار الفعلي 585–596 `candidate_pool = ready_accounts[:5]` ثم `random.choice`، فالفرز وحده لا يفرض الأعلى رصيداً (Arena `SORT_ONLY_DOES_NOT_FORCE_TOP_BALANCE`). |
+| 1145–1160 (أصوات 6–10) | أوامر المالك نصاً: لا استرجاع (6)؛ كل BEFORE/AFTER «باللي موجود فعلاً… مش استنتاج» (7)؛ لا TTL ولا تنظيف إقلاع ولا تعقيد، التحديث فقط لما يؤخذ من 5.2 (8)؛ 502/504 ليست failed، اتبع رد 5.2 والانتقال للحساب التالي (9) | **هذه هي المرجعية الحاكمة للعقود** (§10–§12): no revival، no cache، transient≠dead، UNKNOWN ليس 0/DEAD. أي خطة وكيل تخالفها مرفوضة بغض النظر عن «الدستور». |
+| 1199–1460 | 012345 BEFORE/AFTER: verifier 38–41 + `STALE_GIFT`؛ `inspect_account_gift_status` ينسخ 05.02 بما فيه `STALE,999` و`except: pass`→AUTH_FAILED؛ bridge 2954–2958 AFTER يستدعي `check_gift_status_for_account`/`isolate_stale_gift_account`؛ «L3270–3303» AFTER يستخدم `gve.check_live_balance` و`sess` غير معرّف و`release_account_selection(curr_email, owner_token)`+`continue` | BEFORE لـ2954–2958 **مطابق** للمصدر الحالي (LOW_BALANCE → cooldown → return None). AFTER **غير قابل للنسخ**: الدوال غير موجودة، `sess` غير معرّف، وفرع else يصنف AUTH_FAILED كهدية منتظمة (F17). يبقى تصميماً لا كوداً. |
+| 1461–1629 | «المترجم» rebuild_refactor PARTS 9181 مقابل 9286/9285 | Arena صحح إلى 9285؛ rebuild_refactor 190–216 assert ثم rmtree؛ مختبر Arena: `ONLY_LAST_BOUNDARY_CHANGED exit=1 … p03 '(' was never closed line 652` — أي تعديل حدود PARTS يكسر المولد؛ **شرط قبل GO**. |
+| 1630–3513 | تقرير Arena مضمّن | مطابق Arena 1–1884؛ ليس شاهداً مستقلاً؛ لا يُحتسب مرتين. |
+| 3535–3850 | «Peer Review Audit» من 00: يقر F02/F05/F13/F18؛ يتهم Arena بـ«Paralysis» وبمخالفة T0/T1/T2؛ «7 مكاسب»؛ «محصنة 100%» | الإقرارات مقبولة؛ الاتهامات الدستورية لا نشهد لها؛ «100%» ادعاء بلا دليل اختباري (لا اختبار واحد نُفذ للميزة). |
+| 3849–3940 | الوكيل عدّل الملف الخطأ (00 بدل 012345) ثم نقل | يؤكد ملكية الملفات: 00 لجلسة 00، 012345 للأخرى؛ تقريرنا وحده قابل للتعديل. |
+| 3941–4276 | Voice 16: «مش هننفذ عمياني»؛ D1–D6 «محسومة»: D1 `timedelta(days=14)`؛ D2 -1 UNKNOWN بلا إرسال/تبريد/عزل؛ D3 single-writer+RLock؛ D4 zero mutation on transient؛ D5 عزل 13 فشل + المترجم؛ D6 01.03 READ-ONLY؛ «جاهزة للتنفيذ في انتظار GO» | D1/D2/D4/D6 متسقة مع عقودنا. **D3 خاطئ تقنياً**: `threading.RLock` يحمي داخل عملية واحدة فقط؛ Arena `SYNTHETIC_TWO_PROCESS_RLOCK expected 2 actual 1`؛ single-writer يحتاج جرد writers (05.02 + bridge + verifier + أي CLI) وقفل ملف أو مالك وحيد. D5 «عزل» 13 فشل ليس إصلاحاً. **لا GO صادر** حتى آخر الشات. |
+
+### 17.3 Arena 2490–3330: التفريغات والمختبرات والجرد
+
+- 2490–2552 تفريغات الأصوات 1–17 مطابقة لما في الشات (بما فيه صوت 17: التعديل في 012345 فقط).
+- 2553–2612 نتائج المختبرات الاصطناعية (stubs، بلا شبكة) — ما يُحتسب دليلاً وما لا:
+  - `exact_14_days / 14_days_and_one_hour → STALE days=14`: يثبت `>=` في 05.02:408 ويؤيد الاختيار `>=`.
+  - `network_error_and_no_password → DEAD expired_session_no_password` و`simulated_b2c_502_with_password_text → INVALID_CREDENTIALS` و`simulated_balance_502_user_200 → EMPTY_BALANCE balance=0` و`FAKE_502_WITH_SUSPENDED_TEXT → SUSPENDED is_dead=True`: **تناقض مباشر مع أمر المالك صوت 9** (502/504 ليست failed). هذه هي الفجوة الأولى التي يجب أن يغلقها أي عقد: transient → UNKNOWN بلا كتابة.
+  - `bridge_balance_minus_one_recent_refresh → send_chat_called=True`: -1 يصل للإرسال؛ يؤيد D2 وعقد «UNKNOWN لا يُرسل business».
+  - `INJECTED_FAILOVER_{TIMEOUT,UNKNOWN,TRANSIENT,AUTH_FAILED,LOGIN_FAILED} → primary_changed=True last_used_written=True`: الجسر يكتب في كل مسار فشل؛ ينقض D4 «zero mutation on transient» **بحالة الكود الحالية** — D4 هدف لا واقع.
+  - `write_failed_destination: primary=[] destination_exists=False` و`FAIL_VAULT_WRITE: source_quarantined=True vault_exists=False`: target-first/readback غير مطبق؛ فقدان حساب ممكن؛ يؤيد §11 (source-cut بعد readback فقط).
+  - `CORRUPT_VAULT overwritten=True`: الملف التالف يُستبدل بصمت؛ يحتاج نسخة `.corrupt-<ts>` قبل الاستبدال.
+  - `INJECTED_PRE_TRY_EXCEPTION: claim_still_held`: تسرب claim؛ يحتاج try/finally.
+  - `COPY_FILTER` (نسخة d2eb49d من 012345 NOTES): لا يحجب `accounts_genspark.json`/`.env.production`/`telegram_bot_token.txt`. **version-dependent**: النسخة الحالية من 012345 NOTES (803–824) تضم `accounts_genspark.json` و`"token" in f` و`.tmp_`؛ فالنتيجة تاريخية وليست تناقضاً مع قراءتنا. يبقى فحص الفلتر الحالي مطلوباً قبل أي GO يمس النسخ (GF01 غير معاد).
+  - `SYNTHETIC_TWO_PROCESS_RLOCK expected 2 actual 1` و`STANDALONE_ENGINE_PICKER live_probe_calls=0`: الأول ينقض D3؛ الثاني يثبت أن picker المحرك المستقل لا يفحص حياً.
+  - مختبر المترجم: `CURRENT_MAP exit=1 sentinel_survived=True` (الخريطة الحالية تعمل)؛ أي تغيير حدود يكسر p03 عند السطر 652.
+- 2613–3095 كود المختبرات: stubs؛ لم نشغلها (خارج النطاق) ولا نحتاج ذلك لأن استنتاجاتها البنيوية تحققت بقراءة المصدر.
+- 3096–3330 جرد SHA256 عند d2eb49d (01.33 `4d0bd7e65fe8…` 542683 B؛ 05.02 `192d3a344…`): 01.33 الحالي 542683 B متطابق الحجم؛ لا إعادة حساب كاملة هنا — راجع §15 لبصمات adaf586.
+
+### 17.4 ما ثبت ضد المصدر وما لا يثبت
+
+ثبت:
+1. تعارض داخلي في 05.02: docstring 305 و430 «> threshold_days» بينما الكود 408 `>=`. خطة 00 (PLAN/NOTES) تبنت `>` من الـdocstring. **القرار**: `>=` وفق الكود الحي وجواب المالك (Arena:555)؛ ويُسجل التعارض كملاحظة توثيق لا كتعديل (05.02 خارج النطاق).
+2. الجسر لا يملك مسار UNKNOWN: `bal_check >= 0` فقط (2954)؛ -1/None يسقط إلى الإرسال.
+3. لا وجود لأي من دوال AFTER المقترحة في 012345؛ الفرق بين «موجود» و«مقترح» لم يُلتزم به (مخالفة صوت 7).
+4. RLock ≠ single-writer عبر العمليات.
+5. 13 failure تاريخية ما زالت غير مصلحة ولا معاد قياسها؛ «محصنة 100%» بلا أساس.
+
+لا يثبت (ولا ندعيه):
+- أي شيء عن الأرقام الحية (185/130/279) أو حالة الحسابات أو سلوك Genspark/B2C الفعلي؛ أي شهادة لدستور/skills خارجية؛ أي نتيجة runtime جديدة.
+
+### 17.5 الشروط قبل GO (مجمّعة) وخطة الاعتماد
+
+شروط لا يُمنح GO قبل إغلاقها (كل بند يحتاج دليلاً revision-scoped على HEAD محدد):
+- S1 عقد UNKNOWN/TRANSIENT في الجسر: 502/504/timeout/-1/None → لا إرسال business، لا cooldown، لا عزل، لا كتابة؛ الانتقال للحساب التالي. (صوت 9، D2، D4)
+- S2 عتبة `>=14` يوماً UTC موحدة في الكود والوثائق؛ تسجيل تعارض docstring 05.02.
+- S3 جرد writers لملفات الحسابات (05.02، bridge 989/1108/1122، verifier 376، أي CLI) ونموذج single-writer أو قفل ملف حقيقي؛ RLock وحده مرفوض.
+- S4 حفظ ذري target-first → readback → source-cut؛ نسخة `.corrupt-<ts>` قبل أي استبدال؛ try/finally على claim.
+- S5 schema/pagination لاستجابة الهدية (ما الذي يُعد «هدية حديثة»؛ ctime؛ حدود الصفحة) مثبتة من مصدر حي أو HAR منقّح، لا من ذاكرة الوكلاء.
+- S6 أدلة allowlist لملف failed (ما الذي يدخله ولماذا؛ لا جمع المعزل القديم فيه إلا بقرار المالك الموثق).
+- S7 baseline أحمر: 13 failure إما مصلحة أو مقبولة صراحة من المالك بقائمة أسماء؛ لا «عزل».
+- S8 المترجم: أي تغيير PARTS يخضع لمختبر Arena (sentinel + p03 compile) قبل الدمج.
+- S9 إذن المالك الصريح لأي لمس لـverifier (AGENTS:22)؛ 01.03 READ-ONLY مطلقاً.
+- S10 سياسة credit-in-flight: ما يحدث لرصيد محجوز أثناء العزل/التبريد.
+
+خطة الاعتماد (لا تنفيذ): المالك يراجع §10–§13 و§17.5 ويعتمد/يعدّل كل Sx كتابةً؛ عندها فقط تُحوَّل V2T إلى مهام تنفيذ بفرع منفصل واختبارات قبول لكل Sx؛ GO يُمنح لكل مرحلة على حدة لا للميزة كلها.

@@ -1,32 +1,42 @@
 {
   "current_execution": {
-    "task": "Reconstruct only lost section16 findings from recorded source reads; deliver bounded recovery",
+    "task": "Full Review after owner manual upload of v5 content; FR-0 docs state, FR-1/2 section17 evidence, FR-3 pre-GO conditions",
     "date": "2026-10-29",
-    "restored": "d6e09f38567cb13b3012a119ce58795be5a10328",
+    "restored": "04d9584a743e9194118b1e27e49f7ab9c8d2583d",
     "synced_main": "adaf586c043c08315c4c958020b54caab8013961",
     "branch": "genspark_ai_developer",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "plan": "genspark/tri_state_gift_independent_review_v2.md",
-    "status": "review_docs_validated_local_commit_git_publication_blocked",
+    "status": "published_base_04d9584_full_review_section17_written_local_commit_push_blocked",
     "request": "Read Gist and PROGRESS, independently review workflow until specific plan approval; resume is not runtime GO.",
     "scope": "New review + PROGRESS + recovery only. Previous report and original sources read-only; no Python/tests/generated/accounts/live/migration/merge/deploy.",
     "reference_update": "Merged six upstream documents locally from main@adaf586; no runtime changes. Current fingerprints in V2 section15.",
-    "next": "Deliver and download-verify v5 archive; final receipt in response. Then wait for safe sandbox GitHub auth, publish missing docs and verify PR9 Draft; do not accumulate new review.",
+    "next": "FR-3 remainder: section10-13 consistency pass and map S1-S10 to V2T ids. Publish via owner (grant write / link account / manual upload of v6).",
     "validation": "Historical runtime results in section6: syntax0; pytest1072pass/13fail/+60; canonical1085/13. NOT rerun after latest reset.",
     "history_notice": "completed_pr9_arena_addendum and all other existing fields preserve prior records; not active instructions.",
     "publication": {
-      "remote_pr_head": "d6e09f38567cb13b3012a119ce58795be5a10328",
+      "remote_pr_head": "04d9584a743e9194118b1e27e49f7ab9c8d2583d",
       "pr_draft": true,
-      "current_auth": "gh not logged in",
-      "prior_push_exit": 128,
-      "prior_comment_error": "free_plan_block",
+      "published_via": "owner manual upload of v5 archive content (IFc2FGG8, sha256 6f9425f5a7bd4dd0e737a9aedb88771b68fd0da6a55c85bcdb83c544d54bfab5)",
+      "root_artifacts_out_of_allowlist": [
+        "manifest.json",
+        "review_recovery.patch"
+      ],
+      "root_artifacts_action": "owner decision; no automatic deletion",
+      "prior_session_auth": "platform token belonged to Tifo123lord: push=False pull=True; push denied 403",
+      "current_auth": "no GitHub authorization in sandbox (setup_github_environment none; gh not logged in)",
+      "push_exit": 128,
+      "push_reason": "could not read Username; terminal prompts disabled",
       "last_verified_comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6505635136",
       "new_push_or_comment_succeeded": false,
-      "push_exit": 128,
-      "push_reason": "Current attempt: could not read Username; gh unregistered in this sandbox"
+      "owner_options": [
+        "grant Tifo123lord write access",
+        "link number949481-ux account to platform",
+        "continue manual upload of verified archives"
+      ]
     },
     "inherited_diagnostic_blocker": "Historical only: missing curl_cffi blocked an earlier lab; later AST and mocked fixtures completed D01-D22. Not a current blocker.",
-    "last_verified_checkpoint": "d6e09f38567cb13b3012a119ce58795be5a10328",
+    "last_verified_checkpoint": "04d9584a743e9194118b1e27e49f7ab9c8d2583d",
     "diagnostics": "Generator normal marker retained, optimize1/end-only delete temporary marker then p03 failure; real generated hashes unchanged. AST-extracted fake502 -> DEAD/zero/invalid; corrupt vault overwritten (correct verdict signature rerun); explicit missing path falls back. Initial quoted-name inventory corrected with -z.",
     "bridge_diagnostics": "D12-D20 executed after2b03 before interruption; tool outputs retained, local logs lost after reset. -1/NaN/inf reach fake send, unknown after refresh and401 too. Corrected failover matrix with proper bridge_cfg keyword: TIMEOUT writes last_used; injected UNKNOWN/TRANSIENT/AUTH_FAILED withoutURL ->300s cooldown, withURL ->success metadata. Pre-try fingerprint exception leaves claim. Fixtures mocked, sockets/requests blocked.",
     "threshold_provenance": "Planning preference >=14 full UTC days, following owner answer quoted at Arena555; not independently heard, not runtime GO. Reject UTC-implies-strictly-greater reasoning.",
@@ -50,16 +60,14 @@
     },
     "progress_authority": "Root PROGRESS is entry point; V2 evidence/plan; current_execution mirror only",
     "artifact": {
-      "status": "v4_download_verified_restored_and_published",
-      "url": "https://www.genspark.ai/api/files/s/WEB5Wa4Z",
-      "bytes": 116758,
-      "sha256": "efa20666ae73db6684a4b7ab06ee6fe399ead644c55c5aca4e63c9cd66ed21ee",
-      "snapshot_checkpoint": "c3dc53f7e1958eda539809e2e9cb5f56f68d4778",
-      "prior_v3_upload": "Unknown; not retried",
-      "scope": "Three authorized docs, patch and manifest",
-      "next_snapshot": "v5 planned; final verified receipt in response. No prior v5 upload."
+      "status": "v5_consumed_by_owner_manual_upload",
+      "url": "https://www.genspark.ai/api/files/s/IFc2FGG8",
+      "sha256": "6f9425f5a7bd4dd0e737a9aedb88771b68fd0da6a55c85bcdb83c544d54bfab5",
+      "size": 117495,
+      "next_snapshot": "v6 with published_base=04d9584 only if push stays blocked"
     },
-    "security": "Exposed PAT not used or stored; revoke it in GitHub; no replacement in chat"
+    "security": "Five PATs appeared in chat across sessions (two new this session); none used, copied, or stored. Owner must revoke all. No token printed.",
+    "semantic_coverage": "chat 1-5059 and Arena 1-3330 read and accounted in V2 section16-17 (no runtime)."
   },
   "completed_pr9_arena_addendum": {
     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
