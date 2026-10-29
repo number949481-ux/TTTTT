@@ -359,3 +359,80 @@ strict read للملفات والهوية والrevision؛corrupt/non-list لي�
 بعدثبوتالهدف،أعدالتحقق منالمصدر ثمقصه واحفظه واقرأه. الفشل يتركPENDING_SOURCE_CLEANUP،والهدفالمثبت يمنعاختيارنسخةPRIMARY المتبقية. retry مطابقidempotent بعدالتحقق؛duplicate مختلفCONFLICT. metadata الاسترداد يمكنأن تكونفيالسجلالخاصبالهدف؛لاخزنةحساباترابعةضمنيًا. لاrevival ولاstartup sanitizer. طريقةالتسويةاليدوية أوالأداةالمحدودة تحتاجاعتمادًا.
 
 single-writer شرط **لم يثبت**؛RLock وحده ليسدليلًا. إنلميثبتاستبعادwriter آخر/namespace آخر/CLI،توقفالخطةالدنيا واطلبإذنحل بينالعمليات. Windows busy-file وdiskfull وفشلالfsync تحتاجاختبارات،لا ضمان100% منLinux mocks.
+
+
+## 12. مراحل التنفيذ المستقبلية ومصفوفة القبول
+
+**كل V2T غير منفذ، وكل V2X مخطط ولم يُنشأ كاختبار في المستودع.** هذه ليست نتائج D01–D22 التشخيصية. لا نسبة إنجاز تنفيذية؛ الموجود الآن توثيق وأدلة فقط. T/X في التقرير السابق محفوظة للتاريخ، ولا تُنفذ القائمتان بالتوازي؛ هذه المسودة الأحدث تحتاج اعتمادًا صريحًا.
+
+### 12.1 المراحل والتبعيات
+
+| المرحلة | العمل | شرط الدخول والخروج | الحالة |
+|---|---|---|---|
+| M0 تثبيت العقود | V2T01–05 | GO محدد بالإصدار والملفات؛ دليل schema وخطة writers | محجوبة بلا GO |
+| B خط الأساس، مسار منفصل | V2T06–07 | اعتماد عقود الإخفاقات؛ نجاح البوابات قبل قبول runtime | غير منفذ |
+| M1 نتائج وفحوص قرائية | V2T08–11 | بعد M0؛ اختبارات حمراء للسبب المحدد ثم خضراء بالعقد | غير منفذ |
+| M2 التخزين والاسترداد | V2T12–15 | بعد M0/M1؛ إثبات عدم فقد البيانات ومنع استخدام المكرر | غير منفذ |
+| M3 توصيل الجسر | V2T16–19 | بعد M1/M2؛ UNKNOWN لا يرسل أو يعاقب، وعقود الاستئناف محفوظة | غير منفذ |
+| M4 المخارج والبناء | V2T20–22 | نطاق أمني معتمد؛ أسرار اصطناعية محمية وبناء مرحلي صالح | غير منفذ |
+| M5 التحقق والتسليم | V2T23–24 | B وM1–M4؛ syntax/pytest/canonical/parity ناجحة ثم remote متحقق | غير منفذ |
+
+يمكن كتابة TDD بعد GO مع توثيق baseline الأحمر، لكن ذلك ليس قبولًا للميزة. إصلاح الـ13 لا يتم بحذف assertions أو تغيير180/300 والموديل عشوائيًا؛ لا تعني قدم الإخفاقات أن البوابة خضراء.
+
+### 12.2 قائمة24 مهمة صغيرة
+
+- [ ] V2T01: اعتماد revision التقرير وملفات source/tests/generator المسموحة؛ توسيع نطاق verifier صريح، و01.03 مستثنى.
+- [ ] V2T02: تثبيت >=14 بالـprovenance، و100/29h والـoverride، وUNKNOWN بلا send أو عقوبة، وحد credit-in-flight.
+- [ ] V2T03: توفير schema منقح للرصيد والهدية وأكواد failed واكتمال pagination/window؛ لا اعتبار HAR الحالي إثباتًا لواجهة الهدية.
+- [ ] V2T04: إنهاء جرد writers والمسارات والعمليات والـnamespaces؛ إثبات منع كاتب ثانٍ أو اعتماد حل بين العمليات.
+- [ ] V2T05: تثبيت commit والبيئة وfixtures اصطناعية، وحظر الشبكة ومسارات الحسابات الحقيقية؛ إعادة baseline إذا تغير المصدر.
+- [ ] V2T06: اعتماد عقود13 failure وتصنيف أسبابها في مسار منفصل عن الهدية، بما فيها password UX وparity.
+- [ ] V2T07: إصلاح baseline المعتمد بدفعات واختبارات أسباب؛ لا افتراض أن إصلاح parity وحده يجعل الكل أخضر.
+- [ ] V2T08: تعريف typed results والهوية/revision/session generation وredaction، ثم adapter يحفظ tuple العامة الخماسية.
+- [ ] V2T09: اختبارات numeric/schema/time، بما فيها bool/NaN/Inf/huge-int وDST والحد بالضبط؛ domains مختلفة للرصيد وtimestamps.
+- [ ] V2T10: probe هدية قرائي مع timeouts وretry budget وإلغاء وpagination موثقة؛ لا CLI/signal/retention POST.
+- [ ] V2T11: تعديل auth/refresh محدود بعقد HTTP-first وdeferred mutation وإعادة فحص الجلسة الجديدة؛ بعد إذن verifier فقط.
+- [ ] V2T12: strict vault reads ومسارات صريحة؛ حفظ metadata ورفض فساد البيانات وduplicates المتعارضة.
+- [ ] V2T13: target-first مع temp/flush/replace/readback، ثم revision check وsource-cut؛ حقن فشل في كل خطوة.
+- [ ] V2T14: reconciliation/idempotency/pending ومنع اختيار النسخة المكررة؛ لا revival أو startup cleanup.
+- [ ] V2T15: اختبارات lost update والتزامن وكاتب ثانٍ وWindows busy-file حسب نموذج writers المعتمد.
+- [ ] V2T16: cleanup فور claim وإعادة قراءة الحساب؛ ضمان release حتى عند فشل close_span أو الإلغاء.
+- [ ] V2T17: توصيل preflight أول مرة وبعد refresh وبعد401، مع حفظ الواجهة والسياق الحاليين.
+- [ ] V2T18: dispatch صريح لكل نتيجة مع URL وبدونه؛ منع generic punishment وfalse success للحالات المجهولة.
+- [ ] V2T19: ربط low/recent cooldown وlow/stale delayed وconfirmed failed مع تحقق الحفظ؛ حماية uncertain-send وcredit checkpoint.
+- [ ] V2T20: حماية snapshot/archive/REST باستخدام أسرار اصطناعية؛ حفظ الاستثناءات وسياسة deleted/old queue. بطاقة السر وQwen/uploader المستقل تحتاج نطاقًا منفصلًا.
+- [ ] V2T21: مولد بحماية explicit تعمل مع -O؛ تغطية كل PARTS وAST قبل حذف الوجهة؛ اختبار فشل swap واستعادة البناء السابق.
+- [ ] V2T22: توليد مرحلي وفحص12 جزءًا و14 facade وentrypoints وnormalized parity؛ raw-byte معيار مستقل إن طُلب.
+- [ ] V2T23: regressions P13/P17/P23/P25/P29/P30/P16/P18/P20/P35/P40/P42/P43/P44 وsyntax/full pytest/canonical؛ نتائج فعلية لا وعود.
+- [ ] V2T24: فحص scope/secrets/history/links، وتمرين رجوع واستئناف اصطناعي، وتسليم commit/remote/PR؛ لا merge/deploy/live ضمن هذا الإذن.
+
+### 12.3 مجموعات القبول المخططة
+
+كل صف مجموعة حالات فرعية، لا assertion واحدًا. العدد24 ليس ضمان تغطية وحده. يسجل التنفيذ المستقبلي المدخل والنتيجة الفعلية والمتوقعة وwrite/send calls وexit code، ولا يبدل عقود fixtures القديمة خلسة.
+
+| المعرف | الحالات | معيار القبول | المهام V2T |
+|---|---|---|---|
+| V2X01 | balance0/99.9/100/250 وoverride | >=threshold READY دون gift؛ low لا send قبل تصنيف gift | 02,09,17 |
+| V2X02 | -1/missing/bool/text/NaN/Inf/huge-int | UNKNOWN أوinvalid موثق؛ لا crash أوصفر مزيف أوsend/عقوبة | 08,09,17 |
+| V2X03 | initial/refresh/401 وتغير cookies | حارس واحد للثلاث؛ لا READY بإثبات جلسة قديمة ولا login غير محدود | 11,17 |
+| V2X04 | cached وrandom pool وlast_used شاذ | السياسة القائمة افتراضيًا؛ cached لا يجيز send؛ الفرز إن اعتُمد له عقد مستقل | 09,16 |
+| V2X05 | 429/5xx/timeout/HTML/403 مع password/suspended | لا DEAD اعتمادًا على النص؛ reason منقح وretry محدود | 03,11 |
+| V2X06 | missing credentials/unknown status/dead code موثق | نقص محلي NEEDS/UNKNOWN؛ FAILED بالدليل فقط؛ لا unbound retention | 03,08,11 |
+| V2X07 | 14d-1s/14d/14d+1s وتقدم الساعة | recent/stale/stale وفق >= ومع تاريخ كافٍ؛ وقت حديث UTC | 02,09,10 |
+| V2X08 | offsets/DST/naive/future/invalid/other credit | max بعد parse UTC؛ لا تاريخ مختلق؛ Cairo للعرض، وغير الموثوق UNKNOWN | 09,10 |
+| V2X09 | empty/missing list/page failure/short window/recent page | لا STALE دون اكتمال كافٍ؛ recent الموثوق ينفيه؛ pagination محدودة بلا POST جانبي | 03,10 |
+| V2X10 | exception بعد claim عند fingerprint/reactivate/span close | release للمالك حتى مع استثناء cleanup؛ لا leak أوdouble release | 16 |
+| V2X11 | UNKNOWN في عزل ومع تزامن | لا account write منسوب للمحاولة؛ hash ثابت في عزل فقط؛ لا lock طوال HTTP | 11,16–18 |
+| V2X12 | حذف/نقل/تغير revision/إلغاء بين القراءة والcommit | لا resurrection/overwrite/send؛ CONFLICT أوتسوية محدودة؛ claim محرر | 12–16 |
+| V2X13 | explicit missing/local/parent/custom/legacy | لا fallback خاطئ داخل نقل؛ الوجهتان بجوارPRIMARY المحسوم؛ P23 محفوظ | 04,12 |
+| V2X14 | corrupt/non-list/empty bytes/target missing | STORAGE_ERROR بلا overwrite؛ المفقود فقط ينشأ بالعقد؛ لا[] لتعويض فساد | 12,13 |
+| V2X15 | write/flush/fsync/replace/readback failure للهدف | لا source-cut؛ الحفظ غير المؤكد يوقف dispatch؛ لا نجاح مزعوم | 13 |
+| V2X16 | الهدف ثبت ثم source fail/crash/restart | PENDING؛ لا اختيار النسخة المكررة؛ تسوية بلا revival | 13,14 |
+| V2X17 | retry identical/duplicate casefold/conflicting record | idempotent للمطابق المتحقق؛ CONFLICT للمختلف؛ metadata محفوظة | 12–14 |
+| V2X18 | threads/namespaces/subprocess/Windows busy | لا lost update/deadlock؛ أو رفض كاتب ثانٍ بآلية مثبتة | 04,15 |
+| V2X19 | statuses مع URL وبدونه؛ فشل حفظ cooldown/cookies | dispatch صريح؛ لا success بسبب URL، ولا generic300s للمجهول أوكتم فشل الحفظ | 18,19 |
+| V2X20 | timeout قبل/بعد send وcredit-in-flight وcancel | لا blind resend؛ حفظ URL/checkpoint/prompt-once؛ لا خلط retention/compact بالهدية | 02,19,23 |
+| V2X21 | secret/temp/backup/legacy في snapshot/archive/REST وold queue/delete | لا PUT محظور أوDELETE غير معتمد؛ ملفات المشروع السليمة تبقى؛ card فقط بإذن نطاقه | 20 |
+| V2X22 | normal/-O/end-only/invalid part/swap fail | فشل آمن قبل حذف بناء صالح؛ فحص الأجزاء والfacades وparity | 21,22 |
+| V2X23 | regressions و01.03 freeze وfull gates | hashes المجمد مطابقة؛ baseline fix منفصل؛ البوابات Exit0 قبلجاهزية runtime | 06,07,23 |
+| V2X24 | reset قبلcommit/قبلpush/بعدpush؛ code rollback معpending | لا ادعاء نشر محلي؛ استعادة remote متحقق؛ لا بيانات قديمة تعيد المعزول | 24 |
