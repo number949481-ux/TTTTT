@@ -833,16 +833,21 @@ def filter_productive_account_entries(aggregated, last_email=None) -> tuple[list
     return filtered, False
 
 
-def format_account_timing_block(bridge_cfg, task_total_seconds=None) -> str:
-    """يبني كتلة إحصائيات الحسابات للرسالة النهائية (P30 + فلترة P39 الذكية).
+def format_account_timing_block(bridge_cfg, task_total_seconds=None, local_prep_seconds=None, github_sync_seconds=None, github_status=None) -> str:
+    """يبني كتلة إحصائيات الحسابات للرسالة النهائية (P30 + P39 + P46 فصل مقاييس الأداء 360°).
 
     P39: تُعرض الحسابات المنتجة فقط (عتبة PRODUCTIVE_SPAN_MIN_SECONDS) بأدوار
     واضحة — (البداية) / (استئناف k) / (🌟 الحساب المنجز) — وإجمالي زمن التوليد
     يُحسب من المفلتَر حصراً، بينما «الزمن الكلي للمهمة» (wall clock) مستقل.
+    P46: فصل مقاييس الأداء الثلاثة نقياً لمنع التلوث (Metrics Pollution):
+    1. 🧠 زمن توليد الذكاء الاصطناعي (مفصول بحساباته المنتجة واستئنافاته).
+    2. 📦 زمن الأرشفة والمعالجة المحلية (تنزيل وفك الأرشيف ومسح الملفات).
+    3. 🚀 زمن المزامنة والرفع لـ GitHub (منفصل تماماً بمحرك gh_bulk الذري v5.4).
+    4. 🕒 الزمن الكلي للمهمة.
     Fail-Open: لو كل الحسابات دون العتبة تُعرض القائمة الكاملة بالعنوان القديم.
     عداد الاستئنافات مصدره الوحيد last_credit_continuations (عقد P30 —
     لا يُشتق أبداً من عدد الحسابات). إيميلات كاملة مهرَّبة بلا masking (P29).
-    تُرجع "" فقط لو لا توجد spans إطلاقاً. التوقيع ثابت (عقد P30 محفوظ).
+    تُرجع "" فقط لو لا توجد spans إطلاقاً. التوقيع متوافق عكسياً 100%.
     """
     spans = getattr(bridge_cfg, "account_journey_spans", None) if bridge_cfg is not None else None
     aggregated = aggregate_journey_spans_per_email(spans)
@@ -879,12 +884,44 @@ def format_account_timing_block(bridge_cfg, task_total_seconds=None) -> str:
             f"  {idx}. <code>{html_escape(email)}</code> — "
             f"⏱ {format_compact_duration(item.get('total_seconds'))}{multi}{role}"  # ⏱️ [P40] مدة مضغوطة
         )
-    # ⏱️ [P39] السطر المدمج: إجمالي التوليد (من المفلتَر فقط) + عدد المنتجين + عداد الاستئنافات المستقل
+    # ⏱️ [P39+P46] المحاسبة الزمنية الثلاثية النقية — فصل مقاييس الأداء 360° (Zero Metrics Pollution)
     accounts_word = "حساب منتج" if shown_count == 1 else "حسابات منتجة"
     lines.append(
-        f"⏱️ <b>إجمالي زمن التوليد:</b> {format_compact_duration(productive_total)} "  # ⏱️ [P40]
+        f"🧠 <b>إجمالي زمن التوليد:</b> {format_compact_duration(productive_total)} "  # ⏱️ [P40]
         f"({shown_count} {accounts_word} | 🔁 {continuations} استئناف)"
     )
+
+    # 📦 زمن الأرشفة والمعالجة المحلية (تنزيل، فك ضغط الأرشيف، مسح وحساب الهاشات للـ 208 ملفات)
+    _fmt_phase = format_compact_duration
+    fast_mode = bool(getattr(bridge_cfg, "project_fast_lean_skip", False)) if bridge_cfg else False
+    if fast_mode:
+        lines.append("📦 <b>زمن الأرشفة والمعالجة المحلية:</b> متخطى (الوضع السريع)")
+    else:
+        prep = local_prep_seconds
+        if prep is None and bridge_cfg is not None:
+            prep = getattr(bridge_cfg, "last_local_prep_seconds", None)
+        if prep is None and task_total_seconds is not None:
+            gh_deduct = github_sync_seconds if github_sync_seconds is not None else (getattr(bridge_cfg, "last_github_sync_seconds", 0.0) or 0.0)
+            prep = max(0.0, float(task_total_seconds) - productive_total - float(gh_deduct or 0.0))
+        if prep is not None:
+            lines.append(f"📦 <b>زمن الأرشفة والمعالجة المحلية:</b> {_fmt_phase(prep)}")
+
+    # 🚀 زمن المزامنة والرفع لـ GitHub (منفصل تماماً — محرك المزامنة الذري v5.4)
+    gh_sec = github_sync_seconds
+    if gh_sec is None and bridge_cfg is not None:
+        gh_sec = getattr(bridge_cfg, "last_github_sync_seconds", None)
+    gh_enabled = getattr(bridge_cfg, "github_enabled", True) if bridge_cfg else True
+    gh_state = github_status or (getattr(bridge_cfg, "last_github_status", None) if bridge_cfg else None)
+
+    if not gh_enabled:
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> غير مفعل لهذا المشروع")
+    elif gh_state == "queued":
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> جاري في الخلفية (طابور مستقل)")
+    elif gh_sec is not None and float(gh_sec) > 0:
+        lines.append(f"🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> {_fmt_phase(gh_sec)} (منفصل تماماً)")
+    elif gh_sec is not None and float(gh_sec) == 0.0:
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> مطابق للأصل (لا تغييرات)")
+
     if task_total_seconds is not None:
         lines.append(f"🕒 <b>الزمن الكلي للمهمة:</b> {format_compact_duration(task_total_seconds)}")  # ⏱️ [P40]
     return "\n".join(lines)
@@ -7614,9 +7651,17 @@ def process_user_task_async(
                 chat_id=chat_id,
                 status=stage_status,
             ) or runtime_identity
+            t_snap0 = time.time()
             update = registry.snapshot(stage_dir, stage_url, stage_status, stage_text)
             checkpoint_id = str(update.get("checkpoint") or "")
+            if cfg is not None:
+                cfg.last_local_prep_seconds = max(0.0, time.time() - t_snap0)
+
+            t_sync0 = time.time()
             sync = registry.github_sync(update)
+            if cfg is not None:
+                cfg.last_github_sync_seconds = max(0.0, time.time() - t_sync0)
+                cfg.last_github_status = "synced" if sync.get("upload_confirmed") else ("queued" if (sync.get("queued") or (sync.get("jobs") and sync["jobs"][0].get("state") != "synced")) else "disabled")
             all_jobs = sync.get("jobs") or []
             queued_jobs = [job for job in all_jobs if str(job.get("state") or "") != "synced"]
             queued_ids = sync.get("queued") or []
