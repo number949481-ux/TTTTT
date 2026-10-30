@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p01_bootstrap
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1..174
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1..197
 المحتوى: Header + imports + logging + redact + html_escape + _to_win_long_path (MAX_PATH) + resolve_shared_path (P23) + load_bot_token
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -147,9 +147,32 @@ def resolve_shared_path(name: str) -> pathlib.Path:
     وإلا يلقطه من الفولدر الأب المركزي — ولو غير موجود في الاثنين يرجع المحلي (للإنشاء).
     Zero Breaking Changes: النسخ القديمة بملفاتها المحلية تشتغل كما هي تماماً."""
     local = _to_win_long_path(SCRIPT_DIR / name)
+    parent = _to_win_long_path(SCRIPT_DIR.parent / name)
+    # 🛡️ [P23-GUARD] تحصين السجل المركزي وشجرة المشاريع:
+    # مجلد project_registry لا يُعتبر صالحاً إلا إذا احتوى على registry.json الفعلي.
+    # إذا كان المحلي مجرد مجلد فارغ أو ناتج اختبارات والأب يحتوي على registry.json الحقيقي، فالأولوية للأب دائماً.
+    if name == "project_registry":
+        if (local / "registry.json").exists():
+            return local
+        if (parent / "registry.json").exists():
+            return parent
+        if local.exists():
+            return local
+        if parent.exists():
+            return parent
+        return local
+    if name == "projects_tree.json":
+        if local.exists() and local.stat().st_size > 0:
+            return local
+        if parent.exists() and parent.stat().st_size > 0:
+            return parent
+        if local.exists():
+            return local
+        if parent.exists():
+            return parent
+        return local
     if local.exists():
         return local
-    parent = _to_win_long_path(SCRIPT_DIR.parent / name)
     if parent.exists():
         return parent
     return local
