@@ -680,13 +680,22 @@ class ProjectRegistry:
         if not token:
             raise RuntimeError("PROJECT_GITHUB_TOKEN_MISSING")
 
+        ai_prefix = None
+
+        def _lazy_ai_prefix() -> str:
+            nonlocal ai_prefix
+            if ai_prefix is None:
+                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
+            return ai_prefix
+
         # 🚀 [v5.4] محرك المزامنة الذري المعتمد عبر Git Data API (Atomic Single Commit + Inline Content + Bootstrap)
         if os.getenv("USE_BULK_GIT_DATA_API", "1").lower() in ("1", "true", "yes") and not getattr(self, "_force_legacy_contents_api", False) and not payload.get("use_contents_api"):
             try:
                 import gh_bulk
-                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
-                commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}"
-                return gh_bulk.sync_payload(payload, token=token, commit_message=commit_message)
+                def _get_bulk_commit_msg() -> str:
+                    pfx = _lazy_ai_prefix()
+                    return f"{pfx} [{self.key}] sync {payload['job_id']}" if pfx else f"[{self.key}] sync {payload['job_id']}"
+                return gh_bulk.sync_payload(payload, token=token, commit_message=_get_bulk_commit_msg)
             except Exception as exc:
                 if (isinstance(exc, gh_bulk.RepoNotFoundError) or "Bad credentials" in str(exc) or "HTTP_401" in str(exc)) and not getattr(self, "_strict_bulk_only", False):
                     log_event("warning", f"⚠️ تعذر إكمال المزامنة عبر Git Data API ({exc}) — تجربة مسار Contents API...")
@@ -707,13 +716,6 @@ class ProjectRegistry:
             "failed_file": "",
             "error": "",
         }
-        ai_prefix = None
-
-        def _lazy_ai_prefix() -> str:
-            nonlocal ai_prefix
-            if ai_prefix is None:
-                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
-            return ai_prefix
 
         # فحص ورفع الملفات مع إعادة محاولة ذكية وحفظ التقدم
         for file_info in payload.get("upload_files", []):
