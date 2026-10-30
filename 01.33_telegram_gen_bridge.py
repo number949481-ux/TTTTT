@@ -4385,9 +4385,20 @@ class ProjectRegistry:
         if not token:
             raise RuntimeError("PROJECT_GITHUB_TOKEN_MISSING")
 
-        # 🔧 [P20] قرار المالك: إلغاء مسار Git Native Sync نهائياً (كان يفشل بـ
-        # name 'dest_root' is not defined بشكل متكرر) — GitHub Contents REST API
-        # هو مسار الرفع الوحيد والمباشر الآن بدون أي محاولة clone/push.
+        # 🚀 [v5.4] محرك المزامنة الذري المعتمد عبر Git Data API (Atomic Single Commit + Inline Content + Bootstrap)
+        if os.getenv("USE_BULK_GIT_DATA_API", "1").lower() in ("1", "true", "yes") and not getattr(self, "_force_legacy_contents_api", False) and not payload.get("use_contents_api"):
+            try:
+                import gh_bulk
+                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
+                commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}"
+                return gh_bulk.sync_payload(payload, token=token, commit_message=commit_message)
+            except Exception as exc:
+                if (isinstance(exc, gh_bulk.RepoNotFoundError) or "Bad credentials" in str(exc) or "HTTP_401" in str(exc)) and not getattr(self, "_strict_bulk_only", False):
+                    log_event("warning", f"⚠️ تعذر إكمال المزامنة عبر Git Data API ({exc}) — تجربة مسار Contents API...")
+                else:
+                    raise
+
+        # 🔧 مسار الرفع الاحتياطي (Contents REST API)
         import base64
         import requests
         headers = build_github_api_headers(token)
