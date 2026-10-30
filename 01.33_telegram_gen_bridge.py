@@ -3739,6 +3739,38 @@ UPLOAD_RETRY_BASE_SECONDS = 5
 UPLOAD_RETRY_MAX_SECONDS = 300
 
 
+class PartialUploadError(RuntimeError):
+    """استثناء عند تعثر الرفع إلى GitHub مع حفظ الملفات التي رُفعت بالفعل بنجاح."""
+    def __init__(self, message: str, partial_state: dict | None = None, original_exc: Exception | None = None):
+        super().__init__(message)
+        self.partial_state = partial_state or {}
+        self.original_exc = original_exc
+        self.error_code = type(original_exc).__name__ if original_exc and type(original_exc).__name__ != "RuntimeError" else str(original_exc or message)
+
+
+def _github_http_request_with_retry(method: str, url: str, max_attempts: int = 3, backoff_seconds: float = 2.0, **kwargs):
+    """تنفيذ طلب HTTP لمستودع GitHub مع إعادة محاولة ذكية عند ReadTimeout أو 5xx."""
+    import requests
+    last_exc = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = requests.request(method, url, **kwargs)
+            if resp.status_code in (500, 502, 503, 504) and attempt < max_attempts:
+                time.sleep(backoff_seconds * attempt)
+                continue
+            return resp
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as req_err:
+            last_exc = req_err
+            if attempt < max_attempts:
+                time.sleep(backoff_seconds * attempt)
+                continue
+            raise last_exc
+        except Exception as other_err:
+            raise other_err
+    if last_exc:
+        raise last_exc
+
+
 class ProjectRegistry:
     """عزل دائم لكل مشروع: ملفات، checkpoints، manifests وقفل مستقل.
 
@@ -4036,6 +4068,7 @@ class ProjectRegistry:
         destination = data.get("destination") if isinstance(data.get("destination"), dict) else {}
         branch = str(destination.get("branch") or "")
         branch_mode = str(destination.get("branch_mode") or ("manual" if branch else "auto_default"))
+        synced_files = data.get("synced_files") if isinstance(data.get("synced_files"), dict) else {}
         return {
             "job_id": str(data.get("job_id") or uuid.uuid4().hex),
             "project_key": self.key,
@@ -4051,6 +4084,7 @@ class ProjectRegistry:
             "next_retry_at": data.get("next_retry_at"),
             "last_error_code": str(data.get("last_error_code") or ""),
             "state": str(data.get("state") or "pending"),
+            "synced_files": synced_files,
             "created_at": str(data.get("created_at") or _utc()),
             "updated_at": str(data.get("updated_at") or _utc()),
             "schema_version": UPLOAD_QUEUE_SCHEMA_VERSION,
@@ -4222,7 +4256,7 @@ class ProjectRegistry:
             return dict(updated)
         return None
 
-    def mark_upload_job_retrying(self, job_id: str, last_error_code: str, now_ts: float | None = None) -> dict | None:
+    def mark_upload_job_retrying(self, job_id: str, last_error_code: str, now_ts: float | None = None, partial_data: dict | None = None) -> dict | None:
         queue_data = self._read_queue()
         now_ts = time.time() if now_ts is None else float(now_ts)
         for idx, job in enumerate(queue_data.get("jobs", [])):
@@ -4234,6 +4268,20 @@ class ProjectRegistry:
             updated["last_error_code"] = str(last_error_code or "")
             updated["next_retry_at"] = datetime.fromtimestamp(now_ts + backoff, timezone.utc).isoformat()
             updated["updated_at"] = _utc()
+            if partial_data and isinstance(partial_data, dict):
+                prior = updated.get("synced_files", {}) if isinstance(updated.get("synced_files"), dict) else {}
+                prior_up = set(prior.get("uploaded", []))
+                prior_mod = set(prior.get("modified", []))
+                prior_del = set(prior.get("deleted", []))
+                prior_up.update(partial_data.get("uploaded", []))
+                prior_mod.update(partial_data.get("modified", []))
+                prior_del.update(partial_data.get("deleted", []))
+                updated["synced_files"] = {
+                    "uploaded": sorted(prior_up),
+                    "modified": sorted(prior_mod),
+                    "deleted": sorted(prior_del),
+                    "failed_file": partial_data.get("failed_file", ""),
+                }
             queue_data["jobs"][idx] = updated
             self._write_queue(queue_data)
             return dict(updated)
@@ -4334,15 +4382,16 @@ class ProjectRegistry:
         import base64
         import requests
         headers = build_github_api_headers(token)
-        # 🎯 [P21] دقة تصنيف commit: التمييز بين ملف جديد (غير موجود على الريموت
-        # → 404 → uploaded) وملف معدل (له remote_sha مختلف → modified) — كان الاثنان
-        # يُحسبان "➕ جديد" في الإحصائيات رغم أن remote_sha متاح أصلاً قبل الـ PUT.
         uploaded, modified, unchanged, deleted, skipped = [], [], [], [], list(payload.get("skipped", []))
-        # 🧠 [DEC-019] كوميت ذكي من كوين مرة واحدة لكل job — فشله لا يكسر الرفع.
-        # ⏳ [P31] Lazy Call: كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي — job كله
-        # unchanged (كل الملفات مطابقة للريموت بايت-بايت) ← صفر نداء لكوين
-        # (توفير باقة API + إلغاء تأخير حتى 30ث مجاني في كل sync cycle بلا تغيير).
-        # memoized: None = لم يُستدعَ بعد | "" = استُدعي وفشل/فارغ (fallback حرفي).
+        partial_state = {
+            "uploaded": uploaded,
+            "modified": modified,
+            "unchanged": unchanged,
+            "deleted": deleted,
+            "skipped": skipped,
+            "failed_file": "",
+            "error": "",
+        }
         ai_prefix = None
 
         def _lazy_ai_prefix() -> str:
@@ -4350,6 +4399,8 @@ class ProjectRegistry:
             if ai_prefix is None:
                 ai_prefix = self._qwen_commit_prefix_for_job(payload)
             return ai_prefix
+
+        # فحص ورفع الملفات مع إعادة محاولة ذكية وحفظ التقدم
         for file_info in payload.get("upload_files", []):
             rel = self._normalize_remote_relative_path(file_info["path"])
             if _should_skip_archive_member(rel):
@@ -4358,50 +4409,59 @@ class ProjectRegistry:
             remote_rel = "/".join(part for part in (target_root, rel) if part)
             api = f"https://api.github.com/repos/{repository}/contents/{remote_rel}"
             remote_sha = None
-            got = requests.get(api, headers=headers, params={"ref": branch}, timeout=30)
-            if got.status_code == 200:
-                remote_sha = str(got.json().get("sha") or "")
-            elif got.status_code != 404:
-                raise RuntimeError(f"HTTP_{got.status_code}")
-            local_target = _to_win_long_path(file_info["local_path"])
-            local_sha = self._git_blob_sha(local_target)
-            if remote_sha and remote_sha == local_sha:
-                unchanged.append(rel)
-                continue
-            with open(local_target, "rb") as fh:
-                content_b64 = base64.b64encode(fh.read()).decode("ascii")
-            # [DEC-019] رسالة كوين كبادئة عند النجاح — وإلا نفس الرسالة القديمة حرفياً.
-            # [P31] أول ملف متغير فعلياً هو الذي يوقظ كوين (بعد فحص unchanged) — مرة واحدة لكل job.
-            _lazy_ai_prefix()
-            commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}: {rel}"
-            body = {"message": commit_message, "content": content_b64, "branch": branch}
-            if remote_sha:
-                body["sha"] = remote_sha
-            put = requests.put(api, headers=headers, json=body, timeout=120)
-            if put.status_code in (200, 201):
-                # [P21] remote_sha موجود = الملف كان على الريموت واختلف محتواه → معدل ✏️
-                (modified if remote_sha else uploaded).append(rel)
-            else:
-                raise RuntimeError(f"HTTP_{put.status_code}")
+            try:
+                got = _github_http_request_with_retry("GET", api, headers=headers, params={"ref": branch}, timeout=30)
+                if got.status_code == 200:
+                    remote_sha = str(got.json().get("sha") or "")
+                elif got.status_code != 404:
+                    raise RuntimeError(f"HTTP_{got.status_code}")
+                local_target = _to_win_long_path(file_info["local_path"])
+                local_sha = self._git_blob_sha(local_target)
+                if remote_sha and remote_sha == local_sha:
+                    unchanged.append(rel)
+                    continue
+                with open(local_target, "rb") as fh:
+                    content_b64 = base64.b64encode(fh.read()).decode("ascii")
+                _lazy_ai_prefix()
+                commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}: {rel}"
+                body = {"message": commit_message, "content": content_b64, "branch": branch}
+                if remote_sha:
+                    body["sha"] = remote_sha
+                put = _github_http_request_with_retry("PUT", api, headers=headers, json=body, timeout=120)
+                if put.status_code in (200, 201):
+                    (modified if remote_sha else uploaded).append(rel)
+                else:
+                    raise RuntimeError(f"HTTP_{put.status_code}")
+            except Exception as exc:
+                partial_state["failed_file"] = rel
+                partial_state["error"] = type(exc).__name__ if type(exc).__name__ != "RuntimeError" else str(exc)
+                raise PartialUploadError(str(exc), partial_state=partial_state, original_exc=exc) from exc
+
+        # حذف الملفات المطلوبة مع إعادة المحاولة
         for rel in payload.get("delete_files", []):
             rel = self._normalize_remote_relative_path(rel)
             remote_rel = "/".join(part for part in (target_root, rel) if part)
             api = f"https://api.github.com/repos/{repository}/contents/{remote_rel}"
-            got = requests.get(api, headers=headers, params={"ref": branch}, timeout=30)
-            if got.status_code == 404:
-                continue
-            if got.status_code != 200:
-                raise RuntimeError(f"HTTP_{got.status_code}")
-            sha = got.json().get("sha")
-            # [P31] الحذف الفعلي (الملف موجود على الريموت 200) يوقظ كوين إن لم يستيقظ بعد.
-            _lazy_ai_prefix()
-            delete_message = f"{ai_prefix} [{self.key}] delete {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] delete {payload['job_id']}: {rel}"
-            body = {"message": delete_message, "sha": sha, "branch": branch}
-            delete_resp = requests.delete(api, headers=headers, json=body, timeout=120)
-            if delete_resp.status_code in (200, 204):
-                deleted.append(rel)
-            else:
-                raise RuntimeError(f"HTTP_{delete_resp.status_code}")
+            try:
+                got = _github_http_request_with_retry("GET", api, headers=headers, params={"ref": branch}, timeout=30)
+                if got.status_code == 404:
+                    continue
+                if got.status_code != 200:
+                    raise RuntimeError(f"HTTP_{got.status_code}")
+                sha = got.json().get("sha")
+                _lazy_ai_prefix()
+                delete_message = f"{ai_prefix} [{self.key}] delete {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] delete {payload['job_id']}: {rel}"
+                body = {"message": delete_message, "sha": sha, "branch": branch}
+                delete_resp = _github_http_request_with_retry("DELETE", api, headers=headers, json=body, timeout=120)
+                if delete_resp.status_code in (200, 204):
+                    deleted.append(rel)
+                else:
+                    raise RuntimeError(f"HTTP_{delete_resp.status_code}")
+            except Exception as exc:
+                partial_state["failed_file"] = rel
+                partial_state["error"] = type(exc).__name__ if type(exc).__name__ != "RuntimeError" else str(exc)
+                raise PartialUploadError(str(exc), partial_state=partial_state, original_exc=exc) from exc
+
         return {"uploaded": uploaded, "modified": modified, "unchanged": unchanged, "deleted": deleted, "skipped": skipped}
 
     def recover_upload_queue_after_restart(self, now_ts: float | None = None) -> list[dict]:
@@ -4456,9 +4516,35 @@ class ProjectRegistry:
         }
         try:
             result = (uploader or self._default_github_uploader)(payload)
+        except PartialUploadError as pue:
+            pstate = pue.partial_state or {}
+            err_name = pue.error_code
+            retry_job = self.mark_upload_job_retrying(job["job_id"], err_name, now_ts=now_ts, partial_data=pstate)
+            return {
+                "processed": False,
+                "job": retry_job or job,
+                "error": err_name,
+                "failed_file": str(pstate.get("failed_file") or ""),
+                "uploaded": list(pstate.get("uploaded", []) or []),
+                "modified": list(pstate.get("modified", []) or []),
+                "deleted": list(pstate.get("deleted", []) or []),
+                "unchanged": list(pstate.get("unchanged", []) or []),
+                "skipped": list(pstate.get("skipped", []) or []),
+            }
         except Exception as err:
-            retry_job = self.mark_upload_job_retrying(job["job_id"], type(err).__name__ if type(err).__name__ != "RuntimeError" else str(err), now_ts=now_ts)
-            return {"processed": False, "job": retry_job or job, "error": str(err)}
+            err_name = type(err).__name__ if type(err).__name__ != "RuntimeError" else str(err)
+            retry_job = self.mark_upload_job_retrying(job["job_id"], err_name, now_ts=now_ts)
+            return {
+                "processed": False,
+                "job": retry_job or job,
+                "error": str(err),
+                "failed_file": "",
+                "uploaded": [],
+                "modified": [],
+                "deleted": [],
+                "unchanged": [],
+                "skipped": [],
+            }
         updated = self.update_upload_job_state(job["job_id"], "synced", last_error_code="", next_retry_at=None)
         return {"processed": True, "job": updated or job, **(result or {})}
 
@@ -4780,6 +4866,7 @@ class ProjectRegistry:
             "upload_confirmed": confirmed,
             "job_state": state,
             "upload_error": str(execution.get("error") or execution.get("reason") or ""),
+            "failed_file": str(execution.get("failed_file") or ""),
         }
 
 PROJECT_LOCKS = {}; PROJECT_LOCKS_GUARD = threading.Lock()
@@ -6091,7 +6178,14 @@ def run_project_late_fetch(project_key: str) -> str:
         gh_line = ""
         if sync.get("enabled"):
             queued = sync.get("queued") or []
-            gh_line = f"\n• GitHub: <b>{len(queued)}</b> job في الطابور" if queued else "\n• GitHub: لا تغييرات جديدة للرفع"
+            if sync.get("upload_confirmed"):
+                gh_line = f"\n• GitHub: ✅ تم الرفع بنجاح (➕ {len(sync.get('uploaded', []))} | ✏️ {len(sync.get('modified', []))})"
+            elif sync.get("uploaded") or sync.get("modified"):
+                gh_line = f"\n• GitHub: ⚠️ رفع جزئي (➕ {len(sync.get('uploaded', []))} | ✏️ {len(sync.get('modified', []))}) — المتبقي في الطابور ({len(queued)})"
+            elif queued:
+                gh_line = f"\n• GitHub: <b>{len(queued)}</b> job في الطابور"
+            else:
+                gh_line = "\n• GitHub: لا تغييرات جديدة للرفع"
         log_event("info", f"⬇️ [P43-D6] LATE_FETCH_DONE project={project_key} pid={pid[:16]} checkpoint={checkpoint_id}", email=email)
         return (
             "✅ <b>تم تنزيل الساندبوكس وحفظ اللقطة بنجاح.</b>\n"
@@ -7507,16 +7601,34 @@ def process_user_task_async(
             queued_jobs = [job for job in all_jobs if str(job.get("state") or "") != "synced"]
             queued_ids = sync.get("queued") or []
             context = summarize_project_context(runtime_identity, current_pid=stage_meta["pid"], current_url=stage_url)
+            has_partial = bool(sync.get("uploaded") or sync.get("modified") or sync.get("deleted"))
             if queued_jobs:
                 first_job = queued_jobs[0]
                 dest = first_job.get("destination", {}) if isinstance(first_job, dict) else {}
                 branch_label = dest.get("branch") or ("auto-default" if dest.get("branch_mode") == "auto_default" else "غير محدد")
-                details = "\n".join(
+                job_hdr = "\n".join(
                     f"• <code>{html_escape(job.get('job_id'))}</code> → <code>{html_escape(job.get('state'))}</code> → <code>{html_escape(dest.get('repository') or '')}</code> @ <code>{html_escape(branch_label)}</code>"
                     for job in queued_jobs[:3]
                 )
-                details += "\n• لم يتم تأكيد الرفع إلى GitHub بعد؛ هذه فقط job/queue جاهزة أو قيد التنفيذ."
-            elif sync.get("upload_confirmed") or sync.get("uploaded") or sync.get("modified") or sync.get("deleted"):
+                if has_partial:
+                    stats_line = f"• 📊 <b>تم رفع وتأكيد جزئي على GitHub:</b> ➕ <b>{len(sync.get('uploaded', []))}</b> جديد | ✏️ <b>{len(sync.get('modified', []))}</b> معدل | 🗑️ <b>{len(sync.get('deleted', []))}</b> محذوف"
+                    file_lines = []
+                    for x in sync.get("uploaded", [])[:10]:
+                        file_lines.append(f"  ➕ <code>{html_escape(x)}</code>")
+                    for x in sync.get("modified", [])[:10]:
+                        file_lines.append(f"  ✏️ <code>{html_escape(x)}</code>")
+                    for x in sync.get("deleted", [])[:10]:
+                        file_lines.append(f"  🗑️ <code>{html_escape(x)}</code>")
+                    files_block = "\n" + "\n".join(file_lines) if file_lines else ""
+                    err_txt = sync.get("upload_error") or ""
+                    fail_f = sync.get("failed_file") or ""
+                    err_info = f"\n• ⚠️ <b>تعثر مؤقت عند:</b> <code>{html_escape(fail_f or 'file')}</code> ({html_escape(err_txt)}) — جاري إعادة المحاولة تلقائياً." if err_txt else ""
+                    details = f"{job_hdr}\n{stats_line}{files_block}{err_info}"
+                else:
+                    details = job_hdr + "\n• لم يتم تأكيد الرفع إلى GitHub بعد؛ هذه فقط job/queue جاهزة أو قيد التنفيذ."
+                    if sync.get("upload_error"):
+                        details += f"\n• ⚠️ <b>سبب التعثر:</b> <code>{html_escape(sync.get('upload_error'))}</code>"
+            elif sync.get("upload_confirmed") or has_partial:
                 commit_info = f"\n• 🔗 <b>Commit:</b> <code>{html_escape(sync.get('commit_hash', ''))}</code>" if sync.get("commit_hash") else ""
                 stats_line = f"• 📊 <b>الإحصائيات:</b> ➕ <b>{len(sync.get('uploaded', []))}</b> جديد | ✏️ <b>{len(sync.get('modified', []))}</b> معدل | 🗑️ <b>{len(sync.get('deleted', []))}</b> محذوف | ⏸️ <b>{len(sync.get('unchanged', []))}</b> مطابق"
                 file_lines = []
@@ -7531,7 +7643,15 @@ def process_user_task_async(
             else:
                 details = f"• لم يجد النظام أي تغيير جديد؛ المستودع مطابق تماماً للأرشيف الحالي (Unchanged: <code>{len(sync.get('unchanged', []))}</code>)."
             skipped = "\n".join(f"• <code>{html_escape(x)}</code>" for x in sync.get("skipped", [])[:8])
-            github_label = "تم إنشاء job GitHub لهذا المشروع ولم يتم تأكيد الرفع بعد" if sync.get("enabled") and queued_jobs else ("✅ تم الرفع والمزامنة بنجاح لـ GitHub" if sync.get("upload_confirmed") or sync.get("uploaded") or sync.get("modified") else ("تعذر تأكيد رفع GitHub لهذه اللقطة" if sync.get("enabled") and sync.get("upload_error") else "غير مفعل لهذا المشروع أو إعدادات GitHub غير مكتملة"))
+            github_label = (
+                "⚠️ رفع جزئي مع إعادة محاولة" if (sync.get("enabled") and queued_jobs and has_partial) else (
+                    "تم إنشاء job GitHub لهذا المشروع ولم يتم تأكيد الرفع بعد" if (sync.get("enabled") and queued_jobs) else (
+                        "✅ تم الرفع والمزامنة بنجاح لـ GitHub" if (sync.get("upload_confirmed") or has_partial) else (
+                            "تعذر تأكيد رفع GitHub لهذه اللقطة" if (sync.get("enabled") and sync.get("upload_error")) else "غير مفعل لهذا المشروع أو إعدادات GitHub غير مكتملة"
+                        )
+                    )
+                )
+            )
             stage_label = "⚠️ استنزاف رصيد — تم حفظ نقطة استئناف صالحة ويجري الآن تقييم handoff" if stage_status == "CREDIT_EXHAUSTED" else "🔄 تحديث مشروع صالح"
             continuation_line = ""
             handoff_line = ""
