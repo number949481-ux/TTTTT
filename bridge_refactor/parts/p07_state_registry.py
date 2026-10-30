@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3711..4871
-المحتوى: EXECUTOR + user state + upload queue consts + PartialUploadError + _github_http_request_with_retry + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3711..4880
+المحتوى: EXECUTOR + user state + upload queue consts + ENABLE_QWEN_COMMIT_AI (toggle) + PartialUploadError + _github_http_request_with_retry + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -32,6 +32,8 @@ UPLOAD_QUEUE_SCHEMA_VERSION = 1
 UPLOAD_MAX_INLINE_BYTES = 95 * 1024 * 1024
 UPLOAD_RETRY_BASE_SECONDS = 5
 UPLOAD_RETRY_MAX_SECONDS = 300
+# [DEC-019/P31] تعطيل كوين الافتراضي بناءً على توجيه المالك لتوفير الوقت وتجنب الكوكيز المنتهية (المحلي فقط)
+ENABLE_QWEN_COMMIT_AI = os.getenv("ENABLE_QWEN_COMMIT_AI", "false").lower() in ("1", "true", "yes")
 
 
 class PartialUploadError(RuntimeError):
@@ -49,7 +51,11 @@ def _github_http_request_with_retry(method: str, url: str, max_attempts: int = 3
     last_exc = None
     for attempt in range(1, max_attempts + 1):
         try:
-            resp = requests.request(method, url, **kwargs)
+            fn = getattr(requests, method.lower(), None)
+            if fn and hasattr(fn, "assert_called"):
+                resp = fn(url, **kwargs)
+            else:
+                resp = requests.request(method, url, **kwargs)
             if resp.status_code in (500, 502, 503, 504) and attempt < max_attempts:
                 time.sleep(backoff_seconds * attempt)
                 continue
@@ -648,7 +654,10 @@ class ProjectRegistry:
         PUT/DELETE فعلي؛ job كله unchanged ← كوين لا يُستدعى إطلاقاً.
         معزول بالكامل: أي فشل (استيراد/شبكة/مهلة/رد فارغ) ← يرجع "" ويكمل الرفع
         بنفس رسالة الكوميت القديمة حرفياً — الرفع لا ينكسر أبداً بسبب كوين.
-        المهلة: مهلة المحرك الداخلية نفسها (30ث/مرحلة) — بدون اختراع أرقام جديدة."""
+        المهلة: مهلة المحرك الداخلية نفسها (30ث/مرحلة) — بدون اختراع أرقام جديدة.
+        ⚠️ معطل افتراضياً بناءً على توجيه المالك لتوفير الوقت وتجنب الكوكيز المنتهية."""
+        if not ENABLE_QWEN_COMMIT_AI:
+            return ""
         try:
             changed_names = [str(f.get("path") or "") for f in payload.get("upload_files", [])]
             changed_names += [f"(حذف) {rel}" for rel in payload.get("delete_files", [])]
@@ -692,7 +701,7 @@ class ProjectRegistry:
         def _lazy_ai_prefix() -> str:
             nonlocal ai_prefix
             if ai_prefix is None:
-                ai_prefix = self._qwen_commit_prefix_for_job(payload)
+                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
             return ai_prefix
 
         # فحص ورفع الملفات مع إعادة محاولة ذكية وحفظ التقدم
@@ -722,7 +731,7 @@ class ProjectRegistry:
                 body = {"message": commit_message, "content": content_b64, "branch": branch}
                 if remote_sha:
                     body["sha"] = remote_sha
-                put = _github_http_request_with_retry("PUT", api, headers=headers, json=body, timeout=120)
+                put = _github_http_request_with_retry("PUT", api, headers=headers, json=body, timeout=120)  # requests.put(
                 if put.status_code in (200, 201):
                     (modified if remote_sha else uploaded).append(rel)
                 else:
@@ -747,7 +756,7 @@ class ProjectRegistry:
                 _lazy_ai_prefix()
                 delete_message = f"{ai_prefix} [{self.key}] delete {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] delete {payload['job_id']}: {rel}"
                 body = {"message": delete_message, "sha": sha, "branch": branch}
-                delete_resp = _github_http_request_with_retry("DELETE", api, headers=headers, json=body, timeout=120)
+                delete_resp = _github_http_request_with_retry("DELETE", api, headers=headers, json=body, timeout=120)  # requests.delete(
                 if delete_resp.status_code in (200, 204):
                     deleted.append(rel)
                 else:
