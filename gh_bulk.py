@@ -590,7 +590,8 @@ def sync(
 
     # 10. إنشاء الكوميت الذري (Create Commit)
     parents = [head_commit_sha] if head_commit_sha else []
-    new_commit_sha = client.create_commit(commit_message, new_tree_sha, parents=parents)
+    resolved_commit_message = commit_message() if callable(commit_message) else commit_message
+    new_commit_sha = client.create_commit(resolved_commit_message, new_tree_sha, parents=parents)
 
     _check_timeout()
 
@@ -685,7 +686,7 @@ def sync_payload(payload: Dict[str, Any], token: str, commit_message: Optional[s
     owner, repo_name = parts[0], parts[1]
 
     client = GhClient(owner=owner, repo=repo_name, token=token)
-    msg = commit_message or f"[{project_key}] sync {job_id}: atomic single commit"
+    msg = commit_message if callable(commit_message) else (commit_message or f"[{project_key}] sync {job_id}: atomic single commit")
 
     res = sync(
         client=client,

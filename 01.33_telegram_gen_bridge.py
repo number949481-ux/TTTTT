@@ -918,7 +918,7 @@ def format_account_timing_block(bridge_cfg, task_total_seconds=None, local_prep_
     elif gh_state == "queued":
         lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> جاري في الخلفية (طابور مستقل)")
     elif gh_sec is not None and float(gh_sec) > 0:
-        lines.append(f"🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> {_fmt_phase(gh_sec)} (منفصل تماماً)")
+        lines.append(f"🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> {_fmt_phase(gh_sec)}")
     elif gh_sec is not None and float(gh_sec) == 0.0:
         lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> مطابق للأصل (لا تغييرات)")
 
@@ -3261,6 +3261,11 @@ def send_message_and_make_public(
         if final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
             return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
 
+        # ⏱️ [P46] عزل مقاييس الأداء 360°: إغلاق عداد استجابة الذكاء الاصطناعي فوراً
+        # لمنع احتساب زمن تنزيل الأرشيف وفكه محلياً ضمن زمن التوليد الفعلي
+        close_account_timing_span(bridge_cfg, email)
+        t_local_prep_start = time.time()
+
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
         # 🚫⚡ [P40] Decline Fast-Path: رد الرفض القصير (COMPLETED تقنياً) لا يستحق
@@ -3290,6 +3295,8 @@ def send_message_and_make_public(
             final_public_url = f"https://www.genspark.ai/autopilotagent_viewer?id={pid}"
         else:
             final_public_url = make_project_always_public(pid, cookies, mod=mod, cfg=cfg, email=email, bridge_cfg=bridge_cfg)
+        if bridge_cfg is not None:
+            bridge_cfg.last_local_prep_seconds = max(0.0, time.time() - t_local_prep_start)
         save_project_branch(
             parent_id=extract_project_id(url) if url else None,
             child_id=pid,
@@ -4454,13 +4461,22 @@ class ProjectRegistry:
         if not token:
             raise RuntimeError("PROJECT_GITHUB_TOKEN_MISSING")
 
+        ai_prefix = None
+
+        def _lazy_ai_prefix() -> str:
+            nonlocal ai_prefix
+            if ai_prefix is None:
+                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
+            return ai_prefix
+
         # 🚀 [v5.4] محرك المزامنة الذري المعتمد عبر Git Data API (Atomic Single Commit + Inline Content + Bootstrap)
         if os.getenv("USE_BULK_GIT_DATA_API", "1").lower() in ("1", "true", "yes") and not getattr(self, "_force_legacy_contents_api", False) and not payload.get("use_contents_api"):
             try:
                 import gh_bulk
-                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
-                commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}"
-                return gh_bulk.sync_payload(payload, token=token, commit_message=commit_message)
+                def _get_bulk_commit_msg() -> str:
+                    pfx = _lazy_ai_prefix()
+                    return f"{pfx} [{self.key}] sync {payload['job_id']}" if pfx else f"[{self.key}] sync {payload['job_id']}"
+                return gh_bulk.sync_payload(payload, token=token, commit_message=_get_bulk_commit_msg)
             except Exception as exc:
                 if (isinstance(exc, gh_bulk.RepoNotFoundError) or "Bad credentials" in str(exc) or "HTTP_401" in str(exc)) and not getattr(self, "_strict_bulk_only", False):
                     log_event("warning", f"⚠️ تعذر إكمال المزامنة عبر Git Data API ({exc}) — تجربة مسار Contents API...")
@@ -4481,13 +4497,6 @@ class ProjectRegistry:
             "failed_file": "",
             "error": "",
         }
-        ai_prefix = None
-
-        def _lazy_ai_prefix() -> str:
-            nonlocal ai_prefix
-            if ai_prefix is None:
-                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
-            return ai_prefix
 
         # فحص ورفع الملفات مع إعادة محاولة ذكية وحفظ التقدم
         for file_info in payload.get("upload_files", []):
@@ -7687,7 +7696,7 @@ def process_user_task_async(
             update = registry.snapshot(stage_dir, stage_url, stage_status, stage_text)
             checkpoint_id = str(update.get("checkpoint") or "")
             if cfg is not None:
-                cfg.last_local_prep_seconds = max(0.0, time.time() - t_snap0)
+                cfg.last_local_prep_seconds = (getattr(cfg, "last_local_prep_seconds", 0.0) or 0.0) + max(0.0, time.time() - t_snap0)
 
             t_sync0 = time.time()
             sync = registry.github_sync(update)
