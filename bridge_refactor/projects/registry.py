@@ -15,6 +15,8 @@ __all__ = [
     "UPLOAD_MAX_INLINE_BYTES",
     "UPLOAD_RETRY_BASE_SECONDS",
     "UPLOAD_RETRY_MAX_SECONDS",
+    "PartialUploadError",
+    "_github_http_request_with_retry",
     "ProjectRegistry",
     "PROJECT_LOCKS",
     "PROJECT_LOCKS_GUARD",
