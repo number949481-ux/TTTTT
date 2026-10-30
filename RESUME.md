@@ -11,7 +11,7 @@
 | البند | الحالة |
 |---|---|
 | الفرع | `genspark_ai_developer` فقط (main READ-ONLY، لا فروع جانبية) |
-| HEAD المسحوب في هذه الجلسة | `c46970e` (للتوثيق فقط — اسحب الأحدث دائمًا) |
+| HEAD المسحوب في هذه الجلسة | `a3cd2e3` (للتوثيق فقط — اسحب الأحدث دائمًا). منذ `c46970e` وصلت 8 commits من المالك: p45 `gh_bulk.py` (Git Data API)، p46 timing metrics 360، p47 Telegram 429/throttle/priority claim + tests p45–p47 + Documents 08–10. تمسّ `01.33` في 6 مواضع لا تشمل دوال الحسابات؛ مراسي STEP-2 المحدَّثة: `is_account_ready` 1104، `get_eligible_accounts` 1171، `mark_account_cooldown` 1187، `send_message_with_auto_account_failover` 3305. STEP-1 ما زالت 34 passed على هذا HEAD. |
 | PR | #9 Draft (يبقى Draft؛ لا merge) |
 | وضع التسليم | **حفظ محلي في `/home/user/webapp` فقط** → أداة المزامنة الخارجية (Bridge Sync Engine) ترفع تلقائيًا. لا push، لا gh auth، لا ZIP. |
 | المرحلة | **ALIGN-0 — مواءمة هندسية قبل أي كود** (بطلب المالك). بانتظار اعتماد الخطة أدناه. |
@@ -21,6 +21,8 @@
 - محتواه: `DIAGNOSTIC_COMPACT_ISSUE.md` (2026-09-09، revision واحدة) — تشخيص **compact deadlock** (`run_verified_compact` / `COMPACT_FAILED` / `compact_state["due"]` المحتبس).
 - الفحص على HEAD الحالي: الرمز `COMPACT_FAILED` **غير موجود في أي ملف `.py` تشغيلي**؛ مسار فشل الضغط يعتمد الآن `deferred/bypass_ready` (01.33 ~4664–4685، 7486–7491) ومُغطى بـ`tests/test_auto_compact.py`؛ سجل `genspark/recovery_state.json → completed_compact_credit_execution` يوثق إغلاق هذا العطل عبر PR #7 بموافقة المالك.
 - بينما `PROGRESS.md` والـGist السابق (`number949481-ux/b64bef6ac…`، rev `d6a0088`، لم يتغير) يخصان **tri-state gift integration** (STEP-2/STEP-3 بعد GO مرحلي + Q-F/Q-C/Q-R).
+
+(أُعيد فحص الـGist في الجولة 2: المالك `pijsal1-tech`، ملف واحد، آخر تحديث 2026-09-09، revision واحدة — لم يتغير.)
 
 **السؤال الحاسم للمالك:** هل المهمة التالية هي (أ) STEP-2 من مسار الهدية الثلاثية كما في PROGRESS، أم (ب) إعادة فتح/مراجعة مسار compact وفق الـGist الجديد، أم (ج) كلاهما بترتيب محدد؟ **لن يُلمس أي ملف تشغيلي قبل الجواب.**
 
@@ -52,9 +54,9 @@
 
 **الترتيب الآمن (الأصغر أثرًا → الأكبر):**
 1. **اختبارات أولًا** — `tests/test_p45_gift_preflight.py` (اسم مؤقت): يغطي الثلاث نتائج + in-flight يكمل + UNKNOWN لا يكتب شيئًا + التوافق مع `is_account_ready` الحالي. كلها تعمل على نسخ مؤقتة من JSON؛ لا شبكة.
-2. **دالة نقية** في 01.33 بجوار `is_account_ready` (~1067): `classify_gift_freshness(acc, now) -> ("FRESH"|"GRACE"|"STALE"|"UNKNOWN", days)` تقرأ فقط الحقول المخزَّنة (`last_gift_date`/`days_without_gift`/`gift_checked_at`) — **لا تستدعي الشبكة**.
+2. **دالة نقية** في 01.33 بجوار `is_account_ready` (~1104 على HEAD الحالي): `classify_gift_freshness(acc, now) -> ("FRESH"|"GRACE"|"STALE"|"UNKNOWN", days)` تقرأ فقط الحقول المخزَّنة (`last_gift_date`/`days_without_gift`/`gift_checked_at`) — **لا تستدعي الشبكة**.
 3. **مصدر البيانات:** الجسر لا يستدعي Genspark لفحص الهدية بنفسه (يتعارض مع Rate Limit وحوكمة "لا live")؛ يعتمد على ما يكتبه 05.02 في الحسابات. فحص "حي" داخل الجسر يُقترح كـ**flag اختياري معطَّل افتراضيًا** في `BridgeConfig` (`gift_preflight_live=False`) لقرار لاحق.
-4. **نقطة الحقن الوحيدة:** `get_eligible_accounts` (~1134) — فلتر إضافي بعد `is_account_ready`. لا تعديل في `send_message_with_auto_account_failover` ولا في حلقة failover (~3236+) → الحساب الجاري يكمل طبيعيًا بحكم البناء (Q-C) لأن الفلتر يعمل فقط عند **اختيار** حساب جديد.
+4. **نقطة الحقن الوحيدة:** `get_eligible_accounts` (~1171 على HEAD الحالي) — فلتر إضافي بعد `is_account_ready`. لا تعديل في `send_message_with_auto_account_failover` ولا في حلقة failover (~3305+) → الحساب الجاري يكمل طبيعيًا بحكم البناء (Q-C) لأن الفلتر يعمل فقط عند **اختيار** حساب جديد.
 5. **Pre-existing:** إن تعارض مع أي من الـ13 failure التاريخية → يُوثَّق فقط، لا جلسة إصلاح شاملة.
 6. **Parity:** إن مسّ التعديل جزءًا مولَّدًا من `bridge_refactor/parts/*` يُعاد توليده عبر `scripts/rebuild_refactor.py` وتُشغَّل اختبارات parity؛ وإلا لا يُلمس.
 
