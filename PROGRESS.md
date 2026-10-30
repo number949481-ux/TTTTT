@@ -3,7 +3,18 @@
 > ⚠️ **قاعدة إلزامية**: هذا الملف يُحدَّث بعد **كل** جلسة عمل — أول قسم فيه هو دائماً
 > نقطة الاستئناف المعتمدة للجلسة التالية. لا تبدأ أي عمل جديد قبل قراءته.
 
-## نقطة الاستئناف الحالية — 04d9584 منشور برفع المالك اليدوي؛ Full Review جارٍ بدفعات
+## نقطة الاستئناف الحالية — GO مرحلي صادر؛ الخطوة 1 (حزمة اختبارات العزل) منفذة وناجحة
+
+- القاعدة المنشورة: remote `genspark_ai_developer` = `65f7078abda243ba5e95af0a48dfbdca7f27fe62` (رفع المالك اليدوي لمحتوى v6؛ يضم V2 §17.1–17.5). main@adaf586 مدموج (Already up to date). PR9 OPEN/Draft. Gist لم يتغير (revision d6a0088؛ ليس GO تشغيلياً). ملاحظة: §17.6 (مرور الاتساق + جدول S↔V2T) كُتب في commit محلي سابق ضاع بـreset ولم يُعد كتابته — المالك منع المراجعات النظرية قبل تسليم commit الاختبارات.
+- **GO مرحلي من المالك** بقرارات: **Q-F** نعم — دمج حسابات المعزل القديم داخل `accounts_failed.json` مع نسخة أرشيفية للملف القديم. **Q-C** فحص الهدية استباقي (Pre-Flight) قبل إطلاق الطلب؛ أي حساب قيد التنفيذ يكمل طبيعياً. **Q-R** نعم — حذف `manifest.json` و`review_recovery.patch` من الجذر.
+- **وضع التسليم**: المالك أعاد ربط المنصة بـGitHub (حساب `number949481-ux`؛ `setup_github_environment` ناجح؛ push dry-run Exit0). الرفع يتم بمصادقة المنصة فقط؛ لا استخدام لأي PAT ظهر في الدردشة (المجموع 5؛ يجب إلغاؤها جميعاً). لا ZIP/روابط تنزيل.
+- [x] **STEP-1** — `tests/test_tri_state_isolation.py` (جديد، 34 اختباراً معزولاً لـ05.02): Fresh (2)، Grace (3؛ منها حدّ `>=14` يوماً = STALE وفق قرار المالك/05.02:408)، Stale (3: 20 يوماً، لا هدايا→999، تاريخ غير قابل للتحليل→999)، Banned (suspended/user_not_found بلا B2C؛ invalid_credentials/suspended/domain_banned بعد B2C؛ جلسة منتهية بلا باسورد؛ نجاح relogin يجدد الكوكيز)، Network Error (B2C network_error إعادة محاولة واحدة→AUTH_FAILED؛ تعافٍ في الثانية؛ ConnectionError على سجل الهدايا→AUTH_FAILED بلا `days_without_gift`؛ HTTP 502/503/504/429/401؛ status≠0؛ JSON تالف)، توجيه Cut & Move (نتيجة رباعية دقيقة `{scanned:4,healthy:1,stale_cut:1,dead_cut:1,auth_failed:1,total_credits:150}`؛ dry-run لا يكتب؛ تخطي المصنَّف مسبقاً؛ ترتيب تنازلي؛ primary فارغ→error)، مساعدات (atomic_save/load/backup). العزل: `socket.socket` يرمي استثناء؛ stub لـ`genspark_master_account_manager` الغائب؛ `tmp_path` فقط؛ `sleep/uniform` معطّلان. النتيجة: **34 passed**. الحزمة الكاملة: بلا انحدار (13 failure تاريخية بنفس الأسماء).
+- [x] **Q-R** — `git rm manifest.json review_recovery.patch`.
+- [ ] **STEP-2** — طبقة Pre-Flight في الجسر وفق Q-C + عقد UNKNOWN/transient (S1): فحص قبل الإرسال؛ قيد التنفيذ يكمل؛ UNKNOWN → لا إرسال/لا cooldown/لا عزل/لا كتابة. الاختبارات أولاً. **بانتظار تأكيد المالك لنطاق الملفات** (01.33 فقط؟ verifier يحتاج إذناً صريحاً AGENTS:22؛ 01.03 READ-ONLY).
+- [ ] **STEP-3** — أداة دمج ملف المعزل القديم في `accounts_failed.json` مع أرشفة (Q-F)؛ اختبارات معزولة أولاً.
+- ثوابت: لا تشغيل 05.02 حياً/لا Genspark/Telegram/Qwen حي؛ لا migration/deploy/merge إلى main؛ `tri_state_gift_master_review.md` وArena و00/012345 مراجع لا تُمس؛ لا طباعة أسرار.
+
+## أرشيف نقطة 04d9584 — Full Review جارٍ بدفعات (نُشر ضمن 65f7078)
 
 - بعد reset جديد: fresh clone على main@adaf586؛ أُعيد بناء `genspark_ai_developer` من remote عند `04d9584a743e9194118b1e27e49f7ab9c8d2583d` (رفعه المالك يدوياً من محتوى حزمة v5 [IFc2FGG8](https://www.genspark.ai/api/files/s/IFc2FGG8) SHA256 `6f9425f5a7bd4dd0e737a9aedb88771b68fd0da6a55c85bcdb83c544d54bfab5`)؛ main مدموج داخله (Already up to date)؛ PR9 OPEN/Draft head=04d9584. Gist لم يتغير (revision d6a0088؛ ليس GO).
 - [x] LINK-R3 (مغلق بمسار بديل): النشر تحقق عبر الرفع اليدوي لا عبر push الوكيل. وُجد في جذر المستودع `manifest.json` و`review_recovery.patch` (artifacts v5) خارج allowlist الثلاثي؛ لا حذف تلقائي — قرار المالك (حذفهما أو نقلهما إلى `genspark/recovery/`).
