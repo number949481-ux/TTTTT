@@ -225,9 +225,17 @@ def process_user_task_async(
                 chat_id=chat_id,
                 status=stage_status,
             ) or runtime_identity
+            t_snap0 = time.time()
             update = registry.snapshot(stage_dir, stage_url, stage_status, stage_text)
             checkpoint_id = str(update.get("checkpoint") or "")
+            if cfg is not None:
+                cfg.last_local_prep_seconds = max(0.0, time.time() - t_snap0)
+
+            t_sync0 = time.time()
             sync = registry.github_sync(update)
+            if cfg is not None:
+                cfg.last_github_sync_seconds = max(0.0, time.time() - t_sync0)
+                cfg.last_github_status = "synced" if sync.get("upload_confirmed") else ("queued" if (sync.get("queued") or (sync.get("jobs") and sync["jobs"][0].get("state") != "synced")) else "disabled")
             all_jobs = sync.get("jobs") or []
             queued_jobs = [job for job in all_jobs if str(job.get("state") or "") != "synced"]
             queued_ids = sync.get("queued") or []
