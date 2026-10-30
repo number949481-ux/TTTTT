@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p07_state_registry
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3560..4630
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 3688..4761
 المحتوى: EXECUTOR + user state + upload queue consts + ProjectRegistry (snapshots/checkpoints/github_sync | P20: الرفع REST-Only — إلغاء Git Native Sync نهائياً | P21: تصنيف دقيق جديد/معدل في uploader | DEC-019: كوميت ذكي من qwen_engine كبادئة مع fallback حرفي | P31: Lazy Qwen Call — كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي عبر _lazy_ai_prefix memoized — job كله unchanged ← صفر نداء | P43: fast_mode في _normalize_project_settings (Backward-Compat F9) + update_project_settings (bool حصراً — D5/R1))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -42,13 +42,13 @@ class ProjectRegistry:
     """
     def __init__(self, project_key: str):
         self.key = re.sub(r"[^A-Za-z0-9_-]", "_", project_key)[:80]
-        self.root = PROJECT_REGISTRY_HOME / self.key
+        self.root = _to_win_long_path(PROJECT_REGISTRY_HOME / self.key)
         # fallback environment token يبقى احتياطياً فقط؛ الأولوية لاحقاً لتوكن المشروع نفسه.
         self._github_token = get_default_github_token_from_env()
         self._github_repo = os.getenv("GITHUB_UPLOAD_REPOSITORY", "").strip()
         self.root.mkdir(parents=True, exist_ok=True)
         self.lock = get_project_lock(self.key)
-        self.manifest_path = self.root / "manifest.json"
+        self.manifest_path = _to_win_long_path(self.root / "manifest.json")
 
     def remember_identity(self, root_pid: str | None = None, latest_pid: str | None = None,
                           project_name: str | None = None, chat_id: int | None = None,
@@ -63,10 +63,10 @@ class ProjectRegistry:
         )
 
     def _manifest_backup_path(self) -> pathlib.Path:
-        return self.manifest_path.with_suffix(".bak")
+        return _to_win_long_path(self.manifest_path.with_suffix(".bak"))
 
     def _secrets_path(self) -> pathlib.Path:
-        return self.root / "secrets.local.json"
+        return _to_win_long_path(self.root / "secrets.local.json")
 
     def _secrets_default(self) -> dict:
         return {
@@ -315,13 +315,13 @@ class ProjectRegistry:
         return compose_runtime_resume_prompt(settings.get("continuation", {}).get("prompt"), github_token=github_token)
 
     def _hot_checkpoint_path(self, checkpoint_id: str) -> pathlib.Path:
-        return self.root / "checkpoints" / "hot" / checkpoint_id
+        return _to_win_long_path(self.root / "checkpoints" / "hot" / checkpoint_id)
 
     def _archive_path(self, checkpoint_id: str) -> pathlib.Path:
-        return self.root / "archive" / f"{checkpoint_id}.tar.gz"
+        return _to_win_long_path(self.root / "archive" / f"{checkpoint_id}.tar.gz")
 
     def _queue_path(self) -> pathlib.Path:
-        return self.root / "queue.json"
+        return _to_win_long_path(self.root / "queue.json")
 
     def _queue_default(self) -> dict:
         return {"schema_version": UPLOAD_QUEUE_SCHEMA_VERSION, "jobs": []}
@@ -546,7 +546,7 @@ class ProjectRegistry:
                 "delete_files": [],
                 "skipped": [f"checkpoint:{job.get('checkpoint_id')} (CHECKPOINT_RECORD_MISSING)"],
             }
-        checkpoint_dir = self._hot_checkpoint_path(job.get("checkpoint_id"))
+        checkpoint_dir = _to_win_long_path(self._hot_checkpoint_path(job.get("checkpoint_id")))
         upload_files = []
         skipped = []
         for info in record.get("files", []):
@@ -555,7 +555,7 @@ class ProjectRegistry:
             if size > UPLOAD_MAX_INLINE_BYTES:
                 skipped.append(f"{rel} (FILE_TOO_LARGE_LOCAL_ONLY)")
                 continue
-            local = checkpoint_dir / rel
+            local = _to_win_long_path(checkpoint_dir / rel)
             if not local.exists() or not local.is_file():
                 skipped.append(f"{rel} (CHECKPOINT_FILE_MISSING)")
                 continue
@@ -582,13 +582,14 @@ class ProjectRegistry:
         return branch or "main"
 
     @staticmethod
-    def _git_blob_sha(local_path: str) -> str:
+    def _git_blob_sha(local_path: str | pathlib.Path) -> str:
         """Compute the SHA returned by GitHub Contents API without invoking git."""
         import hashlib
-        size = pathlib.Path(local_path).stat().st_size
+        lp = _to_win_long_path(local_path)
+        size = lp.stat().st_size
         digest = hashlib.sha1()
         digest.update(f"blob {size}\0".encode("ascii"))
-        with open(local_path, "rb") as fh:
+        with open(lp, "rb") as fh:
             for chunk in iter(lambda: fh.read(1024 * 1024), b""):
                 digest.update(chunk)
         return digest.hexdigest()
@@ -657,11 +658,12 @@ class ProjectRegistry:
                 remote_sha = str(got.json().get("sha") or "")
             elif got.status_code != 404:
                 raise RuntimeError(f"HTTP_{got.status_code}")
-            local_sha = self._git_blob_sha(file_info["local_path"])
+            local_target = _to_win_long_path(file_info["local_path"])
+            local_sha = self._git_blob_sha(local_target)
             if remote_sha and remote_sha == local_sha:
                 unchanged.append(rel)
                 continue
-            with open(file_info["local_path"], "rb") as fh:
+            with open(local_target, "rb") as fh:
                 content_b64 = base64.b64encode(fh.read()).decode("ascii")
             # [DEC-019] رسالة كوين كبادئة عند النجاح — وإلا نفس الرسالة القديمة حرفياً.
             # [P31] أول ملف متغير فعلياً هو الذي يوقظ كوين (بعد فحص unchanged) — مرة واحدة لكل job.
@@ -773,7 +775,7 @@ class ProjectRegistry:
         return self._execute_claimed_upload_job(job, uploader=uploader, branch_resolver=branch_resolver, now_ts=now_ts)
 
     def _checkpoint_record_path(self, checkpoint_id: str) -> pathlib.Path:
-        return self.root / "reports" / f"{checkpoint_id}.json"
+        return _to_win_long_path(self.root / "reports" / f"{checkpoint_id}.json")
 
     def _normalize_checkpoint_record(self, record: dict | None) -> dict:
         data = record if isinstance(record, dict) else {}
@@ -803,13 +805,14 @@ class ProjectRegistry:
 
     def _write_checkpoint_archive(self, checkpoint_id: str, checkpoint_dir: pathlib.Path) -> pathlib.Path:
         import tarfile
-        archive_path = self._archive_path(checkpoint_id)
+        checkpoint_dir = _to_win_long_path(checkpoint_dir)
+        archive_path = _to_win_long_path(self._archive_path(checkpoint_id))
         archive_path.parent.mkdir(parents=True, exist_ok=True)
-        temp = archive_path.with_suffix(".tmp")
+        temp = _to_win_long_path(archive_path.with_suffix(".tmp"))
         with tarfile.open(temp, mode="w:gz") as tf:
             if checkpoint_dir.exists():
                 for item in sorted(checkpoint_dir.rglob("*")):
-                    arcname = item.relative_to(checkpoint_dir).as_posix()
+                    arcname = _to_win_long_path(item).relative_to(checkpoint_dir).as_posix()
                     if item.is_dir() and not arcname:
                         continue
                     tf.add(item, arcname=arcname or ".")
@@ -935,11 +938,11 @@ class ProjectRegistry:
         """نسخ streaming إلى hot checkpoint مع تسطيح مسار webapp واستبعاد الأرشيف والملفات السرية."""
         with self.lock:
             data = self._read(); stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-            checkpoint = self._hot_checkpoint_path(stamp)
+            checkpoint = _to_win_long_path(self._hot_checkpoint_path(stamp))
             checkpoint.mkdir(parents=True, exist_ok=True)
             files = []
             deleted_files = []
-            raw_src = pathlib.Path(sandbox_dir) if sandbox_dir else None
+            raw_src = _to_win_long_path(sandbox_dir) if sandbox_dir else None
             src = _resolve_effective_source_root(raw_src) if raw_src else None
             prior_index = data.get("file_index") if isinstance(data.get("file_index"), dict) else {}
             current_seen_at = _utc()
@@ -949,11 +952,11 @@ class ProjectRegistry:
                     if item.is_file():
                         if _is_never_copy_file(item.name) or _should_skip_archive_member(item.name):
                             continue
-                        rel = item.relative_to(src)
+                        rel = _to_win_long_path(item).relative_to(src)
                         rel_path = pathlib.PurePosixPath(rel.as_posix()).as_posix()
                         if _should_skip_archive_member(rel_path):
                             continue
-                        dest = checkpoint / rel; dest.parent.mkdir(parents=True, exist_ok=True)
+                        dest = _to_win_long_path(checkpoint / rel); dest.parent.mkdir(parents=True, exist_ok=True)
                         # copy2 streams internally; لا يحمل الأرشيف الكبير في الذاكرة.
                         shutil.copy2(item, dest)
                         sha256 = _sha256_file(item)
@@ -1034,7 +1037,7 @@ class ProjectRegistry:
             data["updates"].append(entry); data["checkpoints"].append(stamp)
             # hot checkpoints فقط آخر 3؛ archive التاريخي الكامل يبقى محفوظاً منفصلاً.
             for old in data["checkpoints"][:-3]:
-                shutil.rmtree(self._hot_checkpoint_path(old), ignore_errors=True)
+                shutil.rmtree(str(_to_win_long_path(self._hot_checkpoint_path(old))), ignore_errors=True)
             data["checkpoints"] = data["checkpoints"][-3:]
             data["last_three_urls"] = [u.get("url", "") for u in data["updates"] if u.get("url")][-3:]
             self._write(data)

@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p02_config_contracts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 156..489
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 175..508
 المحتوى: Global config + models + CONTRACTS + resume-prompt utils + project settings (P17: ALLOWED_GROUP_IDS + is_chat_allowed لدعم الجروبات | P41: MALFORMED_PROJECT_LINK_MESSAGE — رسالة الرفض الصريحة للرابط المشوّه | P43: حقل fast_mode في default_project_settings + الدالة الحاكمة should_skip_artifacts_download (D3: GitHub مفعّل يفرض التنزيل، وإلا التخطي عند fast_mode=True فقط))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """

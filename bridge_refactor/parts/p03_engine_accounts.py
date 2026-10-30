@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 490..1143
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 509..1240
 المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -431,7 +431,7 @@ class BridgeConfig:
     min_preflight_balance: int = 100     # 💰 [P13] الحد الأدنى للرصيد قبل أي إرسال — أقل منه = تبريد 29h وتخطٍ صامت
     user_agent: str = USER_AGENTS[0]
     current_browser: str = "chrome120"   # 🌐 يُحدث ديناميكياً لكل حساب
-    extracted_webapp_dir: pathlib.Path = field(default_factory=lambda: SCRIPT_DIR / "extracted_webapp")
+    extracted_webapp_dir: pathlib.Path = field(default_factory=lambda: _to_win_long_path(SCRIPT_DIR / "extracted_webapp"))
     run_started_at: float | None = None
     last_credit_continuations: int = 0
     last_credit_checkpoint_state: str = ""
@@ -516,7 +516,13 @@ def update_account_data(email: str, updates: dict, json_path: str | None = None)
             found = False
             for acc in accounts:
                 if isinstance(acc, dict) and acc.get("email") == email:
-                    acc.update(updates)
+                    # 🛡️ [IMMUNE-GUARD] منع أي تحديث يمسح حالة العزل أو يضع كول داون لحساب معزول
+                    is_quarantined = acc.get("quarantined") is True or str(acc.get("status", "")).lower().strip() in ("suspended", "banned")
+                    if is_quarantined and "quarantined" not in updates:
+                        safe_updates = {k: v for k, v in updates.items() if k not in ("status", "active", "cooldown_until")}
+                        acc.update(safe_updates)
+                    else:
+                        acc.update(updates)
                     acc["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                     found = True
                     break
@@ -550,7 +556,8 @@ def is_account_ready(acc: dict) -> bool:
     status = str(acc.get("status", "active")).lower().strip()
     now = time.time()
 
-    if status in ("banned", "blocked"):
+    # 🛡️ [IMMUNE-ENGINE] استبعاد قطعي ودائم لأي حساب معزول أو محظور أو مفقود في قاعدة البيانات
+    if status in ("banned", "blocked", "suspended", "user_not_found", "invalid_credentials") or acc.get("quarantined") is True:
         return False
 
     cooldown_until = 0
@@ -629,11 +636,82 @@ def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: s
 
 
 def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None = None) -> dict | None:
-    """تجديد الكوكيز بقفل محكوم منفرد لكل إيميل يمنع التضارب بين الثريدات الموازية"""
+    """تجديد الكوكيز مع العزل الفوري للحسابات الميتة وفحص كاش AI Data Retention الذكي دون هدر الشبكة"""
     lock = get_account_lock(email)
     with lock:
         try:
-            log_event("warning", "جاري تجديد كوكيز الجلسة...", email=email)
+            log_event("warning", "جاري فحص وتجديد كوكيز الجلسة عبر المحرك الحصين...", email=email)
+            
+            # استيراد محرك الفحص الموحد بأمان
+            try:
+                import genspark_verifier_engine as gve
+            except ImportError:
+                gve = None
+
+            # جلب كائن الحساب الحالي من الـ JSON للتحقق من كاش Data Retention المسبق
+            current_accounts = read_accounts_safe(json_path)
+            acc_entry = next((a for a in current_accounts if isinstance(a, dict) and a.get("email") == email), {})
+
+            if gve is not None:
+                # تشغيل الفاحص الشامل
+                report = gve.master_inspect_and_heal_account(
+                    email=email,
+                    password=password,
+                    existing_cookies=acc_entry.get("cookies"),
+                    account_dict=acc_entry,
+                    min_required_balance=1,
+                    timeout=25
+                )
+
+                # 1. لو الحساب ميت (محظور نهائياً / غير موجود / خطأ باسورد قطعي) -> عزل ذري فوري
+                if report.get("is_dead") is True:
+                    verdict = report.get("verdict", "SUSPENDED")
+                    detail = report.get("detail", "")
+                    
+                    # استخراج المجلد الحقيقي لملف الحسابات بدقة متناهية
+                    acc_file = get_accounts_file_path(json_path)
+                    base_dir = acc_file.parent if acc_file else SCRIPT_DIR
+                    
+                    # عزل ذري في ملف العزل المخصص
+                    gve.quarantine_account_atomic(acc_entry, verdict=verdict, base_dir=base_dir, detail=detail)
+                    
+                    # وسم الحساب في accounts_genspark.json كمحظور دائم وتصفير الكوكيز
+                    update_account_data(email, {
+                        "status": "suspended",
+                        "active": False,
+                        "quarantined": True,
+                        "cooldown_until": 0,
+                        "cookies": {},
+                        "quarantine_reason": verdict,
+                        "quarantined_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                    }, json_path=json_path)
+                    log_event("error", f"[🚫 عزل دائم]: الحساب {email} محظور نهائياً ({verdict}) — تم نقله لملف العزل واستبعاده للأبد", email=email)
+                    return None
+
+                # 2. الحساب سليم وجدد الكوكيز بنجاح
+                new_cookies = report.get("cookies")
+                if new_cookies and isinstance(new_cookies, dict) and len(new_cookies) > 0:
+                    updates = {
+                        "cookies": new_cookies,
+                        "status": "active",
+                        "active": True,
+                        "balance": report.get("balance", acc_entry.get("balance", 0)),
+                        "is_plus": report.get("is_plus", False),
+                        "last_refresh": time.time(),
+                        "last_refresh_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                    }
+                    if report.get("needs_json_retention_save") is True:
+                        updates["data_retention_enabled"] = True
+                        updates["data_retention_activated_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                        log_event("success", "🧬 تم تفعيل AI Data Retention وتوثيقها كاش في الـ JSON للحساب بنجاح", email=email)
+                    elif report.get("data_retention_source") == "cached_in_json":
+                        log_event("info", "⚡ تم تخطي فحص Data Retention بالشبكة (موثقة ومفعلة مسبقاً في الـ JSON)", email=email)
+
+                    update_account_data(email, updates, json_path=json_path)
+                    log_event("success", f"تم تجديد الكوكيز وتحديث الرصيد ({updates['balance']}) بنجاح!", email=email)
+                    return new_cookies
+
+            # Fallback في حالة عدم توفر المحرك مؤقتاً
             new_cookies = mod.do_login(email, password) if hasattr(mod, "do_login") else None
             if new_cookies and isinstance(new_cookies, dict) and len(new_cookies) > 0:
                 update_account_data(email, {
@@ -643,14 +721,14 @@ def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None
                     "last_refresh": time.time(),
                     "last_refresh_at": time.strftime("%Y-%m-%dT%H:%M:%S")
                 }, json_path=json_path)
-                log_event("success", "تم تجديد الكوكيز والجلسة بنجاح!", email=email)
                 return new_cookies
+
         except Exception as e:
             log_event("error", f"فشل تجديد كوكيز الجلسة: {e}", email=email)
             update_account_data(email, {
                 "status": "auth_failed",
                 "active": False,
-                "cooldown_until": time.time() + 1800,  # حظر مؤقت 30 دقيقة فقط ثم يُعاد تلقائياً
+                "cooldown_until": time.time() + 1800,
                 "last_auth_error": str(e),
                 "last_auth_error_at": time.strftime("%Y-%m-%dT%H:%M:%S")
             }, json_path=json_path)
