@@ -2350,6 +2350,10 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
     import tarfile
     import zipfile
 
+    target_out = str(pathlib.Path(out_dir).resolve())
+    if os.name == "nt" and not target_out.startswith("\\\\?\\"):
+        target_out = "\\\\?\\" + target_out
+
     tar_err = ""
     try:
         with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:*") as tf:
@@ -2367,9 +2371,9 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
             if not safe_members:
                 return _archive_diag(True, "tar")
             try:
-                tf.extractall(str(out_dir), members=safe_members, filter="data")
+                tf.extractall(target_out, members=safe_members, filter="data")
             except TypeError:
-                tf.extractall(str(out_dir), members=safe_members)
+                tf.extractall(target_out, members=safe_members)
             except Exception as err:
                 return _archive_diag(False, "tar", "ARCHIVE_TAR_EXTRACT_ERROR", detail=f"{type(err).__name__}: {str(err)[:160]}")
         return _archive_diag(True, "tar")
@@ -2390,7 +2394,7 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
                 safe_infos.append(info)
             try:
                 for info in safe_infos:
-                    zf.extract(info, str(out_dir))
+                    zf.extract(info, target_out)
             except Exception as err:
                 return _archive_diag(False, "zip", "ARCHIVE_ZIP_EXTRACT_ERROR", detail=f"{type(err).__name__}: {str(err)[:160]}")
         return _archive_diag(True, "zip")
