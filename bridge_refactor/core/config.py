@@ -15,7 +15,6 @@ __all__ = [
     "redact_email",
     "log_event",
     "html_escape",
-    "_to_win_long_path",
     "resolve_shared_path",
     "load_bot_token",
     "TELEGRAM_BOT_TOKEN",
