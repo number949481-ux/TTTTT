@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-3-A + A2 done (ALIGNMENT_ONLY): unified cooldown vault spec for FORBIDDEN + EMPTY_STREAM_FAILED, 05.02 periodic sorting via --revive -q without touching its code; RESUME §3-§3.6. Next = MAINT-3-B after owner decisions D1-D14.",
+    "task": "MAINT-3-A/A2/A3 done (ALIGNMENT_ONLY): unified cooldown vault spec + 360° gap audit (G1-G15), dual-schedule design, clean-shutdown findings, anti-complexity simplifications; RESUME §3-§3.7. Next = MAINT-3-B after owner decisions D1-D20.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_a2_spec_written_awaiting_owner_decisions_d1_d14",
+    "status": "maint3_a3_audit_written_awaiting_owner_decisions_d1_d20",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -87,8 +87,8 @@
     ],
     "next": {
       "ticket": "MAINT-3-B",
-      "blocked_on": "owner decisions D1-D14 in RESUME §4",
-      "plan": "tests red-first (p51 x15 + conscious P50 test_09 update) -> p03 constants+move+log fns after 1297 -> p06: replace 3627 + new FORBIDDEN branch after 3642 -> PARTS shift -> rebuild (safe) -> README_COOLDOWN_VAULT.md -> closure by names + 3 docs"
+      "blocked_on": "owner decisions D1-D20 in RESUME §4 (or 'as recommended')",
+      "plan": "tests red-first (p51 x21 + conscious P50 test_09 update) -> p03: constants + move fn + log fn after 1297 -> p06: replace 3627 + FORBIDDEN branch after 3642 with threshold -> PARTS shift -> rebuild (safe) -> scripts/return_from_cooldown.py -> README_COOLDOWN_VAULT.md -> closure by names + 3 docs"
     },
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
@@ -284,6 +284,48 @@
         "D12 cooldown_until_ts informational (rec enough)",
         "D13 docs placement (rec code + README + schema record)",
         "D14 confirm external 24h command --revive -q (no main.py in repo)"
+      ]
+    },
+    "maint3_a3_checkpoints": [
+      "cp0: LayerA ok @2cfc7f1; A2 synced; reading shutdown/cross-process evidence",
+      "cp1: evidence read (01.33 shutdown 9684-9731, EXECUTOR 3965, cffi sessions 2683-2807, tmp 1094, IMMUNE 1080-1084, P48 1215; 05.02 SIGINT 79-86, backups 207-233/523/692, -q usage 287/508/644, paths 250-262, delays 116-123; no cross-process lock in either)",
+      "cp2: RESUME §3.7 + §4 D15-D20 + PROGRESS A3 [x] + MAINT-5 proposal written"
+    ],
+    "maint3_a3": {
+      "gaps": {
+        "G1": "no cross-process lock 01.33<->05.02; both atomic per-file; lost-update window -> accept or O_EXCL lockfile (D15)",
+        "G2": "01.33 fixed .tmp name (1094) vs 05.02 random (223) -> new move fn uses tmp_{pid}_{rand}",
+        "G3": "no scheduler/main.py in repo; 05.02 cycle = N*(10-60s) -> two runs must be sequential with different modes (D16)",
+        "G4": "-q shared by run_quarantine and --revive -> vault only for --revive (D17)",
+        "G5": "05.02 revive is network + gift<=3d (662) -> offline return tool reduces network",
+        "G6": "put our data inside quarantine_info (05.02 strips it at revive 665) instead of cooldown_meta",
+        "G7": "P48 reads quarantine_info.days_without_gift (1215-1218) -> our records must not set it (test 16)",
+        "G8": "01.33 shutdown: sys.exit without EXECUTOR.shutdown or cffi session close -> MAINT-5 (outside MAINT-3)",
+        "G9": "05.02 SIGINT sets IS_RUNNING False + final checkpoint (ok)",
+        "G10": ".bak accumulation in 05.02 (212/523/692) -> --prune-backups in return tool (D18)",
+        "G11": "bridge_bot.log no rotation -> MAINT-5",
+        "G12": "403 may be project-level (3275) -> FORBIDDEN_MOVE_AFTER_N=2 via account_log (D19)",
+        "G13": "different path search 05.02 250-262 vs 01.33 1036-1049 -> absolute -q path (D20)",
+        "G14": "IMMUNE-GUARD 1080-1084: our records must not carry quarantined/suspended (test 18)",
+        "G15": "parallel workers may pick a just-moved account -> idempotent move + duplicate_detected (test 15)"
+      },
+      "simplifications": [
+        "cooldown_meta merged into quarantine_info",
+        "single switch COOLDOWN_VAULT_REASONS (empty tuple = off)",
+        "locks never nested (log written after leaving FILE_LOCK)",
+        "one maintenance tool (return + --prune-backups)",
+        "README_COOLDOWN_VAULT.md one page with absolute paths + both schedule commands"
+      ],
+      "dual_schedule": "12:00 normal sort -q accounts_delayed_gifts_credits.json ; 00:00 --revive -q <abs>/accounts_cooldown.json ; optional offline return tool before 00:00",
+      "clean_shutdown_scope": "move = 2 reads + 2 writes, no network, no threads, inside one lock; orphan tmp cleanup best-effort; EXECUTOR/session closing = MAINT-5",
+      "extra_tests": "(16)-(21) in RESUME §3.7.5",
+      "decisions_added": [
+        "D15 cross-process lock (rec accept+document)",
+        "D16 sequential dual schedule with different modes",
+        "D17 vault file only for --revive",
+        "D18 prune backups inside return tool",
+        "D19 FORBIDDEN_MOVE_AFTER_N=2",
+        "D20 absolute -q path"
       ]
     }
   },
