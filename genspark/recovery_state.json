@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "Tri-state/DEC-07 roadmap: STEP-3 closed; STEP-4 (DEC-07) CLOSED with evidence (S4-A spec, S4-A-RATIFIED decisions 1-7, S4-B 19 tests red-first, S4-C 3 injections in 01.33 + PARTS/parity, S4-D closure by names). Next first [ ] = MAINT-1.",
+    "task": "Tri-state/DEC-07 roadmap: STEP-3, STEP-4 (DEC-07) and MAINT-1 closed with evidence. Next first [ ] = MAINT-3 (FORBIDDEN in failover) — blocked on one owner decision (skip+cooldown / quarantine / skip only).",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "step4_closed_next_maint1",
+    "status": "maint1_closed_next_maint3_awaiting_owner_decision",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -86,14 +86,10 @@
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
     "next": {
-      "ticket": "MAINT-1",
-      "scope": [
-        "scripts/rebuild_refactor.py",
-        "tests/test_refactor_parity.py"
-      ],
-      "spec": "no blind rmtree (delete generated only or allowlist owner file git/github_bulk_sync.py); write with newline='' preserving CRLF as in HEAD; new parity test proves owner file + CRLF survive; idempotent rebuild => clean git status",
+      "ticket": "MAINT-3",
+      "blocked_on": "owner decision: FORBIDDEN in failover = (a) skip + cooldown (duration? proposed 1h) | (b) quarantine like ACCOUNT_SUSPENDED | (c) skip without cooldown",
+      "plan": "tests/test_p51_forbidden_failover.py red-first -> one branch before LOW_BALANCE in send_message_with_auto_account_failover (CRLF) -> PARTS shift -> rebuild_refactor (safe now) -> closure by names",
       "then": [
-        "MAINT-3 FORBIDDEN in failover (needs owner choice: LOW_BALANCE-like skip vs quarantine)",
         "MAINT-2 deferred DEC-04"
       ]
     },
@@ -216,6 +212,28 @@
       },
       "parity": "PARTS p05 1956-2508; p06..p12 shifted +76 (2509-3961/3962-5144/5145-5709/5710-7336/7337-7647/7648-8182/8183-9736); boundaries verified byte-by-byte vs previous file; rebuild run; github_bulk_sync.py restored; CRLF restored on 36 files; test_refactor_parity 11 passed",
       "full_suite": "1201 passed / 26 failed / 1 skipped — failing names identical to baseline (0 new)",
+      "docs_integrity": "exit 0"
+    },
+    "maint1": {
+      "scope_touched": [
+        "scripts/rebuild_refactor.py",
+        "tests/test_refactor_parity.py"
+      ],
+      "generator_changes": [
+        "GENERATED_NEWLINE='\\r\\n' + OWNER_PRESERVED",
+        "generated_relpaths() exclusive list",
+        "purge_generated(out): deletes generated list + stale parts/p*.py + __pycache__ only (no rmtree)",
+        "_write_generated(): newline='' + CRLF normalization",
+        "main(root=None) for isolated runs"
+      ],
+      "tests": {
+        "class": "TestGeneratorSafety",
+        "count": 5,
+        "red_first": "5 failed / 11 passed",
+        "result": "16 passed"
+      },
+      "live_proof": "python3 scripts/rebuild_refactor.py in place -> 36 generated files purged+rewritten; git status --short bridge_refactor empty; owner file 49 lines byte-identical to HEAD; second run also empty (idempotent)",
+      "full_suite": "1206 passed / 26 failed / 1 skipped — failing names identical to baseline (0 new)",
       "docs_integrity": "exit 0"
     }
   },

@@ -9,16 +9,16 @@
 ## 0) قاعدة دستورية دائمة لحسم MODE (معتمدة من المالك 2026-10-31 — لا تُؤرشف)
 إذا ورد كارت الاستئناف بصيغة الخيارين `[ALIGNMENT_ONLY] | أو "ابدأ تنفيذ"` (القالب المعياري الثابت)، فالوضع **الافتراضي الإلزامي = «ابدأ تنفيذ» تلقائياً وذاتياً دون توقف**، طالما: (أ) القرارات اللازمة للخطوة معتمدة ومكتوبة في PROGRESS، و(ب) الخطوة = أول `[ ]` في رأس PROGRESS. **يُحظر التوقف لطلب حسم الخيارين.** الاستثناء الوحيد: خطوة تحتاج قراراً غير مكتوب → تُكتب المواصفة/الأسئلة ويُتوقف عندها فقط.
 
-## 1) أين أقف الآن؟ (2026-10-31 — STEP-3 مغلق؛ STEP-4 (DEC-07) مغلق بالأدلة S4-A..D)
+## 1) أين أقف الآن؟ (2026-10-31 — STEP-3 + STEP-4 (DEC-07) + MAINT-1 مغلقة بالأدلة)
 
 | البند | الحالة |
 |---|---|
 | الفرع | `genspark_ai_developer` فقط (main READ-ONLY، لا فروع جانبية) — Layer A في أول 30 ثانية من كل جلسة بلا استثناء |
-| المرحلة | **STEP-3 مغلق** (+ S3-LOG-1). **STEP-4 (DEC-07) مغلق 2026-10-31:** S4-A مواصفة → S4-A-RATIFIED (قرارات 1–7) → S4-B `tests/test_p50_dec07_breaker.py` 19 اختباراً (حمراء أولاً 10/9) → S4-C ثلاث حقنات في 01.33 (ثوابت `DEC07_*` + `dec07_text_has_suspended_marker`؛ صمام الرد الفارغ في `monitor_chat_completion`؛ فرعا `EMPTY_STREAM_FAILED`/`ACCOUNT_SUSPENDED` في failover) 9660→9736 سطراً CRLF + PARTS p05..p12 محدَّثة وparity 11/11 → S4-D إغلاق بالأسماء. **التالي بالجدول: MAINT-1** (حماية `github_bulk_sync.py` + CRLF في `rebuild_refactor.py`) ثم MAINT-3 (`FORBIDDEN` في failover). |
-| MODE الحالي | STEP-4 مغلق؛ أول `[ ]` = MAINT-1 (قرارات مكتوبة في PROGRESS: حذف `parts/p01..p12` فقط أو allowlist لملف المالك + كتابة CRLF كما في HEAD + اختبار parity) — كارت MODE بالخيارين = «ابدأ تنفيذ» تلقائياً (§0) |
+| المرحلة | **STEP-3 مغلق** (+ S3-LOG-1). **STEP-4 (DEC-07) مغلق 2026-10-31:** S4-A مواصفة → S4-A-RATIFIED (قرارات 1–7) → S4-B `tests/test_p50_dec07_breaker.py` 19 اختباراً (حمراء أولاً 10/9) → S4-C ثلاث حقنات في 01.33 (ثوابت `DEC07_*` + `dec07_text_has_suspended_marker`؛ صمام الرد الفارغ في `monitor_chat_completion`؛ فرعا `EMPTY_STREAM_FAILED`/`ACCOUNT_SUSPENDED` في failover) 9660→9736 سطراً CRLF + PARTS p05..p12 محدَّثة وparity 11/11 → S4-D إغلاق بالأسماء. **MAINT-1 مغلق 2026-10-31:** `rebuild_refactor.py` صار purge-only (لا rmtree) + كاتب CRLF + `main(root=)`؛ 5 اختبارات `TestGeneratorSafety` (حمراء أولاً) → parity 16/16؛ تشغيل حي في المكان ⇒ `git status bridge_refactor` فارغ. **التالي بالجدول: MAINT-3** (`FORBIDDEN` في failover) — **معلّق على قرار المالك (§4 بند 1)**. |
+| MODE الحالي | MAINT-1 مغلق؛ أول `[ ]` = **MAINT-3** لكن قرارها غير مكتوب بعد → عند الكارت التالي: إن ورد القرار في DECISIONS → «ابدأ تنفيذ» (§0)؛ وإلا تُكتب مواصفة MAINT-3 (قراءة فقط) ويُطرح السؤال الواحد في §4 — لا تخمين في سلوك failover |
 | PR | #9 Draft (يبقى Draft؛ لا merge) |
 | وضع التسليم | حفظ محلي في `/home/user/webapp` → أداة المزامنة الخارجية ترفع تلقائيًا. لا push/gh/ZIP من الوكيل. |
-| الخط الأساسي للاختبارات | **بالأسماء لا بالرقم**: 26 فاشلة معروفة (12 تاريخية + 14 drift؛ القائمة في `current_execution.baseline_failing_names`). أي اسم جديد = انحدار. آخر قياس: **1201 passed / 26 failed / 1 skipped** (بعد STEP-4؛ الأسماء الفاشلة مطابقة حرفياً لما قبلها — 0 جديد؛ P50 19/19؛ parity 11/11). |
+| الخط الأساسي للاختبارات | **بالأسماء لا بالرقم**: 26 فاشلة معروفة (12 تاريخية + 14 drift؛ القائمة في `current_execution.baseline_failing_names`). أي اسم جديد = انحدار. آخر قياس: **1206 passed / 26 failed / 1 skipped** (بعد MAINT-1؛ الأسماء الفاشلة مطابقة حرفياً — 0 جديد؛ P50 19/19؛ parity 16/16). |
 
 ### القرارات المعتمدة من المالك (مرجع ثابت)
 المسار (أ) الهدية الثلاثية؛ READ-ONLY = 01.03 + verifier (verifier بإذن AGENTS:22)؛ فحص **أوفلاين** من بيانات 05.02 فقط؛ UNKNOWN = **Fail-Open**؛ حد `>=14` شامل؛ Q-F دمج المعزل القديم في `accounts_failed.json` مع أرشيف؛ Q-C استبعاد عند الاختيار وin-flight يكمل؛ Q-R منجز؛ DEC-04 تأجيل الـ14 drift؛ **STEP-3**: سكربت مستقل `scripts/merge_legacy_quarantine.py`، عدم لمس 05.02، dry-run افتراضي/`--apply`، `.bak` مؤرخة، تفرد `email.lower()`، `legacy_quarantine`، اختبارات أولاً، حارس المسار `--i-know-this-is-real`؛ **STEP-4 (DEC-07)** مجدول رسمياً بعد STEP-3؛ **MAINT-1** مجدول.
@@ -42,26 +42,25 @@
 
 ---
 
-## 3) الخطوة التنفيذية التالية مباشرة — MAINT-1 (صف 5 في جدول الأولويات)
+## 3) الخطوة التنفيذية التالية مباشرة — MAINT-3 (صف 5b): `FORBIDDEN` في `send_message_with_auto_account_failover`
 
-**لماذا الآن:** حدث ثلاث مرات (جلسات 8، 9، 22) أن `scripts/rebuild_refactor.py` حذف `bridge_refactor/` بالكامل (`shutil.rmtree`) فأسقط ملف المالك غير المولَّد `bridge_refactor/git/github_bulk_sync.py` (49 سطراً) وكتب الأجزاء بـLF بينما HEAD يحفظها CRLF (36 ملفاً) — وأُصلح يدوياً في كل مرة.
+**الخلفية (اكتشاف S4-A، قرار 7):** `FORBIDDEN` (403) هو شرط خروج لحلقة `monitor_chat_completion` ويعود للـfailover، لكن الـfailover لا يملك فرعاً صريحاً له (بخلاف `LOW_BALANCE`/`EMPTY_STREAM_FAILED`/`ACCOUNT_SUSPENDED`) فيسقط في المعالجة العامة. القرار (4) في S4-A-RATIFIED ثبّت أن 403 **يبقى** `FORBIDDEN` ولا يُعامل كاشتباه حظر.
 
-**المواصفة (مكتوبة في PROGRESS — بلا قرارات معلّقة):** (أ) لا `rmtree` أعمى: حذف المولَّد فقط (`parts/p*.py` + الواجهات في `FACADES` + `runtime.py`/`main.py`/`__init__.py`) أو allowlist حفظ صريح يضم `git/github_bulk_sync.py`؛ (ب) الكتابة بـ`newline=""` مع نهاية سطر مطابقة لما في HEAD (CRLF للأجزاء والواجهات)؛ (ج) اختبار جديد في `tests/test_refactor_parity.py` يشغّل البناء في مجلد مؤقت ويثبت بقاء ملف المالك وCRLF. **الحدود:** يُلمَس `scripts/rebuild_refactor.py` و`tests/test_refactor_parity.py` فقط؛ 01.33 لا يتغير؛ لا تغيير في مخرجات الأجزاء بايت-بايت (parity 11 تبقى خضراء).
+**قرار واحد مطلوب قبل أي كود (بلا تخمين):** عند `FORBIDDEN` من حساب — **(أ)** تخطٍّ + تبريد كـ`LOW_BALANCE` (ما المدة؟ 1h كـDEC07 أم 29h؟) أم **(ب)** حجر كـ`ACCOUNT_SUSPENDED` (`status=suspended/quarantined=True/cookies={}`) أم **(ج)** تخطٍّ بلا تبريد (الحساب يُجرَّب في المهمة التالية). المقترح الافتراضي للعرض: **(أ) مع 1h** لاتساقه مع DEC07 وعدم إحراق حساب بسبب 403 عابر.
 
-**عند الكارت:** Layer A → رأس PROGRESS → `pytest tests -q` بالأسماء (26 معروفة) + docs Exit 0 → اختبار MAINT-1 أحمر أولاً → تعديل السكربت → تشغيله والتحقق أن `git status` لا يُظهر تغييراً في `bridge_refactor/` (إثبات idempotency) → إغلاق بالأسماء + الوثائق الثلاث.
+**عند اعتماد القرار:** Layer A → `pytest tests -q` بالأسماء (26) + docs Exit 0 → `tests/test_p51_forbidden_failover.py` حمراء أولاً (harness failover من P50 `TestFailoverHandling`) → فرع واحد في failover قبل `LOW_BALANCE` (CRLF؛ `P44_STRUCTURED_STATUSES` لا يتغير) → PARTS p06 end +N وإزاحة p07..p12 → `python3 scripts/rebuild_refactor.py` (صار آمناً بعد MAINT-1: لا استعادة يدوية) → إغلاق بالأسماء + الوثائق الثلاث.
 
-**بعدها:** MAINT-3 (`FORBIDDEN` في failover — تذكرة منفصلة معتمدة بالقرار 7)؛ MAINT-2 مؤجلة (DEC-04).
+**ملاحظة تشغيلية بعد MAINT-1:** إعادة التوليد لم تعد تحتاج استعادة `github_bulk_sync.py` ولا تحويل CRLF يدوياً؛ الدليل: `git status --short bridge_refactor` فارغ بعد التشغيل.
 
 **أداة STEP-3 جاهزة (مرجع):** `python scripts/merge_legacy_quarantine.py --legacy <legacy> --failed <accounts_failed.json>` dry-run؛ `--apply` يكتب بعد `.bak`؛ المسارات الحقيقية تحتاج `--i-know-this-is-real` **وأمراً صريحاً**.
 
 ---
 
 ## 4) ما يحتاجه الوكيل من المالك (بلا تخمين)
-1. **لا قرارات معلّقة لـMAINT-1** — مواصفتها كاملة في PROGRESS؛ تبدأ بأول كارت MODE/«ابدأ تنفيذ».
-2. **MAINT-3:** سلوك `FORBIDDEN` في failover — مقترح: معاملته كـ`LOW_BALANCE` (تخطٍّ صامت + تبريد) أم كـ`ACCOUNT_SUSPENDED` (حجر)؟ يُحسم قبل بدئها (ليس الآن).
-3. **MAINT-2 (DEC-04):** تحديث الاختبارات الـ14 لتعكس v5.4 أم إصلاح الكود — مؤجل بقرار المالك.
-4. (منفصل) تشغيل `merge_legacy_quarantine.py --apply` على الملفات الحقيقية يحتاج أمراً صريحاً + مسارات.
-5. (منفصل) تفعيل DEC-07 حياً = مجرد تشغيل 01.33 المحدَّث؛ لا migration. إن رغب المالك بتعطيله مؤقتاً: `DEC07_EMPTY_BREAKER_ENABLED=False` (اختبار 11 يثبت رجوع السلوك القديم حرفياً).
+1. **MAINT-3 — القرار الوحيد:** سلوك `FORBIDDEN` في failover: (أ) تخطٍّ + تبريد (المدة؟) / (ب) حجر / (ج) تخطٍّ بلا تبريد. المقترح: (أ) 1h. يُكتب في DECISIONS بالكارت.
+2. **MAINT-2 (DEC-04):** تحديث الاختبارات الـ14 لتعكس v5.4 أم إصلاح الكود — مؤجل بقرار المالك.
+3. (منفصل) تشغيل `merge_legacy_quarantine.py --apply` على الملفات الحقيقية يحتاج أمراً صريحاً + مسارات.
+4. (منفصل) تفعيل DEC-07 حياً = تشغيل 01.33 المحدَّث؛ لا migration. تعطيل مؤقت: `DEC07_EMPTY_BREAKER_ENABLED=False`.
 
 ---
 
