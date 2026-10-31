@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "Tri-state/DEC-07 roadmap: STEP-3, STEP-4 (DEC-07) and MAINT-1 closed with evidence. Next first [ ] = MAINT-3 (FORBIDDEN in failover) — blocked on one owner decision (skip+cooldown / quarantine / skip only).",
+    "task": "MAINT-3-A done (ALIGNMENT_ONLY): architecture review + Cut&Move spec for 403 isolation in RESUME §3 with line evidence; key finding T5: FORBIDDEN currently marked SUCCESS in accounts file (3928-3942). Next = MAINT-3-B code after owner decisions D1-D9.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint1_closed_next_maint3_awaiting_owner_decision",
+    "status": "maint3_spec_written_awaiting_owner_decisions_d1_d9",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -86,12 +86,9 @@
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
     "next": {
-      "ticket": "MAINT-3",
-      "blocked_on": "owner decision: FORBIDDEN in failover = (a) skip + cooldown (duration? proposed 1h) | (b) quarantine like ACCOUNT_SUSPENDED | (c) skip without cooldown",
-      "plan": "tests/test_p51_forbidden_failover.py red-first -> one branch before LOW_BALANCE in send_message_with_auto_account_failover (CRLF) -> PARTS shift -> rebuild_refactor (safe now) -> closure by names",
-      "then": [
-        "MAINT-2 deferred DEC-04"
-      ]
+      "ticket": "MAINT-3-B",
+      "blocked_on": "owner decisions D1-D9 in RESUME §4",
+      "plan": "tests red-first -> p03 constants+move+log fns after 1297 -> p06 branch after 3642 -> PARTS shift -> rebuild (safe) -> closure by names + 3 docs"
     },
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
@@ -235,6 +232,29 @@
       "live_proof": "python3 scripts/rebuild_refactor.py in place -> 36 generated files purged+rewritten; git status --short bridge_refactor empty; owner file 49 lines byte-identical to HEAD; second run also empty (idempotent)",
       "full_suite": "1206 passed / 26 failed / 1 skipped — failing names identical to baseline (0 new)",
       "docs_integrity": "exit 0"
+    },
+    "maint3_a": {
+      "mode": "ALIGNMENT_ONLY — no code; 05.02/01.03/verifier untouched; 01.33 unchanged (9736 lines)",
+      "finding_T5": "FORBIDDEN passes 3409 into archive+public (3441/3445; fallback viewer URL 2715/2757) -> returns pub_url -> failover 3928 'if pub_url or COMPLETED' marks account active/last_success_at (3935-3941) while user sees failure card (7633)",
+      "constraints": [
+        "FILE_LOCK non-reentrant (201)",
+        "update_account_data returns False silently for moved email (1091-1092)",
+        "no rotation primitive in 01.33 (71-78)",
+        "05.02 rewrites primary wholesale (525/696) -> resurrection race",
+        "05.02 loader accepts flat list or {accounts:[]} (236-245)"
+      ],
+      "spec": "copy-then-cut idempotent move under FILE_LOCK (manual R/M/W) -> best-effort audit append (30d prune + 5000 cap) -> failover branch after 3642/before 3644 with continue; fallback 5-min cooldown if primary path unresolvable; FORBIDDEN_ISOLATION_ENABLED kill-switch; return tool scripts/return_from_cooldown.py (dry-run); tests/test_p51_forbidden_isolation.py x10",
+      "decisions_needed": [
+        "D1 cooldown_until_ts (rec 24h)",
+        "D2 keep password+cookies (rec keep)",
+        "D3 return path (rec tool + 05.02 later)",
+        "D4 resurrection race (rec accept + no concurrent runs)",
+        "D5 MAINT-3b (rec later)",
+        "D6 files next to primary (rec yes)",
+        "D7 prune-on-write 30d + cap (rec yes)",
+        "D8 names as given (rec yes)",
+        "D9 minimum fix if Cut&Move rejected"
+      ]
     }
   },
   "completed_pr9_arena_addendum": {
