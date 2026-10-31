@@ -164,5 +164,105 @@ class TestBehaviorSpotChecks(unittest.TestCase):
         self.assertTrue(hasattr(mod, "do_login"))
 
 
+# ─── MAINT-1: سلامة المولِّد نفسه (ملف المالك + CRLF + idempotency) ───
+import contextlib  # noqa: E402
+import importlib.util  # noqa: E402
+import io  # noqa: E402
+import shutil  # noqa: E402
+import tempfile  # noqa: E402
+
+GENERATOR = webapp_dir / "scripts" / "rebuild_refactor.py"
+OWNER_FILE_REL = pathlib.Path("git") / "github_bulk_sync.py"
+
+
+def _load_generator():
+    spec = importlib.util.spec_from_file_location("rebuild_refactor_under_test", GENERATOR)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _run_generator_in(root: pathlib.Path):
+    """تشغيل المولِّد على نسخة معزولة (المرجع 01.33 منسوخ بايت-بايت)."""
+    gen = _load_generator()
+    with contextlib.redirect_stdout(io.StringIO()):
+        gen.main(root=root)
+    return root / "bridge_refactor"
+
+
+def _tree_bytes(folder: pathlib.Path) -> dict:
+    return {
+        str(p.relative_to(folder)).replace("\\", "/"): p.read_bytes()
+        for p in sorted(folder.rglob("*"))
+        if p.is_file() and "__pycache__" not in p.parts
+    }
+
+
+class TestGeneratorSafety(unittest.TestCase):
+    """MAINT-1: rebuild_refactor.py لا يُسقط ملفات المالك، يكتب CRLF كما في HEAD، ومتكرّر النتيجة."""
+
+    def setUp(self):
+        self.tmp = pathlib.Path(tempfile.mkdtemp(prefix="maint1_"))
+        shutil.copyfile(SRC, self.tmp / SRC.name)
+        self.owner_bytes = (webapp_dir / "bridge_refactor" / OWNER_FILE_REL).read_bytes()
+        target = self.tmp / "bridge_refactor" / OWNER_FILE_REL
+        target.parent.mkdir(parents=True)
+        target.write_bytes(self.owner_bytes)
+        # ملف إضافي غير مولَّد في مجلد آخر — يجب أن ينجو أيضاً
+        extra = self.tmp / "bridge_refactor" / "core" / "owner_notes.md"
+        extra.parent.mkdir(parents=True)
+        extra.write_bytes(b"owner-only\r\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_m1_owner_file_survives_rebuild(self):
+        out = _run_generator_in(self.tmp)
+        self.assertEqual((out / OWNER_FILE_REL).read_bytes(), self.owner_bytes,
+                         "ملف المالك git/github_bulk_sync.py حُذف أو تغيّر أثناء التوليد")
+        self.assertEqual((out / "core" / "owner_notes.md").read_bytes(), b"owner-only\r\n")
+
+    def test_m2_generated_files_are_crlf(self):
+        out = _run_generator_in(self.tmp)
+        gen = _load_generator()
+        checked = 0
+        for rel, data in _tree_bytes(out).items():
+            if rel == str(OWNER_FILE_REL).replace("\\", "/") or rel.endswith("owner_notes.md"):
+                continue
+            checked += 1
+            bare_lf = data.count(b"\n") - data.count(b"\r\n")
+            self.assertEqual(bare_lf, 0, f"{rel}: {bare_lf} سطر LF عارٍ — المطلوب CRLF")
+            self.assertGreater(data.count(b"\r\n"), 0, rel)
+        self.assertEqual(checked, len(gen.PARTS) + 1 + 3 + len(gen.FACADES)
+                         + len({r.split("/")[0] for r in gen.FACADES}),
+                         "عدد الملفات المولَّدة لا يطابق PARTS+parts/__init__+(__init__,runtime,main)+FACADES+facade __init__")
+
+    def test_m3_rebuild_is_idempotent_and_purges_stale_parts(self):
+        out = _run_generator_in(self.tmp)
+        first = _tree_bytes(out)
+        stale = out / "parts" / "p99_stale.py"
+        stale.write_bytes(b"STALE\r\n")
+        _run_generator_in(self.tmp)
+        second = _tree_bytes(out)
+        self.assertFalse(stale.exists(), "جزء مولَّد قديم لم يُحذف")
+        self.assertEqual(first, second, "توليدان متتاليان أنتجا شجرة مختلفة")
+
+    def test_m4_generated_tree_matches_committed_tree(self):
+        """الدليل الحاسم: ما يولِّده السكربت = ما في الشجرة الملتزمة بايت-بايت (لا ضبط يدوي بعده)."""
+        out = _run_generator_in(self.tmp)
+        committed = _tree_bytes(webapp_dir / "bridge_refactor")
+        generated = _tree_bytes(out)
+        generated.pop("core/owner_notes.md", None)
+        self.assertEqual(sorted(generated), sorted(committed))
+        diff = [k for k in committed if committed[k] != generated[k]]
+        self.assertEqual(diff, [], f"ملفات تختلف عن الملتزم: {diff}")
+
+    def test_m5_generator_source_has_no_blind_rmtree(self):
+        src = GENERATOR.read_text(encoding="utf-8")
+        self.assertNotIn("shutil.rmtree(OUT)", src)
+        self.assertIn("GENERATED_NEWLINE", src)
+        self.assertIn("OWNER_PRESERVED", src)
+
+
 if __name__ == "__main__":
     unittest.main()

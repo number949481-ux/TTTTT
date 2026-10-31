@@ -31,7 +31,7 @@
 
 **ثوابت الحوكمة:** `01.03` وverifier READ-ONLY دائماً (verifier بإذن صريح AGENTS:22)؛ `tri_state_gift_master_review.md` وArena و`00_*`/`012345_*` مراجع لا تُمس؛ لا طباعة أسرار؛ أي PAT يظهر في الدردشة لا يُستخدم ويُطلب إلغاؤه.
 
-## نقطة الاستئناف الحالية — STEP-3 مغلق؛ **STEP-4 (DEC-07) مغلق بالأدلة (S4-A..D ✅ 2026-10-31)** — التالي: **MAINT-1** (أول `[ ]` في الجدول) عند «ابدأ تنفيذ»/كارت MODE
+## نقطة الاستئناف الحالية — STEP-3 وSTEP-4 (DEC-07) وMAINT-1 مغلقة بالأدلة (2026-10-31) — التالي: **MAINT-3** (`FORBIDDEN` في failover؛ صف 5b) — **يحتاج قرار المالك أولاً** (تخطٍّ+تبريد كـLOW_BALANCE أم حجر كـACCOUNT_SUSPENDED)
 
 > **هذا القسم هو المرجع الذاتي الوحيد لأي استئناف.** آخر `[x]` مصدَّق بالأدلة؛ أول `[ ]` في جدول الأولويات أدناه هو نقطة البدء. لا تنفيذ لأي تذكرة قبل إشارة «ابدأ تنفيذ» الصريحة من المالك لتلك التذكرة بعينها.
 
@@ -44,7 +44,7 @@
 | 2 | **STEP-2** Pre-Flight أوفلاين في 01.33 | `[x]` مغلق | ✅ | `01.33` + `tests/` | STEP-1 |
 | 3 | **STEP-3 (Q-F)** دمج المعزل القديم → `accounts_failed.json` | `[x]` **منجز** (14 passed؛ 0 انحدار بالأسماء) | ✅ منفَّذ بأمر «ابدأ تنفيذ» 2026-10-31؛ **لم يُشغَّل على ملفات حقيقية** | `scripts/merge_legacy_quarantine.py` (جديد) + `tests/test_p49_*.py` + PROGRESS/RESUME/current_execution | STEP-2 |
 | 4 | **STEP-4 (DEC-07)** صمام الرد الفارغ + كسر حلقة الـ33 دقيقة في 01.33 | `[x]` **مغلق 2026-10-31**: S4-A/RATIFIED/B/C/D — P50 19/19، parity 11/11، 26 فاشلة معروفة فقط (0 جديد)، docs Exit 0 | ✅ مجدول رسمياً (كرت 2026-10-31) — مواصفة تفصيلية تُكتب بعد إغلاق STEP-3 | `01.33` (`monitor_chat_completion` + failover) + `tests/test_p50_*.py` | STEP-3 |
-| 5 | **MAINT-1** حماية `bridge_refactor/git/github_bulk_sync.py` + CRLF في `rebuild_refactor.py` | `[ ]` مجدول | ✅ مجدول (كرت 2026-10-31) | `scripts/rebuild_refactor.py` + `tests/test_refactor_parity.py` | — (مستقل؛ يُنفَّذ بعد STEP-4 أو عند أول حاجة لإعادة توليد) |
+| 5 | **MAINT-1** حماية `bridge_refactor/git/github_bulk_sync.py` + CRLF في `rebuild_refactor.py` | `[x]` **مغلق 2026-10-31**: purge-only بدل rmtree + كاتب CRLF + 5 اختبارات `TestGeneratorSafety` (حمراء أولاً 5/11) → parity 16/16؛ تشغيل حي في المكان ⇒ `git status bridge_refactor` فارغ | ✅ مجدول (كرت 2026-10-31) | `scripts/rebuild_refactor.py` + `tests/test_refactor_parity.py` | — (مستقل؛ يُنفَّذ بعد STEP-4 أو عند أول حاجة لإعادة توليد) |
 | 5b | **MAINT-3** معالجة `FORBIDDEN` صراحةً في `send_message_with_auto_account_failover` (اكتشاف S4-A؛ قرار 7) | `[ ]` مجدول | ✅ مجدول (كرت 2026-10-31) | `01.33` + `tests/` | STEP-4 |
 | 6 | **MAINT-2** الـ14 اختباراً drift من commits المالك | `[ ]` مؤجل | ⏸️ قرار المالك DEC-04: مؤجل؛ يحتاج قرار (تحديث الاختبارات أم إصلاح الكود) | `tests/` فقط | — |
 | 7 | **Layer B/C** (حارس فرع في أداة المزامنة / اختبار tripwire) | مقترح | ❌ غير معتمد | — | — |
@@ -92,7 +92,7 @@
 
 ### تذاكر الصيانة (MAINT) — مجدولة
 
-- [ ] **MAINT-1** `scripts/rebuild_refactor.py`: (أ) لا `rmtree` أعمى — حذف الأجزاء المولَّدة `parts/p01..p12` فقط، أو allowlist حفظ يضم `bridge_refactor/git/github_bulk_sync.py` (ملف المالك، 49 سطراً، غير مولَّد)؛ (ب) كتابة بـ`newline=""` مع حفظ CRLF للأجزاء كما في HEAD؛ (ج) اختبار في `tests/test_refactor_parity.py` يثبت بقاء ملف المالك وCRLF بعد التوليد. **المحفّز:** حدث مرتين (جلستا 8 و9) وأُصلح يدوياً.
+- [x] **MAINT-1 (2026-10-31) — مغلق بالأدلة.** **الاختبارات أولاً:** `tests/test_refactor_parity.py::TestGeneratorSafety` ×5 (m1 بقاء ملف المالك + ملف مالك إضافي في `core/`؛ m2 كل المولَّد CRLF بلا LF عارٍ وعدده = PARTS+1+3+FACADES+`__init__` الواجهات؛ m3 idempotent + تطهير `parts/p99_stale.py` القديم؛ m4 الشجرة المولَّدة في مجلد مؤقت = الشجرة الملتزمة **بايت-بايت**؛ m5 المصدر بلا `shutil.rmtree(OUT)` ويحوي `GENERATED_NEWLINE`/`OWNER_PRESERVED`) — **حمراء أولاً: 5 failed / 11 passed**. **التنفيذ في `scripts/rebuild_refactor.py` فقط:** ثابتا `GENERATED_NEWLINE="\r\n"` و`OWNER_PRESERVED=("git/github_bulk_sync.py",)`؛ `generated_relpaths()` قائمة حصرية للمولَّد؛ `purge_generated(out)` يحذف القائمة + أي `parts/p*.py` قديم + `__pycache__` فقط (كل ما عداه = ملف مالك يُحفظ)؛ `_write_generated()` يكتب بـ`newline=""` وCRLF موحّد؛ `main(root=None)` قابل للتشغيل على نسخة معزولة (للاختبار) — بلا تغيير في PARTS/FACADES/القوالب. **الأدلة:** parity **16 passed**؛ تشغيل حي `python3 scripts/rebuild_refactor.py` في المكان → «حُذف 36 ملفاً مولَّداً» ثم **`git status --short bridge_refactor` = فارغ** (ملف المالك 49 سطراً مطابق لـHEAD، CRLF سليم، التشغيل الثاني فارغ أيضاً)؛ السويت **1206 passed / 26 failed / 1 skipped** = الـ26 المعروفة حرفياً (0 جديد)؛ docs Exit 0. ~~(أ) لا `rmtree` أعمى — حذف الأجزاء المولَّدة `parts/p01..p12` فقط، أو allowlist حفظ يضم `bridge_refactor/git/github_bulk_sync.py` (ملف المالك، 49 سطراً، غير مولَّد)؛ (ب) كتابة بـ`newline=""` مع حفظ CRLF للأجزاء كما في HEAD؛ (ج) اختبار في `tests/test_refactor_parity.py` يثبت بقاء ملف المالك وCRLF بعد التوليد. **المحفّز:** حدث مرتين (جلستا 8 و9) وأُصلح يدوياً (وثالثة في جلسة 22).~~
 - [ ] **MAINT-2** الـ14 drift (p17×2، p20، p24×2، p26، p31×5، p33، p46 `test_full_isolated_metrics_display`، p47 بيئي `curl_cffi`) — **مؤجلة بقرار المالك DEC-04**؛ تحتاج قراراً: تحديث الاختبارات لتعكس v5.4 أم إصلاح الكود. لا تُلمس قبل القرار.
 
 ### السجل التاريخي للمحطات المنجزة (أدلة)

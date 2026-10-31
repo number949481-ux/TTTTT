@@ -21,6 +21,15 @@ ROOT = pathlib.Path(__file__).parent.parent.resolve()
 SRC = ROOT / "01.33_telegram_gen_bridge.py"
 OUT = ROOT / "bridge_refactor"
 
+# ─── MAINT-1: سلامة التوليد ──────────────────────────────────────
+# (أ) لا rmtree أعمى: يُحذف فقط ما يولِّده هذا السكربت (parts/p*.py + parts/__init__.py
+#     + __init__.py/runtime.py/main.py + ملفات FACADES + __init__.py لمجلدات الواجهات).
+#     أي ملف آخر داخل bridge_refactor/ يُعدّ ملف مالك ويُحفظ كما هو (OWNER_PRESERVED).
+# (ب) كل ملف مولَّد يُكتب بنهاية سطر GENERATED_NEWLINE (CRLF) مطابقةً للشجرة الملتزمة في HEAD،
+#     فلا يظهر diff زائف بعد إعادة التوليد ولا حاجة لأي ضبط يدوي.
+GENERATED_NEWLINE = "\r\n"
+OWNER_PRESERVED = ("git/github_bulk_sync.py",)  # توثيقي — القاعدة الفعلية: كل ما ليس مولَّداً يُحفظ
+
 # ─── خريطة الأجزاء: (اسم الملف، أول سطر، آخر سطر، وصف) ───────
 # الحدود مُختارة عند بدايات def/class top-level للحفاظ على السلامة النحوية.
 PARTS = [
@@ -178,12 +187,49 @@ def top_level_symbols(source: str) -> list[str]:
     return out
 
 
-def main():
-    if not SRC.exists():
-        sys.exit(f"الملف المرجعي غير موجود: {SRC}")
-    lines = SRC.read_text(encoding="utf-8").splitlines(keepends=True)
+def _write_generated(path: pathlib.Path, text: str) -> None:
+    """كتابة ملف مولَّد بنهاية سطر موحّدة (CRLF) بغضّ النظر عن مصدر النص."""
+    normalized = text.replace("\r\n", "\n").replace("\n", GENERATED_NEWLINE)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(normalized)
+
+
+def generated_relpaths() -> list[str]:
+    """القائمة الحصرية لما يولِّده هذا السكربت داخل bridge_refactor/ (مسارات نسبية بـ'/')."""
+    rels = [f"parts/{name}.py" for name, *_ in PARTS]
+    rels += ["parts/__init__.py", "__init__.py", "runtime.py", "main.py"]
+    rels += list(FACADES)
+    rels += sorted({f"{rel.split('/')[0]}/__init__.py" for rel in FACADES})
+    return rels
+
+
+def purge_generated(out: pathlib.Path) -> int:
+    """حذف المولَّد فقط: القائمة الحصرية + أي parts/p*.py قديم. ملفات المالك لا تُمس."""
+    removed = 0
+    if not out.exists():
+        return 0
+    targets = {out / rel for rel in generated_relpaths()}
+    parts_dir = out / "parts"
+    if parts_dir.exists():
+        targets.update(parts_dir.glob("p*.py"))
+    for path in targets:
+        if path.is_file():
+            path.unlink()
+            removed += 1
+    for cache in out.rglob("__pycache__"):
+        shutil.rmtree(cache, ignore_errors=True)
+    return removed
+
+
+def main(root: pathlib.Path | None = None):
+    src = SRC if root is None else pathlib.Path(root) / SRC.name
+    out = OUT if root is None else pathlib.Path(root) / OUT.name
+    if not src.exists():
+        sys.exit(f"الملف المرجعي غير موجود: {src}")
+    lines = src.read_text(encoding="utf-8").splitlines(keepends=True)
     total = len(lines)
-    print(f"المرجع: {SRC.name} — {total} سطر")
+    print(f"المرجع: {src.name} — {total} سطر")
 
     # تحقق من تغطية كاملة بلا فجوات أو تداخل
     expected = 1
@@ -194,10 +240,10 @@ def main():
     assert expected - 1 == total, f"التغطية {expected-1} ≠ إجمالي الأسطر {total}"
     print("✅ خريطة الأجزاء تغطي الملف بالكامل بلا فجوات")
 
-    # إزالة البناء القديم بالكامل (الملفات المرجعية في الجذر لا تُمس)
-    if OUT.exists():
-        shutil.rmtree(OUT)
-    (OUT / "parts").mkdir(parents=True)
+    # MAINT-1: إزالة المولَّد فقط — ملفات المالك داخل bridge_refactor/ تبقى كما هي
+    removed = purge_generated(out)
+    print(f"🧹 حُذف {removed} ملفاً مولَّداً قديماً (ملفات المالك محفوظة)")
+    (out / "parts").mkdir(parents=True, exist_ok=True)
 
     part_symbols: dict[str, list[str]] = {}
     for name, start, end, desc in PARTS:
@@ -208,22 +254,22 @@ def main():
             f"المحتوى: {desc}\n"
             f'⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py\n"""\n'
         )
-        path = OUT / "parts" / f"{name}.py"
-        path.write_text(header + chunk, encoding="utf-8")
+        path = out / "parts" / f"{name}.py"
+        _write_generated(path, header + chunk)
         try:
             part_symbols[name] = top_level_symbols(chunk)
         except SyntaxError as e:
             sys.exit(f"❌ {name} غير سليم نحوياً: {e}")
         print(f"  📦 {name}.py  ({start}..{end}, {end-start+1} سطر, {len(part_symbols[name])} رمز)")
 
-    (OUT / "parts" / "__init__.py").write_text(
+    _write_generated(
+        out / "parts" / "__init__.py",
         '"""أجزاء حرفية من الملف المرجعي — تُنفَّذ بالترتيب عبر runtime.py"""\n',
-        encoding="utf-8",
     )
 
-    (OUT / "__init__.py").write_text(PKG_INIT, encoding="utf-8")
-    (OUT / "runtime.py").write_text(RUNTIME_TEMPLATE, encoding="utf-8")
-    (OUT / "main.py").write_text(MAIN_TEMPLATE, encoding="utf-8")
+    _write_generated(out / "__init__.py", PKG_INIT)
+    _write_generated(out / "runtime.py", RUNTIME_TEMPLATE)
+    _write_generated(out / "main.py", MAIN_TEMPLATE)
 
     # ─── توليد الواجهات ───────────────────────────────────────
     for rel, (parts_list, desc) in FACADES.items():
@@ -234,11 +280,11 @@ def main():
                 if s not in seen and not s.startswith("__"):
                     seen.add(s)
                     symbols.append(s)
-        mod_path = OUT / rel
+        mod_path = out / rel
         mod_path.parent.mkdir(parents=True, exist_ok=True)
         init_path = mod_path.parent / "__init__.py"
         if not init_path.exists():
-            init_path.write_text(f'"""bridge_refactor.{mod_path.parent.name} — واجهة domain"""\n', encoding="utf-8")
+            _write_generated(init_path, f'"""bridge_refactor.{mod_path.parent.name} — واجهة domain"""\n')
         sym_lines = ",\n    ".join(symbols)
         content = (
             f'"""bridge_refactor.{rel[:-3].replace("/", ".")}\n'
@@ -258,10 +304,10 @@ def main():
             f"    return sorted(__all__)\n"
         )
         _ = sym_lines
-        mod_path.write_text(content, encoding="utf-8")
+        _write_generated(mod_path, content)
         print(f"  🔌 facade {rel} ({len(symbols)} رمز)")
 
-    print("✅ اكتمل توليد bridge_refactor/")
+    print(f"✅ اكتمل توليد {out.name}/ (CRLF؛ ملفات المالك محفوظة: {', '.join(OWNER_PRESERVED)})")
 
 
 if __name__ == "__main__":
