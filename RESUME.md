@@ -6,15 +6,30 @@
 
 ---
 
-## 1) أين أقف الآن؟ (2026-10-30)
+## 1) أين أقف الآن؟ (2026-10-31)
 
 | البند | الحالة |
 |---|---|
 | الفرع | `genspark_ai_developer` فقط (main READ-ONLY، لا فروع جانبية) |
-| HEAD المسحوب في هذه الجلسة | `a3cd2e3` (للتوثيق فقط — اسحب الأحدث دائمًا). منذ `c46970e` وصلت 8 commits من المالك: p45 `gh_bulk.py` (Git Data API)، p46 timing metrics 360، p47 Telegram 429/throttle/priority claim + tests p45–p47 + Documents 08–10. تمسّ `01.33` في 6 مواضع لا تشمل دوال الحسابات؛ مراسي STEP-2 المحدَّثة: `is_account_ready` 1104، `get_eligible_accounts` 1171، `mark_account_cooldown` 1187، `send_message_with_auto_account_failover` 3305. STEP-1 ما زالت 34 passed على هذا HEAD. |
+| HEAD المسحوب في هذه الجلسة | `73256fa` (2026-10-31؛ للتوثيق فقط — اسحب الأحدث دائمًا). منذ `a3cd2e3` وصلت 4 commits من المالك: `93456ad` p47 (Telegram 429/throttle/priority claim)، `a3cd2e3`/`bb4a4a9` وثائق وVoice Notes 5–6، `73256fa` v5.4 atomic git data sync + 4 edge invariants + SRE 360. تمسّ `01.33` (9561 سطرًا) في 6 hunks (918، 3261–3297، 4454–4497، 7687) **لا تشمل دوال الحسابات**؛ مراسي STEP-2 ثابتة: `read_accounts_safe` 1052، `update_account_data` 1068، `is_account_ready` 1104، `get_eligible_accounts` 1171، `mark_account_cooldown` 1187، `refresh_cookies_on_401` 1201، `send_message_with_auto_account_failover` 3312. STEP-1 ما زالت **34 passed** على هذا HEAD. |
 | PR | #9 Draft (يبقى Draft؛ لا merge) |
 | وضع التسليم | **حفظ محلي في `/home/user/webapp` فقط** → أداة المزامنة الخارجية (Bridge Sync Engine) ترفع تلقائيًا. لا push، لا gh auth، لا ZIP. |
 | المرحلة | **ALIGN-0 — مواءمة هندسية قبل أي كود** (بطلب المالك). بانتظار اعتماد الخطة أدناه. |
+
+### ⚠️ انحراف الخط الأساسي للاختبارات (BASELINE-DRIFT) — مُكتشف في هذه الجلسة
+`pytest tests -q` على HEAD الحالي = **1134 passed / 26 failed / 1 skipped** (كان 1106 / 13 عند `65f7078` في الـsandbox نفسه).
+الـ26 = **13 تاريخية** (auto_compact ×5، credit_completion_recovery ×3، p2_model_routing ×2، p32 banned_state، p3 opus5 contract، refactor_parity) **+ 13 جديدة**:
+
+| الاختبار الجديد الفاشل | السبب (فحص سريع بالأدلة) | التصنيف |
+|---|---|---|
+| `test_p46_timing_metrics_separation::test_parity_between_p03_and_main_bridge` | `منفصل تماماً` 2× في 01.33 مقابل 3× في `bridge_refactor/parts/p03` — الجزء المولَّد لم يُعَد توليده بعد `73256fa` | انحدار/parity drift |
+| `test_p17_hardening::test_04_p20_decision_documented` + `test_p20_rest_only::test_08_…_inline` | علامة `[P20]` أُزيلت من `_default_github_uploader` في `e70363a` (gh_bulk v5.4) | انحدار توثيقي |
+| `test_p26_project_deletion::test_06_index_cleanup_under_registry_lock` | `shutil.rmtree(project_dir)` لم يعد في `delete_project_atomically` (كان موجودًا عند `65f7078`) | انحدار عقد مصدر |
+| `test_p33_completed_quick_actions::test_01_worker_calls_central_builder` | جسم `process_user_task_async` تغيّر في `73256fa` (hunk 7687) | انحدار عقد مصدر |
+| `test_p24_qwen_commit_bridge` ×2 + `test_p31_lazy_qwen_prefix` ×5 | بادئة Qwen تعود `''` / `generate_ai_summary` لا يُستدعى — سلوك تغيّر في commits المالك | انحدار سلوكي |
+| `test_p47_telegram_429_throttling::test_p47_automatic_429_backoff_recovery` | `ModuleNotFoundError: curl_cffi` (غير مثبت في الـsandbox) | بيئي |
+
+**لم أُصلح أيًا منها** — خارج المهمة الحالية، وقبل اعتماد الخطة. القرار للمالك: (1) إعادة توليد الأجزاء عبر `scripts/rebuild_refactor.py` + تحديث الاختبارات المتأثرة لتعكس v5.4، أو (2) مهمة إصلاح منفصلة قبل STEP-2، أو (3) اعتماد 26 كخط أساسي مؤقت (غير مستحسن). **الخط الأساسي المعتمد لفحص الانحدار في أي عمل قادم = قائمة الأسماء هذه، لا الرقم.**
 
 ### ⚠️ تعارض مرجعي مفتوح يجب أن يحسمه المالك أولًا
 رسالة الاستئناف الأخيرة أحالت إلى Gist **جديد**: `gist.github.com/pijsal1-tech/d7e933267ab63c441e9097c5af9d6334`
@@ -78,6 +93,7 @@
 3. هل الجسر يُسمح له بفحص الهدية **حيًا** (استدعاء Genspark) أم يعتمد على بيانات 05.02 فقط؟ (توصيتي: بيانات فقط + flag معطَّل).
 4. توحيد docstring في 05.02 (`>` → `>=14`) — نعم/لا.
 5. حذف ملفي `GITHUB_SYNC_*.md` بعد نجاح الاختبار — نعم/لا.
+6. **قرار BASELINE-DRIFT** (أعلاه): إعادة توليد + تحديث اختبارات، أم مهمة إصلاح منفصلة، أم اعتماد مؤقت؟
 
 ## 5) فحص الصحة عند كل استئناف (أقوم به تلقائيًا)
-`git fetch` → `checkout -B genspark_ai_developer origin/genspark_ai_developer` → قراءة رأس PROGRESS + هذا الملف → `pytest -q` ومطابقة الخط الأساسي (1106 pass / 13 fail تاريخية) → `python scripts/verify_docs_integrity.py` Exit 0 → البدء من أول `[ ]`.
+`git fetch` → `checkout -B genspark_ai_developer origin/genspark_ai_developer` → قراءة رأس PROGRESS + هذا الملف → `pytest -q` ومطابقة الخط الأساسي **بالأسماء** (13 تاريخية + 13 drift موثقة أعلاه حتى يقرر المالك) → `python scripts/verify_docs_integrity.py` Exit 0 → البدء من أول `[ ]`.
