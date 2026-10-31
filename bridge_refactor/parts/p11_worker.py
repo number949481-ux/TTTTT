@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p11_worker
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7127..7627
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7572..8106
 المحتوى: P43-X7: fast_mode_line في كارت الإكمال — إعلان التخطي صراحةً بلا Diff مزيف + format_active_account_line (P38: سطر 📧 الحساب الموحد — مصدر واحد للحقيقة: تفريغ آمن + fallback غير محدد + html_escape مركزي) + process_user_task_async (المشغل الكامل للمهمة | P39: بطاقة الاكتمال المبسطة — حذف 6 عناصر حشو من res_msg (latest_line/resume_line/fork_line/مسار الساندبوكس/علم الانتهاء+استدعاء is_finished اليتيم/حقن journey_block) مع بقاء دوال P29/P30/P38 كاملة + التسجيل الجنائي: القائمة الكاملة غير المفلترة تُسجَّل في اللوج قبل الإرسال (best-effort) | P38: حقن السطر الموحد في بطاقات اللايف الفوري/handoff الرصيد/اللقطة (stage_email المهمل صار مستخدماً + fallback لـ cfg)/اللايف المكتملة + توحيد تسمية بطاقة الاكتمال «📧 الحساب:» بلا تهريب مزدوج لـ acc_email | P35: إعادة تصنيف COMPLETED+is_model_decline_response ← MODEL_DECLINED + تصفير final_pid (مؤشر الاستئناف لا يتقدم لنقطة الرفض) + كيبورد build_model_decline_keyboard بدل كيبورد الاكتمال | P34: clamp_preview_text لمعاينة 1000 حرف + enforce_completion_message_budget لسقف res_msg 3500 | P25: تسجيل/حقن حدث الإلغاء + رسالة CANCELLED النهائية + تنظيف unregister في finally | P29: سطر مسار الحسابات في الرسالة النهائية | P30: كتلة 📊 إحصائيات الحسابات وزمن التشغيل في الرسالة النهائية | P33: استبدال بناء kb_rows المحلي باستدعاء build_completed_message_keyboard المركزي)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -225,23 +225,49 @@ def process_user_task_async(
                 chat_id=chat_id,
                 status=stage_status,
             ) or runtime_identity
+            t_snap0 = time.time()
             update = registry.snapshot(stage_dir, stage_url, stage_status, stage_text)
             checkpoint_id = str(update.get("checkpoint") or "")
+            if cfg is not None:
+                cfg.last_local_prep_seconds = (getattr(cfg, "last_local_prep_seconds", 0.0) or 0.0) + max(0.0, time.time() - t_snap0)
+
+            t_sync0 = time.time()
             sync = registry.github_sync(update)
+            if cfg is not None:
+                cfg.last_github_sync_seconds = max(0.0, time.time() - t_sync0)
+                cfg.last_github_status = "synced" if sync.get("upload_confirmed") else ("queued" if (sync.get("queued") or (sync.get("jobs") and sync["jobs"][0].get("state") != "synced")) else "disabled")
             all_jobs = sync.get("jobs") or []
             queued_jobs = [job for job in all_jobs if str(job.get("state") or "") != "synced"]
             queued_ids = sync.get("queued") or []
             context = summarize_project_context(runtime_identity, current_pid=stage_meta["pid"], current_url=stage_url)
+            has_partial = bool(sync.get("uploaded") or sync.get("modified") or sync.get("deleted"))
             if queued_jobs:
                 first_job = queued_jobs[0]
                 dest = first_job.get("destination", {}) if isinstance(first_job, dict) else {}
                 branch_label = dest.get("branch") or ("auto-default" if dest.get("branch_mode") == "auto_default" else "غير محدد")
-                details = "\n".join(
+                job_hdr = "\n".join(
                     f"• <code>{html_escape(job.get('job_id'))}</code> → <code>{html_escape(job.get('state'))}</code> → <code>{html_escape(dest.get('repository') or '')}</code> @ <code>{html_escape(branch_label)}</code>"
                     for job in queued_jobs[:3]
                 )
-                details += "\n• لم يتم تأكيد الرفع إلى GitHub بعد؛ هذه فقط job/queue جاهزة أو قيد التنفيذ."
-            elif sync.get("upload_confirmed") or sync.get("uploaded") or sync.get("modified") or sync.get("deleted"):
+                if has_partial:
+                    stats_line = f"• 📊 <b>تم رفع وتأكيد جزئي على GitHub:</b> ➕ <b>{len(sync.get('uploaded', []))}</b> جديد | ✏️ <b>{len(sync.get('modified', []))}</b> معدل | 🗑️ <b>{len(sync.get('deleted', []))}</b> محذوف"
+                    file_lines = []
+                    for x in sync.get("uploaded", [])[:10]:
+                        file_lines.append(f"  ➕ <code>{html_escape(x)}</code>")
+                    for x in sync.get("modified", [])[:10]:
+                        file_lines.append(f"  ✏️ <code>{html_escape(x)}</code>")
+                    for x in sync.get("deleted", [])[:10]:
+                        file_lines.append(f"  🗑️ <code>{html_escape(x)}</code>")
+                    files_block = "\n" + "\n".join(file_lines) if file_lines else ""
+                    err_txt = sync.get("upload_error") or ""
+                    fail_f = sync.get("failed_file") or ""
+                    err_info = f"\n• ⚠️ <b>تعثر مؤقت عند:</b> <code>{html_escape(fail_f or 'file')}</code> ({html_escape(err_txt)}) — جاري إعادة المحاولة تلقائياً." if err_txt else ""
+                    details = f"{job_hdr}\n{stats_line}{files_block}{err_info}"
+                else:
+                    details = job_hdr + "\n• لم يتم تأكيد الرفع إلى GitHub بعد؛ هذه فقط job/queue جاهزة أو قيد التنفيذ."
+                    if sync.get("upload_error"):
+                        details += f"\n• ⚠️ <b>سبب التعثر:</b> <code>{html_escape(sync.get('upload_error'))}</code>"
+            elif sync.get("upload_confirmed") or has_partial:
                 commit_info = f"\n• 🔗 <b>Commit:</b> <code>{html_escape(sync.get('commit_hash', ''))}</code>" if sync.get("commit_hash") else ""
                 stats_line = f"• 📊 <b>الإحصائيات:</b> ➕ <b>{len(sync.get('uploaded', []))}</b> جديد | ✏️ <b>{len(sync.get('modified', []))}</b> معدل | 🗑️ <b>{len(sync.get('deleted', []))}</b> محذوف | ⏸️ <b>{len(sync.get('unchanged', []))}</b> مطابق"
                 file_lines = []
@@ -256,7 +282,15 @@ def process_user_task_async(
             else:
                 details = f"• لم يجد النظام أي تغيير جديد؛ المستودع مطابق تماماً للأرشيف الحالي (Unchanged: <code>{len(sync.get('unchanged', []))}</code>)."
             skipped = "\n".join(f"• <code>{html_escape(x)}</code>" for x in sync.get("skipped", [])[:8])
-            github_label = "تم إنشاء job GitHub لهذا المشروع ولم يتم تأكيد الرفع بعد" if sync.get("enabled") and queued_jobs else ("✅ تم الرفع والمزامنة بنجاح لـ GitHub" if sync.get("upload_confirmed") or sync.get("uploaded") or sync.get("modified") else ("تعذر تأكيد رفع GitHub لهذه اللقطة" if sync.get("enabled") and sync.get("upload_error") else "غير مفعل لهذا المشروع أو إعدادات GitHub غير مكتملة"))
+            github_label = (
+                "⚠️ رفع جزئي مع إعادة محاولة" if (sync.get("enabled") and queued_jobs and has_partial) else (
+                    "تم إنشاء job GitHub لهذا المشروع ولم يتم تأكيد الرفع بعد" if (sync.get("enabled") and queued_jobs) else (
+                        "✅ تم الرفع والمزامنة بنجاح لـ GitHub" if (sync.get("upload_confirmed") or has_partial) else (
+                            "تعذر تأكيد رفع GitHub لهذه اللقطة" if (sync.get("enabled") and sync.get("upload_error")) else "غير مفعل لهذا المشروع أو إعدادات GitHub غير مكتملة"
+                        )
+                    )
+                )
+            )
             stage_label = "⚠️ استنزاف رصيد — تم حفظ نقطة استئناف صالحة ويجري الآن تقييم handoff" if stage_status == "CREDIT_EXHAUSTED" else "🔄 تحديث مشروع صالح"
             continuation_line = ""
             handoff_line = ""
