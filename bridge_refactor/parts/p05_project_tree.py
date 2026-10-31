@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p05_project_tree
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1956..2486
-المحتوى: projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P35: MODEL_DECLINE_MARKERS/MODEL_DECLINE_MAX_RESPONSE_CHARS/MODEL_DECLINED_STATUS + is_model_decline_response (كشف رفض الموديل — ردود قصيرة ≤300 حرف فقط منعاً للـ False Positive) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + P44: compute_reply_fingerprint (بصمة len+hash للاستقرار D7) + fetch_final_reply_text (الجلبة النهائية D8 — FINAL_FETCH_OK/FALLBACK) + extract_project_id + P41: parse_project_locator (التصنيف المركزي SSOT: pid/malformed/none) + detect_context_collision (كشف تصادم السياق النشط مع رابط مشروع آخر)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1956..2508
+المحتوى: projects_tree branches + finished flag + random account + detect_response_status (P20: DATA_RETENTION كنفاد رصيد) + P35: MODEL_DECLINE_MARKERS/MODEL_DECLINE_MAX_RESPONSE_CHARS/MODEL_DECLINED_STATUS + is_model_decline_response (كشف رفض الموديل — ردود قصيرة ≤300 حرف فقط منعاً للـ False Positive) + P18: activity signature monitor (Deep Thinking / Tasks Remaining وقف فوري) + P44: compute_reply_fingerprint (بصمة len+hash للاستقرار D7) + fetch_final_reply_text (الجلبة النهائية D8 — FINAL_FETCH_OK/FALLBACK) + extract_project_id + P41: parse_project_locator (التصنيف المركزي SSOT: pid/malformed/none) + detect_context_collision (كشف تصادم السياق النشط مع رابط مشروع آخر) + DEC07: ثوابت DEC07_* (EMPTY_BREAKER_ENABLED/READS_REQUIRED=3/MIN_SECONDS=30/COOLDOWN_HOURS=1.0/SUSPENDED_MARKERS) + EMPTY_STREAM_FAILED_STATUS/ACCOUNT_SUSPENDED_STATUS + dec07_text_has_suspended_marker (كشف أوفلاين نقي بلا شبكة)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -167,6 +167,28 @@ P44_STRUCTURED_STATUSES = ("CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRE
 P44_GATE_INACTIVE_READS_REQUIRED = 2
 # D8 (يُوصَّل في CP5): قراءتان بمحتوى ثابت (بصمة len+hash) لاعتماد الرد نهائياً
 P44_GATE_STABLE_READS_REQUIRED = 2
+
+# ══════════════════════════════════════════════════════════════
+# 🛡️ [DEC07] صمام الرد الفارغ + كشف الحظر النصّي (الوثيقة 12 — قرارات المالك 1–7)
+# المشكلة: EMPTY ليس شرط خروج حلقة monitor_chat_completion → استطلاع حتى
+# session_timeout (~33 دقيقة). الحل: عدّاد قراءات فارغة متتالية مع نشاط خامل.
+# أوفلاين بحت: لا probe حي لصفحة الحظر؛ الكشف من نص الرد المتاح فقط.
+# ══════════════════════════════════════════════════════════════
+DEC07_EMPTY_BREAKER_ENABLED = True        # False = السلوك القديم حرفياً (TIMEOUT)
+DEC07_EMPTY_READS_REQUIRED = 3            # قراءات فارغة متتالية (≈15 ث) مع نشاط غير فعّال
+DEC07_EMPTY_MIN_SECONDS = 30              # حد أدنى منذ start_time قبل السماح بالكسر
+DEC07_EMPTY_COOLDOWN_HOURS = 1.0          # تبريد حساب EMPTY_STREAM_FAILED (قرار 3)
+DEC07_SUSPENDED_MARKERS = ("user_suspended", "account is suspended", "is_suspended")
+EMPTY_STREAM_FAILED_STATUS = "EMPTY_STREAM_FAILED"
+ACCOUNT_SUSPENDED_STATUS = "ACCOUNT_SUSPENDED"
+
+
+def dec07_text_has_suspended_marker(text) -> bool:
+    """كشف نصّي للحظر من المتاح لـ01.33 فقط (لا شبكة، لا probe)."""
+    if not text:
+        return False
+    low = str(text).lower()
+    return any(marker in low for marker in DEC07_SUSPENDED_MARKERS)
 
 
 def has_platform_credit_signal(message) -> bool:
