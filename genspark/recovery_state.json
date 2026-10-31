@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "Tri-state gift integration: STEP-2 CLOSED; roadmap (STEP-3 Q-F -> STEP-4 DEC-07 -> MAINT-1 -> MAINT-2 deferred) fixed in PROGRESS.md head after 360 review; STEP-3 spec approved, execution awaits explicit 'start execution' signal.",
+    "task": "Tri-state gift integration: STEP-3 (Q-F merge legacy quarantine -> accounts_failed.json) DONE with evidence; next STEP-4 (DEC-07) starting with S4-A spec that needs owner approval.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "alignment_only_roadmap_fixed_step3_spec_approved_awaiting_go",
+    "status": "step3_done_next_step4_s4a_spec_awaiting_owner_go",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -85,9 +85,9 @@
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": "On 'start execution': Layer A -> read PROGRESS head -> pytest by names + verify_docs_integrity -> S3-A confirm -> S3-B tests red -> S3-C script -> S3-D close. No code before the signal.",
+    "next": "On 'start execution' for STEP-4: Layer A -> PROGRESS head -> pytest by names + docs -> write S4-A spec in PROGRESS -> STOP for owner approval -> S4-B tests red -> S4-C 01.33 -> S4-D close.",
     "history_notice": "all other keys preserved as prior records; not active instructions",
-    "mode": "[ALIGNMENT_ONLY]",
+    "mode": "execution finished for STEP-3; no STEP-4 code before S4-A approval + new 'start execution'",
     "roadmap_priority": [
       {
         "id": "STEP-1",
@@ -100,7 +100,7 @@
       },
       {
         "id": "STEP-3",
-        "state": "next_spec_approved_awaiting_go",
+        "state": "done_with_evidence",
         "scope": [
           "scripts/merge_legacy_quarantine.py (new)",
           "tests/test_p49_legacy_quarantine_merge.py (new)",
@@ -120,15 +120,11 @@
           "S3-C script: --legacy --failed --apply --i-know-this-is-real; dry-run default",
           "S3-D close by names + docs + three docs"
         ],
-        "pending_owner_confirmations": [
-          "conflict policy oldest-wins",
-          "dead_accounts.json out of scope",
-          "legacy file stays + dated .bak"
-        ]
+        "owner_confirmations": "all three accepted 2026-10-31"
       },
       {
         "id": "STEP-4",
-        "state": "scheduled_after_step3",
+        "state": "next_s4a_spec_needs_owner_approval",
         "summary": "DEC-07: empty-response valve + user_suspended immediate break in monitor_chat_completion (01.33 ~2838-2884) + failover handling; S4-A spec needs owner approval; tests tests/test_p50_dec07_breaker.py first",
         "verified": "not implemented in 01.33 (read-only check 2026-10-31)"
       },
@@ -146,7 +142,31 @@
         "id": "Layer B/C",
         "state": "proposed_not_approved"
       }
-    ]
+    ],
+    "step3": {
+      "script": "scripts/merge_legacy_quarantine.py",
+      "tests": {
+        "file": "tests/test_p49_legacy_quarantine_merge.py",
+        "count": 14,
+        "red_before": "14 errors (script absent)",
+        "result": "14 passed"
+      },
+      "cli": "--legacy PATH --failed PATH [--apply] [--i-know-this-is-real]; dry-run default; exit 0/2/3",
+      "owner_confirmed": [
+        "oldest wins on conflict",
+        "dead_accounts.json out of scope",
+        "legacy file stays + dated .bak for both files"
+      ],
+      "helpers_from_05_02": [
+        "create_backup",
+        "atomic_save_json (loaded via spec_from_file_location + stub; 05.02 untouched)"
+      ],
+      "strict_load": "own load_json_strict (05.02 load_accounts swallows corruption, cannot honour exit 2)",
+      "full_suite": "1182 passed / 26 failed / 1 skipped — failing names identical to pre-STEP-3 (0 new, 0 fixed)",
+      "docs_integrity": "exit 0",
+      "parity": "test_refactor_parity 11 passed; 01.33 untouched, CRLF intact",
+      "real_files": "NEVER run with --apply on owner files; guard verified rc=3 on repo paths, zero .bak created"
+    }
   },
   "completed_pr9_arena_addendum": {
     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
