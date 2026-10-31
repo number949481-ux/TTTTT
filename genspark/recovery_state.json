@@ -6,7 +6,7 @@
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_b1_0502_closed_awaiting_card_for_b2_0133",
+    "status": "maint3_b2_0133_in_progress_cp0",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -389,6 +389,13 @@
         "توثيق_*"
       ],
       "backup": "/tmp/05.02_pre_maint3b_*.bak (outside repo)"
+    },
+    "maint3_b2_checkpoints": {
+      "cp0": "2026-10-31 started after Layer A @233fa6f; MODE auto=ابدأ تنفيذ per §0 (D1-D25 written, first [ ], scope RESUME §3)",
+      "cp1": "pending: red tests tests/test_p51_forbidden_isolation.py + P50 test_09 conscious update",
+      "cp2": "pending: 01.33 p03 constants + append_account_log + move_account_to_cooldown_vault",
+      "cp3": "pending: 01.33 p06 EMPTY replace + FORBIDDEN branch",
+      "cp4": "pending: PARTS shift + rebuild + parity + README + closure by names (baseline 19)"
     }
   },
   "completed_pr9_arena_addendum": {
