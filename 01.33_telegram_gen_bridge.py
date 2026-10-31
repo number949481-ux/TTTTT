@@ -2118,6 +2118,28 @@ P44_GATE_INACTIVE_READS_REQUIRED = 2
 # D8 (يُوصَّل في CP5): قراءتان بمحتوى ثابت (بصمة len+hash) لاعتماد الرد نهائياً
 P44_GATE_STABLE_READS_REQUIRED = 2
 
+# ══════════════════════════════════════════════════════════════
+# 🛡️ [DEC07] صمام الرد الفارغ + كشف الحظر النصّي (الوثيقة 12 — قرارات المالك 1–7)
+# المشكلة: EMPTY ليس شرط خروج حلقة monitor_chat_completion → استطلاع حتى
+# session_timeout (~33 دقيقة). الحل: عدّاد قراءات فارغة متتالية مع نشاط خامل.
+# أوفلاين بحت: لا probe حي لصفحة الحظر؛ الكشف من نص الرد المتاح فقط.
+# ══════════════════════════════════════════════════════════════
+DEC07_EMPTY_BREAKER_ENABLED = True        # False = السلوك القديم حرفياً (TIMEOUT)
+DEC07_EMPTY_READS_REQUIRED = 3            # قراءات فارغة متتالية (≈15 ث) مع نشاط غير فعّال
+DEC07_EMPTY_MIN_SECONDS = 30              # حد أدنى منذ start_time قبل السماح بالكسر
+DEC07_EMPTY_COOLDOWN_HOURS = 1.0          # تبريد حساب EMPTY_STREAM_FAILED (قرار 3)
+DEC07_SUSPENDED_MARKERS = ("user_suspended", "account is suspended", "is_suspended")
+EMPTY_STREAM_FAILED_STATUS = "EMPTY_STREAM_FAILED"
+ACCOUNT_SUSPENDED_STATUS = "ACCOUNT_SUSPENDED"
+
+
+def dec07_text_has_suspended_marker(text) -> bool:
+    """كشف نصّي للحظر من المتاح لـ01.33 فقط (لا شبكة، لا probe)."""
+    if not text:
+        return False
+    low = str(text).lower()
+    return any(marker in low for marker in DEC07_SUSPENDED_MARKERS)
+
 
 def has_platform_credit_signal(message) -> bool:
     """Only typed platform fields count; quoted text/JSON/code never does."""
@@ -2866,6 +2888,13 @@ def monitor_chat_completion(mod, cookies, cfg, bridge_cfg, pid, answer, start_ti
     prev_reply_fp = None
     polled_any = False
     p18_stopped = False
+    # 🛡️ [DEC07] الصمام لا يعمل في المراقبة/الصيانة/الرصيد غير المؤكد/الأدلة المكتملة
+    dec07_armed = (DEC07_EMPTY_BREAKER_ENABLED and not readiness and not maintenance
+                   and not (evidence and evidence.get("finished")))
+    dec07_empty_streak = 0
+    if dec07_armed and dec07_text_has_suspended_marker(last_resp_text):
+        log_event("warning", "[DEC07] ACCOUNT_SUSPENDED detected in initial reply text", email=email)
+        return ACCOUNT_SUSPENDED_STATUS, last_resp_text
     while final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
         # Cancellation always precedes waiting and network reads.
         if _cancel_event is not None and _cancel_event.is_set():
@@ -2902,6 +2931,26 @@ def monitor_chat_completion(mod, cookies, cfg, bridge_cfg, pid, answer, start_ti
             if http_status != 200:
                 continue
             message = current_attempt_reply(messages, evidence)
+            # 🛡️ [DEC07] نقطة الحقن الوحيدة: كشف الحظر النصّي + عدّاد القراءات الفارغة
+            if dec07_armed and not unconfirmed:
+                _dec07_text = message.get("content", "") if isinstance(message, dict) else ""
+                if dec07_text_has_suspended_marker(_dec07_text):
+                    if _dec07_text:
+                        last_resp_text = _dec07_text
+                    log_event("warning", "[DEC07] ACCOUNT_SUSPENDED detected in reply text — skipping account", email=email)
+                    return ACCOUNT_SUSPENDED_STATUS, last_resp_text
+                _dec07_active = isinstance(curr_activity, dict) and bool(curr_activity.get("active"))
+                if (not message or detect_response_status(_dec07_text) == "EMPTY") and not _dec07_active:
+                    dec07_empty_streak += 1
+                else:
+                    dec07_empty_streak = 0
+                _dec07_elapsed = time.time() - start_time
+                if (dec07_empty_streak >= DEC07_EMPTY_READS_REQUIRED
+                        and _dec07_elapsed >= DEC07_EMPTY_MIN_SECONDS):
+                    log_event("warning",
+                              f"[DEC07] EMPTY_STREAM_BREAK streak={dec07_empty_streak} elapsed={int(_dec07_elapsed)}s — skipping account",
+                              email=email)
+                    return EMPTY_STREAM_FAILED_STATUS, last_resp_text
             if message:
                 text = message.get("content", "")
                 if text:
@@ -3565,6 +3614,33 @@ def send_message_with_auto_account_failover(
 
             if status in ("CREDIT_UNCONFIRMED", "TIMEOUT", "READ_FAILED", "ACTIVITY_STOPPED", "COMPACT_HANDOFF_BLOCKED"):
                 return pub_url, status, curr_acc, ext_dir, last_text
+
+            # 🛡️ [DEC07] بث فارغ متوقف → تبريد قصير (1h) وانتقال فوري للحساب التالي (قرار 3)
+            if status == EMPTY_STREAM_FAILED_STATUS:
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "empty-stream-skip",
+                    status=EMPTY_STREAM_FAILED_STATUS,
+                    max_attempts=max_attempts,
+                )
+                try:
+                    mark_account_cooldown(curr_email, cooldown_hours=DEC07_EMPTY_COOLDOWN_HOURS, json_path=json_path)
+                except Exception as err:
+                    log_event("warning", f"[DEC07] Cooldown save failed: {type(err).__name__}", email=curr_email)
+                log_event("warning", f"[DEC07] EMPTY_STREAM_FAILED — تبريد {DEC07_EMPTY_COOLDOWN_HOURS}h والانتقال الفوري للحساب التالي", email=curr_email)
+                continue
+
+            # 🛡️ [DEC07] حساب محظور (نصّياً) → عزل دائم بلا تبريد زمني وانتقال فوري (قرار 3/4)
+            if status == ACCOUNT_SUSPENDED_STATUS:
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "account-suspended-skip",
+                    status=ACCOUNT_SUSPENDED_STATUS,
+                    max_attempts=max_attempts,
+                )
+                update_account_data(curr_email, {"status": "suspended", "quarantined": True, "cookies": {}, "active": False}, json_path=json_path)
+                log_event("error", "[DEC07] ACCOUNT_SUSPENDED — عُزل الحساب (status=suspended, quarantined) والانتقال الفوري للحساب التالي", email=curr_email)
+                continue
 
             if status == "LOW_BALANCE":
                 notify_account_selection_observer(

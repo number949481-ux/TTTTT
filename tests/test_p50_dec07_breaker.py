@@ -44,10 +44,16 @@ def _load_bridge_module():
 
 
 def _extract_func(src: str, name: str) -> str:
+    """Return the function body only: stops at the first module-level statement
+    (unindented, non-comment, non-blank line) so trailing constants are not included."""
     m = re.search(rf"^def {name}\(", src, re.MULTILINE)
     assert m, f"function not found: {name}"
-    nxt = re.search(r"^(?:def |class |@)", src[m.end():], re.MULTILINE)
-    end = m.end() + (nxt.start() if nxt else len(src) - m.end())
+    # skip the (possibly multi-line) signature: scan from the first line that ends the def header
+    sig_end = re.search(r"\)\s*(?:->[^:\n]+)?:[ \t]*\n", src[m.end():])
+    assert sig_end, f"signature end not found: {name}"
+    scan_from = m.end() + sig_end.end()
+    nxt = re.search(r"^(?!\s)(?!#)\S", src[scan_from:], re.MULTILINE)
+    end = scan_from + (nxt.start() if nxt else len(src) - scan_from)
     return src[m.start():end]
 
 
@@ -297,7 +303,10 @@ class TestSourceContracts(unittest.TestCase):
         self.assertEqual(body.count("EMPTY_STREAM_BREAK"), 1, "exactly one empty-stream break log in the loop")
         self.assertIn("DEC07_EMPTY_READS_REQUIRED", body)
         self.assertIn("DEC07_EMPTY_MIN_SECONDS", body)
-        self.assertIn("DEC07_SUSPENDED_MARKERS", body)
+        self.assertIn("dec07_text_has_suspended_marker", body)  # textual detection via the pure helper
+        helper = _extract_func(BRIDGE_SRC, "dec07_text_has_suspended_marker")
+        self.assertIn("DEC07_SUSPENDED_MARKERS", helper)
+        self.assertNotIn("requests", helper)  # decision (5): no network in the detector
 
     def test_12b_failover_handles_both_statuses(self):
         body = _extract_func(BRIDGE_SRC, "send_message_with_auto_account_failover")
