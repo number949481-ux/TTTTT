@@ -629,6 +629,14 @@ class MasterDelayedGiftsManager:
             "total_credits": total_live_credits,
         }
 
+    def _merge_by_email(self, path: Path, accounts: List[Dict[str, Any]], sort: bool = False) -> None:
+        """[MAINT-3-B/D24] دمج ذري بمفتاح البريد (lower) في ملف وجهة مع .bak قبل الكتابة — بديل DRY لخرائط p_map/s_map"""
+        merged = {a.get("email", "").lower(): a for a in load_accounts(path)}
+        merged.update({a.get("email", "").lower(): a for a in accounts})
+        final = sorted(merged.values(), key=lambda x: (x.get("balance") or -1), reverse=True) if sort else list(merged.values())
+        create_backup(path)
+        atomic_save_json(path, final)
+
     def run_revival(self, limit: int = 50, dry_run: bool = False) -> Dict[str, Any]:
         """
         فحص الحسابات المعزولة في accounts_delayed_gifts_credits.json،
@@ -642,8 +650,10 @@ class MasterDelayedGiftsManager:
         print(f" 🎯 ملف الوجهة الناجح   : {G}{self.success_path.name}{RST}")
 
         quarantined_accounts = load_accounts(self.quarantine_path)
-        primary_accounts = load_accounts(self.primary_path)
-        success_accounts = load_accounts(self.success_path)
+        # [MAINT-3-B/S1] وجهتا الكتابة فقط (⛔ لا تُفحصان): الفاشل + معزل الهدية (C2: resolve لأن -q قد يكون معزل التبريد)
+        delayed_path = resolve_file_path(Config.QUARANTINE_FILE)
+        dead_moves: List[Dict[str, Any]] = []
+        stale_moves: List[Dict[str, Any]] = []
 
         if not quarantined_accounts:
             print(f"{Y}ℹ️ ملف المعزل فارغ، لا توجد حسابات معزولة حالياً.{RST}")
@@ -665,40 +675,37 @@ class MasterDelayedGiftsManager:
                 clean_acc.pop("quarantine_info", None)
                 clean_acc["status"] = "active"
                 revived_accounts.append(clean_acc)
+            elif status == "DEAD":  # [MAINT-3-B/S2] الميت → الفاشل
+                dead_moves.append(acc)
+                print(f"  💀 {R}الحساب {email} ميت ({gift_time}) -> نقل إلى {self.failed_path.name}{RST}")
+            elif status == "STALE":  # [MAINT-3-B/S2] المتأخر → معزل الهدية (عودته يدوية — D23)
+                stale_moves.append(acc)
+                print(f"  📦 {Y}الحساب {email} متأخر الهدية ({days or '?'} يوم) -> نقل إلى {delayed_path.name}{RST}")
             else:
                 still_stale_count += 1
                 print(f"  ⏳ {Y}الحساب {email} ما زال منقطعاً ({days or '?'} يوم | رصيد: {bal or 0}){RST}")
 
             time.sleep(random.uniform(self.min_delay, self.max_delay))
 
-        if revived_accounts and not dry_run:
-            revived_emails = {a.get("email", "").lower() for a in revived_accounts}
-            new_quarantine = [a for a in quarantined_accounts if a.get("email", "").lower() not in revived_emails]
+        if (revived_accounts or dead_moves or stale_moves) and not dry_run:  # [MAINT-3-B/S3]
+            moved_emails = {a.get("email", "").lower() for a in revived_accounts + dead_moves + stale_moves}  # [S4]
+            new_quarantine = [a for a in quarantined_accounts if a.get("email", "").lower() not in moved_emails]
 
-            # دمج الحسابات المنعشة في الأساسي والناجح
-            p_map = {a.get("email", "").lower(): a for a in primary_accounts}
-            s_map = {a.get("email", "").lower(): a for a in success_accounts}
-            for a in revived_accounts:
-                k = a.get("email", "").lower()
-                p_map[k] = a
-                s_map[k] = a
+            # [MAINT-3-B/S5+S6] دمج كل وجهة عبر _merge_by_email (D24) — الوجهة الفارغة لا تُكتب (صفر زيادة على الفاضي)
+            if revived_accounts:
+                self._merge_by_email(self.primary_path, revived_accounts, sort=self.sort_by_balance)
+                self._merge_by_email(self.success_path, revived_accounts, sort=self.sort_by_balance)
+            if dead_moves:
+                self._merge_by_email(self.failed_path, dead_moves)
+            if stale_moves:
+                self._merge_by_email(delayed_path, stale_moves)
 
-            final_p = list(p_map.values())
-            final_s = list(s_map.values())
-            if self.sort_by_balance:
-                final_p.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
-                final_s.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
-
-            create_backup(self.primary_path)
-            create_backup(self.success_path)
             create_backup(self.quarantine_path)
-
-            atomic_save_json(self.primary_path, final_p)
-            atomic_save_json(self.success_path, final_s)
             atomic_save_json(self.quarantine_path, new_quarantine)
-            print(f"\n{G}{B}✅ تم استرجاع {len(revived_accounts)} حساب إلى الملف الأساسي والناجح بنجاح!{RST}")
+            print(f"\n{G}{B}✅ استرجاع {len(revived_accounts)} | 💀 إلى الفاشل {len(dead_moves)} | 📦 إلى معزل الهدية {len(stale_moves)}{RST}")
 
-        return {"revived": len(revived_accounts), "still_stale": still_stale_count}
+        return {"revived": len(revived_accounts), "still_stale": still_stale_count,
+                "moved_to_failed": len(dead_moves), "moved_to_delayed": len(stale_moves)}  # [S7]
 
 
 # ════════════════════════════════════════════════════════════════════════════════
