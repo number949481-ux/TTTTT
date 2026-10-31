@@ -22,7 +22,8 @@ Data contract (PROGRESS.md › S3-A, approved 2026-10-31):
   * missing/corrupt input → exit 2, no change, no ``.bak``.
   * path guard: real file names outside a temp directory are refused (exit 3) unless
     ``--i-know-this-is-real`` is given.  NEVER run on real files without an explicit owner order.
-  * Zero-Leakage: e-mails are printed masked; passwords/cookies are never printed.
+  * Logging: e-mails are printed in full (owner decision 2026-10-31 — no masking);
+    passwords/cookies are never printed.
 
 Exit codes: 0 ok (incl. dry-run) · 2 input missing/corrupt · 3 refused by path guard.
 """
@@ -109,15 +110,10 @@ def _local_atomic_save_json(file_path: Path, data: Any) -> bool:
 
 # ── pure helpers ─────────────────────────────────────────────────────────────
 
-def mask_email(email: Any) -> str:
-    """Zero-Leakage mask: ``alpha@example.com`` → ``al***@example.com``."""
+def display_email(email: Any) -> str:
+    """E-mail as printed in the summary: full and explicit (owner decision: no masking)."""
     s = str(email or "").strip()
-    if not s:
-        return "<empty>"
-    if "@" not in s:
-        return s[:2] + "***"
-    local, _, domain = s.partition("@")
-    return f"{local[:2]}***@{domain}"
+    return s if s else "<empty>"
 
 
 def normalize_email(value: Any) -> str:
@@ -189,7 +185,7 @@ def merge_records(
     existing.discard("")
     added: List[Dict[str, Any]] = []
     stats = {"added": 0, "skipped_existing": 0, "skipped_invalid": 0,
-             "added_masked": [], "skipped_existing_masked": []}
+             "added_emails": [], "skipped_existing_emails": []}
     for rec in legacy_records:
         if not isinstance(rec, dict):
             stats["skipped_invalid"] += 1
@@ -200,12 +196,12 @@ def merge_records(
             continue
         if key in existing:
             stats["skipped_existing"] += 1
-            stats["skipped_existing_masked"].append(mask_email(key))
+            stats["skipped_existing_emails"].append(display_email(key))
             continue
         existing.add(key)
         added.append(build_merged_record(rec, now_str))
         stats["added"] += 1
-        stats["added_masked"].append(mask_email(key))
+        stats["added_emails"].append(display_email(key))
     return list(target_records) + added, stats
 
 
@@ -314,8 +310,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         "skipped_existing": stats["skipped_existing"],
         "skipped_invalid": stats["skipped_invalid"],
         "target_after": len(merged),
-        "added_masked": stats["added_masked"],
-        "skipped_existing_masked": stats["skipped_existing_masked"],
+        "added_emails": stats["added_emails"],
+        "skipped_existing_emails": stats["skipped_existing_emails"],
         "backups": [],
         "written": False,
     }
