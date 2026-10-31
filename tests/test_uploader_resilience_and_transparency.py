@@ -177,3 +177,23 @@ def test_telegram_notification_transparency_on_partial_upload():
     assert "01.33_telegram_gen_bridge.py" in sync["uploaded"]
     assert "scripts/rebuild_refactor.py" in sync["modified"]
     assert "لم يتم تأكيد الرفع إلى GitHub بعد" not in stats_line
+
+
+def test_qwen_commit_ai_deactivated_by_default():
+    """التحقق من أن توليد كوميت كوين معطل افتراضياً لمنع تأخير الرفع وتجنب الكوكيز المنتهية."""
+    assert ns.ENABLE_QWEN_COMMIT_AI is False
+
+    with tempfile.TemporaryDirectory() as td:
+        project_home = pathlib.Path(td)
+        with patch.object(ns, "PROJECT_REGISTRY_HOME", project_home), \
+             patch.object(ns, "get_project_lock", return_value=MagicMock()):
+            registry = ProjectRegistry("prj_test_qwen_disabled")
+            payload = {
+                "upload_files": [{"path": "index.html", "local_path": "index.html"}],
+                "delete_files": [],
+            }
+            # يجب أن ترجع نصاً فارغاً فوراً بدون أي استدعاء لموديل كوين أو كوكيز
+            with patch("qwen_engine.generate_ai_summary", side_effect=AssertionError("Should not call Qwen")):
+                prefix = registry._qwen_commit_prefix_for_job(payload)
+                assert prefix == ""
+

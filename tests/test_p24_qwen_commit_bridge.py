@@ -108,6 +108,13 @@ class TestEngineSharedPath(unittest.TestCase):
 class TestQwenCommitPrefix(unittest.TestCase):
     """🧠 _qwen_commit_prefix_for_job — mock كامل بدون شبكة"""
 
+    def setUp(self):
+        self._patcher = mock.patch.object(_bridge, "ENABLE_QWEN_COMMIT_AI", True)
+        self._patcher.start()
+
+    def tearDown(self):
+        self._patcher.stop()
+
     def test_01_success_returns_commit(self):
         reg = _make_registry()
         with mock.patch.object(qwen_engine, "generate_ai_summary",

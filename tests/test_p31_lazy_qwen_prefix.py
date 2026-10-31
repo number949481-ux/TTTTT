@@ -154,6 +154,13 @@ class TestLazySkipsQwenWhenNothingChanged(unittest.TestCase):
 
 class TestLazyWakesQwenOnceOnRealChange(unittest.TestCase):
 
+    def setUp(self):
+        self._patcher = mock.patch.object(_bridge, "ENABLE_QWEN_COMMIT_AI", True)
+        self._patcher.start()
+
+    def tearDown(self):
+        self._patcher.stop()
+
     def test_01_changed_file_calls_qwen_exactly_once(self):
         """ملف جديد (404 على الريموت) ← كوين مرة واحدة + البادئة في الرسالة"""
         reg = _make_registry(key="prj_test")
@@ -233,6 +240,13 @@ class TestLazyWakesQwenOnceOnRealChange(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════
 
 class TestVerbatimFallbackPreserved(unittest.TestCase):
+
+    def setUp(self):
+        self._patcher = mock.patch.object(_bridge, "ENABLE_QWEN_COMMIT_AI", True)
+        self._patcher.start()
+
+    def tearDown(self):
+        self._patcher.stop()
 
     def test_01_qwen_failure_keeps_old_message_verbatim(self):
         """فشل كوين (Exception) ← نفس رسالة الكوميت القديمة حرفياً — الرفع لا ينكسر"""
