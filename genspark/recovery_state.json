@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-3-A/A2/A3 done (ALIGNMENT_ONLY): unified cooldown vault spec + 360° gap audit (G1-G15), dual-schedule design, clean-shutdown findings, anti-complexity simplifications; RESUME §3-§3.7. Next = MAINT-3-B after owner decisions D1-D20.",
+    "task": "MAINT-3-A/A2/A3/A4 done (ALIGNMENT_ONLY). A4 = owner's non-negotiable Exclusive Cooldown-Vault Scan Invariant fixed in RESUME §3.7.2 + D16/D17 (final) + §3.7.6 + D21; PROGRESS protocol block added. Gap R1: 05.02 --revive returns HEALTHY only -> dedicated vault sorter tool needed. Next = MAINT-3-B after D1-D21.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_a3_audit_written_awaiting_owner_decisions_d1_d20",
+    "status": "maint3_a4_invariant_fixed_awaiting_owner_decisions_d1_d21",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -87,8 +87,8 @@
     ],
     "next": {
       "ticket": "MAINT-3-B",
-      "blocked_on": "owner decisions D1-D20 in RESUME §4 (or 'as recommended')",
-      "plan": "tests red-first (p51 x21 + conscious P50 test_09 update) -> p03: constants + move fn + log fn after 1297 -> p06: replace 3627 + FORBIDDEN branch after 3642 with threshold -> PARTS shift -> rebuild (safe) -> scripts/return_from_cooldown.py -> README_COOLDOWN_VAULT.md -> closure by names + 3 docs"
+      "blocked_on": "owner decisions D1-D21 in RESUME §4 (or 'as recommended')",
+      "plan": "tests red-first (p51 x26 + conscious P50 test_09 update) -> p03 constants+move+log fns after 1297 -> p06: replace 3627 + FORBIDDEN branch after 3642 with threshold -> PARTS shift -> rebuild (safe) -> scripts/cooldown_vault_sorter.py (vault-only input; HEALTHY/DEAD/STALE routing; --max-network-checks; --prune-backups) -> README_COOLDOWN_VAULT.md (single scheduled command, absolute paths) -> closure by names + 3 docs"
     },
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
@@ -327,6 +327,35 @@
         "D19 FORBIDDEN_MOVE_AFTER_N=2",
         "D20 absolute -q path"
       ]
+    },
+    "constitutional_invariants": {
+      "exclusive_cooldown_vault_scan": {
+        "approved": "2026-10-31 owner card (non-negotiable)",
+        "rule": "Periodic scan every 12h (12:00 & 00:00) targets ONLY accounts_cooldown.json.",
+        "forbidden_scan_inputs": [
+          "accounts_failed.json",
+          "accounts_delayed_gifts_credits.json"
+        ],
+        "write_destinations_only": {
+          "HEALTHY": "accounts_genspark.json",
+          "DEAD": "accounts_failed.json",
+          "STALE": "accounts_delayed_gifts_credits.json",
+          "undecided": "stays in accounts_cooldown.json"
+        },
+        "exit": "immediate, exit 0, no threads/cache/network beyond per-cycle cap",
+        "evidence_gap_R1": "05.02 --revive returns HEALTHY only (662-667); no failed_path/DEAD/STALE routing in 644-701; running 05.02 without --revive scans primary (436-462) = violation",
+        "implication": "dedicated scripts/cooldown_vault_sorter.py (no 05.02 edits); D21 recommends hybrid offline-first + capped network via spec_from_file_location reuse of 05.02 check_account_status"
+      }
+    },
+    "maint3_a4": {
+      "changed": [
+        "RESUME §3.7.2 replaced with invariant",
+        "D16/D17 rewritten as final",
+        "§3.7.6 R1-R7 added",
+        "D21 added; D3 updated to sorter tool",
+        "PROGRESS protocol block + A4 [x]"
+      ],
+      "extra_tests": "(22)-(26)"
     }
   },
   "completed_pr9_arena_addendum": {
