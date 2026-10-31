@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "Tri-state/DEC-07 roadmap: STEP-3 closed (+S3-LOG-1 full e-mails in script logs, owner decision); STEP-4 S4-A spec written in PROGRESS; awaiting owner decisions (1)-(7) then 'start execution' for S4-B.",
+    "task": "Tri-state/DEC-07 roadmap: STEP-3 closed; STEP-4 (DEC-07) CLOSED with evidence (S4-A spec, S4-A-RATIFIED decisions 1-7, S4-B 19 tests red-first, S4-C 3 injections in 01.33 + PARTS/parity, S4-D closure by names). Next first [ ] = MAINT-1.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "step3_closed_s4a_spec_written_awaiting_owner_decisions_1_to_7",
+    "status": "step4_closed_next_maint1",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -85,7 +85,18 @@
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": "On owner decisions (1)-(7) + 'start execution': Layer A -> PROGRESS head -> pytest by names + docs -> S4-B tests red -> S4-C 01.33 (CRLF, parity, restore github_bulk_sync.py) -> S4-D close.",
+    "next": {
+      "ticket": "MAINT-1",
+      "scope": [
+        "scripts/rebuild_refactor.py",
+        "tests/test_refactor_parity.py"
+      ],
+      "spec": "no blind rmtree (delete generated only or allowlist owner file git/github_bulk_sync.py); write with newline='' preserving CRLF as in HEAD; new parity test proves owner file + CRLF survive; idempotent rebuild => clean git status",
+      "then": [
+        "MAINT-3 FORBIDDEN in failover (needs owner choice: LOW_BALANCE-like skip vs quarantine)",
+        "MAINT-2 deferred DEC-04"
+      ]
+    },
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
     "roadmap_priority": [
@@ -169,44 +180,43 @@
       "logging": "S3-LOG-1: mask_email removed -> display_email (full e-mail); summary keys added_emails/skipped_existing_emails; passwords/cookies never printed; test_13 rewritten; 14 passed; full suite 1182/26 same names"
     },
     "step4": {
-      "S4-A": "written 2026-10-31 (read-only verification of 01.33)",
-      "verified": "detect_response_status returns EMPTY (2060) but EMPTY not a loop-exit in monitor_chat_completion (2869) -> polls until session_timeout (BridgeConfig:989=2000s) -> TIMEOUT ~33min; no empty-streak counter; no user_suspended detection in 01.33; FORBIDDEN unhandled in failover (side finding)",
-      "proposed_constants": [
+      "decisions_ratified": "(1) EMPTY_STREAM_FAILED + ACCOUNT_SUSPENDED; (2) 3 empty reads + 30s min; (3) 1h cooldown for empty, status=suspended/quarantined=True/cookies={} for banned; (4) 403 stays FORBIDDEN; (5) pure offline, no /user_suspended probe; (6) full email via existing log_event(email=); (7) FORBIDDEN in failover = MAINT-3",
+      "file": "01.33_telegram_gen_bridge.py",
+      "lines_before": 9660,
+      "lines_after": 9736,
+      "crlf": true,
+      "py_compile": "ok",
+      "added": [
         "DEC07_EMPTY_BREAKER_ENABLED=True",
         "DEC07_EMPTY_READS_REQUIRED=3",
         "DEC07_EMPTY_MIN_SECONDS=30",
-        "DEC07_SUSPENDED_MARKERS"
+        "DEC07_EMPTY_COOLDOWN_HOURS=1.0",
+        "DEC07_SUSPENDED_MARKERS",
+        "EMPTY_STREAM_FAILED_STATUS",
+        "ACCOUNT_SUSPENDED_STATUS",
+        "dec07_text_has_suspended_marker"
       ],
-      "proposed_statuses": [
-        "EMPTY_STREAM_FAILED",
-        "ACCOUNT_SUSPENDED"
-      ],
-      "injection_points": [
-        "A: monitor_chat_completion loop ~2905-2914 (empty_streak + guards readiness/unconfirmed/maintenance/evidence.finished)",
-        "A2: textual suspended markers",
-        "B: send_message_with_auto_account_failover ~3566-3600 next to LOW_BALANCE"
+      "modified": [
+        "monitor_chat_completion (dec07_armed + single breaker point after current_attempt_reply)",
+        "send_message_with_auto_account_failover (two branches before LOW_BALANCE: empty-stream-skip cooldown 1h / account-suspended-skip quarantine)"
       ],
       "untouched": [
-        "is_account_ready",
-        "P48",
-        "detect_response_status",
-        "detect_response_status_gated",
         "P44_STRUCTURED_STATUSES",
-        "P25",
+        "is_account_ready",
+        "P48 gift preflight",
         "01.03",
         "verifier",
         "05.02"
       ],
-      "tests_planned": "tests/test_p50_dec07_breaker.py ~12",
-      "owner_decisions_pending": [
-        "(1) status names",
-        "(2) thresholds 3 reads / 30s",
-        "(3) cooldown for EMPTY_STREAM_FAILED",
-        "(4) repeated 403 + empty = suspected ban?",
-        "(5) exclude live probe valve",
-        "(6) full e-mails in [DEC07] logs vs Doc12 Zero-Leakage",
-        "(7) separate ticket for FORBIDDEN in failover"
-      ]
+      "tests": {
+        "file": "tests/test_p50_dec07_breaker.py",
+        "count": 19,
+        "red_first": "10 failed / 9 passed",
+        "result": "19 passed"
+      },
+      "parity": "PARTS p05 1956-2508; p06..p12 shifted +76 (2509-3961/3962-5144/5145-5709/5710-7336/7337-7647/7648-8182/8183-9736); boundaries verified byte-by-byte vs previous file; rebuild run; github_bulk_sync.py restored; CRLF restored on 36 files; test_refactor_parity 11 passed",
+      "full_suite": "1201 passed / 26 failed / 1 skipped — failing names identical to baseline (0 new)",
+      "docs_integrity": "exit 0"
     }
   },
   "completed_pr9_arena_addendum": {
