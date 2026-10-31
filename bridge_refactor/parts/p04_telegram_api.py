@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p04_telegram_api
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1144..1667
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1400..1955
 المحتوى: Telegram API core + P34: ثوابت ودوال Safe Message Formatting (PREVIEW_MAX_CHARS/RES_MSG_MAX_CHARS/OUTGOING limits + _strip_partial_html_token + clamp_preview_text + enforce_completion_message_budget + clamp_outgoing_text محقونة في payload الإرسال) + send/edit + editMessageReplyMarkup (P25) + AccountSelection Live Renderer/Transport (P29: سطر الحساب النشط + سطر تبديل الحساب بعد handoff) + send_document + P28: ALLOWED_DOCUMENT_EXTENSIONS/MAX_DOCUMENT_SIZE_BYTES + download_telegram_document_text (getFile → تنزيل UTF-8 آمن بلا Crash)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -25,10 +25,31 @@ def _call_telegram_api_json(method: str, payload: dict, timeout: int = 15) -> di
                 body = {}
             result = body.get("result") if isinstance(body, dict) and isinstance(body.get("result"), dict) else {}
             description = str(body.get("description") or getattr(response, "text", "") or "") if isinstance(body, dict) else str(getattr(response, "text", "") or "")
-            ok = bool(getattr(response, "status_code", 0) == 200 and (not isinstance(body, dict) or body.get("ok", True)))
+            status_code = int(getattr(response, "status_code", 0) or 0)
+            if status_code == 429:
+                retry_after = 3
+                if isinstance(body, dict) and isinstance(body.get("parameters"), dict):
+                    retry_after = int(body["parameters"].get("retry_after") or 3)
+                log_event("warning", f"⚠️ استلام HTTP 429 من تيليجرام ({method}) — انتظار {retry_after + 1} ثانية للتعافي...")
+                time.sleep(float(retry_after) + 1.0)
+                try:
+                    if mode == "curl_cffi":
+                        response = cffi.post(url, json=payload, timeout=timeout)
+                    else:
+                        response = requests.post(url, json=payload, timeout=timeout)
+                    try:
+                        body = response.json()
+                    except Exception:
+                        body = {}
+                    result = body.get("result") if isinstance(body, dict) and isinstance(body.get("result"), dict) else {}
+                    description = str(body.get("description") or getattr(response, "text", "") or "") if isinstance(body, dict) else str(getattr(response, "text", "") or "")
+                    status_code = int(getattr(response, "status_code", 0) or 0)
+                except Exception:
+                    pass
+            ok = bool(status_code == 200 and (not isinstance(body, dict) or body.get("ok", True)))
             return {
                 "ok": ok,
-                "status_code": int(getattr(response, "status_code", 0) or 0),
+                "status_code": status_code,
                 "result": result,
                 "description": description[:300],
                 "error": "" if ok else description[:300],
@@ -396,19 +417,30 @@ class AccountSelectionLiveTransport:
         self.last_text = ""
         self.renderer = AccountSelectionLiveRenderer(project_key=self.project_key, project_name=self.project_name)
         self.sent_handoff_signatures: set[str] = set()
+        self.last_publish_time = 0.0  # ⏱️ عداد الفرملة الزمنية ضد حظر تيليجرام
 
     def publish(self, event: dict) -> bool:
         text = self.renderer.apply(event)
+        now = time.time()
+        event_type = str(event.get("event") or "").strip()
+        is_priority = event_type in ("account-claimed", "attempt-succeeded", "continuation-handoff-ready")
+
+        # 🛡️ فرملة الـ 7 ثواني للأحداث السريعة (تخطي الحسابات) مع كسر فوري للأحداث المفصلية
+        if self.message_id and not is_priority and (now - self.last_publish_time < 7.0):
+            return True
+
         send_ok = False
         if self.message_id:
             edited = edit_telegram_message_text(self.chat_id, self.message_id, text)
             if edited.get("ok"):
+                self.last_publish_time = now
                 self.last_text = text
                 send_ok = True
         if not send_ok:
             sent = send_telegram_message_detailed(self.chat_id, text)
             if sent.get("ok") and sent.get("message_id") is not None:
                 self.message_id = sent.get("message_id")
+                self.last_publish_time = now
                 self.last_text = text
                 send_ok = True
             else:
