@@ -301,8 +301,8 @@ class MasterDelayedGiftsManager:
         فحص شامل للحساب: الرصيد الحي، الصلاحية، ومتى استلم آخر هدية يومية.
         يرجع: (status, days_since_gift, diagnostic_msg, balance, raw_gift)
         حالات status:
-          - "HEALTHY"    : سليم وله رصيد واستلم هدية حديثة (days < threshold_days)
-          - "STALE"      : سليم وشغال وباسورد صح، لكن هديته متأخرة (days >= threshold_days — الحد شامل، قرار المالك)
+          - "HEALTHY"    : سليم وله رصيد واستلم هدية حديثة (<= threshold_days)
+          - "STALE"      : سليم وشغال وباسورد صح، لكن هديته متأخرة (> threshold_days)
           - "DEAD"       : ميت أو محظور أو باسورد غلط
           - "AUTH_FAILED": خطأ شبكة مؤقت
         """

@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p08_registry_index
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5069..5633
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 4631..5195
 المحتوى: Project run locks + P25: Interactive Cancellation Manager (register/trigger/unregister cancel events) + registry index I/O + identity + resume context + P26: is_project_build_active + delete_project_atomically (الحذف الذري الشامل: فهرس + شجرة + قرص) + viewer URLs + live preview keyboard (P25: cancel_token + confirm_cancel)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -134,7 +134,7 @@ def unregister_cancel_event(token: str) -> bool:
 def _utc(): return datetime.now(timezone.utc).isoformat()
 def _sha256_file(path):
     h=hashlib.sha256()
-    with open(_to_win_long_path(path),"rb") as f:
+    with open(path,"rb") as f:
         for block in iter(lambda:f.read(1024*1024), b""): h.update(block)
     return h.hexdigest()
 
@@ -468,10 +468,10 @@ def delete_project_atomically(project_key: str) -> dict:
     result["tree_removed"] = _remove_project_from_tree_file(project_pids)
 
     # 4️⃣ حذف مجلد المشروع كاملاً من القرص project_registry/<key>/
-    project_dir = _to_win_long_path(PROJECT_REGISTRY_HOME / key)
+    project_dir = PROJECT_REGISTRY_HOME / key
     if project_dir.exists() and project_dir.is_dir():
         try:
-            shutil.rmtree(str(project_dir))
+            shutil.rmtree(project_dir)
             result["disk_removed"] = True
         except Exception as err:
             log_event("error", f"🗑️ [P26] فشل حذف مجلد المشروع من القرص: {err}")
