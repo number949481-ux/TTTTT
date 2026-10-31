@@ -6,7 +6,8 @@ Isolation rules:
   * ``tmp_path`` only — never touches real account files.
   * No network: ``socket.socket`` raises for any attempt.
   * The script is loaded via ``importlib`` and driven through ``main(argv) -> int``.
-  * Zero-Leakage: stdout must never contain full e-mails, passwords or cookies.
+  * Logging contract (owner decision 2026-10-31): e-mails are printed IN FULL (no masking);
+    passwords and cookies must never appear in stdout.
 """
 
 from __future__ import annotations
@@ -277,23 +278,28 @@ def test_12_record_without_email_skipped_invalid(mod, tmp_path, capsys):
     assert summary["legacy_total"] == 5
 
 
-# ── 13: Zero-Leakage ─────────────────────────────────────────────────────────
+# ── 13: Logging contract — full e-mails, never secrets ──────────────────────
 
-def test_13_zero_leakage_stdout(mod, files, capsys):
+def test_13_full_emails_in_stdout_no_secrets(mod, files, capsys):
     legacy, failed = files
-    _write(failed, [_failed_rec("alpha@example.com")])  # force a skipped_existing line too
+    _write(failed, [_failed_rec("alpha@example.com")])  # force a skipped_existing entry too
     assert _run(mod, legacy, failed, "--apply") == EXIT_OK
     out = capsys.readouterr().out
     low = out.lower()
-    assert "alpha@example.com" not in low
-    assert "beta@example.com" not in low
-    assert "gamma@example.com" not in low
+    # owner decision: e-mails are explicit and complete — no stars, no masking
+    assert "alpha@example.com" in low
+    assert "beta@example.com" in low
+    assert "***" not in out
+    summary = json.loads(out[out.index("{"):out.rindex("}") + 1])
+    assert summary["added_emails"] == ["beta@example.com"]
+    assert summary["skipped_existing_emails"] == ["alpha@example.com"]
+    assert "added_masked" not in summary and "skipped_existing_masked" not in summary
+    # secrets are still never printed
     assert "supersecretp@ss" not in low
     assert "cookie_secret_value" not in low
-    assert "al***@" in low or "be***@" in low  # masked form is what gets printed
-    assert mod.mask_email("alpha@example.com") == "al***@example.com"
-    assert "@" not in mod.mask_email("no-at-sign")
-    assert mod.mask_email("") == "<empty>"
+    assert mod.display_email("  Alpha@Example.com ") == "Alpha@Example.com"
+    assert mod.display_email("") == "<empty>"
+    assert not hasattr(mod, "mask_email")
 
 
 # ── 14: path guard ───────────────────────────────────────────────────────────
