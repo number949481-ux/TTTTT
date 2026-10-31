@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-3-A done (ALIGNMENT_ONLY): architecture review + Cut&Move spec for 403 isolation in RESUME §3 with line evidence; key finding T5: FORBIDDEN currently marked SUCCESS in accounts file (3928-3942). Next = MAINT-3-B code after owner decisions D1-D9.",
+    "task": "MAINT-3-A + A2 done (ALIGNMENT_ONLY): unified cooldown vault spec for FORBIDDEN + EMPTY_STREAM_FAILED, 05.02 periodic sorting via --revive -q without touching its code; RESUME §3-§3.6. Next = MAINT-3-B after owner decisions D1-D14.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_spec_written_awaiting_owner_decisions_d1_d9",
+    "status": "maint3_a2_spec_written_awaiting_owner_decisions_d1_d14",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -87,8 +87,8 @@
     ],
     "next": {
       "ticket": "MAINT-3-B",
-      "blocked_on": "owner decisions D1-D9 in RESUME §4",
-      "plan": "tests red-first -> p03 constants+move+log fns after 1297 -> p06 branch after 3642 -> PARTS shift -> rebuild (safe) -> closure by names + 3 docs"
+      "blocked_on": "owner decisions D1-D14 in RESUME §4",
+      "plan": "tests red-first (p51 x15 + conscious P50 test_09 update) -> p03 constants+move+log fns after 1297 -> p06: replace 3627 + new FORBIDDEN branch after 3642 -> PARTS shift -> rebuild (safe) -> README_COOLDOWN_VAULT.md -> closure by names + 3 docs"
     },
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
@@ -254,6 +254,36 @@
         "D7 prune-on-write 30d + cap (rec yes)",
         "D8 names as given (rec yes)",
         "D9 minimum fix if Cut&Move rejected"
+      ]
+    },
+    "maint3_a2_checkpoints": [
+      "cp0: LayerA ok @79bc873; no root main.py (only bridge_refactor/main.py, bot runner); reading 01.33 empty-reply + 05.02 --revive evidence",
+      "cp1: evidence read (01.03:2266/2505 strings; 01.33 EMPTY_STREAM_FAILED 3619-3631; 05.02 --revive 644-701/721/745, loader 236-245, schema 556-562/665, primary reload-at-save 488)",
+      "cp2: RESUME §3.6 + §4 D10-D14 written; PROGRESS A2 [x]; docs check pending"
+    ],
+    "maint3_a2": {
+      "premise_audit": {
+        "P1": "empty-reply strings are from 01.03 (2266/2505); 01.33 equivalent = EMPTY_STREAM_FAILED, today in-place 1h cooldown (3627) -> card modifies ratified decision 3 (D10)",
+        "P2": "no root main.py / scheduler in repo; bridge_refactor/main.py is the bot runner only -> scheduler external (D14)",
+        "P3": "05.02 can sort our vault today with --revive -q accounts_cooldown.json (721/745/644-701) but criterion is gift<=3d (662), not cooldown expiry (D11/D12)",
+        "P4": "05.02 untouched"
+      },
+      "spec_delta": [
+        "move fn takes reason param; COOLDOWN_VAULT_HOURS dict per reason (EMPTY=1.0 ratified)",
+        "EMPTY_STREAM_FAILED branch 3627 -> move with fallback to current mark_account_cooldown; P50 test_09 contract changes consciously",
+        "FORBIDDEN branch via same fn",
+        "COOLDOWN_VAULT_ENABLED + COOLDOWN_VAULT_REASONS switches",
+        "vault entries carry 05.02-compatible quarantine_info (556-562) so run_revival cleans them (665); keep password+cookies (311-338 needs them)",
+        "account_log first permanent 'schema' record; README_COOLDOWN_VAULT.md (D13)"
+      ],
+      "resurrection_race": "05.02 reloads primary at save time (488) and pops cut emails (490) -> only healthy_tested of the same round can re-add -> duplicate not loss; idempotent move + 'duplicate_detected' log event",
+      "extra_tests": "(11)-(15) in RESUME §3.6.5",
+      "decisions_added": [
+        "D10 modify ratified decision 3 (rec yes, keep 1h, fallback old)",
+        "D11 revive criterion gap (rec accept + return tool)",
+        "D12 cooldown_until_ts informational (rec enough)",
+        "D13 docs placement (rec code + README + schema record)",
+        "D14 confirm external 24h command --revive -q (no main.py in repo)"
       ]
     }
   },
