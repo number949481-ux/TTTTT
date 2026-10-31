@@ -29,7 +29,59 @@
 
 **ثوابت الحوكمة:** `01.03` وverifier READ-ONLY دائماً (verifier بإذن صريح AGENTS:22)؛ `tri_state_gift_master_review.md` وArena و`00_*`/`012345_*` مراجع لا تُمس؛ لا طباعة أسرار؛ أي PAT يظهر في الدردشة لا يُستخدم ويُطلب إلغاؤه.
 
-## نقطة الاستئناف الحالية — STEP-1 وSTEP-2 منجزان بالأدلة؛ التالي STEP-3 (دمج المعزل القديم Q-F)
+## نقطة الاستئناف الحالية — خريطة الطريق المعمارية (بعد مراجعة 360° — 2026-10-31)؛ STEP-2 مغلق؛ التالي STEP-3 (Q-F) بانتظار «ابدأ تنفيذ»
+
+> **هذا القسم هو المرجع الذاتي الوحيد لأي استئناف.** آخر `[x]` مصدَّق بالأدلة؛ أول `[ ]` في جدول الأولويات أدناه هو نقطة البدء. لا تنفيذ لأي تذكرة قبل إشارة «ابدأ تنفيذ» الصريحة من المالك لتلك التذكرة بعينها.
+
+### جدول الأولويات الصارم (مرتّب تنفيذياً — لا تخمين)
+
+| # | التذكرة | الحالة | الاعتماد | النطاق المسموح | الاعتماد على |
+|---|---|---|---|---|---|
+| 0 | **حزام الأمان Layer A** (كل جلسة، أول 30 ث) | دائم | ✅ معتمد | git فقط (لا ملفات) | — |
+| 1 | **STEP-1** اختبارات عزل 05.02 | `[x]` | ✅ | `tests/` | — |
+| 2 | **STEP-2** Pre-Flight أوفلاين في 01.33 | `[x]` مغلق | ✅ | `01.33` + `tests/` | STEP-1 |
+| 3 | **STEP-3 (Q-F)** دمج المعزل القديم → `accounts_failed.json` | `[ ]` **التالي المباشر** | ✅ مواصفة معتمدة (Gist RESUME11 + كرت 2026-10-31) — **التنفيذ ينتظر «ابدأ تنفيذ»** | `scripts/merge_legacy_quarantine.py` (جديد) + `tests/test_p49_*.py` + PROGRESS/RESUME/current_execution | STEP-2 |
+| 4 | **STEP-4 (DEC-07)** صمام الرد الفارغ + كسر حلقة الـ33 دقيقة في 01.33 | `[ ]` مجدول | ✅ مجدول رسمياً (كرت 2026-10-31) — مواصفة تفصيلية تُكتب بعد إغلاق STEP-3 | `01.33` (`monitor_chat_completion` + failover) + `tests/test_p50_*.py` | STEP-3 |
+| 5 | **MAINT-1** حماية `bridge_refactor/git/github_bulk_sync.py` + CRLF في `rebuild_refactor.py` | `[ ]` مجدول | ✅ مجدول (كرت 2026-10-31) | `scripts/rebuild_refactor.py` + `tests/test_refactor_parity.py` | — (مستقل؛ يُنفَّذ بعد STEP-4 أو عند أول حاجة لإعادة توليد) |
+| 6 | **MAINT-2** الـ14 اختباراً drift من commits المالك | `[ ]` مؤجل | ⏸️ قرار المالك DEC-04: مؤجل؛ يحتاج قرار (تحديث الاختبارات أم إصلاح الكود) | `tests/` فقط | — |
+| 7 | **Layer B/C** (حارس فرع في أداة المزامنة / اختبار tripwire) | مقترح | ❌ غير معتمد | — | — |
+
+**قاعدة الانتقال:** لا تُفتح تذكرة قبل إغلاق سابقتها بالأدلة (اختبارات بالأسماء + `verify_docs_integrity` Exit 0 + تحديث الوثائق الثلاث)، إلا MAINT-1 المستقلة.
+
+### ثوابت العقد المثبّتة (STEP-2 — مغلق نهائياً)
+`GIFT_PREFLIGHT_ENABLED=True` · `GIFT_STALE_DAYS=14` (شامل `>=`) · `GIFT_GRACE_DAYS=3` · `GIFT_SNAPSHOT_MAX_AGE_HOURS=72` · `GIFT_LABELS={FRESH,GRACE,STALE,UNKNOWN}` · `classify_gift_freshness(acc, now=None, stale_days=None, grace_days=None) -> (label, days)` نقية بلا شبكة/IO · نقطة حقن واحدة في `get_eligible_accounts` بعد `is_account_ready` · STALE يُستبعد عند **الاختيار فقط** (لا عزل ملفات؛ in-flight يكمل) · UNKNOWN = Fail-Open في الذيل · `False` = السلوك القديم حرفياً · صفر كتابة/cooldown. **تصحيح صياغة DEC-01:** الاستبعاد وقت الاختيار وليس «عزل»؛ أي تغيير لهذه الثوابت = تذكرة جديدة.
+
+### مواصفة STEP-3 (Q-F) — معتمدة، بانتظار «ابدأ تنفيذ»
+
+**القرارات المعتمدة (Gist RESUME11.md + كرت 2026-10-31):** سكربت مستقل `scripts/merge_legacy_quarantine.py`؛ **عدم لمس 05.02 نهائياً** (استيراد مساعداته فقط: `create_backup` 207 / `atomic_save_json` 221 / `load_accounts` 236 عبر `spec_from_file_location` + stub لـ`genspark_master_account_manager`)؛ `--dry-run` هو الافتراضي والكتابة **فقط** مع `--apply`؛ نسخة `.bak` مؤرخة للملفين قبل أي كتابة؛ التفرد بـ`email.strip().lower()`؛ الحقول القديمة تُحفظ تحت `"legacy_quarantine"`؛ اختبارات أولاً؛ ملف مفقود/تالف → لا تغيير + رسالة واضحة + **لا `.bak`**؛ **حارس المسار معتمد**: أي مسار يطابق أسماء الملفات الحقيقية خارج `tmp`/مجلد اختبار يُرفض إلا مع `--i-know-this-is-real`؛ **صفر تشغيل على ملفات حقيقية** إلا بأمر صريح.
+
+- [ ] **S3-A — عقد البيانات (مثبّت هنا؛ لا كود):**
+  - **المصدر (legacy):** `accounts_genspark_blocked_failed__block_failed.json` (verifier `QUARANTINE_FILENAME`:39؛ يكتبه `quarantine_account_atomic` 376–420). الشكل: `list[dict]` بحقول `email, password?, status="suspended", quarantine_verdict, quarantine_detail, quarantined_at ("%Y-%m-%dT%H:%M:%S"), active=False, balance=0, cookies={}` (+ أي حقول أخرى من السجل الأصلي).
+  - **الهدف (failed):** `accounts_failed.json` (05.02 `Config.FAILED_FILE`:102). الشكل المقبول: `list[dict]` **أو** `{"accounts":[...]}` (كما يقرأ `load_accounts`)؛ سجل 05.02 القياسي يحمل `status, failure_reason, dead_reason, removed_at ("%Y-%m-%d %H:%M:%S")`. **يُحفظ بالشكل نفسه الذي وُجد عليه** (list يبقى list؛ dict يبقى dict).
+  - **سجل الدمج الناتج لكل حساب legacy غير موجود في الهدف:** `{email, password (إن وُجد), status: "suspended", failure_reason: "legacy_quarantine: <quarantine_verdict>", dead_reason: <quarantine_detail or verdict>, removed_at: <quarantined_at محوَّل إلى "%Y-%m-%d %H:%M:%S" أو كما هو إن تعذّر التحويل>, merged_from_legacy_at: <now>, legacy_quarantine: {<السجل القديم كاملاً بلا تعديل>}}`. لا نقل `cookies`/`balance`/`active` إلى المستوى الأعلى (تبقى داخل `legacy_quarantine`).
+  - **سياسة التعارض (email موجود في الهدف):** لا كتابة فوق السجل الموجود (**الأقدم يفوز**)؛ يُحتسب `skipped_existing` ويُطبع بقناع البريد. ⏳ **يحتاج تأكيد المالك قبل S3-C** — هذا هو الافتراض المقترح وليس قراراً معتمداً.
+  - **`dead_accounts.json`:** **لا يُمس** في STEP-3 (الهدف الوحيد `accounts_failed.json` كما نص Q-F). ⏳ إن أراد المالك مزامنته أيضاً فتذكرة فرعية S3-E لاحقة.
+  - **الملف القديم بعد `--apply`:** يبقى في مكانه **كما هو** + `.bak` مؤرخة؛ الدمج idempotent (التشغيل الثاني = 0 إضافات). ⏳ خيار «إفراغ/إعادة تسمية الملف القديم» غير معتمد — لا يُنفَّذ.
+  - **المخرجات:** ملخص رقمي `{legacy_total, target_before, added, skipped_existing, skipped_invalid, target_after, dry_run, backups:[...]}` + **Zero-Leakage**: البريد يُطبع مقنّعاً (`ab***@domain`)، لا طباعة كلمات مرور/كوكيز أبداً. رمز الخروج: 0 نجاح/dry-run؛ 2 ملف مفقود/تالف؛ 3 رُفض حارس المسار.
+- [ ] **S3-B — اختبارات أولاً** `tests/test_p49_legacy_quarantine_merge.py` (tmp_path فقط؛ 14 اختباراً مخططاً): (1) dry-run افتراضي لا يكتب ولا ينشئ `.bak`؛ (2) `--apply` يكتب ويُنشئ `.bak` للملفين؛ (3) تفرد `email.lower()` مع اختلاف الحالة/المسافات؛ (4) الحقول القديمة كاملة تحت `legacy_quarantine`؛ (5) تحويل `quarantined_at` → `removed_at`؛ (6) الأقدم يفوز عند التعارض؛ (7) idempotent (تشغيلان = نفس الناتج)؛ (8) legacy مفقود → exit 2 + لا تغيير + لا `.bak`؛ (9) legacy JSON تالف → exit 2 + لا تغيير؛ (10) هدف مفقود → يُنشأ كـlist؛ (11) هدف بشكل `{"accounts":[...]}` يُحفظ بالشكل نفسه؛ (12) سجل بلا email يُتخطى (`skipped_invalid`)؛ (13) Zero-Leakage: لا بريد كامل/كلمة مرور/كوكي في stdout؛ (14) حارس المسار: اسم ملف حقيقي خارج tmp → exit 3 بلا `--i-know-this-is-real`. تُكتب **حمراء** أولاً ويُوثَّق العدد الأحمر هنا.
+- [ ] **S3-C — السكربت** `scripts/merge_legacy_quarantine.py` (CLI: `--legacy PATH`, `--failed PATH`, `--apply`, `--i-know-this-is-real`؛ بدون `--apply` = dry-run). يبدأ **فقط** بعد تأكيد المالك لبنود ⏳ أعلاه أو قبوله الصريح للافتراضات المقترحة.
+- [ ] **S3-D — الإغلاق:** `pytest tests -q` مقارنة **بالأسماء** (الـ26 المعروفة؛ 0 جديد) + `verify_docs_integrity.py` Exit 0 + هذا الرأس `[x]` بالأدلة + `RESUME.md` + `current_execution`.
+
+### مواصفة STEP-4 (DEC-07) — مجدولة رسمياً؛ التفصيل بعد STEP-3
+
+- **المشكلة الموثقة (الوثيقتان 12 و13):** الرد الفارغ من Genspark و`user_suspended` يُبقيان حلقة المراقبة حتى `TIMEOUT` (~33 دقيقة) بدل التخطي الفوري للحساب التالي.
+- **الحالة في الكود (تحقق قراءة فقط 2026-10-31):** `monitor_chat_completion` (01.33: ~2838–2884) يعيد `TIMEOUT`/`CREDIT_UNCONFIRMED` فقط؛ **لا صمام رد فارغ ولا كسر `user_suspended`** في 01.33 (العبارة «مفيش نص في الرد» موجودة في 01.03:2505 فقط — READ-ONLY، لا نسخ منه بل تنفيذ مستقل).
+- [ ] **S4-A** مواصفة: حالات الإرجاع الجديدة (مقترح: `EMPTY_RESPONSE`, `ACCOUNT_SUSPENDED`) + عتبات الكسر (عدد الردود الفارغة المتتالية/الزمن) + سلوك failover (تخطٍّ فوري بلا cooldown طويل) — **تحتاج اعتماد المالك قبل S4-B**.
+- [ ] **S4-B** اختبارات أولاً `tests/test_p50_dec07_breaker.py` (حقن ردود وهمية؛ لا شبكة؛ CRLF؛ عدم لمس `is_account_ready`/P48).
+- [ ] **S4-C** التنفيذ في 01.33 (نقطة حقن واحدة في `monitor_chat_completion` + معالجة الحالة الجديدة في `send_message_with_auto_account_failover` ~3312+) + تحديث خريطة PARTS/parity.
+- [ ] **S4-D** الإغلاق بالأدلة (أسماء + docs + الوثائق الثلاث).
+
+### تذاكر الصيانة (MAINT) — مجدولة
+
+- [ ] **MAINT-1** `scripts/rebuild_refactor.py`: (أ) لا `rmtree` أعمى — حذف الأجزاء المولَّدة `parts/p01..p12` فقط، أو allowlist حفظ يضم `bridge_refactor/git/github_bulk_sync.py` (ملف المالك، 49 سطراً، غير مولَّد)؛ (ب) كتابة بـ`newline=""` مع حفظ CRLF للأجزاء كما في HEAD؛ (ج) اختبار في `tests/test_refactor_parity.py` يثبت بقاء ملف المالك وCRLF بعد التوليد. **المحفّز:** حدث مرتين (جلستا 8 و9) وأُصلح يدوياً.
+- [ ] **MAINT-2** الـ14 drift (p17×2، p20، p24×2، p26، p31×5، p33، p46 `test_full_isolated_metrics_display`، p47 بيئي `curl_cffi`) — **مؤجلة بقرار المالك DEC-04**؛ تحتاج قراراً: تحديث الاختبارات لتعكس v5.4 أم إصلاح الكود. لا تُلمس قبل القرار.
+
+### السجل التاريخي للمحطات المنجزة (أدلة)
 
 - القاعدة المنشورة: remote `genspark_ai_developer` = `65f7078abda243ba5e95af0a48dfbdca7f27fe62` (رفع المالك اليدوي لمحتوى v6؛ يضم V2 §17.1–17.5). main@adaf586 مدموج (Already up to date). PR9 OPEN/Draft. Gist لم يتغير (revision d6a0088؛ ليس GO تشغيلياً). ملاحظة: §17.6 (مرور الاتساق + جدول S↔V2T) كُتب في commit محلي سابق ضاع بـreset ولم يُعد كتابته — المالك منع المراجعات النظرية قبل تسليم commit الاختبارات.
 - **GO مرحلي من المالك** بقرارات: **Q-F** نعم — دمج حسابات المعزل القديم داخل `accounts_failed.json` مع نسخة أرشيفية للملف القديم. **Q-C** فحص الهدية استباقي (Pre-Flight) قبل إطلاق الطلب؛ أي حساب قيد التنفيذ يكمل طبيعياً. **Q-R** نعم — حذف `manifest.json` و`review_recovery.patch` من الجذر.
@@ -43,7 +95,7 @@
   - [x] **S2-B** (مطبّق؛ `tests/test_p48_gift_preflight.py` → **34 passed**؛ `py_compile` ok؛ CRLF نقي؛ 01.33 = 9660 سطراً) `01.33`: ثوابت `GIFT_PREFLIGHT_ENABLED/GIFT_STALE_DAYS=14/GIFT_GRACE_DAYS=3` + `classify_gift_freshness` (نقية) بجوار `is_account_ready` + تعديل جسم `get_eligible_accounts` فقط (نقطة حقن واحدة؛ `send_message_with_auto_account_failover` لا يُمس). CRLF محفوظ.
   - [x] **S2-C** (منفّذ: خريطة PARTS محدَّثة لـ9660 سطراً؛ `test_parts_reassemble_to_original` أخضر؛ `github_bulk_sync.py` مُستعاد؛ CRLF مُستعاد على 36 ملفاً؛ الحزمة الكاملة **1168 passed / 26 failed** = نفس أسماء ما قبل STEP-2 بالضبط — 0 جديد، 0 انحدار؛ docs Exit 0) إعادة توليد parity (`rebuild_refactor.py` بعد تحديث النطاقات) + استعادة `github_bulk_sync.py` وCRLF + الحزمة الكاملة مقابل قائمة الأسماء + `verify_docs_integrity` Exit 0.
   - [x] **S2-D** توثيق: هذا الرأس + `RESUME.md` + `current_execution`.
-- [ ] **STEP-3** (**التالي المباشر**) — أداة دمج ملف المعزل القديم (`accounts_genspark_blocked_failed__block_failed.json` — verifier QUARANTINE_FILENAME) في `accounts_failed.json` مع نسخة أرشيفية `.bak` مؤرخة للملف القديم (Q-F)؛ تعتمد `create_backup`/`atomic_save_json`/`load_accounts` من 05.02 (استيراد بـstub كما في STEP-1)؛ إلحاق بلا تكرار (مفتاح email lower)؛ dry-run افتراضي؛ **لا تشغيل على ملفات حقيقية إلا بأمر المالك**. اختبارات معزولة أولاً (`tests/test_p49_legacy_quarantine_merge.py`). نطاق مقترح: سكربت جديد `scripts/merge_legacy_quarantine.py` + tests + docs — **يحتاج تأكيد المالك لاسم/موقع السكربت**.
+- [ ] **STEP-3** — المواصفة الكاملة والمعتمدة في قسم «مواصفة STEP-3 (Q-F)» أعلاه (اسم/موقع السكربت `scripts/merge_legacy_quarantine.py` **اعتُمد** عبر Gist RESUME11.md؛ لم يعد سؤالاً مفتوحاً). **2026-10-31 — جلسة [ALIGNMENT_ONLY]**: مراجعة 360° للوثائق 01–14 + تحقق قراءة فقط من 01.33/05.02/verifier؛ لم يُكتب أي كود؛ خريطة الطريق أعلاه هي ناتجها.
 - ثوابت: لا تشغيل 05.02 حياً/لا Genspark/Telegram/Qwen حي؛ لا migration/deploy/merge إلى main؛ `tri_state_gift_master_review.md` وArena و00/012345 مراجع لا تُمس؛ لا طباعة أسرار.
 
 ## أرشيف نقطة 04d9584 — Full Review جارٍ بدفعات (نُشر ضمن 65f7078)

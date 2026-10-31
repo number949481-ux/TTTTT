@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "Tri-state gift integration: STEP-2 (offline Pre-Flight gift layer in bridge) DONE; next STEP-3 (merge legacy quarantine into accounts_failed.json, Q-F).",
+    "task": "Tri-state gift integration: STEP-2 CLOSED; roadmap (STEP-3 Q-F -> STEP-4 DEC-07 -> MAINT-1 -> MAINT-2 deferred) fixed in PROGRESS.md head after 360 review; STEP-3 spec approved, execution awaits explicit 'start execution' signal.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "step2_done_awaiting_owner_scope_confirmation_for_step3",
+    "status": "alignment_only_roadmap_fixed_step3_spec_approved_awaiting_go",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -85,12 +85,68 @@
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": [
-      "Owner confirms STEP-3 script location (scripts/merge_legacy_quarantine.py) or alternative",
-      "STEP-3 tests first: tests/test_p49_legacy_quarantine_merge.py",
-      "STEP-3 script with dry-run default; never run on real files without explicit owner order"
-    ],
-    "history_notice": "all other keys preserved as prior records; not active instructions"
+    "next": "On 'start execution': Layer A -> read PROGRESS head -> pytest by names + verify_docs_integrity -> S3-A confirm -> S3-B tests red -> S3-C script -> S3-D close. No code before the signal.",
+    "history_notice": "all other keys preserved as prior records; not active instructions",
+    "mode": "[ALIGNMENT_ONLY]",
+    "roadmap_priority": [
+      {
+        "id": "STEP-1",
+        "state": "done"
+      },
+      {
+        "id": "STEP-2",
+        "state": "done_closed",
+        "contract_constants": "GIFT_PREFLIGHT_ENABLED=True, GIFT_STALE_DAYS=14 (>=), GIFT_GRACE_DAYS=3, GIFT_SNAPSHOT_MAX_AGE_HOURS=72, GIFT_LABELS; single injection in get_eligible_accounts; selection-time exclusion only"
+      },
+      {
+        "id": "STEP-3",
+        "state": "next_spec_approved_awaiting_go",
+        "scope": [
+          "scripts/merge_legacy_quarantine.py (new)",
+          "tests/test_p49_legacy_quarantine_merge.py (new)",
+          "PROGRESS.md",
+          "RESUME.md",
+          "current_execution"
+        ],
+        "do_not_touch": [
+          "05.02",
+          "01.33",
+          "01.03",
+          "verifier"
+        ],
+        "chunks": [
+          "S3-A data contract (written in PROGRESS)",
+          "S3-B 14 tests red-first",
+          "S3-C script: --legacy --failed --apply --i-know-this-is-real; dry-run default",
+          "S3-D close by names + docs + three docs"
+        ],
+        "pending_owner_confirmations": [
+          "conflict policy oldest-wins",
+          "dead_accounts.json out of scope",
+          "legacy file stays + dated .bak"
+        ]
+      },
+      {
+        "id": "STEP-4",
+        "state": "scheduled_after_step3",
+        "summary": "DEC-07: empty-response valve + user_suspended immediate break in monitor_chat_completion (01.33 ~2838-2884) + failover handling; S4-A spec needs owner approval; tests tests/test_p50_dec07_breaker.py first",
+        "verified": "not implemented in 01.33 (read-only check 2026-10-31)"
+      },
+      {
+        "id": "MAINT-1",
+        "state": "scheduled_independent",
+        "summary": "rebuild_refactor.py: protect bridge_refactor/git/github_bulk_sync.py (no blind rmtree) + preserve CRLF + parity test"
+      },
+      {
+        "id": "MAINT-2",
+        "state": "deferred_owner_DEC-04",
+        "summary": "14 drift tests; needs owner decision"
+      },
+      {
+        "id": "Layer B/C",
+        "state": "proposed_not_approved"
+      }
+    ]
   },
   "completed_pr9_arena_addendum": {
     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
