@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-3-A/A2/A3/A4 done (ALIGNMENT_ONLY). A4 = owner's non-negotiable Exclusive Cooldown-Vault Scan Invariant fixed in RESUME §3.7.2 + D16/D17 (final) + §3.7.6 + D21; PROGRESS protocol block added. Gap R1: 05.02 --revive returns HEALTHY only -> dedicated vault sorter tool needed. Next = MAINT-3-B after D1-D21.",
+    "task": "MAINT-3-A/A2/A3/A4/A5 done (ALIGNMENT_ONLY). A5 = owner's 5th card: cancel parallel scripts (cooldown_vault_sorter/return_from_cooldown), 05.02 surgical edit ONLY inside run_revival (632-701) per S1-S7, charter (360 + 10 principles + invariants) pinned byte-identical in PROGRESS/RESUME headers; D3/D18/D21 rewritten, D22-D25 added. Next = MAINT-3-B after D1-D25.",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_a4_invariant_fixed_awaiting_owner_decisions_d1_d21",
+    "status": "maint3_a5_aligned_awaiting_owner_decisions_d1_d25",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -85,11 +85,7 @@
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": {
-      "ticket": "MAINT-3-B",
-      "blocked_on": "owner decisions D1-D21 in RESUME §4 (or 'as recommended')",
-      "plan": "tests red-first (p51 x26 + conscious P50 test_09 update) -> p03 constants+move+log fns after 1297 -> p06: replace 3627 + FORBIDDEN branch after 3642 with threshold -> PARTS shift -> rebuild (safe) -> scripts/cooldown_vault_sorter.py (vault-only input; HEALTHY/DEAD/STALE routing; --max-network-checks; --prune-backups) -> README_COOLDOWN_VAULT.md (single scheduled command, absolute paths) -> closure by names + 3 docs"
-    },
+    "next": "MAINT-3-B only after owner writes D1-D25 (or \"كما أوصيت\") in the card DECISIONS: red tests p51/p52 -> 01.33 p03/p06 -> 05.02 run_revival S1-S7 -> PARTS/rebuild -> README_COOLDOWN_VAULT.md -> charter guard -> closure by names. Doc 13 charter pinning awaits owner permission (D25).",
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
     "roadmap_priority": [
@@ -345,7 +341,9 @@
         "exit": "immediate, exit 0, no threads/cache/network beyond per-cycle cap",
         "evidence_gap_R1": "05.02 --revive returns HEALTHY only (662-667); no failed_path/DEAD/STALE routing in 644-701; running 05.02 without --revive scans primary (436-462) = violation",
         "implication": "dedicated scripts/cooldown_vault_sorter.py (no 05.02 edits); D21 recommends hybrid offline-first + capped network via spec_from_file_location reuse of 05.02 check_account_status"
-      }
+      },
+      "file_05_02_policy": "surgical edits ONLY inside run_revival body (632-701); tests-first; LF preserved; .bak before edit (owner A5 2026-10-31)",
+      "no_parallel_scripts_to_05_02": "never create scripts parallel to 05.02 (DRY / anti-complexity) — cooldown_vault_sorter.py and return_from_cooldown.py cancelled"
     },
     "maint3_a4": {
       "changed": [
@@ -356,6 +354,39 @@
         "PROGRESS protocol block + A4 [x]"
       ],
       "extra_tests": "(22)-(26)"
+    },
+    "maint3_a5_checkpoints": {
+      "cp0": "started 2026-10-31 after Layer A @94587ea; previous A5 write never landed (verified: 0 markers)",
+      "cp1": "DONE: charter pinned byte-identical in PROGRESS.md (before ## بروتوكول الاستئناف) + RESUME.md (before first ---)",
+      "cp2": "DONE: RESUME §3.8 (C1/C2, amendment, S1-S7, D23 gate, crash table, anchor shift +66, pinning proposal, tests 27-34) + D3/D18/D21 rewritten + D22-D25 + MODE row + PROGRESS A5 ticket/MAINT-3-B rewrite/row 5b/governance/resume header"
+    },
+    "maint3_a5": {
+      "date": "2026-10-31",
+      "mode": "ALIGNMENT_ONLY (no code written or run)",
+      "base": "genspark_ai_developer @ 94587ea (owner commits 976b017..94587ea: Turbo v01.04 merge into 01.33/01.03, Docs 17/18)",
+      "corrections": {
+        "C1": "function is run_revival (05.02:632-701), not revive_accounts",
+        "C2": "with -q <vault> manager has no delayed-gifts path (285-289) -> resolve_file_path(Config.QUARANTINE_FILE) inside the surgery"
+      },
+      "surgical_spec": "S1-S7 in RESUME §3.8.3; honest budget 12-16 lines inline or ~10 + _merge_by_email helper (D24)",
+      "cancelled": [
+        "scripts/cooldown_vault_sorter.py",
+        "scripts/return_from_cooldown.py"
+      ],
+      "anchor_shift": "01.33 now 9802 lines CRLF; p06 2509-4027; EMPTY branch 3685-3699 (mark_account_cooldown 3693); SUSPENDED 3700-3710; LOW_BALANCE 3711; success check 3994; finally 4021; EXECUTOR 4031; p03 anchors unchanged (1286/1297); 05.02 unchanged 756 LF",
+      "charter_pinned": {
+        "PROGRESS.md": "before ## بروتوكول الاستئناف",
+        "RESUME.md": "before first ---",
+        "doc13": "awaiting owner permission (D25)",
+        "guard": "D22 -> verify_docs_integrity.py in MAINT-3-B"
+      },
+      "new_decisions": [
+        "D22 charter guard",
+        "D23 STALE return policy",
+        "D24 helper vs inline",
+        "D25 doc13 pinning"
+      ],
+      "verification": "verify_docs_integrity.py Exit 0; charter byte-identical in both files; git status shows only PROGRESS.md/RESUME.md/recovery_state.json"
     }
   },
   "completed_pr9_arena_addendum": {
@@ -933,5 +964,20 @@
     "history_notice": "completed_compact_credit_execution and older review/active fields are historical",
     "secrets": "Never persist credentials in repository or remote URL",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/8"
+  },
+  "charter": {
+    "version": 1,
+    "pinned_in": [
+      "PROGRESS.md",
+      "RESUME.md"
+    ],
+    "proposed_for": [
+      "توثيق_…MAX_PATH/13_*.md (owner permission D25)"
+    ],
+    "items": [
+      "360° comprehensive vision before any decision",
+      "10 golden principles",
+      "active invariants: 12h scan exclusive to accounts_cooldown.json; no parallel scripts to 05.02; 01.03/verifier read-only; 05.02 surgical run_revival only; decisions in PROGRESS before code"
+    ]
   }
 }
