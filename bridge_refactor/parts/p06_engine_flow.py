@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2319..3710
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2388..3786
 المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -879,6 +879,11 @@ def send_message_and_make_public(
         if final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
             return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
 
+        # ⏱️ [P46] عزل مقاييس الأداء 360°: إغلاق عداد استجابة الذكاء الاصطناعي فوراً
+        # لمنع احتساب زمن تنزيل الأرشيف وفكه محلياً ضمن زمن التوليد الفعلي
+        close_account_timing_span(bridge_cfg, email)
+        t_local_prep_start = time.time()
+
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
         # 🚫⚡ [P40] Decline Fast-Path: رد الرفض القصير (COMPLETED تقنياً) لا يستحق
@@ -908,6 +913,8 @@ def send_message_and_make_public(
             final_public_url = f"https://www.genspark.ai/autopilotagent_viewer?id={pid}"
         else:
             final_public_url = make_project_always_public(pid, cookies, mod=mod, cfg=cfg, email=email, bridge_cfg=bridge_cfg)
+        if bridge_cfg is not None:
+            bridge_cfg.last_local_prep_seconds = max(0.0, time.time() - t_local_prep_start)
         save_project_branch(
             parent_id=extract_project_id(url) if url else None,
             child_id=pid,
