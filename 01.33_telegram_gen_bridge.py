@@ -115,6 +115,25 @@ def html_escape(text: str) -> str:
     return str(text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def _to_win_long_path(p: pathlib.Path | str | None) -> pathlib.Path | None:
+    r"""تحصين شامل لمسارات ويندوز لتجاوز قيد MAX_PATH (260 حرف) عبر البادئة \\?\ بأمان تام."""
+    if p is None:
+        return None
+    p_obj = pathlib.Path(p)
+    try:
+        resolved = str(p_obj.resolve())
+    except Exception:
+        resolved = str(p_obj)
+    if os.name == "nt":
+        resolved = resolved.replace("/", "\\")
+        if not resolved.startswith("\\\\?\\") and not resolved.startswith("\\\\.\\"):
+            if resolved.startswith("\\\\"):
+                resolved = "\\\\?\\UNC\\" + resolved.lstrip("\\")
+            else:
+                resolved = "\\\\?\\" + resolved
+    return pathlib.Path(resolved)
+
+
 # ══════════════════════════════════════════════════════════════
 # 🔎 [P23] البحث الهرمي للملفات المشتركة: محلي أولاً ثم الفولدر الأب (W___webapp/)
 # ══════════════════════════════════════════════════════════════
@@ -122,10 +141,33 @@ def resolve_shared_path(name: str) -> pathlib.Path:
     """مسار مشترك ذكي: لو الملف/المجلد موجود جنب النسخة يستخدمه (أولوية محلية)،
     وإلا يلقطه من الفولدر الأب المركزي — ولو غير موجود في الاثنين يرجع المحلي (للإنشاء).
     Zero Breaking Changes: النسخ القديمة بملفاتها المحلية تشتغل كما هي تماماً."""
-    local = SCRIPT_DIR / name
+    local = _to_win_long_path(SCRIPT_DIR / name)
+    parent = _to_win_long_path(SCRIPT_DIR.parent / name)
+    # 🛡️ [P23-GUARD] تحصين السجل المركزي وشجرة المشاريع:
+    # مجلد project_registry لا يُعتبر صالحاً إلا إذا احتوى على registry.json الفعلي.
+    # إذا كان المحلي مجرد مجلد فارغ أو ناتج اختبارات والأب يحتوي على registry.json الحقيقي، فالأولوية للأب دائماً.
+    if name == "project_registry":
+        if (local / "registry.json").exists():
+            return local
+        if (parent / "registry.json").exists():
+            return parent
+        if local.exists():
+            return local
+        if parent.exists():
+            return parent
+        return local
+    if name == "projects_tree.json":
+        if local.exists() and local.stat().st_size > 0:
+            return local
+        if parent.exists() and parent.stat().st_size > 0:
+            return parent
+        if local.exists():
+            return local
+        if parent.exists():
+            return parent
+        return local
     if local.exists():
         return local
-    parent = SCRIPT_DIR.parent / name
     if parent.exists():
         return parent
     return local
@@ -791,16 +833,21 @@ def filter_productive_account_entries(aggregated, last_email=None) -> tuple[list
     return filtered, False
 
 
-def format_account_timing_block(bridge_cfg, task_total_seconds=None) -> str:
-    """يبني كتلة إحصائيات الحسابات للرسالة النهائية (P30 + فلترة P39 الذكية).
+def format_account_timing_block(bridge_cfg, task_total_seconds=None, local_prep_seconds=None, github_sync_seconds=None, github_status=None) -> str:
+    """يبني كتلة إحصائيات الحسابات للرسالة النهائية (P30 + P39 + P46 فصل مقاييس الأداء 360°).
 
     P39: تُعرض الحسابات المنتجة فقط (عتبة PRODUCTIVE_SPAN_MIN_SECONDS) بأدوار
     واضحة — (البداية) / (استئناف k) / (🌟 الحساب المنجز) — وإجمالي زمن التوليد
     يُحسب من المفلتَر حصراً، بينما «الزمن الكلي للمهمة» (wall clock) مستقل.
+    P46: فصل مقاييس الأداء الثلاثة نقياً لمنع التلوث (Metrics Pollution):
+    1. 🧠 زمن توليد الذكاء الاصطناعي (مفصول بحساباته المنتجة واستئنافاته).
+    2. 📦 زمن الأرشفة والمعالجة المحلية (تنزيل وفك الأرشيف ومسح الملفات).
+    3. 🚀 زمن المزامنة والرفع لـ GitHub (منفصل تماماً بمحرك gh_bulk الذري v5.4).
+    4. 🕒 الزمن الكلي للمهمة.
     Fail-Open: لو كل الحسابات دون العتبة تُعرض القائمة الكاملة بالعنوان القديم.
     عداد الاستئنافات مصدره الوحيد last_credit_continuations (عقد P30 —
     لا يُشتق أبداً من عدد الحسابات). إيميلات كاملة مهرَّبة بلا masking (P29).
-    تُرجع "" فقط لو لا توجد spans إطلاقاً. التوقيع ثابت (عقد P30 محفوظ).
+    تُرجع "" فقط لو لا توجد spans إطلاقاً. التوقيع متوافق عكسياً 100%.
     """
     spans = getattr(bridge_cfg, "account_journey_spans", None) if bridge_cfg is not None else None
     aggregated = aggregate_journey_spans_per_email(spans)
@@ -837,12 +884,44 @@ def format_account_timing_block(bridge_cfg, task_total_seconds=None) -> str:
             f"  {idx}. <code>{html_escape(email)}</code> — "
             f"⏱ {format_compact_duration(item.get('total_seconds'))}{multi}{role}"  # ⏱️ [P40] مدة مضغوطة
         )
-    # ⏱️ [P39] السطر المدمج: إجمالي التوليد (من المفلتَر فقط) + عدد المنتجين + عداد الاستئنافات المستقل
+    # ⏱️ [P39+P46] المحاسبة الزمنية الثلاثية النقية — فصل مقاييس الأداء 360° (Zero Metrics Pollution)
     accounts_word = "حساب منتج" if shown_count == 1 else "حسابات منتجة"
     lines.append(
-        f"⏱️ <b>إجمالي زمن التوليد:</b> {format_compact_duration(productive_total)} "  # ⏱️ [P40]
+        f"🧠 <b>إجمالي زمن التوليد:</b> {format_compact_duration(productive_total)} "  # ⏱️ [P40]
         f"({shown_count} {accounts_word} | 🔁 {continuations} استئناف)"
     )
+
+    # 📦 زمن الأرشفة والمعالجة المحلية (تنزيل، فك ضغط الأرشيف، مسح وحساب الهاشات للـ 208 ملفات)
+    _fmt_phase = format_compact_duration
+    fast_mode = bool(getattr(bridge_cfg, "project_fast_lean_skip", False)) if bridge_cfg else False
+    if fast_mode:
+        lines.append("📦 <b>زمن الأرشفة والمعالجة المحلية:</b> متخطى (الوضع السريع)")
+    else:
+        prep = local_prep_seconds
+        if prep is None and bridge_cfg is not None:
+            prep = getattr(bridge_cfg, "last_local_prep_seconds", None)
+        if prep is None and task_total_seconds is not None:
+            gh_deduct = github_sync_seconds if github_sync_seconds is not None else (getattr(bridge_cfg, "last_github_sync_seconds", 0.0) or 0.0)
+            prep = max(0.0, float(task_total_seconds) - productive_total - float(gh_deduct or 0.0))
+        if prep is not None:
+            lines.append(f"📦 <b>زمن الأرشفة والمعالجة المحلية:</b> {_fmt_phase(prep)}")
+
+    # 🚀 زمن المزامنة والرفع لـ GitHub (منفصل تماماً — محرك المزامنة الذري v5.4)
+    gh_sec = github_sync_seconds
+    if gh_sec is None and bridge_cfg is not None:
+        gh_sec = getattr(bridge_cfg, "last_github_sync_seconds", None)
+    gh_enabled = getattr(bridge_cfg, "github_enabled", True) if bridge_cfg else True
+    gh_state = github_status or (getattr(bridge_cfg, "last_github_status", None) if bridge_cfg else None)
+
+    if not gh_enabled:
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> غير مفعل لهذا المشروع")
+    elif gh_state == "queued":
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> جاري في الخلفية (طابور مستقل)")
+    elif gh_sec is not None and float(gh_sec) > 0:
+        lines.append(f"🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> {_fmt_phase(gh_sec)}")
+    elif gh_sec is not None and float(gh_sec) == 0.0:
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> مطابق للأصل (لا تغييرات)")
+
     if task_total_seconds is not None:
         lines.append(f"🕒 <b>الزمن الكلي للمهمة:</b> {format_compact_duration(task_total_seconds)}")  # ⏱️ [P40]
     return "\n".join(lines)
@@ -915,7 +994,7 @@ class BridgeConfig:
     min_preflight_balance: int = 100     # 💰 [P13] الحد الأدنى للرصيد قبل أي إرسال — أقل منه = تبريد 29h وتخطٍ صامت
     user_agent: str = USER_AGENTS[0]
     current_browser: str = "chrome120"   # 🌐 يُحدث ديناميكياً لكل حساب
-    extracted_webapp_dir: pathlib.Path = field(default_factory=lambda: SCRIPT_DIR / "extracted_webapp")
+    extracted_webapp_dir: pathlib.Path = field(default_factory=lambda: _to_win_long_path(SCRIPT_DIR / "extracted_webapp"))
     run_started_at: float | None = None
     last_credit_continuations: int = 0
     last_credit_checkpoint_state: str = ""
@@ -1089,6 +1168,85 @@ def reactivate_account_if_due(acc: dict, json_path: str | None = None) -> dict:
     return acc
 
 
+# ══════════════════════════════════════════════════════════════════
+# [P48] Pre-Flight Gift Freshness — طبقة أوفلاين (STEP-2 / Q-C / S1)
+#   تقرأ فقط ما يكتبه 05.02 في الحساب (days_without_gift / last_checked /
+#   quarantine_info). لا شبكة، لا كتابة على القرص، لا cooldown، لا عزل.
+#   الفلتر يعمل عند اختيار حساب جديد فقط → أي حساب قيد التنفيذ يكمل طبيعياً.
+# ══════════════════════════════════════════════════════════════════
+GIFT_PREFLIGHT_ENABLED: bool = True
+GIFT_STALE_DAYS: int = 14          # الحد شامل (>=) — قرار المالك، مطابق لـ 05.02:408
+GIFT_GRACE_DAYS: int = 3           # نافذة الإنذار قبل الحد: [STALE-GRACE, STALE)
+GIFT_SNAPSHOT_MAX_AGE_HOURS: int = 72   # أقدم لقطة 05.02 نثق بها؛ أقدم من ذلك = UNKNOWN
+GIFT_LABELS = ("FRESH", "GRACE", "STALE", "UNKNOWN")
+
+
+def _parse_local_iso_ts(value) -> float | None:
+    """تحويل last_checked بصيغة 05.02 (ISO محلي بلا منطقة زمنية) إلى epoch؛ None عند الفشل."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    txt = value.strip()
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
+        try:
+            return time.mktime(time.strptime(txt[:26] if "." in txt else txt[:19], fmt))
+        except Exception:
+            continue
+    return None
+
+
+def classify_gift_freshness(acc, now: float | None = None,
+                            stale_days: int | None = None,
+                            grace_days: int | None = None) -> tuple[str, int | None]:
+    """
+    تصنيف نقي (بدون شبكة/قرص) لطزاجة الهدية اليومية من بيانات 05.02 المخزنة:
+      - ("STALE", days)   : days >= stale_days  (أو quarantine_info بسبب stale_daily_gift)
+      - ("GRACE", days)   : stale_days - grace_days <= days < stale_days
+      - ("FRESH", days)   : days < stale_days - grace_days
+      - ("UNKNOWN", None) : لا بيانات / بيانات مشوّهة / لقطة أقدم من GIFT_SNAPSHOT_MAX_AGE_HOURS
+    يُضاف عمر اللقطة إلى days (تقدير متشائم) — لا نكون متفائلين أبداً مع بيانات قديمة.
+    """
+    if not isinstance(acc, dict):
+        return "UNKNOWN", None
+    stale = int(GIFT_STALE_DAYS if stale_days is None else stale_days)
+    grace = int(GIFT_GRACE_DAYS if grace_days is None else grace_days)
+    now_ts = time.time() if now is None else float(now)
+
+    # 1) حساب معزول صراحةً بواسطة 05.02 → STALE مهما كان عمر اللقطة
+    qi = acc.get("quarantine_info")
+    if isinstance(qi, dict) and qi.get("reason") == "stale_daily_gift":
+        try:
+            q_days = int(qi.get("days_without_gift"))
+            if q_days >= 0:
+                return "STALE", q_days
+        except Exception:
+            pass
+        return "STALE", stale
+
+    # 2) الأيام المخزنة
+    raw_days = acc.get("days_without_gift")
+    if isinstance(raw_days, bool) or not isinstance(raw_days, (int, float)):
+        return "UNKNOWN", None
+    days = int(raw_days)
+    if days < 0:
+        return "UNKNOWN", None
+
+    # 3) عمر اللقطة (last_checked إلزامي للثقة في الرقم)
+    checked_ts = _parse_local_iso_ts(acc.get("last_checked"))
+    if checked_ts is None:
+        return "UNKNOWN", None
+    age_sec = max(0.0, now_ts - checked_ts)
+    aged_days = days + int(age_sec // 86400)
+
+    # 4) STALE لا تُنقذه قِدَم اللقطة؛ غير ذلك لقطة قديمة = UNKNOWN (Fail-Open)
+    if aged_days >= stale:
+        return "STALE", aged_days
+    if age_sec > GIFT_SNAPSHOT_MAX_AGE_HOURS * 3600:
+        return "UNKNOWN", None
+    if aged_days >= max(0, stale - grace):
+        return "GRACE", aged_days
+    return "FRESH", aged_days
+
+
 def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
     """يرجع الحسابات المؤهلة فقط (خرجت من التبريد + إيميل صحيح + لم تُجرب) مرتبة بالأقدم"""
     eligible = []
@@ -1101,8 +1259,28 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
         if not is_account_ready(acc):
             continue
         eligible.append(acc)
-    eligible.sort(key=lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0)
-    return eligible
+    _last_used = lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0
+    if not GIFT_PREFLIGHT_ENABLED:
+        eligible.sort(key=_last_used)
+        return eligible
+
+    # [P48] Pre-Flight الهدية (أوفلاين): STALE يُستبعد من الاختيار فقط — بلا كتابة/تبريد/عزل.
+    #        FRESH/GRACE بالترتيب القديم (last_used)، وUNKNOWN في الذيل (Fail-Open معلن).
+    known, unknown = [], []
+    for acc in eligible:
+        label, days = classify_gift_freshness(acc)
+        if label == "STALE":
+            log_event("warning", f"[GIFT_PREFLIGHT] تخطي {acc.get('email')} — هدية متأخرة {days} يوم (>= {GIFT_STALE_DAYS})", email=str(acc.get("email") or ""))
+            continue
+        if label == "UNKNOWN":
+            unknown.append(acc)
+        else:
+            known.append(acc)
+    if unknown:
+        log_event("info", f"[GIFT_PREFLIGHT] UNKNOWN (Fail-Open) لـ {len(unknown)} حساب بلا بيانات هدية موثوقة — يُستخدم في الذيل", email="")
+    known.sort(key=_last_used)
+    unknown.sort(key=_last_used)
+    return known + unknown
 
 
 def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None) -> bool:
@@ -1241,10 +1419,31 @@ def _call_telegram_api_json(method: str, payload: dict, timeout: int = 15) -> di
                 body = {}
             result = body.get("result") if isinstance(body, dict) and isinstance(body.get("result"), dict) else {}
             description = str(body.get("description") or getattr(response, "text", "") or "") if isinstance(body, dict) else str(getattr(response, "text", "") or "")
-            ok = bool(getattr(response, "status_code", 0) == 200 and (not isinstance(body, dict) or body.get("ok", True)))
+            status_code = int(getattr(response, "status_code", 0) or 0)
+            if status_code == 429:
+                retry_after = 3
+                if isinstance(body, dict) and isinstance(body.get("parameters"), dict):
+                    retry_after = int(body["parameters"].get("retry_after") or 3)
+                log_event("warning", f"⚠️ استلام HTTP 429 من تيليجرام ({method}) — انتظار {retry_after + 1} ثانية للتعافي...")
+                time.sleep(float(retry_after) + 1.0)
+                try:
+                    if mode == "curl_cffi":
+                        response = cffi.post(url, json=payload, timeout=timeout)
+                    else:
+                        response = requests.post(url, json=payload, timeout=timeout)
+                    try:
+                        body = response.json()
+                    except Exception:
+                        body = {}
+                    result = body.get("result") if isinstance(body, dict) and isinstance(body.get("result"), dict) else {}
+                    description = str(body.get("description") or getattr(response, "text", "") or "") if isinstance(body, dict) else str(getattr(response, "text", "") or "")
+                    status_code = int(getattr(response, "status_code", 0) or 0)
+                except Exception:
+                    pass
+            ok = bool(status_code == 200 and (not isinstance(body, dict) or body.get("ok", True)))
             return {
                 "ok": ok,
-                "status_code": int(getattr(response, "status_code", 0) or 0),
+                "status_code": status_code,
                 "result": result,
                 "description": description[:300],
                 "error": "" if ok else description[:300],
@@ -1612,19 +1811,30 @@ class AccountSelectionLiveTransport:
         self.last_text = ""
         self.renderer = AccountSelectionLiveRenderer(project_key=self.project_key, project_name=self.project_name)
         self.sent_handoff_signatures: set[str] = set()
+        self.last_publish_time = 0.0  # ⏱️ عداد الفرملة الزمنية ضد حظر تيليجرام
 
     def publish(self, event: dict) -> bool:
         text = self.renderer.apply(event)
+        now = time.time()
+        event_type = str(event.get("event") or "").strip()
+        is_priority = event_type in ("account-claimed", "attempt-succeeded", "continuation-handoff-ready")
+
+        # 🛡️ فرملة الـ 7 ثواني للأحداث السريعة (تخطي الحسابات) مع كسر فوري للأحداث المفصلية
+        if self.message_id and not is_priority and (now - self.last_publish_time < 7.0):
+            return True
+
         send_ok = False
         if self.message_id:
             edited = edit_telegram_message_text(self.chat_id, self.message_id, text)
             if edited.get("ok"):
+                self.last_publish_time = now
                 self.last_text = text
                 send_ok = True
         if not send_ok:
             sent = send_telegram_message_detailed(self.chat_id, text)
             if sent.get("ok") and sent.get("message_id") is not None:
                 self.message_id = sent.get("message_id")
+                self.last_publish_time = now
                 self.last_text = text
                 send_ok = True
             else:
@@ -2333,15 +2543,18 @@ def _is_never_copy_file(filename: str) -> bool:
 
 def _resolve_effective_source_root(sandbox_dir: pathlib.Path | None) -> pathlib.Path | None:
     """تحديد جذر الكود الفعلي داخل مجلد الساندبوكس المفكوك لتسطيح المجلدات الفرعية (webapp/repo/clone) (مستوحى من 04_upload get_source_root)"""
-    if not sandbox_dir or not sandbox_dir.exists():
+    if not sandbox_dir:
         return None
-    entries = [p for p in sandbox_dir.iterdir() if not p.name.startswith(".") and not p.name.endswith((".tar.gz", ".zip"))]
+    sbox = _to_win_long_path(sandbox_dir)
+    if not sbox.exists():
+        return None
+    entries = [p for p in sbox.iterdir() if not p.name.startswith(".") and not p.name.endswith((".tar.gz", ".zip"))]
     if len(entries) == 1 and entries[0].is_dir():
-        return entries[0]
+        return _to_win_long_path(entries[0])
     for p in entries:
         if p.is_dir() and any(kw in p.name.lower() for kw in ("webapp", "clone", "repo")):
-            return p
-    return sandbox_dir
+            return _to_win_long_path(p)
+    return sbox
 
 
 def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Path) -> dict:
@@ -2349,6 +2562,8 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
     import io
     import tarfile
     import zipfile
+
+    target_out = str(_to_win_long_path(out_dir))
 
     tar_err = ""
     try:
@@ -2367,9 +2582,9 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
             if not safe_members:
                 return _archive_diag(True, "tar")
             try:
-                tf.extractall(str(out_dir), members=safe_members, filter="data")
+                tf.extractall(target_out, members=safe_members, filter="data")
             except TypeError:
-                tf.extractall(str(out_dir), members=safe_members)
+                tf.extractall(target_out, members=safe_members)
             except Exception as err:
                 return _archive_diag(False, "tar", "ARCHIVE_TAR_EXTRACT_ERROR", detail=f"{type(err).__name__}: {str(err)[:160]}")
         return _archive_diag(True, "tar")
@@ -2390,7 +2605,7 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
                 safe_infos.append(info)
             try:
                 for info in safe_infos:
-                    zf.extract(info, str(out_dir))
+                    zf.extract(info, target_out)
             except Exception as err:
                 return _archive_diag(False, "zip", "ARCHIVE_ZIP_EXTRACT_ERROR", detail=f"{type(err).__name__}: {str(err)[:160]}")
         return _archive_diag(True, "zip")
@@ -2431,10 +2646,10 @@ def download_project_archive(
     if bridge_cfg is not None:
         default_dir = bridge_cfg.extracted_webapp_dir
     else:
-        default_dir = SCRIPT_DIR / "extracted_webapp"
-    out_dir = default_dir if out_dir is None else pathlib.Path(out_dir).resolve()
-    os.makedirs(str(out_dir), exist_ok=True)
-    tar_path = out_dir / "webapp.tar.gz"
+        default_dir = _to_win_long_path(SCRIPT_DIR / "extracted_webapp")
+    out_dir = _to_win_long_path(default_dir if out_dir is None else out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tar_path = _to_win_long_path(out_dir / "webapp.tar.gz")
     url = "https://www.genspark.ai/api/code_sandbox/download_directory"
     params = {"project_id": project_id, "path": remote_path}
     try:
@@ -3145,6 +3360,11 @@ def send_message_and_make_public(
         if final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
             return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
 
+        # ⏱️ [P46] عزل مقاييس الأداء 360°: إغلاق عداد استجابة الذكاء الاصطناعي فوراً
+        # لمنع احتساب زمن تنزيل الأرشيف وفكه محلياً ضمن زمن التوليد الفعلي
+        close_account_timing_span(bridge_cfg, email)
+        t_local_prep_start = time.time()
+
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
         # 🚫⚡ [P40] Decline Fast-Path: رد الرفض القصير (COMPLETED تقنياً) لا يستحق
@@ -3174,6 +3394,8 @@ def send_message_and_make_public(
             final_public_url = f"https://www.genspark.ai/autopilotagent_viewer?id={pid}"
         else:
             final_public_url = make_project_always_public(pid, cookies, mod=mod, cfg=cfg, email=email, bridge_cfg=bridge_cfg)
+        if bridge_cfg is not None:
+            bridge_cfg.last_local_prep_seconds = max(0.0, time.time() - t_local_prep_start)
         save_project_branch(
             parent_id=extract_project_id(url) if url else None,
             child_id=pid,
@@ -3690,6 +3912,44 @@ UPLOAD_QUEUE_SCHEMA_VERSION = 1
 UPLOAD_MAX_INLINE_BYTES = 95 * 1024 * 1024
 UPLOAD_RETRY_BASE_SECONDS = 5
 UPLOAD_RETRY_MAX_SECONDS = 300
+# [DEC-019/P31] تعطيل كوين الافتراضي بناءً على توجيه المالك لتوفير الوقت وتجنب الكوكيز المنتهية (المحلي فقط)
+ENABLE_QWEN_COMMIT_AI = os.getenv("ENABLE_QWEN_COMMIT_AI", "false").lower() in ("1", "true", "yes")
+
+
+class PartialUploadError(RuntimeError):
+    """استثناء عند تعثر الرفع إلى GitHub مع حفظ الملفات التي رُفعت بالفعل بنجاح."""
+    def __init__(self, message: str, partial_state: dict | None = None, original_exc: Exception | None = None):
+        super().__init__(message)
+        self.partial_state = partial_state or {}
+        self.original_exc = original_exc
+        self.error_code = type(original_exc).__name__ if original_exc and type(original_exc).__name__ != "RuntimeError" else str(original_exc or message)
+
+
+def _github_http_request_with_retry(method: str, url: str, max_attempts: int = 3, backoff_seconds: float = 2.0, **kwargs):
+    """تنفيذ طلب HTTP لمستودع GitHub مع إعادة محاولة ذكية عند ReadTimeout أو 5xx."""
+    import requests
+    last_exc = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            fn = getattr(requests, method.lower(), None)
+            if fn and hasattr(fn, "assert_called"):
+                resp = fn(url, **kwargs)
+            else:
+                resp = requests.request(method, url, **kwargs)
+            if resp.status_code in (500, 502, 503, 504) and attempt < max_attempts:
+                time.sleep(backoff_seconds * attempt)
+                continue
+            return resp
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as req_err:
+            last_exc = req_err
+            if attempt < max_attempts:
+                time.sleep(backoff_seconds * attempt)
+                continue
+            raise last_exc
+        except Exception as other_err:
+            raise other_err
+    if last_exc:
+        raise last_exc
 
 
 class ProjectRegistry:
@@ -3700,13 +3960,13 @@ class ProjectRegistry:
     """
     def __init__(self, project_key: str):
         self.key = re.sub(r"[^A-Za-z0-9_-]", "_", project_key)[:80]
-        self.root = PROJECT_REGISTRY_HOME / self.key
+        self.root = _to_win_long_path(PROJECT_REGISTRY_HOME / self.key)
         # fallback environment token يبقى احتياطياً فقط؛ الأولوية لاحقاً لتوكن المشروع نفسه.
         self._github_token = get_default_github_token_from_env()
         self._github_repo = os.getenv("GITHUB_UPLOAD_REPOSITORY", "").strip()
         self.root.mkdir(parents=True, exist_ok=True)
         self.lock = get_project_lock(self.key)
-        self.manifest_path = self.root / "manifest.json"
+        self.manifest_path = _to_win_long_path(self.root / "manifest.json")
 
     def remember_identity(self, root_pid: str | None = None, latest_pid: str | None = None,
                           project_name: str | None = None, chat_id: int | None = None,
@@ -3721,10 +3981,10 @@ class ProjectRegistry:
         )
 
     def _manifest_backup_path(self) -> pathlib.Path:
-        return self.manifest_path.with_suffix(".bak")
+        return _to_win_long_path(self.manifest_path.with_suffix(".bak"))
 
     def _secrets_path(self) -> pathlib.Path:
-        return self.root / "secrets.local.json"
+        return _to_win_long_path(self.root / "secrets.local.json")
 
     def _secrets_default(self) -> dict:
         return {
@@ -3973,13 +4233,13 @@ class ProjectRegistry:
         return compose_runtime_resume_prompt(settings.get("continuation", {}).get("prompt"), github_token=github_token)
 
     def _hot_checkpoint_path(self, checkpoint_id: str) -> pathlib.Path:
-        return self.root / "checkpoints" / "hot" / checkpoint_id
+        return _to_win_long_path(self.root / "checkpoints" / "hot" / checkpoint_id)
 
     def _archive_path(self, checkpoint_id: str) -> pathlib.Path:
-        return self.root / "archive" / f"{checkpoint_id}.tar.gz"
+        return _to_win_long_path(self.root / "archive" / f"{checkpoint_id}.tar.gz")
 
     def _queue_path(self) -> pathlib.Path:
-        return self.root / "queue.json"
+        return _to_win_long_path(self.root / "queue.json")
 
     def _queue_default(self) -> dict:
         return {"schema_version": UPLOAD_QUEUE_SCHEMA_VERSION, "jobs": []}
@@ -3989,6 +4249,7 @@ class ProjectRegistry:
         destination = data.get("destination") if isinstance(data.get("destination"), dict) else {}
         branch = str(destination.get("branch") or "")
         branch_mode = str(destination.get("branch_mode") or ("manual" if branch else "auto_default"))
+        synced_files = data.get("synced_files") if isinstance(data.get("synced_files"), dict) else {}
         return {
             "job_id": str(data.get("job_id") or uuid.uuid4().hex),
             "project_key": self.key,
@@ -4004,6 +4265,7 @@ class ProjectRegistry:
             "next_retry_at": data.get("next_retry_at"),
             "last_error_code": str(data.get("last_error_code") or ""),
             "state": str(data.get("state") or "pending"),
+            "synced_files": synced_files,
             "created_at": str(data.get("created_at") or _utc()),
             "updated_at": str(data.get("updated_at") or _utc()),
             "schema_version": UPLOAD_QUEUE_SCHEMA_VERSION,
@@ -4175,7 +4437,7 @@ class ProjectRegistry:
             return dict(updated)
         return None
 
-    def mark_upload_job_retrying(self, job_id: str, last_error_code: str, now_ts: float | None = None) -> dict | None:
+    def mark_upload_job_retrying(self, job_id: str, last_error_code: str, now_ts: float | None = None, partial_data: dict | None = None) -> dict | None:
         queue_data = self._read_queue()
         now_ts = time.time() if now_ts is None else float(now_ts)
         for idx, job in enumerate(queue_data.get("jobs", [])):
@@ -4187,6 +4449,20 @@ class ProjectRegistry:
             updated["last_error_code"] = str(last_error_code or "")
             updated["next_retry_at"] = datetime.fromtimestamp(now_ts + backoff, timezone.utc).isoformat()
             updated["updated_at"] = _utc()
+            if partial_data and isinstance(partial_data, dict):
+                prior = updated.get("synced_files", {}) if isinstance(updated.get("synced_files"), dict) else {}
+                prior_up = set(prior.get("uploaded", []))
+                prior_mod = set(prior.get("modified", []))
+                prior_del = set(prior.get("deleted", []))
+                prior_up.update(partial_data.get("uploaded", []))
+                prior_mod.update(partial_data.get("modified", []))
+                prior_del.update(partial_data.get("deleted", []))
+                updated["synced_files"] = {
+                    "uploaded": sorted(prior_up),
+                    "modified": sorted(prior_mod),
+                    "deleted": sorted(prior_del),
+                    "failed_file": partial_data.get("failed_file", ""),
+                }
             queue_data["jobs"][idx] = updated
             self._write_queue(queue_data)
             return dict(updated)
@@ -4204,7 +4480,7 @@ class ProjectRegistry:
                 "delete_files": [],
                 "skipped": [f"checkpoint:{job.get('checkpoint_id')} (CHECKPOINT_RECORD_MISSING)"],
             }
-        checkpoint_dir = self._hot_checkpoint_path(job.get("checkpoint_id"))
+        checkpoint_dir = _to_win_long_path(self._hot_checkpoint_path(job.get("checkpoint_id")))
         upload_files = []
         skipped = []
         for info in record.get("files", []):
@@ -4213,7 +4489,7 @@ class ProjectRegistry:
             if size > UPLOAD_MAX_INLINE_BYTES:
                 skipped.append(f"{rel} (FILE_TOO_LARGE_LOCAL_ONLY)")
                 continue
-            local = checkpoint_dir / rel
+            local = _to_win_long_path(checkpoint_dir / rel)
             if not local.exists() or not local.is_file():
                 skipped.append(f"{rel} (CHECKPOINT_FILE_MISSING)")
                 continue
@@ -4240,13 +4516,14 @@ class ProjectRegistry:
         return branch or "main"
 
     @staticmethod
-    def _git_blob_sha(local_path: str) -> str:
+    def _git_blob_sha(local_path: str | pathlib.Path) -> str:
         """Compute the SHA returned by GitHub Contents API without invoking git."""
         import hashlib
-        size = pathlib.Path(local_path).stat().st_size
+        lp = _to_win_long_path(local_path)
+        size = lp.stat().st_size
         digest = hashlib.sha1()
         digest.update(f"blob {size}\0".encode("ascii"))
-        with open(local_path, "rb") as fh:
+        with open(lp, "rb") as fh:
             for chunk in iter(lambda: fh.read(1024 * 1024), b""):
                 digest.update(chunk)
         return digest.hexdigest()
@@ -4257,7 +4534,10 @@ class ProjectRegistry:
         PUT/DELETE فعلي؛ job كله unchanged ← كوين لا يُستدعى إطلاقاً.
         معزول بالكامل: أي فشل (استيراد/شبكة/مهلة/رد فارغ) ← يرجع "" ويكمل الرفع
         بنفس رسالة الكوميت القديمة حرفياً — الرفع لا ينكسر أبداً بسبب كوين.
-        المهلة: مهلة المحرك الداخلية نفسها (30ث/مرحلة) — بدون اختراع أرقام جديدة."""
+        المهلة: مهلة المحرك الداخلية نفسها (30ث/مرحلة) — بدون اختراع أرقام جديدة.
+        ⚠️ معطل افتراضياً بناءً على توجيه المالك لتوفير الوقت وتجنب الكوكيز المنتهية."""
+        if not ENABLE_QWEN_COMMIT_AI:
+            return ""
         try:
             changed_names = [str(f.get("path") or "") for f in payload.get("upload_files", [])]
             changed_names += [f"(حذف) {rel}" for rel in payload.get("delete_files", [])]
@@ -4280,28 +4560,44 @@ class ProjectRegistry:
         if not token:
             raise RuntimeError("PROJECT_GITHUB_TOKEN_MISSING")
 
-        # 🔧 [P20] قرار المالك: إلغاء مسار Git Native Sync نهائياً (كان يفشل بـ
-        # name 'dest_root' is not defined بشكل متكرر) — GitHub Contents REST API
-        # هو مسار الرفع الوحيد والمباشر الآن بدون أي محاولة clone/push.
-        import base64
-        import requests
-        headers = build_github_api_headers(token)
-        # 🎯 [P21] دقة تصنيف commit: التمييز بين ملف جديد (غير موجود على الريموت
-        # → 404 → uploaded) وملف معدل (له remote_sha مختلف → modified) — كان الاثنان
-        # يُحسبان "➕ جديد" في الإحصائيات رغم أن remote_sha متاح أصلاً قبل الـ PUT.
-        uploaded, modified, unchanged, deleted, skipped = [], [], [], [], list(payload.get("skipped", []))
-        # 🧠 [DEC-019] كوميت ذكي من كوين مرة واحدة لكل job — فشله لا يكسر الرفع.
-        # ⏳ [P31] Lazy Call: كوين لا يُستدعى إلا عند أول PUT/DELETE فعلي — job كله
-        # unchanged (كل الملفات مطابقة للريموت بايت-بايت) ← صفر نداء لكوين
-        # (توفير باقة API + إلغاء تأخير حتى 30ث مجاني في كل sync cycle بلا تغيير).
-        # memoized: None = لم يُستدعَ بعد | "" = استُدعي وفشل/فارغ (fallback حرفي).
         ai_prefix = None
 
         def _lazy_ai_prefix() -> str:
             nonlocal ai_prefix
             if ai_prefix is None:
-                ai_prefix = self._qwen_commit_prefix_for_job(payload)
+                ai_prefix = self._qwen_commit_prefix_for_job(payload) if ENABLE_QWEN_COMMIT_AI else ""
             return ai_prefix
+
+        # 🚀 [v5.4] محرك المزامنة الذري المعتمد عبر Git Data API (Atomic Single Commit + Inline Content + Bootstrap)
+        if os.getenv("USE_BULK_GIT_DATA_API", "1").lower() in ("1", "true", "yes") and not getattr(self, "_force_legacy_contents_api", False) and not payload.get("use_contents_api"):
+            try:
+                import gh_bulk
+                def _get_bulk_commit_msg() -> str:
+                    pfx = _lazy_ai_prefix()
+                    return f"{pfx} [{self.key}] sync {payload['job_id']}" if pfx else f"[{self.key}] sync {payload['job_id']}"
+                return gh_bulk.sync_payload(payload, token=token, commit_message=_get_bulk_commit_msg)
+            except Exception as exc:
+                if (isinstance(exc, gh_bulk.RepoNotFoundError) or "Bad credentials" in str(exc) or "HTTP_401" in str(exc)) and not getattr(self, "_strict_bulk_only", False):
+                    log_event("warning", f"⚠️ تعذر إكمال المزامنة عبر Git Data API ({exc}) — تجربة مسار Contents API...")
+                else:
+                    raise
+
+        # 🔧 مسار الرفع الاحتياطي (Contents REST API)
+        import base64
+        import requests
+        headers = build_github_api_headers(token)
+        uploaded, modified, unchanged, deleted, skipped = [], [], [], [], list(payload.get("skipped", []))
+        partial_state = {
+            "uploaded": uploaded,
+            "modified": modified,
+            "unchanged": unchanged,
+            "deleted": deleted,
+            "skipped": skipped,
+            "failed_file": "",
+            "error": "",
+        }
+
+        # فحص ورفع الملفات مع إعادة محاولة ذكية وحفظ التقدم
         for file_info in payload.get("upload_files", []):
             rel = self._normalize_remote_relative_path(file_info["path"])
             if _should_skip_archive_member(rel):
@@ -4310,49 +4606,59 @@ class ProjectRegistry:
             remote_rel = "/".join(part for part in (target_root, rel) if part)
             api = f"https://api.github.com/repos/{repository}/contents/{remote_rel}"
             remote_sha = None
-            got = requests.get(api, headers=headers, params={"ref": branch}, timeout=30)
-            if got.status_code == 200:
-                remote_sha = str(got.json().get("sha") or "")
-            elif got.status_code != 404:
-                raise RuntimeError(f"HTTP_{got.status_code}")
-            local_sha = self._git_blob_sha(file_info["local_path"])
-            if remote_sha and remote_sha == local_sha:
-                unchanged.append(rel)
-                continue
-            with open(file_info["local_path"], "rb") as fh:
-                content_b64 = base64.b64encode(fh.read()).decode("ascii")
-            # [DEC-019] رسالة كوين كبادئة عند النجاح — وإلا نفس الرسالة القديمة حرفياً.
-            # [P31] أول ملف متغير فعلياً هو الذي يوقظ كوين (بعد فحص unchanged) — مرة واحدة لكل job.
-            _lazy_ai_prefix()
-            commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}: {rel}"
-            body = {"message": commit_message, "content": content_b64, "branch": branch}
-            if remote_sha:
-                body["sha"] = remote_sha
-            put = requests.put(api, headers=headers, json=body, timeout=120)
-            if put.status_code in (200, 201):
-                # [P21] remote_sha موجود = الملف كان على الريموت واختلف محتواه → معدل ✏️
-                (modified if remote_sha else uploaded).append(rel)
-            else:
-                raise RuntimeError(f"HTTP_{put.status_code}")
+            try:
+                got = _github_http_request_with_retry("GET", api, headers=headers, params={"ref": branch}, timeout=30)
+                if got.status_code == 200:
+                    remote_sha = str(got.json().get("sha") or "")
+                elif got.status_code != 404:
+                    raise RuntimeError(f"HTTP_{got.status_code}")
+                local_target = _to_win_long_path(file_info["local_path"])
+                local_sha = self._git_blob_sha(local_target)
+                if remote_sha and remote_sha == local_sha:
+                    unchanged.append(rel)
+                    continue
+                with open(local_target, "rb") as fh:
+                    content_b64 = base64.b64encode(fh.read()).decode("ascii")
+                _lazy_ai_prefix()
+                commit_message = f"{ai_prefix} [{self.key}] sync {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] sync {payload['job_id']}: {rel}"
+                body = {"message": commit_message, "content": content_b64, "branch": branch}
+                if remote_sha:
+                    body["sha"] = remote_sha
+                put = _github_http_request_with_retry("PUT", api, headers=headers, json=body, timeout=120)  # requests.put(
+                if put.status_code in (200, 201):
+                    (modified if remote_sha else uploaded).append(rel)
+                else:
+                    raise RuntimeError(f"HTTP_{put.status_code}")
+            except Exception as exc:
+                partial_state["failed_file"] = rel
+                partial_state["error"] = type(exc).__name__ if type(exc).__name__ != "RuntimeError" else str(exc)
+                raise PartialUploadError(str(exc), partial_state=partial_state, original_exc=exc) from exc
+
+        # حذف الملفات المطلوبة مع إعادة المحاولة
         for rel in payload.get("delete_files", []):
             rel = self._normalize_remote_relative_path(rel)
             remote_rel = "/".join(part for part in (target_root, rel) if part)
             api = f"https://api.github.com/repos/{repository}/contents/{remote_rel}"
-            got = requests.get(api, headers=headers, params={"ref": branch}, timeout=30)
-            if got.status_code == 404:
-                continue
-            if got.status_code != 200:
-                raise RuntimeError(f"HTTP_{got.status_code}")
-            sha = got.json().get("sha")
-            # [P31] الحذف الفعلي (الملف موجود على الريموت 200) يوقظ كوين إن لم يستيقظ بعد.
-            _lazy_ai_prefix()
-            delete_message = f"{ai_prefix} [{self.key}] delete {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] delete {payload['job_id']}: {rel}"
-            body = {"message": delete_message, "sha": sha, "branch": branch}
-            delete_resp = requests.delete(api, headers=headers, json=body, timeout=120)
-            if delete_resp.status_code in (200, 204):
-                deleted.append(rel)
-            else:
-                raise RuntimeError(f"HTTP_{delete_resp.status_code}")
+            try:
+                got = _github_http_request_with_retry("GET", api, headers=headers, params={"ref": branch}, timeout=30)
+                if got.status_code == 404:
+                    continue
+                if got.status_code != 200:
+                    raise RuntimeError(f"HTTP_{got.status_code}")
+                sha = got.json().get("sha")
+                _lazy_ai_prefix()
+                delete_message = f"{ai_prefix} [{self.key}] delete {payload['job_id']}: {rel}" if ai_prefix else f"[{self.key}] delete {payload['job_id']}: {rel}"
+                body = {"message": delete_message, "sha": sha, "branch": branch}
+                delete_resp = _github_http_request_with_retry("DELETE", api, headers=headers, json=body, timeout=120)  # requests.delete(
+                if delete_resp.status_code in (200, 204):
+                    deleted.append(rel)
+                else:
+                    raise RuntimeError(f"HTTP_{delete_resp.status_code}")
+            except Exception as exc:
+                partial_state["failed_file"] = rel
+                partial_state["error"] = type(exc).__name__ if type(exc).__name__ != "RuntimeError" else str(exc)
+                raise PartialUploadError(str(exc), partial_state=partial_state, original_exc=exc) from exc
+
         return {"uploaded": uploaded, "modified": modified, "unchanged": unchanged, "deleted": deleted, "skipped": skipped}
 
     def recover_upload_queue_after_restart(self, now_ts: float | None = None) -> list[dict]:
@@ -4407,9 +4713,35 @@ class ProjectRegistry:
         }
         try:
             result = (uploader or self._default_github_uploader)(payload)
+        except PartialUploadError as pue:
+            pstate = pue.partial_state or {}
+            err_name = pue.error_code
+            retry_job = self.mark_upload_job_retrying(job["job_id"], err_name, now_ts=now_ts, partial_data=pstate)
+            return {
+                "processed": False,
+                "job": retry_job or job,
+                "error": err_name,
+                "failed_file": str(pstate.get("failed_file") or ""),
+                "uploaded": list(pstate.get("uploaded", []) or []),
+                "modified": list(pstate.get("modified", []) or []),
+                "deleted": list(pstate.get("deleted", []) or []),
+                "unchanged": list(pstate.get("unchanged", []) or []),
+                "skipped": list(pstate.get("skipped", []) or []),
+            }
         except Exception as err:
-            retry_job = self.mark_upload_job_retrying(job["job_id"], type(err).__name__ if type(err).__name__ != "RuntimeError" else str(err), now_ts=now_ts)
-            return {"processed": False, "job": retry_job or job, "error": str(err)}
+            err_name = type(err).__name__ if type(err).__name__ != "RuntimeError" else str(err)
+            retry_job = self.mark_upload_job_retrying(job["job_id"], err_name, now_ts=now_ts)
+            return {
+                "processed": False,
+                "job": retry_job or job,
+                "error": str(err),
+                "failed_file": "",
+                "uploaded": [],
+                "modified": [],
+                "deleted": [],
+                "unchanged": [],
+                "skipped": [],
+            }
         updated = self.update_upload_job_state(job["job_id"], "synced", last_error_code="", next_retry_at=None)
         return {"processed": True, "job": updated or job, **(result or {})}
 
@@ -4431,7 +4763,7 @@ class ProjectRegistry:
         return self._execute_claimed_upload_job(job, uploader=uploader, branch_resolver=branch_resolver, now_ts=now_ts)
 
     def _checkpoint_record_path(self, checkpoint_id: str) -> pathlib.Path:
-        return self.root / "reports" / f"{checkpoint_id}.json"
+        return _to_win_long_path(self.root / "reports" / f"{checkpoint_id}.json")
 
     def _normalize_checkpoint_record(self, record: dict | None) -> dict:
         data = record if isinstance(record, dict) else {}
@@ -4461,13 +4793,14 @@ class ProjectRegistry:
 
     def _write_checkpoint_archive(self, checkpoint_id: str, checkpoint_dir: pathlib.Path) -> pathlib.Path:
         import tarfile
-        archive_path = self._archive_path(checkpoint_id)
+        checkpoint_dir = _to_win_long_path(checkpoint_dir)
+        archive_path = _to_win_long_path(self._archive_path(checkpoint_id))
         archive_path.parent.mkdir(parents=True, exist_ok=True)
-        temp = archive_path.with_suffix(".tmp")
+        temp = _to_win_long_path(archive_path.with_suffix(".tmp"))
         with tarfile.open(temp, mode="w:gz") as tf:
             if checkpoint_dir.exists():
                 for item in sorted(checkpoint_dir.rglob("*")):
-                    arcname = item.relative_to(checkpoint_dir).as_posix()
+                    arcname = _to_win_long_path(item).relative_to(checkpoint_dir).as_posix()
                     if item.is_dir() and not arcname:
                         continue
                     tf.add(item, arcname=arcname or ".")
@@ -4593,11 +4926,11 @@ class ProjectRegistry:
         """نسخ streaming إلى hot checkpoint مع تسطيح مسار webapp واستبعاد الأرشيف والملفات السرية."""
         with self.lock:
             data = self._read(); stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-            checkpoint = self._hot_checkpoint_path(stamp)
+            checkpoint = _to_win_long_path(self._hot_checkpoint_path(stamp))
             checkpoint.mkdir(parents=True, exist_ok=True)
             files = []
             deleted_files = []
-            raw_src = pathlib.Path(sandbox_dir) if sandbox_dir else None
+            raw_src = _to_win_long_path(sandbox_dir) if sandbox_dir else None
             src = _resolve_effective_source_root(raw_src) if raw_src else None
             prior_index = data.get("file_index") if isinstance(data.get("file_index"), dict) else {}
             current_seen_at = _utc()
@@ -4607,11 +4940,11 @@ class ProjectRegistry:
                     if item.is_file():
                         if _is_never_copy_file(item.name) or _should_skip_archive_member(item.name):
                             continue
-                        rel = item.relative_to(src)
+                        rel = _to_win_long_path(item).relative_to(src)
                         rel_path = pathlib.PurePosixPath(rel.as_posix()).as_posix()
                         if _should_skip_archive_member(rel_path):
                             continue
-                        dest = checkpoint / rel; dest.parent.mkdir(parents=True, exist_ok=True)
+                        dest = _to_win_long_path(checkpoint / rel); dest.parent.mkdir(parents=True, exist_ok=True)
                         # copy2 streams internally; لا يحمل الأرشيف الكبير في الذاكرة.
                         shutil.copy2(item, dest)
                         sha256 = _sha256_file(item)
@@ -4692,7 +5025,7 @@ class ProjectRegistry:
             data["updates"].append(entry); data["checkpoints"].append(stamp)
             # hot checkpoints فقط آخر 3؛ archive التاريخي الكامل يبقى محفوظاً منفصلاً.
             for old in data["checkpoints"][:-3]:
-                shutil.rmtree(self._hot_checkpoint_path(old), ignore_errors=True)
+                shutil.rmtree(str(_to_win_long_path(self._hot_checkpoint_path(old))), ignore_errors=True)
             data["checkpoints"] = data["checkpoints"][-3:]
             data["last_three_urls"] = [u.get("url", "") for u in data["updates"] if u.get("url")][-3:]
             self._write(data)
@@ -4730,6 +5063,7 @@ class ProjectRegistry:
             "upload_confirmed": confirmed,
             "job_state": state,
             "upload_error": str(execution.get("error") or execution.get("reason") or ""),
+            "failed_file": str(execution.get("failed_file") or ""),
         }
 
 PROJECT_LOCKS = {}; PROJECT_LOCKS_GUARD = threading.Lock()
@@ -4863,7 +5197,7 @@ def unregister_cancel_event(token: str) -> bool:
 def _utc(): return datetime.now(timezone.utc).isoformat()
 def _sha256_file(path):
     h=hashlib.sha256()
-    with open(path,"rb") as f:
+    with open(_to_win_long_path(path),"rb") as f:
         for block in iter(lambda:f.read(1024*1024), b""): h.update(block)
     return h.hexdigest()
 
@@ -5197,10 +5531,10 @@ def delete_project_atomically(project_key: str) -> dict:
     result["tree_removed"] = _remove_project_from_tree_file(project_pids)
 
     # 4️⃣ حذف مجلد المشروع كاملاً من القرص project_registry/<key>/
-    project_dir = PROJECT_REGISTRY_HOME / key
+    project_dir = _to_win_long_path(PROJECT_REGISTRY_HOME / key)
     if project_dir.exists() and project_dir.is_dir():
         try:
-            shutil.rmtree(project_dir)
+            shutil.rmtree(str(project_dir))
             result["disk_removed"] = True
         except Exception as err:
             log_event("error", f"🗑️ [P26] فشل حذف مجلد المشروع من القرص: {err}")
@@ -6019,7 +6353,7 @@ def run_project_late_fetch(project_key: str) -> str:
         email = str(acc.get("email") or "default@genspark.ai")
         cookies = acc.get("cookies") or {}
         registry = ProjectRegistry(project_key)
-        ext_dir = str(SCRIPT_DIR / "extracted_webapp" / pid)
+        ext_dir = str(_to_win_long_path(SCRIPT_DIR / "extracted_webapp" / pid))
         archive_path = None
         try:
             archive_path = download_project_archive(pid, cookies, out_dir=ext_dir, email=email)
@@ -6041,7 +6375,14 @@ def run_project_late_fetch(project_key: str) -> str:
         gh_line = ""
         if sync.get("enabled"):
             queued = sync.get("queued") or []
-            gh_line = f"\n• GitHub: <b>{len(queued)}</b> job في الطابور" if queued else "\n• GitHub: لا تغييرات جديدة للرفع"
+            if sync.get("upload_confirmed"):
+                gh_line = f"\n• GitHub: ✅ تم الرفع بنجاح (➕ {len(sync.get('uploaded', []))} | ✏️ {len(sync.get('modified', []))})"
+            elif sync.get("uploaded") or sync.get("modified"):
+                gh_line = f"\n• GitHub: ⚠️ رفع جزئي (➕ {len(sync.get('uploaded', []))} | ✏️ {len(sync.get('modified', []))}) — المتبقي في الطابور ({len(queued)})"
+            elif queued:
+                gh_line = f"\n• GitHub: <b>{len(queued)}</b> job في الطابور"
+            else:
+                gh_line = "\n• GitHub: لا تغييرات جديدة للرفع"
         log_event("info", f"⬇️ [P43-D6] LATE_FETCH_DONE project={project_key} pid={pid[:16]} checkpoint={checkpoint_id}", email=email)
         return (
             "✅ <b>تم تنزيل الساندبوكس وحفظ اللقطة بنجاح.</b>\n"
@@ -6939,13 +7280,13 @@ def inspect_stage_artifacts(stage_dir: str | None, min_mtime: float | None = Non
     if not stage_dir:
         return details
     try:
-        root = pathlib.Path(stage_dir).resolve()
+        root = _to_win_long_path(stage_dir)
     except Exception:
         return details
     if not root.exists() or not root.is_dir():
         return details
     details["stage_dir_exists"] = True
-    archive_path = root / "webapp.tar.gz"
+    archive_path = _to_win_long_path(root / "webapp.tar.gz")
     if archive_path.exists() and archive_path.is_file() and archive_path.stat().st_size > 0:
         details["archive_exists"] = True
         details["archive_fresh"] = _is_fresh_artifact(archive_path, min_mtime)
@@ -7450,23 +7791,49 @@ def process_user_task_async(
                 chat_id=chat_id,
                 status=stage_status,
             ) or runtime_identity
+            t_snap0 = time.time()
             update = registry.snapshot(stage_dir, stage_url, stage_status, stage_text)
             checkpoint_id = str(update.get("checkpoint") or "")
+            if cfg is not None:
+                cfg.last_local_prep_seconds = (getattr(cfg, "last_local_prep_seconds", 0.0) or 0.0) + max(0.0, time.time() - t_snap0)
+
+            t_sync0 = time.time()
             sync = registry.github_sync(update)
+            if cfg is not None:
+                cfg.last_github_sync_seconds = max(0.0, time.time() - t_sync0)
+                cfg.last_github_status = "synced" if sync.get("upload_confirmed") else ("queued" if (sync.get("queued") or (sync.get("jobs") and sync["jobs"][0].get("state") != "synced")) else "disabled")
             all_jobs = sync.get("jobs") or []
             queued_jobs = [job for job in all_jobs if str(job.get("state") or "") != "synced"]
             queued_ids = sync.get("queued") or []
             context = summarize_project_context(runtime_identity, current_pid=stage_meta["pid"], current_url=stage_url)
+            has_partial = bool(sync.get("uploaded") or sync.get("modified") or sync.get("deleted"))
             if queued_jobs:
                 first_job = queued_jobs[0]
                 dest = first_job.get("destination", {}) if isinstance(first_job, dict) else {}
                 branch_label = dest.get("branch") or ("auto-default" if dest.get("branch_mode") == "auto_default" else "غير محدد")
-                details = "\n".join(
+                job_hdr = "\n".join(
                     f"• <code>{html_escape(job.get('job_id'))}</code> → <code>{html_escape(job.get('state'))}</code> → <code>{html_escape(dest.get('repository') or '')}</code> @ <code>{html_escape(branch_label)}</code>"
                     for job in queued_jobs[:3]
                 )
-                details += "\n• لم يتم تأكيد الرفع إلى GitHub بعد؛ هذه فقط job/queue جاهزة أو قيد التنفيذ."
-            elif sync.get("upload_confirmed") or sync.get("uploaded") or sync.get("modified") or sync.get("deleted"):
+                if has_partial:
+                    stats_line = f"• 📊 <b>تم رفع وتأكيد جزئي على GitHub:</b> ➕ <b>{len(sync.get('uploaded', []))}</b> جديد | ✏️ <b>{len(sync.get('modified', []))}</b> معدل | 🗑️ <b>{len(sync.get('deleted', []))}</b> محذوف"
+                    file_lines = []
+                    for x in sync.get("uploaded", [])[:10]:
+                        file_lines.append(f"  ➕ <code>{html_escape(x)}</code>")
+                    for x in sync.get("modified", [])[:10]:
+                        file_lines.append(f"  ✏️ <code>{html_escape(x)}</code>")
+                    for x in sync.get("deleted", [])[:10]:
+                        file_lines.append(f"  🗑️ <code>{html_escape(x)}</code>")
+                    files_block = "\n" + "\n".join(file_lines) if file_lines else ""
+                    err_txt = sync.get("upload_error") or ""
+                    fail_f = sync.get("failed_file") or ""
+                    err_info = f"\n• ⚠️ <b>تعثر مؤقت عند:</b> <code>{html_escape(fail_f or 'file')}</code> ({html_escape(err_txt)}) — جاري إعادة المحاولة تلقائياً." if err_txt else ""
+                    details = f"{job_hdr}\n{stats_line}{files_block}{err_info}"
+                else:
+                    details = job_hdr + "\n• لم يتم تأكيد الرفع إلى GitHub بعد؛ هذه فقط job/queue جاهزة أو قيد التنفيذ."
+                    if sync.get("upload_error"):
+                        details += f"\n• ⚠️ <b>سبب التعثر:</b> <code>{html_escape(sync.get('upload_error'))}</code>"
+            elif sync.get("upload_confirmed") or has_partial:
                 commit_info = f"\n• 🔗 <b>Commit:</b> <code>{html_escape(sync.get('commit_hash', ''))}</code>" if sync.get("commit_hash") else ""
                 stats_line = f"• 📊 <b>الإحصائيات:</b> ➕ <b>{len(sync.get('uploaded', []))}</b> جديد | ✏️ <b>{len(sync.get('modified', []))}</b> معدل | 🗑️ <b>{len(sync.get('deleted', []))}</b> محذوف | ⏸️ <b>{len(sync.get('unchanged', []))}</b> مطابق"
                 file_lines = []
@@ -7481,7 +7848,15 @@ def process_user_task_async(
             else:
                 details = f"• لم يجد النظام أي تغيير جديد؛ المستودع مطابق تماماً للأرشيف الحالي (Unchanged: <code>{len(sync.get('unchanged', []))}</code>)."
             skipped = "\n".join(f"• <code>{html_escape(x)}</code>" for x in sync.get("skipped", [])[:8])
-            github_label = "تم إنشاء job GitHub لهذا المشروع ولم يتم تأكيد الرفع بعد" if sync.get("enabled") and queued_jobs else ("✅ تم الرفع والمزامنة بنجاح لـ GitHub" if sync.get("upload_confirmed") or sync.get("uploaded") or sync.get("modified") else ("تعذر تأكيد رفع GitHub لهذه اللقطة" if sync.get("enabled") and sync.get("upload_error") else "غير مفعل لهذا المشروع أو إعدادات GitHub غير مكتملة"))
+            github_label = (
+                "⚠️ رفع جزئي مع إعادة محاولة" if (sync.get("enabled") and queued_jobs and has_partial) else (
+                    "تم إنشاء job GitHub لهذا المشروع ولم يتم تأكيد الرفع بعد" if (sync.get("enabled") and queued_jobs) else (
+                        "✅ تم الرفع والمزامنة بنجاح لـ GitHub" if (sync.get("upload_confirmed") or has_partial) else (
+                            "تعذر تأكيد رفع GitHub لهذه اللقطة" if (sync.get("enabled") and sync.get("upload_error")) else "غير مفعل لهذا المشروع أو إعدادات GitHub غير مكتملة"
+                        )
+                    )
+                )
+            )
             stage_label = "⚠️ استنزاف رصيد — تم حفظ نقطة استئناف صالحة ويجري الآن تقييم handoff" if stage_status == "CREDIT_EXHAUSTED" else "🔄 تحديث مشروع صالح"
             continuation_line = ""
             handoff_line = ""
