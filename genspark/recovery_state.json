@@ -6,7 +6,7 @@
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_a5_aligned_awaiting_owner_decisions_d1_d25",
+    "status": "maint3_b1_0502_closed_awaiting_card_for_b2_0133",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -60,32 +60,12 @@
       "parity": "scripts/rebuild_refactor.py PARTS map updated to 9660 lines; test_parts_reassemble_to_original green; github_bulk_sync.py restored; CRLF restored on 36 generated files",
       "docs_integrity": "exit 0"
     },
-    "baseline_failing_names": {
-      "historical_12": [
-        "test_auto_compact x5",
-        "test_credit_completion_recovery x3",
-        "test_p2_model_routing x2",
-        "test_p32 test_06_banned_state_described",
-        "test_p3_regression test_opus5_matches_new_contract"
-      ],
-      "owner_drift_14": [
-        "p17 test_02_bridge_log_untracked",
-        "p17 test_04_p20_decision_documented",
-        "p20 test_08",
-        "p24 x2",
-        "p26 test_06",
-        "p31 x5",
-        "p33 test_01",
-        "p46 test_full_isolated_metrics_display",
-        "p47 curl_cffi (env)"
-      ],
-      "rule": "compare by names, never by count"
-    },
+    "baseline_failing_names": "19 (2026-10-31 after owner 1f90790): auto_compact x5, credit_completion_recovery x3, p2 x2 (format_model_display_label, opus5_has_no_ai_chat_model), p32 test_06_banned_state_described, p3 test_opus5_matches_new_contract, p17 test_02_bridge_log_untracked + test_04_p20_decision_documented, p20 test_08, p26 test_06_index_cleanup_under_registry_lock, p33 test_01_worker_calls_central_builder, p46 test_full_isolated_metrics_display, p47 test_p47_automatic_429_backoff_recovery",
     "rebuild_refactor_caveats": [
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": "MAINT-3-B only after owner writes D1-D25 (or \"كما أوصيت\") in the card DECISIONS: red tests p51/p52 -> 01.33 p03/p06 -> 05.02 run_revival S1-S7 -> PARTS/rebuild -> README_COOLDOWN_VAULT.md -> charter guard -> closure by names. Doc 13 charter pinning awaits owner permission (D25).",
+    "next": "MAINT-3-B-2 (01.33) requires an owner \"ابدأ تنفيذ\" card with scope 01.33 + tests + bridge_refactor: p51 red tests -> p03 move_account_to_cooldown_vault/append_account_log after 1297 -> p06 replace mark_account_cooldown@3693 + FORBIDDEN branch after 3710/before 3711 (FORBIDDEN_MOVE_AFTER_N=2) -> PARTS shift/rebuild -> README_COOLDOWN_VAULT.md -> closure by names (baseline 19).",
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
     "roadmap_priority": [
@@ -387,6 +367,28 @@
         "D25 doc13 pinning"
       ],
       "verification": "verify_docs_integrity.py Exit 0; charter byte-identical in both files; git status shows only PROGRESS.md/RESUME.md/recovery_state.json"
+    },
+    "maint3_b_checkpoints": {
+      "cp0": "2026-10-31 started @25c7cef; owner card: D1-D25 approved as recommended; scope = 05.02 + tests/test_p52_revival_routing.py + scripts/verify_docs_integrity.py ONLY (01.33 phase deferred to a later card)",
+      "cp1": "DONE: tests/test_p52_revival_routing.py written (10 tests 27-36) and RED against untouched 05.02",
+      "cp2": "DONE: 05.02 surgery S1-S7 + _merge_by_email (D24) applied; 756->763 lines, LF pure, py_compile OK; P52 10/10 + tri_state_isolation 34/34 green; pre-surgery .bak at /tmp/05.02_pre_maint3b_*.bak (outside repo)",
+      "cp3": "DONE: D22 charter guard in verify_docs_integrity.py (Exit 0 clean; detects tamper/missing); full pytest 1224 passed/19 failed/1 skipped — 19 all within known 26, 0 new; p24x2+p31x5 now pass after owner 1f90790 -> new baseline = 19 names; PROGRESS/RESUME updated"
+    },
+    "maint3_b1": {
+      "date": "2026-10-31",
+      "base": "25c7cef",
+      "scope": "05.02 + tests/test_p52_revival_routing.py + scripts/verify_docs_integrity.py (owner card)",
+      "surgery": "_merge_by_email 632-638 (D24) + S1 653-656 + S2 678-683 + S3/S4 690-692 + S5/S6 694-701 + S7 707-708; 756->763 lines LF; p_map/s_map removed from run_revival",
+      "tests": "P52 10/10 (red-first 8F/2P), tri_state_isolation 34/34, full 1224/19/1 by names, 0 new",
+      "d22_guard": "verify_charter_identity() — once per file + byte-identical PROGRESS/RESUME",
+      "untouched": [
+        "01.33",
+        "01.03",
+        "genspark_verifier_engine.py",
+        "bridge_refactor/",
+        "توثيق_*"
+      ],
+      "backup": "/tmp/05.02_pre_maint3b_*.bak (outside repo)"
     }
   },
   "completed_pr9_arena_addendum": {

@@ -8,6 +8,8 @@ scripts/verify_docs_integrity.py
 2. التحقق من سلامة كافة ملفات docs/engineering و docs/tests.
 3. منع وجود أي روابط مكسورة (Broken Links) أو ملفات يتيمة.
 4. إرجاع Exit Code 0 عند النجاح، أو Exit Code 1 عند وجود أي رابط مكسور.
+5. [MAINT-3-B/D22] حارس الميثاق الدائم: كتلة `⚖️ الميثاق الدائم` يجب أن تكون
+   موجودة ومتطابقة بايتياً بين PROGRESS.md وRESUME.md (مرة واحدة في كل ملف).
 """
 
 import os
@@ -16,6 +18,41 @@ import sys
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DOCS_DIR = os.path.join(ROOT_DIR, "docs")
+CHARTER_MARKER = "> ## ⚖️ الميثاق الدائم"
+CHARTER_FILES = ("PROGRESS.md", "RESUME.md")
+
+
+def extract_charter_block(content):
+    """يُرجع كتلة الميثاق (الأسطر المتتالية التي تبدأ بـ'>' ابتداءً من العلامة) أو None إن غابت."""
+    lines = content.splitlines()
+    starts = [i for i, l in enumerate(lines) if l.startswith(CHARTER_MARKER)]
+    if len(starts) != 1:
+        return None
+    block = []
+    for l in lines[starts[0]:]:
+        if not l.startswith(">"):
+            break
+        block.append(l)
+    return "\n".join(block)
+
+
+def verify_charter_identity(root_dir=ROOT_DIR):
+    """[D22] يفحص وجود الميثاق مرة واحدة في كل ملف وتطابقه بايتياً بين الملفين. يُرجع قائمة أخطاء."""
+    errors, blocks = [], {}
+    for name in CHARTER_FILES:
+        path = os.path.join(root_dir, name)
+        if not os.path.exists(path):
+            errors.append(f"حارس الميثاق: الملف {name} غير موجود")
+            continue
+        with open(path, "r", encoding="utf-8") as f:
+            block = extract_charter_block(f.read())
+        if block is None:
+            errors.append(f"حارس الميثاق: كتلة `{CHARTER_MARKER}` غائبة أو مكررة في {name}")
+        else:
+            blocks[name] = block
+    if len(blocks) == len(CHARTER_FILES) and len(set(blocks.values())) != 1:
+        errors.append("حارس الميثاق: كتلة الميثاق غير متطابقة بايتياً بين " + " و".join(CHARTER_FILES))
+    return errors
 
 def verify_docs_integrity():
     """
@@ -67,6 +104,7 @@ def verify_docs_integrity():
             if not os.path.exists(resolved_path):
                 errors.append(f"رابط مكسور في [{rel_fpath}]: [{label}] -> '{clean_target}'")
 
+    errors.extend(verify_charter_identity())  # [D22]
     return (len(errors) == 0, errors, checked_files, checked_links)
 
 def main():
@@ -83,7 +121,7 @@ def main():
         print("=" * 70)
         sys.exit(0)
     else:
-        print(f"\nتم اكتشاف {len(errors)} رابط مكسور:\n")
+        print(f"\nتم اكتشاف {len(errors)} خطأ (روابط مكسورة / حارس الميثاق):\n")
         for err in errors:
             print(f"  {err}")
         print("=" * 70)
