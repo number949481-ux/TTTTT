@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2199..3559
-المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2509..3961
+المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -62,15 +62,18 @@ def _is_never_copy_file(filename: str) -> bool:
 
 def _resolve_effective_source_root(sandbox_dir: pathlib.Path | None) -> pathlib.Path | None:
     """تحديد جذر الكود الفعلي داخل مجلد الساندبوكس المفكوك لتسطيح المجلدات الفرعية (webapp/repo/clone) (مستوحى من 04_upload get_source_root)"""
-    if not sandbox_dir or not sandbox_dir.exists():
+    if not sandbox_dir:
         return None
-    entries = [p for p in sandbox_dir.iterdir() if not p.name.startswith(".") and not p.name.endswith((".tar.gz", ".zip"))]
+    sbox = _to_win_long_path(sandbox_dir)
+    if not sbox.exists():
+        return None
+    entries = [p for p in sbox.iterdir() if not p.name.startswith(".") and not p.name.endswith((".tar.gz", ".zip"))]
     if len(entries) == 1 and entries[0].is_dir():
-        return entries[0]
+        return _to_win_long_path(entries[0])
     for p in entries:
         if p.is_dir() and any(kw in p.name.lower() for kw in ("webapp", "clone", "repo")):
-            return p
-    return sandbox_dir
+            return _to_win_long_path(p)
+    return sbox
 
 
 def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Path) -> dict:
@@ -78,6 +81,8 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
     import io
     import tarfile
     import zipfile
+
+    target_out = str(_to_win_long_path(out_dir))
 
     tar_err = ""
     try:
@@ -96,9 +101,9 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
             if not safe_members:
                 return _archive_diag(True, "tar")
             try:
-                tf.extractall(str(out_dir), members=safe_members, filter="data")
+                tf.extractall(target_out, members=safe_members, filter="data")
             except TypeError:
-                tf.extractall(str(out_dir), members=safe_members)
+                tf.extractall(target_out, members=safe_members)
             except Exception as err:
                 return _archive_diag(False, "tar", "ARCHIVE_TAR_EXTRACT_ERROR", detail=f"{type(err).__name__}: {str(err)[:160]}")
         return _archive_diag(True, "tar")
@@ -119,7 +124,7 @@ def _extract_archive_with_diagnostics(archive_bytes: bytes, out_dir: pathlib.Pat
                 safe_infos.append(info)
             try:
                 for info in safe_infos:
-                    zf.extract(info, str(out_dir))
+                    zf.extract(info, target_out)
             except Exception as err:
                 return _archive_diag(False, "zip", "ARCHIVE_ZIP_EXTRACT_ERROR", detail=f"{type(err).__name__}: {str(err)[:160]}")
         return _archive_diag(True, "zip")
@@ -160,10 +165,10 @@ def download_project_archive(
     if bridge_cfg is not None:
         default_dir = bridge_cfg.extracted_webapp_dir
     else:
-        default_dir = SCRIPT_DIR / "extracted_webapp"
-    out_dir = default_dir if out_dir is None else pathlib.Path(out_dir).resolve()
-    os.makedirs(str(out_dir), exist_ok=True)
-    tar_path = out_dir / "webapp.tar.gz"
+        default_dir = _to_win_long_path(SCRIPT_DIR / "extracted_webapp")
+    out_dir = _to_win_long_path(default_dir if out_dir is None else out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tar_path = _to_win_long_path(out_dir / "webapp.tar.gz")
     url = "https://www.genspark.ai/api/code_sandbox/download_directory"
     params = {"project_id": project_id, "path": remote_path}
     try:
@@ -380,6 +385,13 @@ def monitor_chat_completion(mod, cookies, cfg, bridge_cfg, pid, answer, start_ti
     prev_reply_fp = None
     polled_any = False
     p18_stopped = False
+    # 🛡️ [DEC07] الصمام لا يعمل في المراقبة/الصيانة/الرصيد غير المؤكد/الأدلة المكتملة
+    dec07_armed = (DEC07_EMPTY_BREAKER_ENABLED and not readiness and not maintenance
+                   and not (evidence and evidence.get("finished")))
+    dec07_empty_streak = 0
+    if dec07_armed and dec07_text_has_suspended_marker(last_resp_text):
+        log_event("warning", "[DEC07] ACCOUNT_SUSPENDED detected in initial reply text", email=email)
+        return ACCOUNT_SUSPENDED_STATUS, last_resp_text
     while final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
         # Cancellation always precedes waiting and network reads.
         if _cancel_event is not None and _cancel_event.is_set():
@@ -416,6 +428,26 @@ def monitor_chat_completion(mod, cookies, cfg, bridge_cfg, pid, answer, start_ti
             if http_status != 200:
                 continue
             message = current_attempt_reply(messages, evidence)
+            # 🛡️ [DEC07] نقطة الحقن الوحيدة: كشف الحظر النصّي + عدّاد القراءات الفارغة
+            if dec07_armed and not unconfirmed:
+                _dec07_text = message.get("content", "") if isinstance(message, dict) else ""
+                if dec07_text_has_suspended_marker(_dec07_text):
+                    if _dec07_text:
+                        last_resp_text = _dec07_text
+                    log_event("warning", "[DEC07] ACCOUNT_SUSPENDED detected in reply text — skipping account", email=email)
+                    return ACCOUNT_SUSPENDED_STATUS, last_resp_text
+                _dec07_active = isinstance(curr_activity, dict) and bool(curr_activity.get("active"))
+                if (not message or detect_response_status(_dec07_text) == "EMPTY") and not _dec07_active:
+                    dec07_empty_streak += 1
+                else:
+                    dec07_empty_streak = 0
+                _dec07_elapsed = time.time() - start_time
+                if (dec07_empty_streak >= DEC07_EMPTY_READS_REQUIRED
+                        and _dec07_elapsed >= DEC07_EMPTY_MIN_SECONDS):
+                    log_event("warning",
+                              f"[DEC07] EMPTY_STREAM_BREAK streak={dec07_empty_streak} elapsed={int(_dec07_elapsed)}s — skipping account",
+                              email=email)
+                    return EMPTY_STREAM_FAILED_STATUS, last_resp_text
             if message:
                 text = message.get("content", "")
                 if text:
@@ -708,6 +740,12 @@ def send_message_and_make_public(
                         mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                         return None, "LOW_BALANCE", None, None, None
             else:
+                # 🛡️ التحقق أولاً هل الحساب معزول نهائياً لتفادي مسح حالة العزل بالخطأ
+                latest_accs = read_accounts_safe(json_path)
+                acc_chk = next((a for a in latest_accs if isinstance(a, dict) and a.get("email") == email), {})
+                if acc_chk.get("quarantined") is True or acc_chk.get("status") == "suspended":
+                    log_event("warning", f"الحساب {email} معزول نهائياً — لن يتم تعيين كول داون مؤقت", email=email)
+                    return None, "ACCOUNT_QUARANTINED", None, None, None
                 update_account_data(email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 1800}, json_path=json_path)
                 return None, "LOGIN_FAILED", None, None, None
 
@@ -868,6 +906,11 @@ def send_message_and_make_public(
         if final_status not in ("COMPLETED", "CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"):
             return build_genspark_viewer_url(pid), final_status, None, last_resp_text, None
 
+        # ⏱️ [P46] عزل مقاييس الأداء 360°: إغلاق عداد استجابة الذكاء الاصطناعي فوراً
+        # لمنع احتساب زمن تنزيل الأرشيف وفكه محلياً ضمن زمن التوليد الفعلي
+        close_account_timing_span(bridge_cfg, email)
+        t_local_prep_start = time.time()
+
         ext_base = pathlib.Path(bridge_cfg.extracted_webapp_dir)
         ext_dir = str(ext_base / pid)
         # 🚫⚡ [P40] Decline Fast-Path: رد الرفض القصير (COMPLETED تقنياً) لا يستحق
@@ -897,6 +940,8 @@ def send_message_and_make_public(
             final_public_url = f"https://www.genspark.ai/autopilotagent_viewer?id={pid}"
         else:
             final_public_url = make_project_always_public(pid, cookies, mod=mod, cfg=cfg, email=email, bridge_cfg=bridge_cfg)
+        if bridge_cfg is not None:
+            bridge_cfg.last_local_prep_seconds = max(0.0, time.time() - t_local_prep_start)
         save_project_branch(
             parent_id=extract_project_id(url) if url else None,
             child_id=pid,
@@ -1067,6 +1112,33 @@ def send_message_with_auto_account_failover(
             if status in ("CREDIT_UNCONFIRMED", "TIMEOUT", "READ_FAILED", "ACTIVITY_STOPPED", "COMPACT_HANDOFF_BLOCKED"):
                 return pub_url, status, curr_acc, ext_dir, last_text
 
+            # 🛡️ [DEC07] بث فارغ متوقف → تبريد قصير (1h) وانتقال فوري للحساب التالي (قرار 3)
+            if status == EMPTY_STREAM_FAILED_STATUS:
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "empty-stream-skip",
+                    status=EMPTY_STREAM_FAILED_STATUS,
+                    max_attempts=max_attempts,
+                )
+                try:
+                    mark_account_cooldown(curr_email, cooldown_hours=DEC07_EMPTY_COOLDOWN_HOURS, json_path=json_path)
+                except Exception as err:
+                    log_event("warning", f"[DEC07] Cooldown save failed: {type(err).__name__}", email=curr_email)
+                log_event("warning", f"[DEC07] EMPTY_STREAM_FAILED — تبريد {DEC07_EMPTY_COOLDOWN_HOURS}h والانتقال الفوري للحساب التالي", email=curr_email)
+                continue
+
+            # 🛡️ [DEC07] حساب محظور (نصّياً) → عزل دائم بلا تبريد زمني وانتقال فوري (قرار 3/4)
+            if status == ACCOUNT_SUSPENDED_STATUS:
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "account-suspended-skip",
+                    status=ACCOUNT_SUSPENDED_STATUS,
+                    max_attempts=max_attempts,
+                )
+                update_account_data(curr_email, {"status": "suspended", "quarantined": True, "cookies": {}, "active": False}, json_path=json_path)
+                log_event("error", "[DEC07] ACCOUNT_SUSPENDED — عُزل الحساب (status=suspended, quarantined) والانتقال الفوري للحساب التالي", email=curr_email)
+                continue
+
             if status == "LOW_BALANCE":
                 notify_account_selection_observer(
                     bridge_cfg,
@@ -1195,6 +1267,13 @@ def send_message_with_auto_account_failover(
                 state_refresh[curr_email] = refresh_count + 1
                 log_event("warning", "401 session منتهية! جاري التجديد مع راندوم Backoff...", email=curr_email)
                 time.sleep(1 + random.uniform(0.5, 1.5))
+                # 🛡️ فحص هل الحساب معزول قبل مسح حالته بـ SESSION_EXPIRED
+                latest_accs_pre = read_accounts_safe(json_path)
+                acc_chk_pre = next((a for a in latest_accs_pre if isinstance(a, dict) and a.get("email") == curr_email), {})
+                if acc_chk_pre.get("quarantined") is True or acc_chk_pre.get("status") == "suspended":
+                    log_event("warning", f"الحساب {curr_email} معزول نهائياً — تخطٍ فوري", email=curr_email)
+                    tried_emails.add(curr_email)
+                    continue
                 update_account_data(curr_email, {"cookies": {}, "status": "SESSION_EXPIRED"}, json_path=json_path)
                 try:
                     mod = get_genspark_engine()
@@ -1210,6 +1289,15 @@ def send_message_with_auto_account_failover(
                         continue
                 except Exception as e:
                     log_event("error", f"فشل تجديد كوكيز الحساب: {e}", email=curr_email)
+                
+                # 🛡️ فحص هل تم عزل الحساب بالفعل في الخطوة السابقة؟
+                latest_accs = read_accounts_safe(json_path)
+                check_acc = next((a for a in latest_accs if isinstance(a, dict) and a.get("email") == curr_email), {})
+                if check_acc.get("quarantined") is True or check_acc.get("status") == "suspended":
+                    log_event("warning", f"الحساب {curr_email} تم عزله نهائياً — تخطٍ فوري للحساب التالي بدون أي كول داون 30 دقيقة", email=curr_email)
+                    tried_emails.add(curr_email)
+                    continue
+
                 notify_account_selection_observer(
                     bridge_cfg,
                     "session-refresh-failed",
@@ -1355,7 +1443,11 @@ def send_message_with_auto_account_failover(
                 "attempt-failed-continue",
                 status=str(status or "FAILED"),
             )
-            update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
+            # 🛡️ عدم تعيين كول داون 5 دقائق لو الحساب معزول نهائياً
+            latest_accs_end = read_accounts_safe(json_path)
+            acc_chk_end = next((a for a in latest_accs_end if isinstance(a, dict) and a.get("email") == curr_email), {})
+            if not (acc_chk_end.get("quarantined") is True or str(acc_chk_end.get("status", "")).lower().strip() == "suspended"):
+                update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
             continue
         finally:
             close_account_timing_span(bridge_cfg, curr_email)  # ⏱️ [P30] إغلاق حتمي للـ span في كل المسارات

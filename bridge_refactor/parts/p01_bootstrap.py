@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p01_bootstrap
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1..155
-المحتوى: Header + imports + logging + redact + html_escape + resolve_shared_path (P23) + load_bot_token
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 1..197
+المحتوى: Header + imports + logging + redact + html_escape + _to_win_long_path (MAX_PATH) + resolve_shared_path (P23) + load_bot_token
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 #!/usr/bin/env python3
@@ -120,6 +120,25 @@ def html_escape(text: str) -> str:
     return str(text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def _to_win_long_path(p: pathlib.Path | str | None) -> pathlib.Path | None:
+    r"""تحصين شامل لمسارات ويندوز لتجاوز قيد MAX_PATH (260 حرف) عبر البادئة \\?\ بأمان تام."""
+    if p is None:
+        return None
+    p_obj = pathlib.Path(p)
+    try:
+        resolved = str(p_obj.resolve())
+    except Exception:
+        resolved = str(p_obj)
+    if os.name == "nt":
+        resolved = resolved.replace("/", "\\")
+        if not resolved.startswith("\\\\?\\") and not resolved.startswith("\\\\.\\"):
+            if resolved.startswith("\\\\"):
+                resolved = "\\\\?\\UNC\\" + resolved.lstrip("\\")
+            else:
+                resolved = "\\\\?\\" + resolved
+    return pathlib.Path(resolved)
+
+
 # ══════════════════════════════════════════════════════════════
 # 🔎 [P23] البحث الهرمي للملفات المشتركة: محلي أولاً ثم الفولدر الأب (W___webapp/)
 # ══════════════════════════════════════════════════════════════
@@ -127,10 +146,33 @@ def resolve_shared_path(name: str) -> pathlib.Path:
     """مسار مشترك ذكي: لو الملف/المجلد موجود جنب النسخة يستخدمه (أولوية محلية)،
     وإلا يلقطه من الفولدر الأب المركزي — ولو غير موجود في الاثنين يرجع المحلي (للإنشاء).
     Zero Breaking Changes: النسخ القديمة بملفاتها المحلية تشتغل كما هي تماماً."""
-    local = SCRIPT_DIR / name
+    local = _to_win_long_path(SCRIPT_DIR / name)
+    parent = _to_win_long_path(SCRIPT_DIR.parent / name)
+    # 🛡️ [P23-GUARD] تحصين السجل المركزي وشجرة المشاريع:
+    # مجلد project_registry لا يُعتبر صالحاً إلا إذا احتوى على registry.json الفعلي.
+    # إذا كان المحلي مجرد مجلد فارغ أو ناتج اختبارات والأب يحتوي على registry.json الحقيقي، فالأولوية للأب دائماً.
+    if name == "project_registry":
+        if (local / "registry.json").exists():
+            return local
+        if (parent / "registry.json").exists():
+            return parent
+        if local.exists():
+            return local
+        if parent.exists():
+            return parent
+        return local
+    if name == "projects_tree.json":
+        if local.exists() and local.stat().st_size > 0:
+            return local
+        if parent.exists() and parent.stat().st_size > 0:
+            return parent
+        if local.exists():
+            return local
+        if parent.exists():
+            return parent
+        return local
     if local.exists():
         return local
-    parent = SCRIPT_DIR.parent / name
     if parent.exists():
         return parent
     return local

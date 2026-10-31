@@ -1,5 +1,456 @@
 {
   "current_execution": {
+    "task": "MAINT-3-A + A2 done (ALIGNMENT_ONLY): unified cooldown vault spec for FORBIDDEN + EMPTY_STREAM_FAILED, 05.02 periodic sorting via --revive -q without touching its code; RESUME §3-§3.6. Next = MAINT-3-B after owner decisions D1-D14.",
+    "date": "2026-10-31",
+    "branch": "genspark_ai_developer",
+    "base": "latest origin HEAD (no fixed commit ids as execution reference)",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
+    "pr_draft_must_stay": true,
+    "status": "maint3_a2_spec_written_awaiting_owner_decisions_d1_d14",
+    "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
+    "owner_decisions": {
+      "path": "(a) tri-state gift",
+      "scope_allowed": [
+        "01.33_telegram_gen_bridge.py",
+        "tests/",
+        "PROGRESS.md",
+        "RESUME.md",
+        "05.02 docstring only",
+        "delete GITHUB_SYNC_*.md"
+      ],
+      "read_only": [
+        "01.03Genspark_claude-opus-5-code.py",
+        "genspark_verifier_engine.py"
+      ],
+      "gift_check": "offline from 05.02 stored fields only; no network",
+      "unknown_contract": "fail-open: no send-block beyond ordering to tail, no cooldown, no isolation, no write; logged",
+      "threshold": ">=14 inclusive",
+      "Q-F": "merge legacy quarantine into accounts_failed.json with archival backup",
+      "Q-C": "pre-flight before dispatch; in-flight completes",
+      "Q-R": "done"
+    },
+    "step2": {
+      "file": "01.33_telegram_gen_bridge.py",
+      "lines": 9660,
+      "crlf": true,
+      "added": [
+        "GIFT_PREFLIGHT_ENABLED",
+        "GIFT_STALE_DAYS=14",
+        "GIFT_GRACE_DAYS=3",
+        "GIFT_SNAPSHOT_MAX_AGE_HOURS=72",
+        "GIFT_LABELS",
+        "_parse_local_iso_ts",
+        "classify_gift_freshness"
+      ],
+      "modified": [
+        "get_eligible_accounts body (single injection point after is_account_ready)"
+      ],
+      "untouched": [
+        "is_account_ready",
+        "send_message_with_auto_account_failover",
+        "01.03",
+        "verifier"
+      ],
+      "tests": {
+        "file": "tests/test_p48_gift_preflight.py",
+        "count": 34,
+        "result": "34 passed"
+      },
+      "full_suite": "1168 passed / 26 failed / 1 skipped — failing names identical to pre-STEP-2 (0 new)",
+      "parity": "scripts/rebuild_refactor.py PARTS map updated to 9660 lines; test_parts_reassemble_to_original green; github_bulk_sync.py restored; CRLF restored on 36 generated files",
+      "docs_integrity": "exit 0"
+    },
+    "baseline_failing_names": {
+      "historical_12": [
+        "test_auto_compact x5",
+        "test_credit_completion_recovery x3",
+        "test_p2_model_routing x2",
+        "test_p32 test_06_banned_state_described",
+        "test_p3_regression test_opus5_matches_new_contract"
+      ],
+      "owner_drift_14": [
+        "p17 test_02_bridge_log_untracked",
+        "p17 test_04_p20_decision_documented",
+        "p20 test_08",
+        "p24 x2",
+        "p26 test_06",
+        "p31 x5",
+        "p33 test_01",
+        "p46 test_full_isolated_metrics_display",
+        "p47 curl_cffi (env)"
+      ],
+      "rule": "compare by names, never by count"
+    },
+    "rebuild_refactor_caveats": [
+      "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
+      "script writes LF; committed generated files are CRLF -> convert back"
+    ],
+    "next": {
+      "ticket": "MAINT-3-B",
+      "blocked_on": "owner decisions D1-D14 in RESUME §4",
+      "plan": "tests red-first (p51 x15 + conscious P50 test_09 update) -> p03 constants+move+log fns after 1297 -> p06: replace 3627 + new FORBIDDEN branch after 3642 -> PARTS shift -> rebuild (safe) -> README_COOLDOWN_VAULT.md -> closure by names + 3 docs"
+    },
+    "history_notice": "all other keys preserved as prior records; not active instructions",
+    "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
+    "roadmap_priority": [
+      {
+        "id": "STEP-1",
+        "state": "done"
+      },
+      {
+        "id": "STEP-2",
+        "state": "done_closed",
+        "contract_constants": "GIFT_PREFLIGHT_ENABLED=True, GIFT_STALE_DAYS=14 (>=), GIFT_GRACE_DAYS=3, GIFT_SNAPSHOT_MAX_AGE_HOURS=72, GIFT_LABELS; single injection in get_eligible_accounts; selection-time exclusion only"
+      },
+      {
+        "id": "STEP-3",
+        "state": "done_with_evidence",
+        "scope": [
+          "scripts/merge_legacy_quarantine.py (new)",
+          "tests/test_p49_legacy_quarantine_merge.py (new)",
+          "PROGRESS.md",
+          "RESUME.md",
+          "current_execution"
+        ],
+        "do_not_touch": [
+          "05.02",
+          "01.33",
+          "01.03",
+          "verifier"
+        ],
+        "chunks": [
+          "S3-A data contract (written in PROGRESS)",
+          "S3-B 14 tests red-first",
+          "S3-C script: --legacy --failed --apply --i-know-this-is-real; dry-run default",
+          "S3-D close by names + docs + three docs"
+        ],
+        "owner_confirmations": "all three accepted 2026-10-31"
+      },
+      {
+        "id": "STEP-4",
+        "state": "in_progress_s4a_done_awaiting_owner_decisions",
+        "summary": "DEC-07: empty-response valve + user_suspended immediate break in monitor_chat_completion (01.33 ~2838-2884) + failover handling; S4-A spec needs owner approval; tests tests/test_p50_dec07_breaker.py first",
+        "verified": "not implemented in 01.33 (read-only check 2026-10-31)"
+      },
+      {
+        "id": "MAINT-1",
+        "state": "scheduled_independent",
+        "summary": "rebuild_refactor.py: protect bridge_refactor/git/github_bulk_sync.py (no blind rmtree) + preserve CRLF + parity test"
+      },
+      {
+        "id": "MAINT-2",
+        "state": "deferred_owner_DEC-04",
+        "summary": "14 drift tests; needs owner decision"
+      },
+      {
+        "id": "Layer B/C",
+        "state": "proposed_not_approved"
+      }
+    ],
+    "step3": {
+      "script": "scripts/merge_legacy_quarantine.py",
+      "tests": {
+        "file": "tests/test_p49_legacy_quarantine_merge.py",
+        "count": 14,
+        "red_before": "14 errors (script absent)",
+        "result": "14 passed"
+      },
+      "cli": "--legacy PATH --failed PATH [--apply] [--i-know-this-is-real]; dry-run default; exit 0/2/3",
+      "owner_confirmed": [
+        "oldest wins on conflict",
+        "dead_accounts.json out of scope",
+        "legacy file stays + dated .bak for both files"
+      ],
+      "helpers_from_05_02": [
+        "create_backup",
+        "atomic_save_json (loaded via spec_from_file_location + stub; 05.02 untouched)"
+      ],
+      "strict_load": "own load_json_strict (05.02 load_accounts swallows corruption, cannot honour exit 2)",
+      "full_suite": "1182 passed / 26 failed / 1 skipped — failing names identical to pre-STEP-3 (0 new, 0 fixed)",
+      "docs_integrity": "exit 0",
+      "parity": "test_refactor_parity 11 passed; 01.33 untouched, CRLF intact",
+      "real_files": "NEVER run with --apply on owner files; guard verified rc=3 on repo paths, zero .bak created",
+      "logging": "S3-LOG-1: mask_email removed -> display_email (full e-mail); summary keys added_emails/skipped_existing_emails; passwords/cookies never printed; test_13 rewritten; 14 passed; full suite 1182/26 same names"
+    },
+    "step4": {
+      "decisions_ratified": "(1) EMPTY_STREAM_FAILED + ACCOUNT_SUSPENDED; (2) 3 empty reads + 30s min; (3) 1h cooldown for empty, status=suspended/quarantined=True/cookies={} for banned; (4) 403 stays FORBIDDEN; (5) pure offline, no /user_suspended probe; (6) full email via existing log_event(email=); (7) FORBIDDEN in failover = MAINT-3",
+      "file": "01.33_telegram_gen_bridge.py",
+      "lines_before": 9660,
+      "lines_after": 9736,
+      "crlf": true,
+      "py_compile": "ok",
+      "added": [
+        "DEC07_EMPTY_BREAKER_ENABLED=True",
+        "DEC07_EMPTY_READS_REQUIRED=3",
+        "DEC07_EMPTY_MIN_SECONDS=30",
+        "DEC07_EMPTY_COOLDOWN_HOURS=1.0",
+        "DEC07_SUSPENDED_MARKERS",
+        "EMPTY_STREAM_FAILED_STATUS",
+        "ACCOUNT_SUSPENDED_STATUS",
+        "dec07_text_has_suspended_marker"
+      ],
+      "modified": [
+        "monitor_chat_completion (dec07_armed + single breaker point after current_attempt_reply)",
+        "send_message_with_auto_account_failover (two branches before LOW_BALANCE: empty-stream-skip cooldown 1h / account-suspended-skip quarantine)"
+      ],
+      "untouched": [
+        "P44_STRUCTURED_STATUSES",
+        "is_account_ready",
+        "P48 gift preflight",
+        "01.03",
+        "verifier",
+        "05.02"
+      ],
+      "tests": {
+        "file": "tests/test_p50_dec07_breaker.py",
+        "count": 19,
+        "red_first": "10 failed / 9 passed",
+        "result": "19 passed"
+      },
+      "parity": "PARTS p05 1956-2508; p06..p12 shifted +76 (2509-3961/3962-5144/5145-5709/5710-7336/7337-7647/7648-8182/8183-9736); boundaries verified byte-by-byte vs previous file; rebuild run; github_bulk_sync.py restored; CRLF restored on 36 files; test_refactor_parity 11 passed",
+      "full_suite": "1201 passed / 26 failed / 1 skipped — failing names identical to baseline (0 new)",
+      "docs_integrity": "exit 0"
+    },
+    "maint1": {
+      "scope_touched": [
+        "scripts/rebuild_refactor.py",
+        "tests/test_refactor_parity.py"
+      ],
+      "generator_changes": [
+        "GENERATED_NEWLINE='\\r\\n' + OWNER_PRESERVED",
+        "generated_relpaths() exclusive list",
+        "purge_generated(out): deletes generated list + stale parts/p*.py + __pycache__ only (no rmtree)",
+        "_write_generated(): newline='' + CRLF normalization",
+        "main(root=None) for isolated runs"
+      ],
+      "tests": {
+        "class": "TestGeneratorSafety",
+        "count": 5,
+        "red_first": "5 failed / 11 passed",
+        "result": "16 passed"
+      },
+      "live_proof": "python3 scripts/rebuild_refactor.py in place -> 36 generated files purged+rewritten; git status --short bridge_refactor empty; owner file 49 lines byte-identical to HEAD; second run also empty (idempotent)",
+      "full_suite": "1206 passed / 26 failed / 1 skipped — failing names identical to baseline (0 new)",
+      "docs_integrity": "exit 0"
+    },
+    "maint3_a": {
+      "mode": "ALIGNMENT_ONLY — no code; 05.02/01.03/verifier untouched; 01.33 unchanged (9736 lines)",
+      "finding_T5": "FORBIDDEN passes 3409 into archive+public (3441/3445; fallback viewer URL 2715/2757) -> returns pub_url -> failover 3928 'if pub_url or COMPLETED' marks account active/last_success_at (3935-3941) while user sees failure card (7633)",
+      "constraints": [
+        "FILE_LOCK non-reentrant (201)",
+        "update_account_data returns False silently for moved email (1091-1092)",
+        "no rotation primitive in 01.33 (71-78)",
+        "05.02 rewrites primary wholesale (525/696) -> resurrection race",
+        "05.02 loader accepts flat list or {accounts:[]} (236-245)"
+      ],
+      "spec": "copy-then-cut idempotent move under FILE_LOCK (manual R/M/W) -> best-effort audit append (30d prune + 5000 cap) -> failover branch after 3642/before 3644 with continue; fallback 5-min cooldown if primary path unresolvable; FORBIDDEN_ISOLATION_ENABLED kill-switch; return tool scripts/return_from_cooldown.py (dry-run); tests/test_p51_forbidden_isolation.py x10",
+      "decisions_needed": [
+        "D1 cooldown_until_ts (rec 24h)",
+        "D2 keep password+cookies (rec keep)",
+        "D3 return path (rec tool + 05.02 later)",
+        "D4 resurrection race (rec accept + no concurrent runs)",
+        "D5 MAINT-3b (rec later)",
+        "D6 files next to primary (rec yes)",
+        "D7 prune-on-write 30d + cap (rec yes)",
+        "D8 names as given (rec yes)",
+        "D9 minimum fix if Cut&Move rejected"
+      ]
+    },
+    "maint3_a2_checkpoints": [
+      "cp0: LayerA ok @79bc873; no root main.py (only bridge_refactor/main.py, bot runner); reading 01.33 empty-reply + 05.02 --revive evidence",
+      "cp1: evidence read (01.03:2266/2505 strings; 01.33 EMPTY_STREAM_FAILED 3619-3631; 05.02 --revive 644-701/721/745, loader 236-245, schema 556-562/665, primary reload-at-save 488)",
+      "cp2: RESUME §3.6 + §4 D10-D14 written; PROGRESS A2 [x]; docs check pending"
+    ],
+    "maint3_a2": {
+      "premise_audit": {
+        "P1": "empty-reply strings are from 01.03 (2266/2505); 01.33 equivalent = EMPTY_STREAM_FAILED, today in-place 1h cooldown (3627) -> card modifies ratified decision 3 (D10)",
+        "P2": "no root main.py / scheduler in repo; bridge_refactor/main.py is the bot runner only -> scheduler external (D14)",
+        "P3": "05.02 can sort our vault today with --revive -q accounts_cooldown.json (721/745/644-701) but criterion is gift<=3d (662), not cooldown expiry (D11/D12)",
+        "P4": "05.02 untouched"
+      },
+      "spec_delta": [
+        "move fn takes reason param; COOLDOWN_VAULT_HOURS dict per reason (EMPTY=1.0 ratified)",
+        "EMPTY_STREAM_FAILED branch 3627 -> move with fallback to current mark_account_cooldown; P50 test_09 contract changes consciously",
+        "FORBIDDEN branch via same fn",
+        "COOLDOWN_VAULT_ENABLED + COOLDOWN_VAULT_REASONS switches",
+        "vault entries carry 05.02-compatible quarantine_info (556-562) so run_revival cleans them (665); keep password+cookies (311-338 needs them)",
+        "account_log first permanent 'schema' record; README_COOLDOWN_VAULT.md (D13)"
+      ],
+      "resurrection_race": "05.02 reloads primary at save time (488) and pops cut emails (490) -> only healthy_tested of the same round can re-add -> duplicate not loss; idempotent move + 'duplicate_detected' log event",
+      "extra_tests": "(11)-(15) in RESUME §3.6.5",
+      "decisions_added": [
+        "D10 modify ratified decision 3 (rec yes, keep 1h, fallback old)",
+        "D11 revive criterion gap (rec accept + return tool)",
+        "D12 cooldown_until_ts informational (rec enough)",
+        "D13 docs placement (rec code + README + schema record)",
+        "D14 confirm external 24h command --revive -q (no main.py in repo)"
+      ]
+    }
+  },
+  "completed_pr9_arena_addendum": {
+    "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
+    "date": "2026-10-29",
+    "audit_base": "92f658ebd575407d0bba8e3a682cadd0fc248404",
+    "synced_main": "d2eb49d9e72ac18f213c48e432ecdab765583b16",
+    "restored": "58676b9d4fecc9655262e8998257db618552d6cc",
+    "last_verified_detail_checkpoint": "13db50fa90aeff280a18d4933e3d5771ba7facb9",
+    "branch": "genspark_ai_developer",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
+    "pull_request_state": "OPEN_DRAFT_verified_before_final_documentation_push",
+    "plan": "genspark/tri_state_gift_master_review.md",
+    "governing_sections": [
+      "15.5 decisions",
+      "15.7 M0-M4 plan",
+      "13 rollback and recovery"
+    ],
+    "status": "addendum_review_complete_runtime_not_implemented_awaiting_revision_scoped_GO",
+    "scope": "Only master review, root PROGRESS and this record. No Python/tests/generated/account or original-agent-document changes; no live Genspark/Telegram/Qwen, manager run, migration, merge or deployment.",
+    "completed": [
+      "restored_verified_remote_58676b9_without_repeating_review",
+      "Arena_and_chat_tail_review_completed_in_previous_session",
+      "latest_00_012345_comparison_and_source_evidence",
+      "independent_filter_random_rebuild_and_memory_threshold_diagnostics_recorded",
+      "redacted_Qwen_uploader_password_card_call_path_review",
+      "section15_readability_and_historical_cross_references_corrected",
+      "optional_sorting_X01_unresolved_X08_frozen_engine_X24_security_X28_clarified",
+      "34_findings_40_unchecked_tasks_30_planned_acceptance_cases_preserved",
+      "root_progress_updated_and_initial_PR9_record_archived_without_history_loss"
+    ],
+    "decisions": {
+      "D1": "UNRESOLVED: at exactly 14 days, >=14 stale versus >14 stale; Arena and latest task predicates conflict with latest D1 summaries. UTC arithmetic does not choose policy.",
+      "D2_D4": "Planning constraint: UNKNOWN/transient skip without send, quarantine or cooldown; propose zero account-file mutation. New GO must explicitly cover minus-one behavior differing from old PR8 and deferred last_used/reactivate writes.",
+      "D3": "Declared single-writer plus shared in-process locking is the minimal proposal, not an established fact. Inventory all writers/namespaces/CLI; stop and request broader OS-lock scope if exclusion cannot be proved.",
+      "D5": "Existing 13 failures remain unresolved. Compact 180/300, model routing/payload and banned UX require agreed contracts. Red TDD design can proceed after GO; runtime acceptance requires green gates.",
+      "D6": "01.03 READ-ONLY by default. E6/T29-T31 deferred outside base plan. Bridge guards do not repair independent CLI or establish all-writer safety.",
+      "sorting": "Retain current choice policy by default. Cached-balance sorting optional; random first-five must be addressed separately if strict highest-first is approved.",
+      "failed_evidence": "Reviewed structured evidence/allowlist required. Missing credentials, generic403 and unknown INACTIVE do not prove death; absence of evidence remains UNKNOWN.",
+      "legacy": "Record Arena-reported direction toward failed while retaining old files; read-only inventory and conflict review first, separate migration approval required.",
+      "in_flight": "Define credit-in-flight boundary without changing retention/maintenance cooldown blindly or breaking checkpoint/URL/prompt-once.",
+      "GO": "Not granted by resume request. Require explicit approval of updated report revision and scope; live/migration/merge/deploy remain separate."
+    },
+    "validation_from_previous_session": {
+      "provenance": "Executed after restoring d072816, recorded in report section15.3 and pushed at58676b9 before current reset. NOT rerun during current documentation session.",
+      "runtime_modified": false,
+      "tests_modified": false,
+      "syntax_exit": 0,
+      "pytest_passed": 1072,
+      "pytest_failed": 13,
+      "pytest_subtests": 60,
+      "pytest_seconds": 9.37,
+      "pytest_exit": 1,
+      "parity_passed": 10,
+      "parity_failed": 1,
+      "parity_seconds": 0.36,
+      "parity_exit": 1,
+      "canonical_tests": 1085,
+      "canonical_failures": 13,
+      "canonical_seconds": 3.064,
+      "canonical_exit": 1,
+      "live_calls": false,
+      "diagnostics": {
+        "filter": "Proposed replacement loses seven current exclusions; both versions miss dead_accounts, Telegram token and tmp_1234 examples.",
+        "random": "Actual AST-extracted claim function can choose50 from sorted500/400/300/200/50 with injected choice; no preflight/send executed.",
+        "rebuild": "Original coverage failure preserves temporary marker; end-only9285 removes marker then fails p03 syntax after three partial parts. Real generated tree hashes unchanged.",
+        "compact": "Same eight tests:300 gives8 failures/0 errors; memory-only180 gives8 passes/0 errors; constant restored300. No policy approval or source edit.",
+        "Qwen": "Four nonempty literal credential records; values not printed, validity not tested. signin consumes password_hash as password.",
+        "password_card": "Call paths allow card destination to be an allowed group; possible exposure path, not evidence of an actual leak."
+      },
+      "note": "Local ignored .tmp logs may be lost after reset. X01-X30 are planned, not implemented acceptance tests."
+    },
+    "validation_this_session": {
+      "kind": "Documentation integrity and Git scope only; no runtime gates rerun",
+      "runtime_modified": false,
+      "tests_modified": false,
+      "generated_modified": false,
+      "live_calls": false,
+      "checks": [
+        "UTF8_JSON",
+        "report_local_links",
+        "F01_F34",
+        "T00_T39_all_unchecked",
+        "X01_X30_planned",
+        "all_legacy_recovery_values_unchanged",
+        "PROGRESS_history_suffix_unchanged",
+        "only_three_docs_differ_from_main",
+        "no_new_PAT_or_credential_URL",
+        "git_diff_check"
+      ],
+      "gate_status": "Historical baseline remains red; documentation validation is not production readiness."
+    },
+    "verified_checkpoints": [
+      {
+        "sha": "166afc4bbd38409ad24a0ec99159fdd20ac50c5b",
+        "comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6493591902"
+      },
+      {
+        "sha": "58676b9d4fecc9655262e8998257db618552d6cc",
+        "comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6493651587"
+      },
+      {
+        "sha": "13db50fa90aeff280a18d4933e3d5771ba7facb9",
+        "comment": "https://github.com/number949481-ux/TTTTT/pull/9#issuecomment-6493751270"
+      }
+    ],
+    "publication": "Report checkpoint13db50f pushed and remote verified. Commit/push this final record and verify local HEAD=remote=PR9 head with Draft true. Current commit cannot embed its own hash; inspect remote before retrying publication.",
+    "next": "Verify current docs-only delivery on remote and PR9; finish only missing publication. Otherwise await exact-14 decision and revision-scoped GO on section15.5 plus baseline/evidence contracts. Do not repeat review, diagnostics or PR8; do not implement runtime.",
+    "history_notice": "completed_pr9_initial_review preserves the previous current_execution exactly; completed_pr8_execution and ALL other pre-existing top-level fields remain unchanged historical records, not active tasks.",
+    "security": "Newly supplied GitHub PAT used only in process environment for authorized publication; not saved to project files, Git config, remote URLs or commits. Revoke exposed PAT in GitHub, not BotFather. Pre-existing credential risks are documented without values; no validity tests."
+  },
+  "completed_pr9_initial_review": {
+    "task": "PR9 tri-state gift comprehensive audit and corrected implementation plan",
+    "date": "2026-10-29",
+    "audit_base": "92f658ebd575407d0bba8e3a682cadd0fc248404",
+    "synced_main": "a181f35d67dbda9930dd2dd2ace66c3a717d173e",
+    "restored": "a06218c83e8345f7cc9cfb69b2dd13708ee7d697",
+    "last_verified_detail_checkpoint": "4491b1bbe3b1c35c18abb717092cf9644e1658fb",
+    "branch": "genspark_ai_developer",
+    "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
+    "plan": "genspark/tri_state_gift_master_review.md",
+    "status": "audit_plan_complete_runtime_not_implemented_awaiting_decisions",
+    "scope": "Documentation only: master report, root PROGRESS, this recovery record. No runtime/test/account mutations, live Genspark/Telegram, merge or deployment.",
+    "completed": [
+      "eight_requested_sources_reviewed",
+      "call_paths_and_34_findings",
+      "offline_defect_reproductions",
+      "corrected_probe_time_storage_contracts",
+      "before_after_C1_C8",
+      "pending_tasks_T00_T39",
+      "planned_acceptance_X01_X30",
+      "decisions_D1_D6_and_rollback_runbook",
+      "root_progress_and_PR8_archive"
+    ],
+    "open_decisions": {
+      "D1": "Recommend elapsed UTC strictly greater than 14 days; equality recent",
+      "D2": "Approve skip-on-unknown versus existing occasional continue-on-minus-one",
+      "D3": "Choose declared single writer or shared OS lock across every writer",
+      "D4": "Define no-touch: recommend no account file mutation even last_used/reactivate on transient",
+      "D5": "Resolve compact 180/300, model aliases/payload and banned UX baseline contracts",
+      "D6": "Approve limited engine picker/balance/writer changes; no broad unfreeze"
+    },
+    "validation_after_latest_reset": {
+      "runtime_modified": false,
+      "tests_modified": false,
+      "syntax_exit": 0,
+      "pytest_passed": 1072,
+      "pytest_failed": 13,
+      "pytest_subtests": 60,
+      "pytest_exit": 1,
+      "parity_passed": 10,
+      "parity_failed": 1,
+      "parity_exit": 1,
+      "canonical_tests": 1085,
+      "canonical_failures": 13,
+      "canonical_exit": 1,
+      "live_calls": false,
+      "note": "Same pre-existing failures as audit base. Planned X scenarios are NOT implemented acceptance tests. Local .tmp logs may disappear on reset."
+    },
+    "publication": "Checkpoint details pushed and verified. Final record must be committed/pushed and PR9 remote head verified; inspect actual Git/PR before retrying. Squash may change hashes without changing tree.",
+    "next": "Inspect remote PR9 head and clean local tree; finish only missing publication. Then await explicit D1-D6 and revision-scoped GO. T00 is first implementation task. Do not repeat audit or PR8 work.",
+    "new_main_document": "a181f35 added one additional review document; preserved unchanged, not reviewed among original eight sources. Python unchanged from audit base.",
+    "history_notice": "completed_pr8_execution and ALL other top-level legacy review/execution fields below are historical, not active instructions or today's baseline.",
+    "security": "No credentials stored in tracked files, remote URLs or commits. Exposed chat token should be revoked; use secure integration for replacement."
+  },
+  "completed_pr8_execution": {
     "task": "PR8 approved V2 implementation delivered with green offline gates",
     "base": "08943e6",
     "restored": "4d5c31d",

@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 490..1143
-المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + cooldown + refresh_cookies_on_401
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1399
+المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 _ENGINE_CACHE = {"mod": None, "path": None}
@@ -307,16 +307,21 @@ def filter_productive_account_entries(aggregated, last_email=None) -> tuple[list
     return filtered, False
 
 
-def format_account_timing_block(bridge_cfg, task_total_seconds=None) -> str:
-    """يبني كتلة إحصائيات الحسابات للرسالة النهائية (P30 + فلترة P39 الذكية).
+def format_account_timing_block(bridge_cfg, task_total_seconds=None, local_prep_seconds=None, github_sync_seconds=None, github_status=None) -> str:
+    """يبني كتلة إحصائيات الحسابات للرسالة النهائية (P30 + P39 + P46 فصل مقاييس الأداء 360°).
 
     P39: تُعرض الحسابات المنتجة فقط (عتبة PRODUCTIVE_SPAN_MIN_SECONDS) بأدوار
     واضحة — (البداية) / (استئناف k) / (🌟 الحساب المنجز) — وإجمالي زمن التوليد
     يُحسب من المفلتَر حصراً، بينما «الزمن الكلي للمهمة» (wall clock) مستقل.
+    P46: فصل مقاييس الأداء الثلاثة نقياً لمنع التلوث (Metrics Pollution):
+    1. 🧠 زمن توليد الذكاء الاصطناعي (مفصول بحساباته المنتجة واستئنافاته).
+    2. 📦 زمن الأرشفة والمعالجة المحلية (تنزيل وفك الأرشيف ومسح الملفات).
+    3. 🚀 زمن المزامنة والرفع لـ GitHub (منفصل تماماً بمحرك gh_bulk الذري v5.4).
+    4. 🕒 الزمن الكلي للمهمة.
     Fail-Open: لو كل الحسابات دون العتبة تُعرض القائمة الكاملة بالعنوان القديم.
     عداد الاستئنافات مصدره الوحيد last_credit_continuations (عقد P30 —
     لا يُشتق أبداً من عدد الحسابات). إيميلات كاملة مهرَّبة بلا masking (P29).
-    تُرجع "" فقط لو لا توجد spans إطلاقاً. التوقيع ثابت (عقد P30 محفوظ).
+    تُرجع "" فقط لو لا توجد spans إطلاقاً. التوقيع متوافق عكسياً 100%.
     """
     spans = getattr(bridge_cfg, "account_journey_spans", None) if bridge_cfg is not None else None
     aggregated = aggregate_journey_spans_per_email(spans)
@@ -353,12 +358,44 @@ def format_account_timing_block(bridge_cfg, task_total_seconds=None) -> str:
             f"  {idx}. <code>{html_escape(email)}</code> — "
             f"⏱ {format_compact_duration(item.get('total_seconds'))}{multi}{role}"  # ⏱️ [P40] مدة مضغوطة
         )
-    # ⏱️ [P39] السطر المدمج: إجمالي التوليد (من المفلتَر فقط) + عدد المنتجين + عداد الاستئنافات المستقل
+    # ⏱️ [P39+P46] المحاسبة الزمنية الثلاثية النقية — فصل مقاييس الأداء 360° (Zero Metrics Pollution)
     accounts_word = "حساب منتج" if shown_count == 1 else "حسابات منتجة"
     lines.append(
-        f"⏱️ <b>إجمالي زمن التوليد:</b> {format_compact_duration(productive_total)} "  # ⏱️ [P40]
+        f"🧠 <b>إجمالي زمن التوليد:</b> {format_compact_duration(productive_total)} "  # ⏱️ [P40]
         f"({shown_count} {accounts_word} | 🔁 {continuations} استئناف)"
     )
+
+    # 📦 زمن الأرشفة والمعالجة المحلية (تنزيل، فك ضغط الأرشيف، مسح وحساب الهاشات للـ 208 ملفات)
+    _fmt_phase = format_compact_duration
+    fast_mode = bool(getattr(bridge_cfg, "project_fast_lean_skip", False)) if bridge_cfg else False
+    if fast_mode:
+        lines.append("📦 <b>زمن الأرشفة والمعالجة المحلية:</b> متخطى (الوضع السريع)")
+    else:
+        prep = local_prep_seconds
+        if prep is None and bridge_cfg is not None:
+            prep = getattr(bridge_cfg, "last_local_prep_seconds", None)
+        if prep is None and task_total_seconds is not None:
+            gh_deduct = github_sync_seconds if github_sync_seconds is not None else (getattr(bridge_cfg, "last_github_sync_seconds", 0.0) or 0.0)
+            prep = max(0.0, float(task_total_seconds) - productive_total - float(gh_deduct or 0.0))
+        if prep is not None:
+            lines.append(f"📦 <b>زمن الأرشفة والمعالجة المحلية:</b> {_fmt_phase(prep)}")
+
+    # 🚀 زمن المزامنة والرفع لـ GitHub (منفصل تماماً — محرك المزامنة الذري v5.4)
+    gh_sec = github_sync_seconds
+    if gh_sec is None and bridge_cfg is not None:
+        gh_sec = getattr(bridge_cfg, "last_github_sync_seconds", None)
+    gh_enabled = getattr(bridge_cfg, "github_enabled", True) if bridge_cfg else True
+    gh_state = github_status or (getattr(bridge_cfg, "last_github_status", None) if bridge_cfg else None)
+
+    if not gh_enabled:
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> غير مفعل لهذا المشروع")
+    elif gh_state == "queued":
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> جاري في الخلفية (طابور مستقل)")
+    elif gh_sec is not None and float(gh_sec) > 0:
+        lines.append(f"🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> {_fmt_phase(gh_sec)}")
+    elif gh_sec is not None and float(gh_sec) == 0.0:
+        lines.append("🚀 <b>زمن المزامنة والرفع لـ GitHub:</b> مطابق للأصل (لا تغييرات)")
+
     if task_total_seconds is not None:
         lines.append(f"🕒 <b>الزمن الكلي للمهمة:</b> {format_compact_duration(task_total_seconds)}")  # ⏱️ [P40]
     return "\n".join(lines)
@@ -431,7 +468,7 @@ class BridgeConfig:
     min_preflight_balance: int = 100     # 💰 [P13] الحد الأدنى للرصيد قبل أي إرسال — أقل منه = تبريد 29h وتخطٍ صامت
     user_agent: str = USER_AGENTS[0]
     current_browser: str = "chrome120"   # 🌐 يُحدث ديناميكياً لكل حساب
-    extracted_webapp_dir: pathlib.Path = field(default_factory=lambda: SCRIPT_DIR / "extracted_webapp")
+    extracted_webapp_dir: pathlib.Path = field(default_factory=lambda: _to_win_long_path(SCRIPT_DIR / "extracted_webapp"))
     run_started_at: float | None = None
     last_credit_continuations: int = 0
     last_credit_checkpoint_state: str = ""
@@ -516,7 +553,13 @@ def update_account_data(email: str, updates: dict, json_path: str | None = None)
             found = False
             for acc in accounts:
                 if isinstance(acc, dict) and acc.get("email") == email:
-                    acc.update(updates)
+                    # 🛡️ [IMMUNE-GUARD] منع أي تحديث يمسح حالة العزل أو يضع كول داون لحساب معزول
+                    is_quarantined = acc.get("quarantined") is True or str(acc.get("status", "")).lower().strip() in ("suspended", "banned")
+                    if is_quarantined and "quarantined" not in updates:
+                        safe_updates = {k: v for k, v in updates.items() if k not in ("status", "active", "cooldown_until")}
+                        acc.update(safe_updates)
+                    else:
+                        acc.update(updates)
                     acc["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                     found = True
                     break
@@ -550,7 +593,8 @@ def is_account_ready(acc: dict) -> bool:
     status = str(acc.get("status", "active")).lower().strip()
     now = time.time()
 
-    if status in ("banned", "blocked"):
+    # 🛡️ [IMMUNE-ENGINE] استبعاد قطعي ودائم لأي حساب معزول أو محظور أو مفقود في قاعدة البيانات
+    if status in ("banned", "blocked", "suspended", "user_not_found", "invalid_credentials") or acc.get("quarantined") is True:
         return False
 
     cooldown_until = 0
@@ -598,6 +642,85 @@ def reactivate_account_if_due(acc: dict, json_path: str | None = None) -> dict:
     return acc
 
 
+# ══════════════════════════════════════════════════════════════════
+# [P48] Pre-Flight Gift Freshness — طبقة أوفلاين (STEP-2 / Q-C / S1)
+#   تقرأ فقط ما يكتبه 05.02 في الحساب (days_without_gift / last_checked /
+#   quarantine_info). لا شبكة، لا كتابة على القرص، لا cooldown، لا عزل.
+#   الفلتر يعمل عند اختيار حساب جديد فقط → أي حساب قيد التنفيذ يكمل طبيعياً.
+# ══════════════════════════════════════════════════════════════════
+GIFT_PREFLIGHT_ENABLED: bool = True
+GIFT_STALE_DAYS: int = 14          # الحد شامل (>=) — قرار المالك، مطابق لـ 05.02:408
+GIFT_GRACE_DAYS: int = 3           # نافذة الإنذار قبل الحد: [STALE-GRACE, STALE)
+GIFT_SNAPSHOT_MAX_AGE_HOURS: int = 72   # أقدم لقطة 05.02 نثق بها؛ أقدم من ذلك = UNKNOWN
+GIFT_LABELS = ("FRESH", "GRACE", "STALE", "UNKNOWN")
+
+
+def _parse_local_iso_ts(value) -> float | None:
+    """تحويل last_checked بصيغة 05.02 (ISO محلي بلا منطقة زمنية) إلى epoch؛ None عند الفشل."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    txt = value.strip()
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
+        try:
+            return time.mktime(time.strptime(txt[:26] if "." in txt else txt[:19], fmt))
+        except Exception:
+            continue
+    return None
+
+
+def classify_gift_freshness(acc, now: float | None = None,
+                            stale_days: int | None = None,
+                            grace_days: int | None = None) -> tuple[str, int | None]:
+    """
+    تصنيف نقي (بدون شبكة/قرص) لطزاجة الهدية اليومية من بيانات 05.02 المخزنة:
+      - ("STALE", days)   : days >= stale_days  (أو quarantine_info بسبب stale_daily_gift)
+      - ("GRACE", days)   : stale_days - grace_days <= days < stale_days
+      - ("FRESH", days)   : days < stale_days - grace_days
+      - ("UNKNOWN", None) : لا بيانات / بيانات مشوّهة / لقطة أقدم من GIFT_SNAPSHOT_MAX_AGE_HOURS
+    يُضاف عمر اللقطة إلى days (تقدير متشائم) — لا نكون متفائلين أبداً مع بيانات قديمة.
+    """
+    if not isinstance(acc, dict):
+        return "UNKNOWN", None
+    stale = int(GIFT_STALE_DAYS if stale_days is None else stale_days)
+    grace = int(GIFT_GRACE_DAYS if grace_days is None else grace_days)
+    now_ts = time.time() if now is None else float(now)
+
+    # 1) حساب معزول صراحةً بواسطة 05.02 → STALE مهما كان عمر اللقطة
+    qi = acc.get("quarantine_info")
+    if isinstance(qi, dict) and qi.get("reason") == "stale_daily_gift":
+        try:
+            q_days = int(qi.get("days_without_gift"))
+            if q_days >= 0:
+                return "STALE", q_days
+        except Exception:
+            pass
+        return "STALE", stale
+
+    # 2) الأيام المخزنة
+    raw_days = acc.get("days_without_gift")
+    if isinstance(raw_days, bool) or not isinstance(raw_days, (int, float)):
+        return "UNKNOWN", None
+    days = int(raw_days)
+    if days < 0:
+        return "UNKNOWN", None
+
+    # 3) عمر اللقطة (last_checked إلزامي للثقة في الرقم)
+    checked_ts = _parse_local_iso_ts(acc.get("last_checked"))
+    if checked_ts is None:
+        return "UNKNOWN", None
+    age_sec = max(0.0, now_ts - checked_ts)
+    aged_days = days + int(age_sec // 86400)
+
+    # 4) STALE لا تُنقذه قِدَم اللقطة؛ غير ذلك لقطة قديمة = UNKNOWN (Fail-Open)
+    if aged_days >= stale:
+        return "STALE", aged_days
+    if age_sec > GIFT_SNAPSHOT_MAX_AGE_HOURS * 3600:
+        return "UNKNOWN", None
+    if aged_days >= max(0, stale - grace):
+        return "GRACE", aged_days
+    return "FRESH", aged_days
+
+
 def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
     """يرجع الحسابات المؤهلة فقط (خرجت من التبريد + إيميل صحيح + لم تُجرب) مرتبة بالأقدم"""
     eligible = []
@@ -610,8 +733,28 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
         if not is_account_ready(acc):
             continue
         eligible.append(acc)
-    eligible.sort(key=lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0)
-    return eligible
+    _last_used = lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0
+    if not GIFT_PREFLIGHT_ENABLED:
+        eligible.sort(key=_last_used)
+        return eligible
+
+    # [P48] Pre-Flight الهدية (أوفلاين): STALE يُستبعد من الاختيار فقط — بلا كتابة/تبريد/عزل.
+    #        FRESH/GRACE بالترتيب القديم (last_used)، وUNKNOWN في الذيل (Fail-Open معلن).
+    known, unknown = [], []
+    for acc in eligible:
+        label, days = classify_gift_freshness(acc)
+        if label == "STALE":
+            log_event("warning", f"[GIFT_PREFLIGHT] تخطي {acc.get('email')} — هدية متأخرة {days} يوم (>= {GIFT_STALE_DAYS})", email=str(acc.get("email") or ""))
+            continue
+        if label == "UNKNOWN":
+            unknown.append(acc)
+        else:
+            known.append(acc)
+    if unknown:
+        log_event("info", f"[GIFT_PREFLIGHT] UNKNOWN (Fail-Open) لـ {len(unknown)} حساب بلا بيانات هدية موثوقة — يُستخدم في الذيل", email="")
+    known.sort(key=_last_used)
+    unknown.sort(key=_last_used)
+    return known + unknown
 
 
 def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None) -> bool:
@@ -629,11 +772,82 @@ def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: s
 
 
 def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None = None) -> dict | None:
-    """تجديد الكوكيز بقفل محكوم منفرد لكل إيميل يمنع التضارب بين الثريدات الموازية"""
+    """تجديد الكوكيز مع العزل الفوري للحسابات الميتة وفحص كاش AI Data Retention الذكي دون هدر الشبكة"""
     lock = get_account_lock(email)
     with lock:
         try:
-            log_event("warning", "جاري تجديد كوكيز الجلسة...", email=email)
+            log_event("warning", "جاري فحص وتجديد كوكيز الجلسة عبر المحرك الحصين...", email=email)
+            
+            # استيراد محرك الفحص الموحد بأمان
+            try:
+                import genspark_verifier_engine as gve
+            except ImportError:
+                gve = None
+
+            # جلب كائن الحساب الحالي من الـ JSON للتحقق من كاش Data Retention المسبق
+            current_accounts = read_accounts_safe(json_path)
+            acc_entry = next((a for a in current_accounts if isinstance(a, dict) and a.get("email") == email), {})
+
+            if gve is not None:
+                # تشغيل الفاحص الشامل
+                report = gve.master_inspect_and_heal_account(
+                    email=email,
+                    password=password,
+                    existing_cookies=acc_entry.get("cookies"),
+                    account_dict=acc_entry,
+                    min_required_balance=1,
+                    timeout=25
+                )
+
+                # 1. لو الحساب ميت (محظور نهائياً / غير موجود / خطأ باسورد قطعي) -> عزل ذري فوري
+                if report.get("is_dead") is True:
+                    verdict = report.get("verdict", "SUSPENDED")
+                    detail = report.get("detail", "")
+                    
+                    # استخراج المجلد الحقيقي لملف الحسابات بدقة متناهية
+                    acc_file = get_accounts_file_path(json_path)
+                    base_dir = acc_file.parent if acc_file else SCRIPT_DIR
+                    
+                    # عزل ذري في ملف العزل المخصص
+                    gve.quarantine_account_atomic(acc_entry, verdict=verdict, base_dir=base_dir, detail=detail)
+                    
+                    # وسم الحساب في accounts_genspark.json كمحظور دائم وتصفير الكوكيز
+                    update_account_data(email, {
+                        "status": "suspended",
+                        "active": False,
+                        "quarantined": True,
+                        "cooldown_until": 0,
+                        "cookies": {},
+                        "quarantine_reason": verdict,
+                        "quarantined_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                    }, json_path=json_path)
+                    log_event("error", f"[🚫 عزل دائم]: الحساب {email} محظور نهائياً ({verdict}) — تم نقله لملف العزل واستبعاده للأبد", email=email)
+                    return None
+
+                # 2. الحساب سليم وجدد الكوكيز بنجاح
+                new_cookies = report.get("cookies")
+                if new_cookies and isinstance(new_cookies, dict) and len(new_cookies) > 0:
+                    updates = {
+                        "cookies": new_cookies,
+                        "status": "active",
+                        "active": True,
+                        "balance": report.get("balance", acc_entry.get("balance", 0)),
+                        "is_plus": report.get("is_plus", False),
+                        "last_refresh": time.time(),
+                        "last_refresh_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                    }
+                    if report.get("needs_json_retention_save") is True:
+                        updates["data_retention_enabled"] = True
+                        updates["data_retention_activated_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                        log_event("success", "🧬 تم تفعيل AI Data Retention وتوثيقها كاش في الـ JSON للحساب بنجاح", email=email)
+                    elif report.get("data_retention_source") == "cached_in_json":
+                        log_event("info", "⚡ تم تخطي فحص Data Retention بالشبكة (موثقة ومفعلة مسبقاً في الـ JSON)", email=email)
+
+                    update_account_data(email, updates, json_path=json_path)
+                    log_event("success", f"تم تجديد الكوكيز وتحديث الرصيد ({updates['balance']}) بنجاح!", email=email)
+                    return new_cookies
+
+            # Fallback في حالة عدم توفر المحرك مؤقتاً
             new_cookies = mod.do_login(email, password) if hasattr(mod, "do_login") else None
             if new_cookies and isinstance(new_cookies, dict) and len(new_cookies) > 0:
                 update_account_data(email, {
@@ -643,14 +857,14 @@ def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None
                     "last_refresh": time.time(),
                     "last_refresh_at": time.strftime("%Y-%m-%dT%H:%M:%S")
                 }, json_path=json_path)
-                log_event("success", "تم تجديد الكوكيز والجلسة بنجاح!", email=email)
                 return new_cookies
+
         except Exception as e:
             log_event("error", f"فشل تجديد كوكيز الجلسة: {e}", email=email)
             update_account_data(email, {
                 "status": "auth_failed",
                 "active": False,
-                "cooldown_until": time.time() + 1800,  # حظر مؤقت 30 دقيقة فقط ثم يُعاد تلقائياً
+                "cooldown_until": time.time() + 1800,
                 "last_auth_error": str(e),
                 "last_auth_error_at": time.strftime("%Y-%m-%dT%H:%M:%S")
             }, json_path=json_path)

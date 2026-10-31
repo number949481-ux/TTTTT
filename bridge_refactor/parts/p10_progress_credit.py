@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6816..7126
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7337..7647
 المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer (P35: فرع MODEL_DECLINED مخصص بـ allow_preview=True — نص الرفض القصير يُعرض للمستخدم)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -25,13 +25,13 @@ def inspect_stage_artifacts(stage_dir: str | None, min_mtime: float | None = Non
     if not stage_dir:
         return details
     try:
-        root = pathlib.Path(stage_dir).resolve()
+        root = _to_win_long_path(stage_dir)
     except Exception:
         return details
     if not root.exists() or not root.is_dir():
         return details
     details["stage_dir_exists"] = True
-    archive_path = root / "webapp.tar.gz"
+    archive_path = _to_win_long_path(root / "webapp.tar.gz")
     if archive_path.exists() and archive_path.is_file() and archive_path.stat().st_size > 0:
         details["archive_exists"] = True
         details["archive_fresh"] = _is_fresh_artifact(archive_path, min_mtime)
