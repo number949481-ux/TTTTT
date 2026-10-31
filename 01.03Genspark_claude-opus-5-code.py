@@ -442,22 +442,43 @@ class SandboxDownloader:
         
         try:
             os.makedirs(staging_dir, exist_ok=True)
-            r = sess.get(url, params=params, stream=True, timeout=self.cfg.auto_download_timeout)
-            if r.status_code != 200:
+            
+            # تسخين الاتصال مسبقاً وتنشيط الساندبوكس لتجنب 403 / unready
+            try:
+                sess.get(f"{GENSPARK}/api/code_sandbox/extend_lifecycle?project_id={project_id}", timeout=10)
+            except Exception:
+                pass
+
+            # ضبط خيارات التوربو في libcurl: بافر 2MB وإلغاء تأخير حزم TCP
+            try:
+                from curl_cffi import CurlOpt
+                sess.curl_options = {
+                    CurlOpt.BUFFERSIZE: 2 * 1024 * 1024,
+                    CurlOpt.TCP_NODELAY: 1,
+                }
+            except Exception:
+                pass
+
+            timeout = max(600, getattr(self.cfg, "auto_download_timeout", 600))
+            max_bytes = getattr(self.cfg, "auto_download_max_size_mb", 200) * 1024 * 1024
+            downloaded_bytes = [0]
+            size_exceeded = [False]
+
+            with open(tmp_file, "wb", buffering=1024 * 1024) as f:
+                def _turbo_writer(chunk: bytes):
+                    if not chunk:
+                        return
+                    downloaded_bytes[0] += len(chunk)
+                    if downloaded_bytes[0] > max_bytes:
+                        size_exceeded[0] = True
+                        return
+                    f.write(chunk)
+
+                r = sess.get(url, params=params, timeout=timeout, content_callback=_turbo_writer)
+
+            if r.status_code != 200 or size_exceeded[0] or downloaded_bytes[0] <= 50:
                 shutil.rmtree(staging_dir, ignore_errors=True)
                 return False
-            
-            downloaded_bytes = 0
-            max_bytes = self.cfg.auto_download_max_size_mb * 1024 * 1024
-            
-            with open(tmp_file, "wb") as f:
-                for chunk in r.iter_content(chunk_size=1024 * 1024):
-                    if chunk:
-                        downloaded_bytes += len(chunk)
-                        if downloaded_bytes > max_bytes:
-                            shutil.rmtree(staging_dir, ignore_errors=True)
-                            return False
-                        f.write(chunk)
             
             # فحص البصمة الرقمية Magic Bytes
             with open(tmp_file, "rb") as f:

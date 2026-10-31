@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2509..3961
-المحتوى: Archive safety/extraction + download_project_archive + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2509..4027
+المحتوى: Archive safety/extraction + download_project_archive (v01.04 Turbo Direct Streaming) + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -158,7 +158,8 @@ def download_project_archive(
     out_dir: str | pathlib.Path | None = None,
     remote_path: str = "/home/user/webapp",
     email: str = "default@genspark.ai",
-    bridge_cfg: BridgeConfig | None = None
+    bridge_cfg: BridgeConfig | None = None,
+    timeout: int = 600
 ) -> str | None:
     if not project_id or not cookies:
         return None
@@ -169,33 +170,98 @@ def download_project_archive(
     out_dir = _to_win_long_path(default_dir if out_dir is None else out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     tar_path = _to_win_long_path(out_dir / "webapp.tar.gz")
+    tar_tmp = _to_win_long_path(out_dir / "webapp.tar.gz.tmp")
+    if tar_tmp.exists():
+        try:
+            tar_tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
+
     url = "https://www.genspark.ai/api/code_sandbox/download_directory"
     params = {"project_id": project_id, "path": remote_path}
     try:
         from curl_cffi import requests as cffi
+        from curl_cffi import CurlOpt
         fp = get_account_fingerprint(email)
-        browser = getattr(bridge_cfg, "current_browser", fp["browser"])
-        ua = getattr(bridge_cfg, "user_agent", fp["user_agent"])
+        browser = getattr(bridge_cfg, "current_browser", fp.get("browser", "chrome131"))
+        ua = getattr(bridge_cfg, "user_agent", fp.get("user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"))
         try:
             sess = cffi.Session(impersonate=browser) if hasattr(cffi, "Session") else cffi.Session()
         except Exception:
             sess = cffi.Session(impersonate="chrome120") if hasattr(cffi, "Session") else cffi.Session()
-        sess.headers.update({"User-Agent": ua, "Referer": "https://www.genspark.ai/"})
+
+        # هيدرز المتصفح الحقيقية والمطابقة لما تم رصده في ملفات HAR مع أولوية HTTP/2
+        sess.headers.update({
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-US,en;q=0.9",
+            "priority": "u=1, i",
+            "sec-ch-ua": '"Not:A-Brand";v="8", "Chromium";v="131", "Google Chrome";v="131"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": ua,
+            "referer": "https://www.genspark.ai/",
+        })
+
         for k, v in cookies.items():
             if hasattr(sess.cookies, "set"):
                 sess.cookies.set(str(k), str(v), domain=".genspark.ai")
             else:
                 sess.cookies[str(k)] = str(v)
-        r = sess.get(url, params=params, timeout=180)
-        if r.status_code == 200 and len(r.content) > 50:
-            with open(tar_path, "wb") as f:
-                f.write(r.content)
-            archive_diag = _extract_archive_with_diagnostics(r.content, out_dir)
+
+        # ضبط بافر libcurl لـ 2MB وإلغاء تأخير حزم TCP
+        try:
+            sess.curl_options = {
+                CurlOpt.BUFFERSIZE: 2 * 1024 * 1024,
+                CurlOpt.TCP_NODELAY: 1,
+            }
+        except Exception:
+            pass
+
+        # تسخين الاتصال مسبقاً وتنشيط الساندبوكس لتجنب 403 / unready
+        try:
+            sess.get(f"https://www.genspark.ai/api/code_sandbox/extend_lifecycle?project_id={project_id}", timeout=10)
+        except Exception:
+            pass
+
+        # تدفق البيانات مباشرة إلى القرص مع بافر 1MB
+        bytes_downloaded = [0]
+        with open(tar_tmp, "wb", buffering=1024 * 1024) as f:
+            def _direct_stream_writer(chunk: bytes):
+                if chunk:
+                    f.write(chunk)
+                    bytes_downloaded[0] += len(chunk)
+
+            r = sess.get(url, params=params, timeout=timeout, content_callback=_direct_stream_writer)
+
+        if r.status_code == 200 and bytes_downloaded[0] > 50:
+            if tar_path.exists():
+                try:
+                    tar_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            tar_tmp.rename(tar_path)
+
+            raw_archive = tar_path.read_bytes()
+            archive_diag = _extract_archive_with_diagnostics(raw_archive, out_dir)
             if not archive_diag.get("ok"):
                 log_event("warning", format_archive_diagnostic(archive_diag, tar_path.name), extra=archive_diag)
+            else:
+                log_event("info", f"✅ [TURBO] تم تنزيل وفك ضغط أرشيف المشروع بنجاح ({bytes_downloaded[0] / (1024*1024):.2f} MB)")
             return str(tar_path)
+        else:
+            log_event("error", f"فشل تحميل أرشيف المشروع: HTTP {r.status_code} (bytes={bytes_downloaded[0]})")
     except Exception as e:
         log_event("error", f"فشل تحميل أرشيف المشروع: {e}")
+    finally:
+        if tar_tmp.exists():
+            try:
+                tar_tmp.unlink(missing_ok=True)
+            except Exception:
+                pass
     return None
 
 
