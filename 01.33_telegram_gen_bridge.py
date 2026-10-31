@@ -1168,6 +1168,85 @@ def reactivate_account_if_due(acc: dict, json_path: str | None = None) -> dict:
     return acc
 
 
+# ══════════════════════════════════════════════════════════════════
+# [P48] Pre-Flight Gift Freshness — طبقة أوفلاين (STEP-2 / Q-C / S1)
+#   تقرأ فقط ما يكتبه 05.02 في الحساب (days_without_gift / last_checked /
+#   quarantine_info). لا شبكة، لا كتابة على القرص، لا cooldown، لا عزل.
+#   الفلتر يعمل عند اختيار حساب جديد فقط → أي حساب قيد التنفيذ يكمل طبيعياً.
+# ══════════════════════════════════════════════════════════════════
+GIFT_PREFLIGHT_ENABLED: bool = True
+GIFT_STALE_DAYS: int = 14          # الحد شامل (>=) — قرار المالك، مطابق لـ 05.02:408
+GIFT_GRACE_DAYS: int = 3           # نافذة الإنذار قبل الحد: [STALE-GRACE, STALE)
+GIFT_SNAPSHOT_MAX_AGE_HOURS: int = 72   # أقدم لقطة 05.02 نثق بها؛ أقدم من ذلك = UNKNOWN
+GIFT_LABELS = ("FRESH", "GRACE", "STALE", "UNKNOWN")
+
+
+def _parse_local_iso_ts(value) -> float | None:
+    """تحويل last_checked بصيغة 05.02 (ISO محلي بلا منطقة زمنية) إلى epoch؛ None عند الفشل."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    txt = value.strip()
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
+        try:
+            return time.mktime(time.strptime(txt[:26] if "." in txt else txt[:19], fmt))
+        except Exception:
+            continue
+    return None
+
+
+def classify_gift_freshness(acc, now: float | None = None,
+                            stale_days: int | None = None,
+                            grace_days: int | None = None) -> tuple[str, int | None]:
+    """
+    تصنيف نقي (بدون شبكة/قرص) لطزاجة الهدية اليومية من بيانات 05.02 المخزنة:
+      - ("STALE", days)   : days >= stale_days  (أو quarantine_info بسبب stale_daily_gift)
+      - ("GRACE", days)   : stale_days - grace_days <= days < stale_days
+      - ("FRESH", days)   : days < stale_days - grace_days
+      - ("UNKNOWN", None) : لا بيانات / بيانات مشوّهة / لقطة أقدم من GIFT_SNAPSHOT_MAX_AGE_HOURS
+    يُضاف عمر اللقطة إلى days (تقدير متشائم) — لا نكون متفائلين أبداً مع بيانات قديمة.
+    """
+    if not isinstance(acc, dict):
+        return "UNKNOWN", None
+    stale = int(GIFT_STALE_DAYS if stale_days is None else stale_days)
+    grace = int(GIFT_GRACE_DAYS if grace_days is None else grace_days)
+    now_ts = time.time() if now is None else float(now)
+
+    # 1) حساب معزول صراحةً بواسطة 05.02 → STALE مهما كان عمر اللقطة
+    qi = acc.get("quarantine_info")
+    if isinstance(qi, dict) and qi.get("reason") == "stale_daily_gift":
+        try:
+            q_days = int(qi.get("days_without_gift"))
+            if q_days >= 0:
+                return "STALE", q_days
+        except Exception:
+            pass
+        return "STALE", stale
+
+    # 2) الأيام المخزنة
+    raw_days = acc.get("days_without_gift")
+    if isinstance(raw_days, bool) or not isinstance(raw_days, (int, float)):
+        return "UNKNOWN", None
+    days = int(raw_days)
+    if days < 0:
+        return "UNKNOWN", None
+
+    # 3) عمر اللقطة (last_checked إلزامي للثقة في الرقم)
+    checked_ts = _parse_local_iso_ts(acc.get("last_checked"))
+    if checked_ts is None:
+        return "UNKNOWN", None
+    age_sec = max(0.0, now_ts - checked_ts)
+    aged_days = days + int(age_sec // 86400)
+
+    # 4) STALE لا تُنقذه قِدَم اللقطة؛ غير ذلك لقطة قديمة = UNKNOWN (Fail-Open)
+    if aged_days >= stale:
+        return "STALE", aged_days
+    if age_sec > GIFT_SNAPSHOT_MAX_AGE_HOURS * 3600:
+        return "UNKNOWN", None
+    if aged_days >= max(0, stale - grace):
+        return "GRACE", aged_days
+    return "FRESH", aged_days
+
+
 def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
     """يرجع الحسابات المؤهلة فقط (خرجت من التبريد + إيميل صحيح + لم تُجرب) مرتبة بالأقدم"""
     eligible = []
@@ -1180,8 +1259,28 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
         if not is_account_ready(acc):
             continue
         eligible.append(acc)
-    eligible.sort(key=lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0)
-    return eligible
+    _last_used = lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0
+    if not GIFT_PREFLIGHT_ENABLED:
+        eligible.sort(key=_last_used)
+        return eligible
+
+    # [P48] Pre-Flight الهدية (أوفلاين): STALE يُستبعد من الاختيار فقط — بلا كتابة/تبريد/عزل.
+    #        FRESH/GRACE بالترتيب القديم (last_used)، وUNKNOWN في الذيل (Fail-Open معلن).
+    known, unknown = [], []
+    for acc in eligible:
+        label, days = classify_gift_freshness(acc)
+        if label == "STALE":
+            log_event("warning", f"[GIFT_PREFLIGHT] تخطي {acc.get('email')} — هدية متأخرة {days} يوم (>= {GIFT_STALE_DAYS})", email=str(acc.get("email") or ""))
+            continue
+        if label == "UNKNOWN":
+            unknown.append(acc)
+        else:
+            known.append(acc)
+    if unknown:
+        log_event("info", f"[GIFT_PREFLIGHT] UNKNOWN (Fail-Open) لـ {len(unknown)} حساب بلا بيانات هدية موثوقة — يُستخدم في الذيل", email="")
+    known.sort(key=_last_used)
+    unknown.sort(key=_last_used)
+    return known + unknown
 
 
 def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None) -> bool:
