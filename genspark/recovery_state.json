@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_b_execute_in_progress_B1",
+    "status": "maint4_b_execute_in_progress_B4",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1130,16 +1130,21 @@
   "maint4_b_checkpoints": {
     "B0": {
       "state": "done",
-      "proof": "git check-ignore 7/7 IGNORED; git ls-files .bak/.lock/.jsonl=0"
+      "proof": "git check-ignore 7/7 IGNORED; git ls-files .bak/.lock/.jsonl=0",
+      "docs": "PROGRESS ticked; RESUME D34-D39 approved rows"
     },
     "B1": {
-      "state": "pending"
+      "state": "done",
+      "p53": "15 tests (35-49) written, 12 red/3 green before code",
+      "p51": "rewritten 8-13,15,18 + jsonl fixture; 10 red/8 green before code"
     },
     "B2": {
-      "state": "pending"
+      "state": "done",
+      "note": "p03 rewritten: constants (reasons+lock+breaker), _with_vault_lock, jsonl append_account_log(full record), move w/o timer metadata; py_compile OK; 10030 CRLF"
     },
     "B3": {
-      "state": "pending"
+      "state": "done",
+      "note": "p06: M1 blind FORBIDDEN, M2 four LOGIN_FAILED sites (1586/P13/4061/4104) -> move, M3 BALANCE_UNREADABLE move + D34 breaker NETWORK_DOWN, M4 zero+STALE move; statuses dict; py_compile OK; 10076 CRLF; 0 x 1800s"
     },
     "B4": {
       "state": "pending"
