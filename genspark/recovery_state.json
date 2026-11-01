@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "review1_done_not_complete_F1_bak_tracked_owner_action; next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY",
+    "status": "MAINT-4-C planned (ALIGNMENT_ONLY 2026-11-01): RESUME §3.12 + D40-D44; awaiting explicit GO + Q-1..Q-5; no code touched; .bak still tracked (D44 pending)",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1188,5 +1188,29 @@
     "owner_action_required": "git rm --cached 05.02_genspark_delayed_gifts_manager.py.bak (agent not permitted)",
     "tests": "19 failed by names == baseline, 1257 passed",
     "head_unchanged": true
+  },
+  "maint4_c": {
+    "date": "2026-11-01",
+    "mode": "ALIGNMENT_ONLY",
+    "base": "43fa2bc",
+    "owner_card": "[RESUME] MAINT-4-C D40-D44 + Gist 314ac479 + 05.03 (43fa2bc, 768 lines CRLF)",
+    "lineage": "05.03 = 00df71e:05.02 + 83 diff lines (pre-MAINT-4-B); vs HEAD 05.02 = 207 lines; direction graft 05.03->05.02 only",
+    "targets": {
+      "D40": "run_quarantine HEALTHY block 545-550 (card name check_and_clean_all does not exist)",
+      "D41": "run_revival clean_acc 753-756; proven gap: vault record active=False (01.33:1434) not cleared -> is_account_ready 1143 rejects",
+      "D42": "already implemented (494-505, 712, 778-779) -> zero code",
+      "D43": "protected 640-714 / 772-800 / 859-861; guards p52+p53 (96/96 green)",
+      "D44": "git rm (not --cached) recommended; blob 66bd67a == 00df71e:05.02"
+    },
+    "recommended_impl": "helper _activate_for_bot31(acc, bal) beside _merge_by_email + one call at 547 and 755",
+    "open_questions_for_GO": [
+      "Q-1 D41 >=100 condition",
+      "Q-2 git rm vs --cached",
+      "Q-3 extend A5 to run_quarantine HEALTHY block",
+      "Q-4 .bak in /tmp + sha256",
+      "Q-5 tests/test_p54_bot31_readiness.py red-first"
+    ],
+    "exec_sequence_after_GO": "C-0 D44 -> C-1 /tmp bak -> C-2 p54 red -> C-3 surgery LF -> C-4 compile+p54+96+full by names -> C-5 docs -> C-6 FULL review card",
+    "code_touched": false
   }
 }
