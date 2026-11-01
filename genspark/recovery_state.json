@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-4-A2 + Gist re-review closed as docs; MAINT-4-B (B-0..B-8) blocked on owner D34–D39 + «ابدأ تنفيذ»",
+    "task": "MAINT-4-B B-0..B-8 (owner card: D26-D39 + C1-C7 approved; D34(b) breaker, D35 STALE-only, D36 external, D37 gitignore, D38 -l 0, D39 sys.exit)",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
-    "base": "00df71e",
+    "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_a2_gist_rereview_done_awaiting_owner_decisions_d34_d39",
+    "status": "maint4_b_execute_in_progress_B1",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -67,7 +67,7 @@
     ],
     "next": "MAINT-4-B only after owner writes D26-D33 (or \"كما أوصيت\") + explicit ابدأ تنفيذ card. Then MAINT-5 (unapproved), MAINT-2 (deferred). D25 doc13 pinning still awaits owner.",
     "history_notice": "all other keys preserved as prior records; not active instructions",
-    "mode": "ALIGNMENT_ONLY",
+    "mode": "EXECUTE_NOW",
     "roadmap_priority": [
       {
         "id": "STEP-1",
@@ -1125,6 +1125,36 @@
     "cp4": {
       "state": "done",
       "target": "PROGRESS: MAINT-4-A2 ticket note + MAINT-4-B split into B-0..B-8 [ ] sub-boxes + header; recovery final"
+    }
+  },
+  "maint4_b_checkpoints": {
+    "B0": {
+      "state": "done",
+      "proof": "git check-ignore 7/7 IGNORED; git ls-files .bak/.lock/.jsonl=0"
+    },
+    "B1": {
+      "state": "pending"
+    },
+    "B2": {
+      "state": "pending"
+    },
+    "B3": {
+      "state": "pending"
+    },
+    "B4": {
+      "state": "pending"
+    },
+    "B5": {
+      "state": "pending"
+    },
+    "B6": {
+      "state": "pending"
+    },
+    "B7": {
+      "state": "pending"
+    },
+    "B8": {
+      "state": "pending"
     }
   }
 }
