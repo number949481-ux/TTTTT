@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_b_execute_in_progress_B8",
+    "status": "maint4_b_done_alignment_only_next_first_open_box_MAINT5_unapproved",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1163,7 +1163,8 @@
       "note": "full pytest: 19 failed / 1257 passed / 1 skipped; failures == 19-name baseline exactly (0 new, 0 fixed). Two tests updated to MAINT-4-B contracts: test_auto_compact::test_unknown_balance (-1 => BALANCE_UNREADABLE vault move of B, continue on C) + test_p48::test_04 (second classify site in send_message_and_make_public = D35)"
     },
     "B8": {
-      "state": "pending"
+      "state": "done",
+      "note": "PROGRESS (hdr L41, row 5c [x], MAINT-4-B parent + B-1..B-8 [x], log+scheduling doc) synced f183282; RESUME MODE row + D26-D39 executed markers + §3.11.9 closure + §4 heading; verify_docs_integrity Exit 0"
     }
   }
 }
