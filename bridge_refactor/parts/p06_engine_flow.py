@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2683..4236
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2706..4297
 المحتوى: Archive safety/extraction + download_project_archive (v01.04 Turbo Direct Streaming) + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue | MAINT3: EMPTY_STREAM_FAILED → move_account_to_cooldown_vault مع fallback التبريد القديم (D10) + فرع FORBIDDEN قبل LOW_BALANCE: register_forbidden_hit + عتبة FORBIDDEN_MOVE_AFTER_N=2 + تبريد 5 دقائق احتياطياً — لا وسم نجاح لـ403 (إصلاح T5))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -778,8 +778,23 @@ def send_message_and_make_public(
                 bal_check = mod.check_balance(cookies)
             except Exception:
                 bal_check = -1
+            # [MAINT-4-B/D26 M3] تعذر قراءة الرصيد (−1 استثناء/شبكة) ⇒ نقل أعمى فوري للمعزل (D34: المستدعي يقطع بعد اثنين متتاليين)
+            if bal_check == -1 and "BALANCE_UNREADABLE" in COOLDOWN_VAULT_REASONS:
+                _moved = move_account_to_cooldown_vault(email, reason="BALANCE_UNREADABLE", json_path=json_path,
+                                                        meta={"http_status": None})
+                log_event("warning", f"[MAINT-4-B] تعذر قراءة الرصيد — {'نُقل للمعزل' if _moved else 'تبريد 5 دقائق (فشل النقل)'}", email=email)
+                if not _moved:
+                    update_account_data(email, {"cooldown_until": time.time() + 300}, json_path=json_path)
+                return None, "BALANCE_UNREADABLE", None, None, None
             if isinstance(bal_check, (int, float)) and bal_check >= 0:
                 if bal_check < _min_balance:
+                    # [MAINT-4-B/D26 M4 + D35] رصيد 0 + هدية راكدة ≥14 يوماً (لقطة 05.02) ⇒ نقل فوري؛ غير ذلك ⇒ 29h القديمة
+                    _gift_state = classify_gift_freshness(acc)[0] if acc else "UNKNOWN"
+                    if int(bal_check) == 0 and _gift_state == "STALE" and "ZERO_BALANCE_STALE_GIFT" in COOLDOWN_VAULT_REASONS:
+                        if move_account_to_cooldown_vault(email, reason="ZERO_BALANCE_STALE_GIFT", json_path=json_path,
+                                                          meta={"http_status": None}):
+                            log_event("warning", "💰 رصيد 0 + هدية راكدة ≥14 يوماً — نُقل للمعزل فوراً (D35)", email=email)
+                            return None, "LOW_BALANCE", None, None, None
                     log_event("warning", f"💰 رصيد منخفض ({int(bal_check)} < {_min_balance}) — تبريد 29h وتخطٍ صامت بدون أي إرسال", email=email)
                     mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                     return None, "LOW_BALANCE", None, None, None
@@ -812,7 +827,10 @@ def send_message_and_make_public(
                 if acc_chk.get("quarantined") is True or acc_chk.get("status") == "suspended":
                     log_event("warning", f"الحساب {email} معزول نهائياً — لن يتم تعيين كول داون مؤقت", email=email)
                     return None, "ACCOUNT_QUARANTINED", None, None, None
-                update_account_data(email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 1800}, json_path=json_path)
+                # [MAINT-4-B/D26 C1] الجلسة ثم الإيميل/الباسورد فشلا ⇒ نقل فوري للمعزل (refresh قد نقله بالفعل)
+                if acc_chk and "LOGIN_FAILED" in COOLDOWN_VAULT_REASONS:
+                    if not move_account_to_cooldown_vault(email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": 401}):
+                        update_account_data(email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 300}, json_path=json_path)
                 return None, "LOGIN_FAILED", None, None, None
 
         # ⚡ [P12] لو معانا مشروع ملتقط من محاولة سابقة → نستأنف عليه مباشرة
@@ -1052,6 +1070,7 @@ def send_message_with_auto_account_failover(
     tried_emails = set()
     state_refresh = {}
     attempt = 0
+    _unreadable_streak = 0   # [MAINT-4-B/D34]
     max_attempts = getattr(bridge_cfg, "max_account_attempts", 50)
     credit_continuations = 0
     max_credit_continuations = get_credit_continuation_limit(bridge_cfg)
@@ -1215,8 +1234,8 @@ def send_message_with_auto_account_failover(
                 log_event("error", "[DEC07] ACCOUNT_SUSPENDED — عُزل الحساب (status=suspended, quarantined) والانتقال الفوري للحساب التالي", email=curr_email)
                 continue
 
-            # 🧊 [MAINT3] 403 صريح → لا وسم نجاح أبداً (إصلاح T5). D19: أول 403 = تبريد 5 دقائق فقط؛
-            # 403 على مشروعين مختلفين خلال 24h = Cut&Move إلى accounts_cooldown.json (الرجوع عبر 05.02 --revive -q).
+            # 🧊 [MAINT-4-B/D26 M1] 403 صريح → لا وسم نجاح أبداً (إصلاح T5) + نقل أعمى فوري N=1 إلى accounts_cooldown.json
+            # بلا كاش ضربات وبلا انتظار (D19 مُلغى). احتياطي 5 دقائق فقط إن فشل النقل نفسه (منع الحلقة الساخنة).
             # تعطيل الآلية (COOLDOWN_VAULT_REASONS بلا FORBIDDEN) يعيد السلوك القديم حرفياً.
             if status == "FORBIDDEN" and "FORBIDDEN" in COOLDOWN_VAULT_REASONS:
                 notify_account_selection_observer(
@@ -1226,19 +1245,34 @@ def send_message_with_auto_account_failover(
                     max_attempts=max_attempts,
                 )
                 _pid_403 = extract_project_id(pub_url or active_url or "")
-                _hits_403 = register_forbidden_hit(curr_email, _pid_403, json_path=json_path)
-                moved = False
-                if _hits_403 >= FORBIDDEN_MOVE_AFTER_N:
-                    moved = move_account_to_cooldown_vault(
-                        curr_email, reason="FORBIDDEN", json_path=json_path,
-                        meta={"http_status": 403, "project_key": str(getattr(bridge_cfg, "selection_project_key", "") or ""),
-                              "pid": _pid_403},
-                    )
+                moved = move_account_to_cooldown_vault(
+                    curr_email, reason="FORBIDDEN", json_path=json_path,
+                    meta={"http_status": 403, "project_key": str(getattr(bridge_cfg, "selection_project_key", "") or ""),
+                          "pid": _pid_403},
+                )
                 if not moved:
                     update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
-                _403_action = "نُقل للمعزل" if moved else "تبريد 5 دقائق"
-                log_event("warning", f"[MAINT3] FORBIDDEN ({_hits_403}/{FORBIDDEN_MOVE_AFTER_N}) — {_403_action} والانتقال للحساب التالي", email=curr_email)
+                _403_action = "نُقل للمعزل فوراً (N=1)" if moved else "تبريد 5 دقائق (فشل النقل)"
+                log_event("warning", f"[MAINT-4-B] FORBIDDEN — {_403_action} والانتقال للحساب التالي", email=curr_email)
                 continue   # active_url/active_query بلا تغيير — عقد LOW_BALANCE
+
+            # 🛡️ [MAINT-4-B/D34] قاطع الانقطاع المحلي: الحساب نُقل بالفعل في P13 (D26)؛ −1 لحسابين متتاليين = شبكة محلية
+            # لا حسابات ⇒ إيقاف المهمة بلا نقل مزيد (05.02 يعيد المنقولين في أول دورة).
+            if status == "BALANCE_UNREADABLE":
+                _unreadable_streak += 1
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "balance-unreadable-skip",
+                    status="BALANCE_UNREADABLE",
+                    max_attempts=max_attempts,
+                )
+                if _unreadable_streak >= BALANCE_UNREADABLE_BREAKER_N:
+                    log_event("error", f"[MAINT-4-B] تعذر قراءة الرصيد لـ{_unreadable_streak} حسابات متتالية — NETWORK_DOWN: إيقاف المهمة بلا نقل مزيد")
+                    release_account_selection(bridge_cfg, owner_token, curr_email)
+                    bridge_cfg.selected_account_claim_state = "released"
+                    return None, "NETWORK_DOWN", None, None, None
+                continue
+            _unreadable_streak = 0
 
             if status == "LOW_BALANCE":
                 notify_account_selection_observer(
@@ -1361,8 +1395,10 @@ def send_message_with_auto_account_failover(
                         status="auth_failed",
                         refresh_count=refresh_count,
                     )
-                    log_event("error", "الحساب فشل بعد التجديد مرة واحدة -> وضع الحظر المؤقت", email=curr_email)
-                    update_account_data(curr_email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 1800}, json_path=json_path)
+                    log_event("error", "الحساب فشل بعد التجديد مرة واحدة -> نقل فوري للمعزل (D26)", email=curr_email)
+                    if not (("LOGIN_FAILED" in COOLDOWN_VAULT_REASONS) and move_account_to_cooldown_vault(
+                            curr_email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": 401})):
+                        update_account_data(curr_email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 300}, json_path=json_path)
                     continue
 
                 state_refresh[curr_email] = refresh_count + 1
@@ -1405,7 +1441,9 @@ def send_message_with_auto_account_failover(
                     status="auth_failed",
                     refresh_count=state_refresh.get(curr_email, 0),
                 )
-                update_account_data(curr_email, {"cooldown_until": time.time() + 1800, "status": "auth_failed", "active": False}, json_path=json_path)
+                if not (("LOGIN_FAILED" in COOLDOWN_VAULT_REASONS) and move_account_to_cooldown_vault(
+                        curr_email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": 401})):
+                    update_account_data(curr_email, {"cooldown_until": time.time() + 300, "status": "auth_failed", "active": False}, json_path=json_path)
                 continue
 
             if status == "CREDIT_EXHAUSTED":

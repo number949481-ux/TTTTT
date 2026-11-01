@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_b_execute_in_progress_B5",
+    "status": "maint4_b_execute_in_progress_B8",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1151,13 +1151,16 @@
       "note": "05.02: constants+_with_vault_lock+_log_move+_trim_account_log beside _merge_by_email; run_revival trim-at-start, limit<=0=all, R-A reload under shared lock, _log_move per move; main() sys.exit(1) (D39); py_compile OK; 865 LF; p52 10/10"
     },
     "B5": {
-      "state": "pending"
+      "state": "done",
+      "note": "PARTS 12 bounds updated (p03 532-1596 … p12 8523-10076, total 10076) + p03 desc MAINT-4-B; rebuild_refactor OK CRLF; py_compile 01.33 + bridge_refactor OK; test_refactor_parity 16/16"
     },
     "B6": {
-      "state": "pending"
+      "state": "done",
+      "note": "README_COOLDOWN_VAULT.md rewritten for MAINT-4-B: N=1 blind, jsonl full data (D28), lock name/30s/60s, D29 documentary, 12:00 OS / 00:00 external main.py + -l 0 + exit code, D34 breaker, D37 .gitignore, test list p50-p53+parity; test_46 green"
     },
     "B7": {
-      "state": "pending"
+      "state": "done",
+      "note": "full pytest: 19 failed / 1257 passed / 1 skipped; failures == 19-name baseline exactly (0 new, 0 fixed). Two tests updated to MAINT-4-B contracts: test_auto_compact::test_unknown_balance (-1 => BALANCE_UNREADABLE vault move of B, continue on C) + test_p48::test_04 (second classify site in send_message_and_make_public = D35)"
     },
     "B8": {
       "state": "pending"
