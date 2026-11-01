@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-3-A/A2/A3/A4/A5 done (ALIGNMENT_ONLY). A5 = owner's 5th card: cancel parallel scripts (cooldown_vault_sorter/return_from_cooldown), 05.02 surgical edit ONLY inside run_revival (632-701) per S1-S7, charter (360 + 10 principles + invariants) pinned byte-identical in PROGRESS/RESUME headers; D3/D18/D21 rewritten, D22-D25 added. Next = MAINT-3-B after D1-D25.",
+    "task": "MAINT-4-A2 (ALIGNMENT_ONLY) — closed as docs; MAINT-4-B blocked on owner D34–D37 + «ابدأ تنفيذ»",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
-    "base": "latest origin HEAD (no fixed commit ids as execution reference)",
+    "base": "b51ff24",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_study_done_awaiting_owner_decisions_d26_d33",
+    "status": "maint4_a2_done_awaiting_owner_decisions_d34_d37",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -67,7 +67,7 @@
     ],
     "next": "MAINT-4-B only after owner writes D26-D33 (or \"كما أوصيت\") + explicit ابدأ تنفيذ card. Then MAINT-5 (unapproved), MAINT-2 (deferred). D25 doc13 pinning still awaits owner.",
     "history_notice": "all other keys preserved as prior records; not active instructions",
-    "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
+    "mode": "ALIGNMENT_ONLY",
     "roadmap_priority": [
       {
         "id": "STEP-1",
@@ -1045,5 +1045,48 @@
       "10 golden principles",
       "active invariants: 12h scan exclusive to accounts_cooldown.json; no parallel scripts to 05.02; 01.03/verifier read-only; 05.02 surgical run_revival only; decisions in PROGRESS before code"
     ]
-  }
+  },
+  "maint4_a2_checkpoints": {
+    "cp0": {
+      "state": "done",
+      "evidence": "no main.py in repo root (only bridge_refactor/main.py = bot runner); 05.02 login seq 318-345 (session first, then B2C email/password); threshold_days=14 (279/290/408); 01.33 P13 preflight 3445-3493; GIFT_STALE_DAYS=14 (1178); LOGIN_FAILED 3493/4024; .gitignore line 10 accounts*.json only; 05.02 argparse 719-732 no loop/daemon"
+    },
+    "cp1": {
+      "state": "done",
+      "target": "RESUME §3.11 (3.11.1-3.11.7) inserted before ## 4)"
+    },
+    "cp2": {
+      "state": "done",
+      "target": "RESUME D26/D28/D30/D31/D32/D33 rewritten + D34–D37 + §4 header + MODE row; PROGRESS MAINT-4-A2 [x] + MAINT-4-B rewritten (step 0 .gitignore) + row 5c + header; recovery final"
+    }
+  },
+  "maint4_a2": {
+    "mode": "ALIGNMENT_ONLY",
+    "code_changed": false,
+    "docs": [
+      "RESUME.md §3.11",
+      "RESUME.md §4 D26–D37",
+      "PROGRESS.md (header L41, 5c, MAINT-4-A2, MAINT-4-B)",
+      "genspark/recovery_state.json"
+    ],
+    "owner_constitutional": {
+      "D26": "blind N=1 instant move",
+      "D27": "persistent vault, revival only via 05.02",
+      "D28": "account_log.jsonl full account data, no masking (local decision)",
+      "D32": "jsonl append-only",
+      "D33": "dual-run 12:00/00:00 + R-A/R-B"
+    },
+    "open_decisions": {
+      "D34": "local-outage task-level breaker after 2 consecutive check_balance=-1 (recommend) vs absolute N=1",
+      "D35": "balance 0: move only if gift STALE>=14d; FRESH/UNKNOWN keeps 29h (recommend)",
+      "D36": "main.py meaning: OS scheduler recommended; daemon/new main.py conflict with A5",
+      "D37": ".gitignore step 0 mandatory before any code (5 patterns)"
+    },
+    "withdrawn": [
+      "D30 (5-min for legitimate 403)",
+      "D31 (-1 => 5 min)"
+    ],
+    "planned_tests": "p53 35–48; p51 9–13 rewritten"
+  },
+  "next": "Owner writes D34–D37 (or «كما أوصيت») + «ابدأ تنفيذ» ⇒ MAINT-4-B step 0 = .gitignore (D37), then p53 red, then 01.33 M1–M4, then 05.02 run_revival R-A/_log_move/lock, rebuild, README, closure by names (baseline 19)."
 }
