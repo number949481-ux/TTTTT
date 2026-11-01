@@ -6,7 +6,7 @@
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_closed_b2_0133_done_next_maint5_alignment_only",
+    "status": "maint4_study_done_awaiting_owner_decisions_d26_d33",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -65,7 +65,7 @@
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": "MAINT-3 fully closed. Next first [ ] = MAINT-5 (A3 proposal, NOT approved -> ALIGNMENT_ONLY until owner writes decision), then MAINT-2 (deferred DEC-04). Doc 13 charter pinning awaits owner (D25).",
+    "next": "MAINT-4-B only after owner writes D26-D33 (or \"كما أوصيت\") + explicit ابدأ تنفيذ card. Then MAINT-5 (unapproved), MAINT-2 (deferred). D25 doc13 pinning still awaits owner.",
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
     "roadmap_priority": [
@@ -415,6 +415,43 @@
       "cancelled_per_a5": [
         "scripts/cooldown_vault_sorter.py",
         "scripts/return_from_cooldown.py"
+      ]
+    },
+    "maint4_checkpoints": {
+      "cp0": "2026-11-01 Layer A @92fc449 clean; previous MAINT-4 write never landed (0 markers); evidence re-read (01.33 10011 CRLF / 05.02 763 LF / 01.03 4176 LF read-only); MODE=ALIGNMENT_ONLY (owner card D26-D29 + 3 risks)",
+      "cp1": "DONE: RESUME §3.10 header + 3.10.1 (D26) + 3.10.2 (D27) + 3.10.3 (D28)",
+      "cp2": "DONE: RESUME §3.10.4 (race/locks R-A/R-B) + 3.10.5 (log growth/jsonl) + 3.10.6 (transient vs real 403 + D29 verdict) + 3.10.7 (opinion) + 3.10.8 (tests 35-46)",
+      "cp3": "DONE: RESUME D26-D33 rows + §4 header + MODE row",
+      "cp4": "DONE: PROGRESS MAINT-4 [x] study + MAINT-4-B [ ] + table row 5c + resume header; recovery updated"
+    },
+    "maint4": {
+      "date": "2026-11-01",
+      "mode": "ALIGNMENT_ONLY (no code)",
+      "base": "92fc449",
+      "spec": "RESUME §3.10.1-8",
+      "decisions_new": [
+        "D26 N=1 with ownership probe",
+        "D27 proven, guard test only",
+        "D28 _log_move in 05.02",
+        "D29 terminal marker = documentation not code",
+        "D30 keep 5-min fallback",
+        "D31 check_balance -1 -> 5 min no move",
+        "D32 jsonl append-only",
+        "D33 R-A mandatory + R-B lockfile + run_quarantine permission"
+      ],
+      "owner_risks": {
+        "race": "atomic writes both sides => no corruption; lost-update real (window = revival cycle minutes) => R-A + R-B",
+        "log_growth": "bounded 1.2MB but O(n) => jsonl",
+        "transient_vs_403": "network drop never yields FORBIDDEN (01.03:1707/1728 -> status 0 -> continue 3171; send_chat never returns 403; monitor exceptions continue 3230)"
+      },
+      "tests_planned": "p53 35-46",
+      "untouched": [
+        "01.33",
+        "05.02",
+        "01.03",
+        "verifier",
+        "bridge_refactor",
+        "توثيق_*"
       ]
     }
   },
