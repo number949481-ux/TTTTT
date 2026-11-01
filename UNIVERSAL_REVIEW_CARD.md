@@ -23,7 +23,7 @@ https://github.com/number949481-ux/TTTTT/blob/genspark_ai_developer/ALIGNMENT_ON
 
 # كارت المراجعة الكوني بعد كل عمل — UNIVERSAL POST-WORK REVIEW CARD
 **MODE: [POST_WORK_REVIEW | STRICT_READ_ONLY | DUAL_TRACK | DUAL_PASS | EVIDENCE_ONLY]**
-الإصدار 1.0 — 2026-11-01 — المصدر: فويس المالك 75 (Gist `f1df6d6c…`) + كل مسودات `ALIGNMENT_ONLY.md`. عند تعارض هذا الكارت مع أي مسودة هناك: **هذا الكارت يفوز**؛ وعند تعارضه مع قرار مالك حرفي (فويس/قرار D/كارت معتمد): **قرار المالك يفوز** ويُسجَّل `CONFLICT`.
+الإصدار 1.1 — 2026-11-01 (سجل التحديثات في §14) — المصدر: فويس المالك 75 (Gist `f1df6d6c…`) + كل مسودات `ALIGNMENT_ONLY.md`. عند تعارض هذا الكارت مع أي مسودة هناك: **هذا الكارت يفوز**؛ وعند تعارضه مع قرار مالك حرفي (فويس/قرار D/كارت معتمد): **قرار المالك يفوز** ويُسجَّل `CONFLICT`.
 
 > **الغرض بجملة واحدة:** لا يوجد مخرج معتمد من الضربة الأولى. بعد **أي** شيء يخرج من الوكيل — كود، تعديل، تحديث، خطة، مراجعة، تقرير، قراءة، إجابة، دردشة، ادعاء إنجاز — يدخل الوكيل تلقائياً في مراجعة ثانية بمسارين متوازيين وبالأدلة فقط، ولا ينتقل لأي خطوة تالية قبل تسليم تقريرها بسطر النزاهة الأخير.
 
@@ -107,7 +107,7 @@ https://github.com/number949481-ux/TTTTT/blob/genspark_ai_developer/ALIGNMENT_ON
 - **A1 دفتر المتطلبات `Q-1…Q-n`:** كل ما طُلب في هذا العمل بنصه الحرفي ومصدره (فويس/كارت/رسالة المالك/قرار D/مربع PROGRESS/قيد نطاق/معيار جودة). ما لا يتوفر نصه = `UNAVAILABLE`؛ ممنوع استنتاج مضمونه من رقمه أو عنوانه.
 - **A2 دفتر الادعاءات `K-1…K-n`:** كل عبارة إنجاز في مخرجك الأخير وفي رسائل commit وفي ما كتبتَه في PROGRESS/RESUME/recovery/README خلال هذا العمل.
 - **A3 المطابقة سطراً بسطر:** جدول `Q | أين على القرص (file:line) | الإثبات (أمر+مخرج) | الفرق بين المطلوب والموجود`. التطابق «بالمعنى» غير كافٍ إن كان نص المالك محدداً (مثال: «`-l 0`» ليس «حد كبير»).
-- **A4 أثر التغيير الكامل:** `git diff --stat BASE..HEAD` و`--name-only` و`--check`؛ كل ملف متغير يُبرَّر بـQ؛ ملف بلا Q = `SCOPE-CREEP`. وما لم يصل للريموت: تحقق الهبوط بـ`git show origin/<branch>:<file> | grep -c '<marker>'` — **«حفظتُ محلياً» ≠ «مُزامَن»** حتى يُثبت المرجع البعيد.
+- **A4 أثر التغيير الكامل:** `git diff --stat BASE..HEAD` و`--name-only` و`--check`؛ كل ملف متغير يُبرَّر بـQ؛ ملف بلا Q = `SCOPE-CREEP`؛ وملف لم تقصد رفعه (`.bak`/`.tmp`/لوج) ظهر في commit المزامنة = **F** فوراً (7.14). وما لم يصل للريموت: تحقق الهبوط بـ`git show origin/<branch>:<file> | grep -c '<marker>'` — **«حفظتُ محلياً» ≠ «مُزامَن»** حتى يُثبت المرجع البعيد.
 - **A5 ما لم يُطلب وفعلتَه، وما طُلب ولم تفعله** — صراحة، بندين منفصلين، ولو كانا فارغين تُكتب «فارغ — تحققت بـ…».
 
 ### المسار B — مسح المنظومة من الصفر 360° (Clean-Slate System Scan)
@@ -183,7 +183,8 @@ https://github.com/number949481-ux/TTTTT/blob/genspark_ai_developer/ALIGNMENT_ON
 7.9 **D36/D38/D39 التشغيل:** `-l 0` = الكل؛ `sys.exit(1)` عند `error`/استثناء؛ لا `main.py` داخل المستودع؛ الأمر الموثق في README/PROGRESS حرفياً.
 7.10 **D37 `.gitignore`:** `git check-ignore -v account_log.jsonl accounts_cooldown.json accounts_cooldown.json.lock x.bak x.cooldown_move.bak accounts_x.json.tmp1` كلها مُطابقة؛ `git ls-files | grep -E '(account_log|\.lock$|\.bak$|accounts_cooldown)'` فارغ؛ `git log --all --name-only -- <الأسماء>` للتاريخ (أسماء فقط).
 7.11 **الثابت الدستوري:** الفحص الدوري (12:00/00:00) يستهدف `accounts_cooldown.json` فقط؛ ⛔ `accounts_failed.json` و⛔ `accounts_delayed_gifts_credits.json` لا يُمرَّران لـ`-q` أبداً — تحقق في الكود والوثائق معاً.
-7.12 **A5 نطاق 05.02:** التعديلات داخل `run_revival` + helpers بجوار `_merge_by_email` + `main()` (D39 فقط)؛ أي شيء خارجها = `SCOPE-CREEP`؛ `.bak` موجود محلياً ومتجاهَل.
+7.12 **A5 نطاق 05.02:** التعديلات داخل `run_revival` + helpers بجوار `_merge_by_email` + `main()` (D39 فقط)؛ أي شيء خارجها = `SCOPE-CREEP`؛ `.bak` **غير متتبَّع** — الدليل الوحيد المقبول `git ls-files | grep -E '\.bak$'` فارغ (وجوده في `.gitignore` **ليس دليلاً** — انظر 7.14).
+7.14 **محرك المزامنة لا يحترم `.gitignore` (F-1 2026-11-01):** أي ملف يُنشأ داخل الصندوق يُرفع ولو كان متجاهَلاً (`05.02_…py.bak` رُفع في `9225703` رغم `*.bak` في `.gitignore:17`). لذلك: (أ) ممنوع إنشاء `.bak`/`.tmp`/لوج/أي ملف مؤقت **داخل المستودع** — المكان `/tmp` فقط؛ (ب) بعد كل commit مزامنة: `git ls-files -i -c --exclude-standard` يجب أن يُرجع فقط القائمة التاريخية المعروفة (`bridge_bot.log` منذ 2026-09-09) — أي اسم جديد = **S1** فوراً (وS0 إن احتوى بيانات حساب)؛ (ج) «موجود في `.gitignore`» لا يُكتب أبداً كدليل على عدم الرفع.
 7.13 **الملفات المحمية:** `01.03Genspark_claude-opus-5-code.py` و`genspark_verifier_engine.py` والمراجع الموثقة في RESUME §3 — `git diff --name-only BASE..HEAD` لا يحتويها، وإلا S0.
 
 ---
@@ -194,7 +195,8 @@ https://github.com/number949481-ux/TTTTT/blob/genspark_ai_developer/ALIGNMENT_ON
 1  git rev-parse --abbrev-ref HEAD && git rev-parse --short HEAD && git log -1 --oneline
 2  git status --porcelain; git diff --quiet; echo "diff_quiet_exit=$?"          # قبل التفتيش وبعده — يجب التطابق
 3  git fetch origin <branch> -q && git rev-parse --short origin/<branch> && git log --oneline -5 origin/<branch>
-4  git diff --stat <BASE>..HEAD && git diff --name-only <BASE>..HEAD && git diff --check <BASE>..HEAD; echo "check_exit=$?"
+4  git diff --stat <BASE>..HEAD && git diff --name-only <BASE>..HEAD && git -c core.whitespace=cr-at-eol diff --check <BASE>..HEAD; echo "check_exit=$?"   # cr-at-eol إلزامي: 01.33 CRLF يعطي إيجابيات كاذبة بدونه
+4b git ls-files -i -c --exclude-standard     # متتبَّع رغم .gitignore — المتوقع: القائمة التاريخية المعروفة فقط (7.14)
 5  git ls-files | grep -E '(account_log\.jsonl|accounts_cooldown\.json|\.lock|\.bak)$'     # يجب أن يكون فارغاً
 6  git check-ignore -v account_log.jsonl accounts_cooldown.json accounts_cooldown.json.lock x.bak x.cooldown_move.bak accounts_x.json.tmp1
 7  git grep -nIEi '(password|passwd|cookie|token|secret)' -- ':!tests' ':!*.md' | cut -d: -f1,2 | sort -u | head -40   # file:line فقط
@@ -284,6 +286,8 @@ https://github.com/number949481-ux/TTTTT/blob/genspark_ai_developer/ALIGNMENT_ON
 | E23 | تقرير مُقسَّم يُعلن الاكتمال في جزء مبكر | 0.6 |
 | E24 | `COMPLETE` مع بنود مفتوحة | 11.2 + شرط الصحة الآلي لـR10 |
 | E25 | ادعاء استقلالية غير موجودة | B1 `SAME-SESSION` إلزامي عند انطباقه |
+| E26 | «الملف في `.gitignore` إذن لم يُرفع» | 7.14 + §8-4b + §8-5: الدليل `git ls-files` فقط؛ محرك المزامنة يتجاوز `.gitignore` |
+| E27 | إنشاء ملف مؤقت/نسخة احتياطية داخل المستودع «لأنه متجاهَل» | 7.14(أ): `/tmp` فقط |
 
 ---
 
@@ -303,6 +307,14 @@ R8: لا خرق — HEAD/porcelain قبل = بعد
 R9: COMPLETE ضمن حدود: لم أُشغّل الاختبارات (غير مطلوبة لإجابة) · الخطوة التالية: لا شيء
 REVIEW-INTEGRITY: level=LITE | type=T5 | HEAD_unchanged=yes | porcelain_unchanged=yes | code_unmodified=yes | Q=1 K=0 classified=1 | findings=<S0:0 S1:0 S2:0 S3:0> | B5=none-with-proof | verdict=COMPLETE
 ```
+
+---
+## §14 — سجل تحديثات الكارت (إلزامي: كل ثغرة تُكتشف في أي مراجعة تُسجَّل هنا مع البند الذي سدّها — قاعدة المالك في رأس الملف)
+
+| الإصدار | التاريخ | المصدر | الثغرة المكتشفة | البند المُضاف/المُعدَّل |
+|---|---|---|---|---|
+| 1.0 | 2026-11-01 | فويس 75 + مسودات ALIGNMENT_ONLY.md | — (الإصدار الأول) | §0–§13، E1–E25 |
+| 1.1 | 2026-11-01 | مراجعة FULL للـcommits `9225703`/`f183282`/`f504a3c` (F-1) | `05.02_…py.bak` رُفع رغم `.gitignore` ⇒ محرك المزامنة يتجاوزه؛ الكارت نفسه كان يقول «متجاهَل» (§7.12)؛ `git diff --check` إيجابيات كاذبة على CRLF | 7.12 مُصحَّح، 7.14 جديد، §8-4 `cr-at-eol` + §8-4b، A4، E26، E27، §14 |
 
 ---
 **ابدأ الآن بعد كل عمل:** سجّل R0 والحالة الأولية، ابنِ الدفترين، فتّش المسارين بتمريرتين، لا تعدّل شيئاً، لا تقبل الضربة الأولى، لا تُعلن شيئاً بلا دليل، وأنهِ بسطر R10.
