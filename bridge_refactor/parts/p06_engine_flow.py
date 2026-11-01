@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2509..4027
-المحتوى: Archive safety/extraction + download_project_archive (v01.04 Turbo Direct Streaming) + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue)
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2683..4236
+المحتوى: Archive safety/extraction + download_project_archive (v01.04 Turbo Direct Streaming) + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue | MAINT3: EMPTY_STREAM_FAILED → move_account_to_cooldown_vault مع fallback التبريد القديم (D10) + فرع FORBIDDEN قبل LOW_BALANCE: register_forbidden_hit + عتبة FORBIDDEN_MOVE_AFTER_N=2 + تبريد 5 دقائق احتياطياً — لا وسم نجاح لـ403 (إصلاح T5))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -1186,11 +1186,21 @@ def send_message_with_auto_account_failover(
                     status=EMPTY_STREAM_FAILED_STATUS,
                     max_attempts=max_attempts,
                 )
-                try:
-                    mark_account_cooldown(curr_email, cooldown_hours=DEC07_EMPTY_COOLDOWN_HOURS, json_path=json_path)
-                except Exception as err:
-                    log_event("warning", f"[DEC07] Cooldown save failed: {type(err).__name__}", email=curr_email)
-                log_event("warning", f"[DEC07] EMPTY_STREAM_FAILED — تبريد {DEC07_EMPTY_COOLDOWN_HOURS}h والانتقال الفوري للحساب التالي", email=curr_email)
+                # 🧊 [MAINT3] D10: Cut&Move إلى accounts_cooldown.json (1h معلوماتية)؛ الاحتياطي = التبريد القديم في المكان
+                moved = False
+                if EMPTY_STREAM_FAILED_STATUS in COOLDOWN_VAULT_REASONS:
+                    moved = move_account_to_cooldown_vault(
+                        curr_email, reason=EMPTY_STREAM_FAILED_STATUS, json_path=json_path,
+                        meta={"http_status": None, "project_key": str(getattr(bridge_cfg, "selection_project_key", "") or ""),
+                              "pid": extract_project_id(pub_url or active_url or "")},
+                    )
+                if not moved:
+                    try:
+                        mark_account_cooldown(curr_email, cooldown_hours=DEC07_EMPTY_COOLDOWN_HOURS, json_path=json_path)
+                    except Exception as err:
+                        log_event("warning", f"[DEC07] Cooldown save failed: {type(err).__name__}", email=curr_email)
+                _empty_action = "نُقل للمعزل" if moved else f"تبريد {DEC07_EMPTY_COOLDOWN_HOURS}h"
+                log_event("warning", f"[DEC07] EMPTY_STREAM_FAILED — {_empty_action} والانتقال الفوري للحساب التالي", email=curr_email)
                 continue
 
             # 🛡️ [DEC07] حساب محظور (نصّياً) → عزل دائم بلا تبريد زمني وانتقال فوري (قرار 3/4)
@@ -1204,6 +1214,31 @@ def send_message_with_auto_account_failover(
                 update_account_data(curr_email, {"status": "suspended", "quarantined": True, "cookies": {}, "active": False}, json_path=json_path)
                 log_event("error", "[DEC07] ACCOUNT_SUSPENDED — عُزل الحساب (status=suspended, quarantined) والانتقال الفوري للحساب التالي", email=curr_email)
                 continue
+
+            # 🧊 [MAINT3] 403 صريح → لا وسم نجاح أبداً (إصلاح T5). D19: أول 403 = تبريد 5 دقائق فقط؛
+            # 403 على مشروعين مختلفين خلال 24h = Cut&Move إلى accounts_cooldown.json (الرجوع عبر 05.02 --revive -q).
+            # تعطيل الآلية (COOLDOWN_VAULT_REASONS بلا FORBIDDEN) يعيد السلوك القديم حرفياً.
+            if status == "FORBIDDEN" and "FORBIDDEN" in COOLDOWN_VAULT_REASONS:
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "forbidden-isolate",
+                    status="FORBIDDEN",
+                    max_attempts=max_attempts,
+                )
+                _pid_403 = extract_project_id(pub_url or active_url or "")
+                _hits_403 = register_forbidden_hit(curr_email, _pid_403, json_path=json_path)
+                moved = False
+                if _hits_403 >= FORBIDDEN_MOVE_AFTER_N:
+                    moved = move_account_to_cooldown_vault(
+                        curr_email, reason="FORBIDDEN", json_path=json_path,
+                        meta={"http_status": 403, "project_key": str(getattr(bridge_cfg, "selection_project_key", "") or ""),
+                              "pid": _pid_403},
+                    )
+                if not moved:
+                    update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
+                _403_action = "نُقل للمعزل" if moved else "تبريد 5 دقائق"
+                log_event("warning", f"[MAINT3] FORBIDDEN ({_hits_403}/{FORBIDDEN_MOVE_AFTER_N}) — {_403_action} والانتقال للحساب التالي", email=curr_email)
+                continue   # active_url/active_query بلا تغيير — عقد LOW_BALANCE
 
             if status == "LOW_BALANCE":
                 notify_account_selection_observer(

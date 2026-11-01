@@ -222,10 +222,11 @@ class TestAccountLogAndHits(_VaultFixture):
         ok = bridge.append_account_log("exit_to_cooldown", EMAIL_A, reason="FORBIDDEN",
                                        meta={"password": "p", "cookies": {"a": 1}, "http_status": 403}, base_dir=self.tmp)
         self.assertTrue(ok)
-        raw = self.log.read_text(encoding="utf-8")
-        self.assertNotIn("password", raw.replace('"fields"', ""))
-        self.assertNotIn("cookies", raw.replace('"fields"', ""))
-        self.assertEqual(self.log_events()[-1]["http_status"], 403)
+        events = self.log_events()
+        for e in events:  # keys only — the schema note may *mention* the words, data must never carry them
+            self.assertFalse({"password", "cookies"} & set(e.keys()), f"secret key leaked into log entry: {e}")
+        self.assertEqual(events[0]["event"], "schema")
+        self.assertEqual(events[-1]["http_status"], 403)
 
     def test_10_register_forbidden_hit_counts_distinct_pids_within_window(self):
         now = time.time()
