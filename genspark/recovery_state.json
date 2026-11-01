@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "MAINT-4-C planned (ALIGNMENT_ONLY 2026-11-01): RESUME §3.12 + D40-D44; awaiting explicit GO + Q-1..Q-5; no code touched; .bak still tracked (D44 pending)",
+    "status": "MAINT-4-C executed+closed 2026-11-01 (owner GO A-G); next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1191,7 +1191,7 @@
   },
   "maint4_c": {
     "date": "2026-11-01",
-    "mode": "ALIGNMENT_ONLY",
+    "mode": "EXECUTE_NOW (owner GO card, decisions A-G = all recommendations)",
     "base": "43fa2bc",
     "owner_card": "[RESUME] MAINT-4-C D40-D44 + Gist 314ac479 + 05.03 (43fa2bc, 768 lines CRLF)",
     "lineage": "05.03 = 00df71e:05.02 + 83 diff lines (pre-MAINT-4-B); vs HEAD 05.02 = 207 lines; direction graft 05.03->05.02 only",
@@ -1211,6 +1211,43 @@
       "Q-5 tests/test_p54_bot31_readiness.py red-first"
     ],
     "exec_sequence_after_GO": "C-0 D44 -> C-1 /tmp bak -> C-2 p54 red -> C-3 surgery LF -> C-4 compile+p54+96+full by names -> C-5 docs -> C-6 FULL review card",
-    "code_touched": false
+    "code_touched": true,
+    "base_at_go": "73084c3",
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT4C.bak",
+      "sha256": "4713913bf2b6379d9992fdee202e0467fcd5f6b3894e70f0c473f293235ded31",
+      "equals": "05.02 @73084c3",
+      "note": "lost on sandbox reset; git history is the durable copy"
+    },
+    "post_edit_sha256_05_02": "c7468e518f1007465db4d14d28545c8597681bf11a22cfd6393dea834b2cc0e4",
+    "checkpoints": {
+      "C-0": "git rm .bak done; tracked .bak = 0",
+      "C-1": "/tmp backup + sha256",
+      "C-2": "tests/test_p54_bot31_readiness.py red-first 13 failed/7 passed",
+      "C-3": "helper _activate_for_bot31 before _merge_by_email; call in run_quarantine HEALTHY + ready_31 tag; call in run_revival; 05.02 865->881 LF (+20/-4)",
+      "C-4": "py_compile OK; p54 20/20; guards 160/160; full 19 failed/1277 passed/1 skipped; names == baseline (NEW=0 FIXED=0)",
+      "C-5": "README line + PROGRESS [x] + RESUME §3.12.8 + this record",
+      "C-6": "FULL review card report in chat"
+    },
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p54_bot31_readiness.py (new)",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json",
+      "05.02_genspark_delayed_gifts_manager.py.bak (deleted)"
+    ],
+    "untouched": [
+      "05.03",
+      "01.33",
+      "01.03",
+      "verifier",
+      "_with_vault_lock",
+      "_log_move",
+      "_trim_account_log",
+      "main()"
+    ],
+    "status": "closed"
   }
 }
