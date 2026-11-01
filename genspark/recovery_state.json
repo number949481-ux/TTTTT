@@ -6,7 +6,7 @@
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_b2_0133_in_progress_cp0",
+    "status": "maint3_b2_0133_in_progress_cp2",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -392,8 +392,8 @@
     },
     "maint3_b2_checkpoints": {
       "cp0": "2026-10-31 started after Layer A @233fa6f; MODE auto=ابدأ تنفيذ per §0 (D1-D25 written, first [ ], scope RESUME §3)",
-      "cp1": "pending: red tests tests/test_p51_forbidden_isolation.py + P50 test_09 conscious update",
-      "cp2": "pending: 01.33 p03 constants + append_account_log + move_account_to_cooldown_vault",
+      "cp1": "DONE (red): tests/test_p51_forbidden_isolation.py written (18 tests) — red on untouched 01.33; P50 test_09 update deferred to cp3",
+      "cp2": "DONE: p03 MAINT3 block inserted after mark_account_cooldown (1299-1472, 174 lines): constants + _atomic_json_dump + append_account_log + register_forbidden_hit + move_account_to_cooldown_vault; 01.33 9802->9976 CRLF; py_compile OK; p06 anchors shift +174",
       "cp3": "pending: 01.33 p06 EMPTY replace + FORBIDDEN branch",
       "cp4": "pending: PARTS shift + rebuild + parity + README + closure by names (baseline 19)"
     }
