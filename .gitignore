@@ -8,6 +8,13 @@ __pycache__/
 
 # Secrets & Accounts (Strict Protection)
 accounts*.json
+# [MAINT-4-B B-0 / D37] سجل الحركات ببيانات كاملة + أقفال + نسخ احتياطية تحوي حسابات — لا تُرفع أبداً
+account_log.jsonl*
+account_log.json*
+*.lock
+*.cooldown_move.bak
+accounts*.json.tmp*
+*.bak
 *.pem
 *.key
 telegram_bot_token.txt
