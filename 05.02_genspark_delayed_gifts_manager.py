@@ -709,15 +709,21 @@ class MasterDelayedGiftsManager:
 
     @staticmethod
     def _activate_for_bot31(acc: Dict[str, Any], bal: Optional[int]) -> Dict[str, Any]:
-        """[MAINT-4-C/D40+D41] تفعيل فوري متوافق مع is_account_ready في 01.33 (helper واحد — DRY):
-        status=active + active=True + last_updated؛ رصيد >= 100 ⇒ cooldown_until=0 + cooldown_released_at (Q-1)؛
-        مسح وسوم العزل القديمة quarantine_info/quarantined. يعدّل القاموس في مكانه ويعيده."""
+        """[MAINT-4-C/D40+D41 + MAINT-4-D] تفعيل/تبريد متوافق مع is_account_ready في 01.33 (helper واحد — DRY):
+        رصيد >= 100 ⇒ status=active + active=True + cooldown_until=0 + cooldown_released_at (Q-1)؛
+        رصيد < 100 ⇒ [MAINT-4-D — الوثيقتان 19/20] status=cooldown + active=False + cooldown_until=now+29h
+        (نفس شكل mark_account_cooldown في 01.33 — تبريد في مكانه، لا نقل لملف خارجي)؛
+        في الحالتين: last_updated + مسح وسوم العزل القديمة quarantine_info/quarantined. يعدّل القاموس في مكانه ويعيده."""
         now_iso = datetime.now().isoformat(timespec="seconds")
-        acc["status"] = "active"
-        acc["active"] = True
         if (bal or 0) >= 100:
+            acc["status"] = "active"
+            acc["active"] = True
             acc["cooldown_until"] = 0
             acc["cooldown_released_at"] = now_iso
+        else:
+            acc["status"] = "cooldown"
+            acc["active"] = False
+            acc["cooldown_until"] = int(time.time() + 29 * 3600)
         acc["last_updated"] = now_iso
         acc.pop("quarantine_info", None)
         acc.pop("quarantined", None)

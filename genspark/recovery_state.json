@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "MAINT-4-C fully closed 2026-11-01 (C-0..C-6; sync 90e184d); next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY",
+    "status": "MAINT-4-D executed+closed 2026-11-01 (owner EXECUTE_NOW, docs 19/20 @2406dab); next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY; Q-6 open",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1250,5 +1250,46 @@
     ],
     "status": "closed (C-0..C-6 complete)",
     "sync_landed_commit": "90e184d"
+  },
+  "maint4_d": {
+    "mode": "EXECUTE_NOW",
+    "base_at_card": "2406dab",
+    "owner_docs": [
+      "19_…توافق_360_مع_بوت_31.md",
+      "20_…حسم_ملف_التبريد.md"
+    ],
+    "review_verdict": "gap real (helper set active=True for bal<100); doc-19 consequence (CREDIT_EXHAUSTED crash) inaccurate — 01.33 P13 preflight gate 3472-3500 blocks send; real harm = wasted check_balance + blind vault move on -1 (D26 M3) + contract mismatch with mark_account_cooldown 1286-1297; doc-19 file names wrong (accounts_genspark_failed/success vs accounts_failed/success.json); doc-20 substantively correct (p06 line numbers shifted)",
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT4D.bak",
+      "sha256": "c7468e518f1007465db4d14d28545c8597681bf11a22cfd6393dea834b2cc0e4",
+      "equals": "05.02 @90e184d",
+      "note": "lost on sandbox reset; git history is the durable copy"
+    },
+    "post_edit_sha256_05_02": "a8a2199d981f91c126ec62e5528a7408807f48cc44e493d0f01b0cdb0effa038",
+    "surgery": "only inside _activate_for_bot31 body (git diff -U0 = 4 hunks within 712-726); else-branch: status=cooldown, active=False, cooldown_until=int(time.time()+29*3600); 05.02 881->887 LF (+10/-4)",
+    "tests": "p54 red-first 6 failed/16 passed -> 22/22; guards 182/182; full 19 failed/1279 passed/1 skipped names==baseline (NEW=0)",
+    "d43_byte_identical": {
+      "1-711": "same",
+      "642-707": "905b274a",
+      "HEAD 726-881 == local 732-887": "359271ee"
+    },
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p54_bot31_readiness.py",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json"
+    ],
+    "untouched": [
+      "01.33",
+      "05.03",
+      "docs 19/20",
+      "01.03",
+      "verifier",
+      "MAINT-5"
+    ],
+    "open_question_Q6": "unconditional now+29h extends an existing bot cooldown (9h left -> 29h) and resets every 12h cycle for poor accounts; alternatives max(existing, now+29h) or leave-if-running; NO action without owner decision",
+    "status": "closed"
   }
 }

@@ -22,7 +22,7 @@
 |---|---|
 | الفرع | `genspark_ai_developer` فقط (main READ-ONLY، لا فروع جانبية) — Layer A في أول 30 ثانية من كل جلسة بلا استثناء |
 | المرحلة | **STEP-3 مغلق** (+ S3-LOG-1). **STEP-4 (DEC-07) مغلق 2026-10-31:** S4-A مواصفة → S4-A-RATIFIED (قرارات 1–7) → S4-B `tests/test_p50_dec07_breaker.py` 19 اختباراً (حمراء أولاً 10/9) → S4-C ثلاث حقنات في 01.33 (ثوابت `DEC07_*` + `dec07_text_has_suspended_marker`؛ صمام الرد الفارغ في `monitor_chat_completion`؛ فرعا `EMPTY_STREAM_FAILED`/`ACCOUNT_SUSPENDED` في failover) 9660→9736 سطراً CRLF + PARTS p05..p12 محدَّثة وparity 11/11 → S4-D إغلاق بالأسماء. **MAINT-1 مغلق 2026-10-31:** `rebuild_refactor.py` صار purge-only (لا rmtree) + كاتب CRLF + `main(root=)`؛ 5 اختبارات `TestGeneratorSafety` (حمراء أولاً) → parity 16/16؛ تشغيل حي في المكان ⇒ `git status bridge_refactor` فارغ. **التالي بالجدول: MAINT-3** (`FORBIDDEN` في failover) — **معلّق على قرار المالك (§4 بند 1)**. |
-| MODE الحالي | **MAINT-4-C منفَّذ ومغلق 2026-11-01 (كارت GO A–G؛ §3.12.8): 05.02 = 881 LF، `_activate_for_bot31` في D40+D41، `.bak` محذوف من Git (D44)، p54 20/20، 1277/19 بالأسماء. التالي = ALIGNMENT_ONLY (MAINT-5 غير معتمد).** **REVIEW-1 منجز (NOT-COMPLETE: F-1 `.bak` متتبَّع — إزالته بيد المالك).** **MAINT-4-B مغلق 2026-11-01 (كارت المالك EXECUTE_NOW؛ D26–D39 + C1–C7 منفَّذة).** B-0…B-8 كلها `[x]` في PROGRESS: 01.33 = 10076 CRLF (p03 + p06: نقل أعمى N=1، LOGIN_FAILED ×4، BALANCE_UNREADABLE + قاطع `NETWORK_DOWN`، ZERO_BALANCE_STALE_GIFT)؛ 05.02 = 865 LF (قفل مشترك + `_log_move` + تقليم + R-A + `-l 0` + `sys.exit(1)`)؛ PARTS/parity 16/16؛ README مُعاد كتابته؛ pytest 19 فشلاً بالأسماء حرفياً + 0 جديد / 1257 ناجحاً. **المحطة التالية = ALIGNMENT_ONLY**: أول `[ ]` في PROGRESS هو MAINT-5 (مقترح غير معتمد) ⇒ لا تنفيذ تلقائي حتى يعتمده المالك أو يكتب تذكرة جديدة. MAINT-3 مغلق. |
+| MODE الحالي | **MAINT-4-D منفَّذ ومغلق 2026-11-01 (كارت EXECUTE_NOW، الوثيقتان 19/20؛ §3.13): `_activate_for_bot31` رصيد <100 ⇒ `cooldown`/`active=False`/29h؛ 05.02 = 887 LF؛ p54 22/22؛ 1279/19 بالأسماء. التالي = ALIGNMENT_ONLY (MAINT-5 غير معتمد).** سابقه: **MAINT-4-C منفَّذ ومغلق 2026-11-01 (كارت GO A–G؛ §3.12.8): 05.02 كان 881 LF، `_activate_for_bot31` في D40+D41، `.bak` محذوف من Git (D44)، p54 20/20، 1277/19 بالأسماء. التالي = ALIGNMENT_ONLY (MAINT-5 غير معتمد).** **REVIEW-1 منجز (NOT-COMPLETE: F-1 `.bak` متتبَّع — إزالته بيد المالك).** **MAINT-4-B مغلق 2026-11-01 (كارت المالك EXECUTE_NOW؛ D26–D39 + C1–C7 منفَّذة).** B-0…B-8 كلها `[x]` في PROGRESS: 01.33 = 10076 CRLF (p03 + p06: نقل أعمى N=1، LOGIN_FAILED ×4، BALANCE_UNREADABLE + قاطع `NETWORK_DOWN`، ZERO_BALANCE_STALE_GIFT)؛ 05.02 = 865 LF (قفل مشترك + `_log_move` + تقليم + R-A + `-l 0` + `sys.exit(1)`)؛ PARTS/parity 16/16؛ README مُعاد كتابته؛ pytest 19 فشلاً بالأسماء حرفياً + 0 جديد / 1257 ناجحاً. **المحطة التالية = ALIGNMENT_ONLY**: أول `[ ]` في PROGRESS هو MAINT-5 (مقترح غير معتمد) ⇒ لا تنفيذ تلقائي حتى يعتمده المالك أو يكتب تذكرة جديدة. MAINT-3 مغلق. |
 | PR | #9 Draft (يبقى Draft؛ لا merge) |
 | وضع التسليم | حفظ محلي في `/home/user/webapp` → أداة المزامنة الخارجية ترفع تلقائيًا. لا push/gh/ZIP من الوكيل. |
 | الخط الأساسي للاختبارات | **بالأسماء لا بالرقم**: 26 فاشلة معروفة (12 تاريخية + 14 drift؛ القائمة في `current_execution.baseline_failing_names`). أي اسم جديد = انحدار. آخر قياس: **1206 passed / 26 failed / 1 skipped** (بعد MAINT-1؛ الأسماء الفاشلة مطابقة حرفياً — 0 جديد؛ P50 19/19؛ parity 16/16). |
@@ -493,7 +493,33 @@ if status == "FORBIDDEN" and FORBIDDEN_ISOLATION_ENABLED:
 | العابر للبرنامجين | p54-21: سجل بشكل 01.33 (`status=cooldown`, `active=False`, `cooldown_until` مستقبلي) ⇒ `is_account_ready=False` قبل، ثم `run_revival` ⇒ `is_account_ready=True` بعد؛ p54-22: رصيد 20 ⇒ `active=True` لكن `cooldown_until` يبقى ⇒ البوت يظل يرفضه (متسق مع R2) |
 | لم يُلمس | 05.03 (ملف مالك CRLF)، 01.33، 01.03، verifier، `_with_vault_lock`/`_log_move`/`_trim_account_log`/`main()` |
 
-## 4) قرارات المالك — D1–D25 (MAINT-3، معتمدة «كما أوصيت») + **D26/D27/D28/D32/D33 (مُقرَّرة دستورياً بكارت MAINT-4-A2)** + **D34–D39 (مُعتمدة بكارت EXECUTE_NOW 2026-11-01 ومنفَّذة في MAINT-4-B)** + **D40–D44 (كارت MAINT-4-C 2026-11-01 — مُعتمدة بكارت GO ومنفَّذة؛ §3.12.8)** + D29 توثيقي، D30/D31 مسحوبان (بلا تخمين — تُكتب في DECISIONS بالكارت؛ D16/D17 معتمدان نهائياً؛ D3/D18/D21 بصيغة A5)
+### 3.13 MAINT-4-D — مراجعة مستقلة لـ`2406dab` (الوثيقتان 19/20) + إغلاق ثغرة الرصيد <100 (2026-11-01، كارت EXECUTE_NOW)
+
+**3.13.1 حكم المراجعة بالدليل (قبل التنفيذ):**
+| ادعاء الوثيقتين | الدليل في الكود | الحكم |
+|---|---|---|
+| 19: `_activate_for_bot31` تضع `active=True/status=active` حتى برصيد 0 | 05.02@90e184d L717–718 غير مشروطين؛ `>=100` يحكم `cooldown_until` فقط | **صح — ثغرة حقيقية** |
+| 19: الحساب الفقير «يُختار ويُرسَل عليه مشروع وينهار بـ`CREDIT_EXHAUSTED`» | 01.33 L3472–3500 (p06 772–800): بوابة P13 تفحص الرصيد قبل أي إرسال ⇒ `<100` = `mark_account_cooldown` 29h + `LOW_BALANCE` صامت | **عاقبة غير دقيقة** — الضرر الفعلي: `check_balance` مهدور لكل فقير + نقل أعمى للمعزل عند `-1` (D26 M3 L3482–3488) + مخالفة تعاقد البوت |
+| 19: أسماء `accounts_genspark_failed/success.json` | 05.02 L100/102 = `accounts_success.json`/`accounts_failed.json` | **غلط في الأسماء** (لا يمس القرار) |
+| 19/20: `is_account_ready` p03 578، `mark_account_cooldown` p03 760 بـ29h | p03 L578/L760 ✓؛ 01.33 L1104/L1286 `cooldown_hours=29.0` ✓ | **صح** |
+| 20: التبريد في مكانه، لا نقل لملف خارجي | 01.33 L1286–1297 `update_account_data` فقط | **صح — تحذير المالك مُثبت** |
+| 20: p06 1376–1384 `notify … credit-exhausted-observed` ثم `mark_account_cooldown` | L1374 داخل فرع `compact_state_save_failed`؛ كتلة `notify` الفعلية L1449–1453 | **أرقام مُزاحة، الجوهر صحيح** |
+
+**الحكم:** قرار MAINT-4-D صحيح معمارياً (توحيد التعاقد مع نمط البوت + منع النداءات المهدورة والنقل الأعمى)؛ السبب المعلَن في الوثيقة 19 مبالَغ فيه والسبب الصحيح في الوثيقة 20 نفسها. `CONFLICT-NOTE` مسجَّل هنا فقط — الوثيقة 19 مجمَّدة بأمر المالك ولم تُلمس.
+
+**3.13.2 التنفيذ (كارت EXECUTE_NOW — قرارات 1–4 حرفياً):**
+| خطوة | الدليل |
+|---|---|
+| نسخة | `/tmp/05.02_pre_MAINT4D.bak` sha256 `c7468e518f1007465db4d14d28545c8597681bf11a22cfd6393dea834b2cc0e4` (= 05.02@90e184d)؛ لا `.bak` في الشجرة (7.14) |
+| أحمر أولاً | p54: test_03 ⇒ `_poor_balance_is_cooled_29h_like_bot31`، test_04 (None=0 ⇒ cooldown)، **جديد** 04b (رصيد 0 ⇒ `is_account_ready=False` عبر 01.33 الحقيقي)، 04c (حدّ 99/100)، test_11 (HEALTHY فقير يبقى في الأساسي مبرَّداً، بلا نقل)، test_22 (مُنعَش فقير ⇒ `cooldown`/`active=False`/29h والجسر يرفضه) ⇒ **6 فشلاً / 16 نجاحاً** |
+| الجراحة | **داخل جسم `_activate_for_bot31` فقط**: `git diff -U0` = 4 hunks كلها 712–726؛ `if (bal or 0) >= 100:` الحقول الأربعة؛ `else:` `status="cooldown"`, `active=False`, `cooldown_until=int(time.time()+29*3600)`؛ المشترك `last_updated` + pop للوسمين؛ 05.02 = **887 LF** (+10/−4)؛ sha256 بعد = `a8a2199d981f91c126ec62e5528a7408807f48cc44e493d0f01b0cdb0effa038` |
+| أخضر | `py_compile` OK · p54 **22/22** · حرّاس D43 (p48–p54 + tri_state + parity) **182/182** · pytest كامل **19 فشلاً / 1279 ناجحاً / 1 متخطى** — الأسماء = خط الأساس (NEW=0) |
+| D43 | sha256 متطابقة: 1–711، 642–707 (`905b274a…`)، 726–881@HEAD ≡ 732–887 (`359271ee…`)؛ موضعا النداء (D40 547 / D41 ~777) بلا تغيير |
+| لم يُلمس | 01.33، 05.03، الوثيقتان 19/20، 01.03، verifier، MAINT-5 |
+
+**3.13.3 مرفوع للمالك — Q-6 (R-1):** `cooldown_until = now+29h` غير المشروط **يُمدّد** تبريداً قائماً وضعه البوت (متبقٍ 9h ⇒ 29h) ويعيد العدّ عند كل دورة 12h لحساب فقير. الأثر محدود لأن الدورة التالية تفك `>=100`؛ البديل `max(existing, now+29h)` أو «لا تلمس إن كان قائماً» — **لا تنفيذ بلا قرار**.
+
+## 4) قرارات المالك — D1–D25 (MAINT-3، معتمدة «كما أوصيت») + **D26/D27/D28/D32/D33 (مُقرَّرة دستورياً بكارت MAINT-4-A2)** + **D34–D39 (مُعتمدة بكارت EXECUTE_NOW 2026-11-01 ومنفَّذة في MAINT-4-B)** + **D40–D44 (كارت MAINT-4-C 2026-11-01 — مُعتمدة بكارت GO ومنفَّذة؛ §3.12.8)** + **D45 (MAINT-4-D 2026-11-01 — رصيد <100 ⇒ تبريد 29h في مكانه؛ §3.13)** + D29 توثيقي، D30/D31 مسحوبان (بلا تخمين — تُكتب في DECISIONS بالكارت؛ D16/D17 معتمدان نهائياً؛ D3/D18/D21 بصيغة A5)
 | # | القرار | الخيارات | توصيتي ولماذا |
 |---|---|---|---|
 | D1 | `cooldown_until_ts` في `cooldown_meta` (معلوماتي لـ05.02/أداة الرجوع) | بلا / 1h / 24h / 29h | **24h**: 403 ليس نفاد رصيد (29h) ولا بثاً فارغاً (1h) |
@@ -540,6 +566,7 @@ if status == "FORBIDDEN" and FORBIDDEN_ISOLATION_ENABLED:
 | D42 | **الفرز تنازلياً بالرصيد** | — | **منفَّذ أصلاً** في 05.02 (494–495/504–505 عبر `sort_by_balance`؛ `_merge_by_email` 712؛ 778–779) ⇒ صفر كود؛ يُثبَت باختبار موجود `test_healthy_sorted_by_balance_desc` |
 | D43 | **حظر المساس بمكتسبات SRE** | — | **قرار مالك.** المناطق المحمية 640–714/772–800/859–861 لا تُلمس؛ حُرّاسها p53-44/45/49 + p52 (96/96 خضراء 2026-11-01) |
 | D44 | **إلغاء تتبع `05.02_…py.bak`** (S1 من REVIEW-1) | `git rm --cached` (يترك الملف ⇒ المزامنة تعيده على الأرجح) / `git rm` (فهرس+شجرة) | **قرار مالك.** توصيتي `git rm` (Q-2)؛ المحتوى = `00df71e:05.02` (blob `66bd67a`) محفوظ في التاريخ. ⇒ **منفَّذ (MAINT-4-C 2026-11-01، كارت GO)** (C-0) |
+| D45 | **ثغرة الرصيد <100 في `_activate_for_bot31`** (الوثيقتان 19/20، `2406dab`) | (A) إبقاء `active=True` مع `cooldown_until` كما هو / (B) تبريد في مكانه بشكل البوت | **قرار مالك (B) — كارت EXECUTE_NOW 2026-11-01:** `>=100` ⇒ `active/True/0/cooldown_released_at`؛ `<100` ⇒ `cooldown/False/now+29h`؛ الحالتان تمسحان الوسمين وتكتبان `last_updated`؛ حظر MAINT-5 ولمس 01.33 ⇒ **منفَّذ (MAINT-4-D، §3.13)**؛ Q-6 مفتوح (تمديد تبريد قائم) |
 
 (منفصل: `merge_legacy_quarantine.py --apply` على الملفات الحقيقية يحتاج أمراً صريحاً؛ MAINT-2 مؤجلة DEC-04.)
 
