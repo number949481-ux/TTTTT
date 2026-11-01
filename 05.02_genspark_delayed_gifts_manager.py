@@ -544,9 +544,11 @@ class MasterDelayedGiftsManager:
 
             if status == "HEALTHY":
                 total_live_credits += (bal or 0)
+                self._activate_for_bot31(acc, bal)                     # [MAINT-4-C/D40] تفعيل فوري لبوت 31
                 healthy_tested.append(acc)
                 ret_tag = "🔓" if acc.get("data_retention_enabled") else "⚠️"
-                tag = f"{G}نشط سليم ✅ {ret_tag}{RST}"
+                ready_31 = " [جاهز للبوت 31 ⚡]" if (bal or 0) >= 100 else ""
+                tag = f"{G}نشط سليم ✅ {ret_tag}{M}{ready_31}{RST}"
                 print(f"{W}{email:<33}{RST} | {tag:<27} | {G}{bal_str:>7}{RST} | آخر هدية: {diag_msg} ({days} يوم)")
 
             elif status == "STALE":
@@ -705,6 +707,22 @@ class MasterDelayedGiftsManager:
         except Exception as e:
             print(f"  {Y}⚠️ تعذر تقليم account_log.jsonl: {type(e).__name__}{RST}")
 
+    @staticmethod
+    def _activate_for_bot31(acc: Dict[str, Any], bal: Optional[int]) -> Dict[str, Any]:
+        """[MAINT-4-C/D40+D41] تفعيل فوري متوافق مع is_account_ready في 01.33 (helper واحد — DRY):
+        status=active + active=True + last_updated؛ رصيد >= 100 ⇒ cooldown_until=0 + cooldown_released_at (Q-1)؛
+        مسح وسوم العزل القديمة quarantine_info/quarantined. يعدّل القاموس في مكانه ويعيده."""
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        acc["status"] = "active"
+        acc["active"] = True
+        if (bal or 0) >= 100:
+            acc["cooldown_until"] = 0
+            acc["cooldown_released_at"] = now_iso
+        acc["last_updated"] = now_iso
+        acc.pop("quarantine_info", None)
+        acc.pop("quarantined", None)
+        return acc
+
     def _merge_by_email(self, path: Path, accounts: List[Dict[str, Any]], sort: bool = False) -> None:
         """[MAINT-3-B/D24] دمج ذري بمفتاح البريد (lower) في ملف وجهة مع .bak قبل الكتابة — بديل DRY لخرائط p_map/s_map"""
         merged = {a.get("email", "").lower(): a for a in load_accounts(path)}
@@ -750,9 +768,7 @@ class MasterDelayedGiftsManager:
             # إذا استلم الحساب هدية حديثة (خلال آخر 3 أيام) يعود فورياً للناجح والأساسي
             if status == "HEALTHY" and days is not None and days <= 3:
                 print(f"  🎉 {G}مبروك! الحساب {W}{email}{G} عاد له الرصيد ({bal:,} نقطة | هدية منذ {days} يوم) -> استرجاع!{RST}")
-                clean_acc = dict(acc)
-                clean_acc.pop("quarantine_info", None)
-                clean_acc["status"] = "active"
+                clean_acc = self._activate_for_bot31(dict(acc), bal)  # [MAINT-4-C/D41] نفس الحقول الأربعة (Q-1: >=100)
                 revived_accounts.append(clean_acc)
             elif status == "DEAD":  # [MAINT-3-B/S2] الميت → الفاشل
                 dead_moves.append(acc)
