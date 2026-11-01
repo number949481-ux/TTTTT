@@ -148,14 +148,14 @@ class TestMovePrimitive(_VaultFixture):
         self.assertEqual(qi["http_status"], 403)
         self.assertEqual(qi["pid"], PID_A)
         self.assertEqual(qi["source"], "accounts_genspark.json")
-        self.assertAlmostEqual(qi["cooldown_until_ts"] - qi["moved_at_ts"], 24 * 3600, delta=1)  # D1
+        self.assertNotIn("cooldown_until_ts", qi)                      # D27 / C2: persistent vault, no timer
         self.assertIsInstance(self.read(self.vault), list)  # flat list for 05.02
         events = self.log_events()
-        self.assertEqual(events[0]["event"], "schema")
         moved = [e for e in events if e.get("event") == "exit_to_cooldown"]
         self.assertEqual(len(moved), 1)
         self.assertEqual(moved[0]["email"], EMAIL_A)
-        self.assertEqual(moved[0]["target_file"], "accounts_cooldown.json")
+        self.assertEqual(moved[0]["password"], "secret-a")                # D28 full record
+        self.assertEqual(moved[0]["to_path"], str(self.vault))
         self.assertTrue((self.tmp / "accounts_genspark.json.cooldown_move.bak").exists())
 
     def test_02_record_keeps_credentials_and_is_not_suspended_or_stale(self):

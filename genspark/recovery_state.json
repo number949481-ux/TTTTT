@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_b_execute_in_progress_B4",
+    "status": "maint4_b_execute_in_progress_B5",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1147,7 +1147,8 @@
       "note": "p06: M1 blind FORBIDDEN, M2 four LOGIN_FAILED sites (1586/P13/4061/4104) -> move, M3 BALANCE_UNREADABLE move + D34 breaker NETWORK_DOWN, M4 zero+STALE move; statuses dict; py_compile OK; 10076 CRLF; 0 x 1800s"
     },
     "B4": {
-      "state": "pending"
+      "state": "done",
+      "note": "05.02: constants+_with_vault_lock+_log_move+_trim_account_log beside _merge_by_email; run_revival trim-at-start, limit<=0=all, R-A reload under shared lock, _log_move per move; main() sys.exit(1) (D39); py_compile OK; 865 LF; p52 10/10"
     },
     "B5": {
       "state": "pending"

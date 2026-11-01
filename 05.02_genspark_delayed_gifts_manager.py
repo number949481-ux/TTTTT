@@ -629,6 +629,82 @@ class MasterDelayedGiftsManager:
             "total_credits": total_live_credits,
         }
 
+    # ── [MAINT-4-B] ثوابت المعزل المشتركة مع 01.33 (D28/D32/D33) ──
+    COOLDOWN_VAULT_LOCK_FILENAME = "accounts_cooldown.json.lock"   # R-B: الاسم نفسه في 01.33
+    COOLDOWN_VAULT_LOCK_TIMEOUT_S = 30.0
+    COOLDOWN_VAULT_LOCK_ORPHAN_S = 60.0
+    ACCOUNT_LOG_FILENAME = "account_log.jsonl"                     # JSON Lines — سطر لكل حركة
+    ACCOUNT_LOG_RETENTION_DAYS = 30                                # D32: التقليم هنا فقط (عند بدء run_revival)
+    ACCOUNT_LOG_MAX_ENTRIES = 5000
+
+    def _with_vault_lock(self, lock_path: Path, fn):
+        """[MAINT-4-B/D33 R-B] قفل عبر العمليات بملف O_CREAT|O_EXCL يشاركه 01.33؛ مهلة ثم تجاوز اليتيم بتحذير."""
+        deadline = time.time() + self.COOLDOWN_VAULT_LOCK_TIMEOUT_S
+        while True:
+            try:
+                fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                break
+            except FileExistsError:
+                try:
+                    age = time.time() - lock_path.stat().st_mtime
+                except OSError:
+                    age = 0.0
+                if age > self.COOLDOWN_VAULT_LOCK_ORPHAN_S:
+                    print(f"  {Y}⚠️ قفل يتيم (orphan lock) عمره {age:.0f}s — يُتجاوز: {lock_path.name}{RST}")
+                    try:
+                        lock_path.unlink()
+                    except OSError:
+                        pass
+                    continue
+                if time.time() >= deadline:
+                    print(f"  {R}❌ تعذر الحصول على القفل المشترك خلال {self.COOLDOWN_VAULT_LOCK_TIMEOUT_S:g}s: {lock_path.name}{RST}")
+                    return False, None
+                time.sleep(0.1)
+        try:
+            try:
+                os.write(fd, f"{os.getpid()} 05.02 {datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}".encode("utf-8"))
+            finally:
+                os.close(fd)
+            return True, fn()
+        finally:
+            try:
+                lock_path.unlink()
+            except OSError:
+                pass
+
+    def _log_move(self, acc: Dict[str, Any], event: str, reason: str, src: Path, dst: Path) -> None:
+        """[MAINT-4-B/D28] سطر JSON واحد في account_log.jsonl ببيانات الحساب الكاملة (إيميل/باسورد/كوكيز/وقت/سبب/مسار)
+        بقرار المالك المحلي وبلا حجب — نفس صيغة 01.33 (by=05.02). best-effort."""
+        try:
+            entry = {"ts": time.time(), "at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "event": event,
+                     "email": acc.get("email", ""), "password": acc.get("password", ""), "cookies": acc.get("cookies", {}),
+                     "reason": reason, "from_path": str(src), "to_path": str(dst), "by": "05.02"}
+            with open(src.parent / self.ACCOUNT_LOG_FILENAME, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
+        except Exception as e:
+            print(f"  {Y}⚠️ تعذر كتابة account_log.jsonl: {type(e).__name__}{RST}")
+
+    def _trim_account_log(self, folder: Path) -> None:
+        """[MAINT-4-B/D32] تقليم السجل مرة عند بدء run_revival فقط: إبقاء آخر 30 يوماً وبحد 5000 سطر؛ الأسطر التالفة تُهمل."""
+        log_path = folder / self.ACCOUNT_LOG_FILENAME
+        if not log_path.exists():
+            return
+        try:
+            cutoff = time.time() - self.ACCOUNT_LOG_RETENTION_DAYS * 86400
+            kept: List[str] = []
+            for line in log_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+                try:
+                    if float(json.loads(line).get("ts") or 0) >= cutoff:
+                        kept.append(line)
+                except Exception:
+                    continue
+            kept = kept[-self.ACCOUNT_LOG_MAX_ENTRIES:]
+            tmp = log_path.with_name(log_path.name + ".tmp")
+            tmp.write_text("".join(l + "\n" for l in kept), encoding="utf-8")
+            tmp.replace(log_path)
+        except Exception as e:
+            print(f"  {Y}⚠️ تعذر تقليم account_log.jsonl: {type(e).__name__}{RST}")
+
     def _merge_by_email(self, path: Path, accounts: List[Dict[str, Any]], sort: bool = False) -> None:
         """[MAINT-3-B/D24] دمج ذري بمفتاح البريد (lower) في ملف وجهة مع .bak قبل الكتابة — بديل DRY لخرائط p_map/s_map"""
         merged = {a.get("email", "").lower(): a for a in load_accounts(path)}
@@ -649,6 +725,9 @@ class MasterDelayedGiftsManager:
         print(f" 📁 ملف الوجهة الأساسي  : {G}{self.primary_path.name}{RST}")
         print(f" 🎯 ملف الوجهة الناجح   : {G}{self.success_path.name}{RST}")
 
+        self._trim_account_log(self.quarantine_path.parent)      # [MAINT-4-B/D32] التقليم هنا فقط
+        if limit is None or limit <= 0:                            # [MAINT-4-B/D38] -l 0 = الكل
+            limit = None
         quarantined_accounts = load_accounts(self.quarantine_path)
         # [MAINT-3-B/S1] وجهتا الكتابة فقط (⛔ لا تُفحصان): الفاشل + معزل الهدية (C2: resolve لأن -q قد يكون معزل التبريد)
         delayed_path = resolve_file_path(Config.QUARANTINE_FILE)
@@ -689,19 +768,35 @@ class MasterDelayedGiftsManager:
 
         if (revived_accounts or dead_moves or stale_moves) and not dry_run:  # [MAINT-3-B/S3]
             moved_emails = {a.get("email", "").lower() for a in revived_accounts + dead_moves + stale_moves}  # [S4]
-            new_quarantine = [a for a in quarantined_accounts if a.get("email", "").lower() not in moved_emails]
 
-            # [MAINT-3-B/S5+S6] دمج كل وجهة عبر _merge_by_email (D24) — الوجهة الفارغة لا تُكتب (صفر زيادة على الفاضي)
-            if revived_accounts:
-                self._merge_by_email(self.primary_path, revived_accounts, sort=self.sort_by_balance)
-                self._merge_by_email(self.success_path, revived_accounts, sort=self.sort_by_balance)
-            if dead_moves:
-                self._merge_by_email(self.failed_path, dead_moves)
-            if stale_moves:
-                self._merge_by_email(delayed_path, stale_moves)
+            def _commit_moves():
+                # [MAINT-4-B/R-A] إعادة تحميل المعزل من القرص تحت القفل — ما أضافه 01.33 أثناء الفحص لا يُفقد
+                fresh_vault = load_accounts(self.quarantine_path)
+                new_quarantine = [a for a in fresh_vault if a.get("email", "").lower() not in moved_emails]
+                # [MAINT-3-B/S5+S6] دمج كل وجهة عبر _merge_by_email (D24) — الوجهة الفارغة لا تُكتب (صفر زيادة على الفاضي)
+                if revived_accounts:
+                    self._merge_by_email(self.primary_path, revived_accounts, sort=self.sort_by_balance)
+                    self._merge_by_email(self.success_path, revived_accounts, sort=self.sort_by_balance)
+                if dead_moves:
+                    self._merge_by_email(self.failed_path, dead_moves)
+                if stale_moves:
+                    self._merge_by_email(delayed_path, stale_moves)
+                create_backup(self.quarantine_path)
+                atomic_save_json(self.quarantine_path, new_quarantine)
+                # [MAINT-4-B/D28] سطر لكل حركة ببيانات الحساب الكاملة
+                for a in revived_accounts:
+                    self._log_move(a, "return_to_primary", "HEALTHY", self.quarantine_path, self.primary_path)
+                for a in dead_moves:
+                    self._log_move(a, "move_to_failed", "DEAD", self.quarantine_path, self.failed_path)
+                for a in stale_moves:
+                    self._log_move(a, "move_to_delayed_gifts", "STALE", self.quarantine_path, delayed_path)
+                return True
 
-            create_backup(self.quarantine_path)
-            atomic_save_json(self.quarantine_path, new_quarantine)
+            # [MAINT-4-B/R-B] القفل المشترك مع 01.33 (accounts_cooldown.json.lock بجوار المعزل)
+            acquired, _ = self._with_vault_lock(self.quarantine_path.parent / self.COOLDOWN_VAULT_LOCK_FILENAME, _commit_moves)
+            if not acquired:
+                print(f"{R}❌ لم يُحفظ شيء: القفل المشترك مشغول — أعد التشغيل لاحقاً (لا فقدان بيانات).{RST}")
+                return {"error": "vault_lock_busy", "revived": 0}
             print(f"\n{G}{B}✅ استرجاع {len(revived_accounts)} | 💀 إلى الفاشل {len(dead_moves)} | 📦 إلى معزل الهدية {len(stale_moves)}{RST}")
 
         return {"revived": len(revived_accounts), "still_stale": still_stale_count,
@@ -749,14 +844,21 @@ def main():
         max_delay=Config.MAX_DELAY,
     )
 
-    if args.revive:
-        manager.run_revival(limit=args.limit, dry_run=args.dry_run or Config.DRY_RUN)
-    else:
-        manager.run_quarantine(
-            scan_mode=args.mode,
-            limit=args.limit,
-            dry_run=args.dry_run or Config.DRY_RUN,
-        )
+    # [MAINT-4-B/D39 — إذن صريح بتوسيع A5 لـmain()] كود خروج ≠ 0 عند الفشل ليميّزه المجدول/main.py الخارجي
+    try:
+        if args.revive:
+            result = manager.run_revival(limit=args.limit, dry_run=args.dry_run or Config.DRY_RUN)
+        else:
+            result = manager.run_quarantine(
+                scan_mode=args.mode,
+                limit=args.limit,
+                dry_run=args.dry_run or Config.DRY_RUN,
+            )
+    except Exception as e:
+        print(f"{R}❌ فشل التشغيل: {type(e).__name__}: {e}{RST}")
+        sys.exit(1)
+    if isinstance(result, dict) and result.get("error"):
+        sys.exit(1)
 
 
 if __name__ == "__main__":
