@@ -5,9 +5,10 @@ Spec: RESUME.md §3.12 + §4 D40–D44 (owner GO card 2026-11-01, Q-1..Q-5 resol
 
 What is verified (offline, no network, no repo file touched):
   * helper ``_activate_for_bot31(acc, bal)`` lives beside ``_merge_by_email`` (A5, DRY)
-      - status="active", active=True, last_updated=ISO, quarantine_info/quarantined popped
-      - bal >= 100  -> cooldown_until=0 + cooldown_released_at=ISO   (Q-1 / owner A)
-      - bal <  100  -> cooldown_until untouched, no cooldown_released_at
+      - last_updated=ISO, quarantine_info/quarantined popped (both branches)
+      - bal >= 100  -> status="active", active=True, cooldown_until=0 + cooldown_released_at=ISO (Q-1 / owner A)
+      - bal <  100  -> [MAINT-4-D] status="cooldown", active=False, cooldown_until=now+29h (docs 19/20;
+                       mirrors 01.33 mark_account_cooldown 1286-1297), no cooldown_released_at
   * D40  run_quarantine HEALTHY block calls the helper (primary + success carry the flags)
   * D41  run_revival HEALTHY<=3d calls the helper (revived record carries the flags)
   * cross-program contract: a vault record exactly as 01.33 writes it
@@ -30,6 +31,7 @@ import re
 import socket
 import subprocess
 import sys
+import time
 import types
 from pathlib import Path
 
@@ -163,20 +165,36 @@ class TestHelper:
         assert ISO_RE.match(acc["last_updated"])
         assert "quarantine_info" not in acc and "quarantined" not in acc
 
-    def test_03_poor_balance_keeps_cooldown(self):
-        acc = {"email": "a@x.com", "status": "auth_failed", "active": False,
-               "cooldown_until": 123.0, "quarantine_info": {"x": 1}}
+    def test_03_poor_balance_is_cooled_29h_like_bot31(self):
+        """[MAINT-4-D] <100 => status=cooldown, active=False, cooldown_until=now+29h (01.33 1286-1297 shape)."""
+        acc = {"email": "a@x.com", "status": "auth_failed", "active": True,
+               "cooldown_until": 123.0, "quarantine_info": {"x": 1}, "quarantined": True}
+        t0 = time.time()
         MOD.MasterDelayedGiftsManager._activate_for_bot31(acc, 99)
-        assert acc["status"] == "active" and acc["active"] is True
-        assert acc["cooldown_until"] == 123.0            # untouched (<100)
+        assert acc["status"] == "cooldown" and acc["active"] is False
+        assert isinstance(acc["cooldown_until"], int)
+        assert t0 + 29 * 3600 - 2 <= acc["cooldown_until"] <= time.time() + 29 * 3600 + 2
         assert "cooldown_released_at" not in acc
         assert ISO_RE.match(acc["last_updated"])
-        assert "quarantine_info" not in acc
+        assert "quarantine_info" not in acc and "quarantined" not in acc
 
     def test_04_none_balance_treated_as_zero(self):
         acc = {"email": "a@x.com", "cooldown_until": 5}
         MOD.MasterDelayedGiftsManager._activate_for_bot31(acc, None)
-        assert acc["cooldown_until"] == 5 and acc["active"] is True
+        assert acc["status"] == "cooldown" and acc["active"] is False
+        assert acc["cooldown_until"] > time.time() + 28 * 3600
+
+    def test_04b_zero_balance_is_rejected_by_0133_after_helper(self, bridge):
+        """[MAINT-4-D] owner's case: balance 0 must NOT become selectable by bot 31."""
+        acc = {"email": "zero@x.com", "status": "active", "active": True, "balance": 0}
+        MOD.MasterDelayedGiftsManager._activate_for_bot31(acc, 0)
+        assert bridge.is_account_ready(acc) is False
+
+    def test_04c_boundary_99_vs_100(self, bridge):
+        poor = MOD.MasterDelayedGiftsManager._activate_for_bot31({"email": "p@x.com"}, 99)
+        rich = MOD.MasterDelayedGiftsManager._activate_for_bot31({"email": "r@x.com"}, 100)
+        assert poor["status"] == "cooldown" and bridge.is_account_ready(poor) is False
+        assert rich["status"] == "active" and rich["cooldown_until"] == 0 and bridge.is_account_ready(rich) is True
 
     def test_05_helper_never_touches_credentials(self):
         acc = {"email": "a@x.com", "password": "pw", "cookies": {"s": 1}, "balance": 7}
@@ -205,15 +223,18 @@ class TestD40RunQuarantine:
             assert ISO_RE.match(a["last_updated"])
             assert "quarantine_info" not in a and "quarantined" not in a
 
-    def test_11_healthy_poor_account_keeps_cooldown_until(self, tmp_path, monkeypatch):
+    def test_11_healthy_poor_account_is_cooled_in_place(self, tmp_path, monkeypatch, bridge):
+        """[MAINT-4-D] HEALTHY but <100: stays in primary (no move) with cooldown 29h, active=False."""
         mgr = _mgr(tmp_path, monkeypatch, "accounts_delayed_gifts_credits.json")
-        _write(mgr.primary_path, [{"email": "poor@x.com", "password": "pw", "active": False,
+        _write(mgr.primary_path, [{"email": "poor@x.com", "password": "pw", "active": True,
                                    "cooldown_until": 777.0}])
         _route(monkeypatch, {"poor@x.com": ("HEALTHY", 1, "t", 50, {})})
         mgr.run_quarantine()
         a = _by_email(_read(mgr.primary_path), "poor@x.com")
-        assert a["active"] is True and a["status"] == "active"
-        assert a["cooldown_until"] == 777.0 and "cooldown_released_at" not in a
+        assert a["active"] is False and a["status"] == "cooldown"
+        assert a["cooldown_until"] > time.time() + 28 * 3600 and "cooldown_released_at" not in a
+        assert bridge.is_account_ready(a) is False
+        assert a["password"] == "pw"  # still in primary, credentials intact (no physical move)
 
     def test_12_stale_and_dead_are_not_activated(self, tmp_path, monkeypatch):
         mgr = _mgr(tmp_path, monkeypatch, "accounts_delayed_gifts_credits.json")
@@ -288,13 +309,16 @@ class TestD41RunRevival:
         revived = _by_email(_read(mgr.primary_path), "bridge@x.com")
         assert bridge.is_account_ready(revived) is True
 
-    def test_22_revived_poor_balance_keeps_cooldown_and_bridge_still_rejects(self, tmp_path, monkeypatch, bridge):
+    def test_22_revived_poor_balance_is_cooled_and_bridge_rejects(self, tmp_path, monkeypatch, bridge):
+        """[MAINT-4-D] revived with <100 => back in primary as cooldown/active=False/29h; 01.33 rejects it."""
         rec = _vault_record_as_written_by_0133(email="poor@x.com", cooldown_until=9999999999.0)
         mgr = self._setup(tmp_path, monkeypatch, [rec], {"poor@x.com": ("HEALTHY", 1)}, bal=20)
         mgr.run_revival(limit=0)
         revived = _by_email(_read(mgr.primary_path), "poor@x.com")
-        assert revived["active"] is True and revived["cooldown_until"] == 9999999999.0
-        assert bridge.is_account_ready(revived) is False  # consistent: cooldown still running
+        assert revived["active"] is False and revived["status"] == "cooldown"
+        assert time.time() + 28 * 3600 < revived["cooldown_until"] < time.time() + 30 * 3600
+        assert "quarantine_info" not in revived and "quarantined" not in revived
+        assert bridge.is_account_ready(revived) is False
 
     def test_23_still_stale_and_dead_not_activated(self, tmp_path, monkeypatch):
         vault = [_vault_record_as_written_by_0133("dead@x.com"),

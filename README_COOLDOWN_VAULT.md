@@ -47,7 +47,7 @@ python "/ABS/PATH/05.02_genspark_delayed_gifts_manager.py" --revive -q "/ABS/PAT
 ```
 - **`-l 0` إلزامي** (D38): `limit <= 0` = فحص **كل** المعزل؛ الافتراضي 10 يقطع الإحياء.
 - **كود الخروج (D39):** `0` نجاح · `1` عند أي استثناء أو `result["error"]` (مثل `vault_lock_busy`) — المجدول الخارجي يستطيع اكتشاف الفشل.
-- الدورة (`run_revival`): تقليم السجل → قراءة المعزل → `check_account_status` لكل حساب → `HEALTHY` ← الأساسي · `DEAD` ← `accounts_failed.json` · `STALE` ← `accounts_delayed_gifts_credits.json` · غير المحسوم يبقى. يحذف `quarantine_info`/`quarantined` عند الإنعاش ويضع **`status=active`، `active=True`، `last_updated`، ورصيد ≥100 ⇒ `cooldown_until=0` + `cooldown_released_at`** (MAINT-4-C D40/D41 — نفس الحقول في فحص `run_quarantine` للحساب HEALTHY) فيقبله `is_account_ready` في 01.33 فوراً. ثم خروج فوري.
+- الدورة (`run_revival`): تقليم السجل → قراءة المعزل → `check_account_status` لكل حساب → `HEALTHY` ← الأساسي · `DEAD` ← `accounts_failed.json` · `STALE` ← `accounts_delayed_gifts_credits.json` · غير المحسوم يبقى. يحذف `quarantine_info`/`quarantined` عند الإنعاش ويضع **`status=active`، `active=True`، `last_updated`، ورصيد ≥100 ⇒ `cooldown_until=0` + `cooldown_released_at`** (MAINT-4-C D40/D41 — نفس الحقول في فحص `run_quarantine` للحساب HEALTHY) فيقبله `is_account_ready` في 01.33 فوراً؛ **ورصيد <100 ⇒ [MAINT-4-D] `status=cooldown`، `active=False`، `cooldown_until=now+29h` في مكانه** (نفس شكل `mark_account_cooldown` في 01.33 — لا نقل لملف خارجي) فيرفضه `is_account_ready` حتى تنزل الهدية. ثم خروج فوري.
 - عودة `STALE` من معزل الهدية = يدوياً/جدول المالك (D23) — لا فحص دوري لذلك الملف.
 
 ### الجدولة المزدوجة (D33/D36 — ثابت دستوري D16/D17: يفحص `accounts_cooldown.json` **فقط**)
