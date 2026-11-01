@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_b_done_alignment_only_next_first_open_box_MAINT5_unapproved",
+    "status": "review1_done_not_complete_F1_bak_tracked_owner_action; next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -453,7 +453,8 @@
         "bridge_refactor",
         "توثيق_*"
       ]
-    }
+    },
+    "post_work_review_rule": "UNIVERSAL_REVIEW_CARD.md mandatory after every output; agent may edit only card/PROGRESS/RESUME/recovery after review"
   },
   "completed_pr9_arena_addendum": {
     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
@@ -1166,5 +1167,26 @@
       "state": "done",
       "note": "PROGRESS (hdr L41, row 5c [x], MAINT-4-B parent + B-1..B-8 [x], log+scheduling doc) synced f183282; RESUME MODE row + D26-D39 executed markers + §3.11.9 closure + §4 heading; verify_docs_integrity Exit 0"
     }
+  },
+  "review_verdict": {
+    "date": "2026-11-01",
+    "card": "UNIVERSAL_REVIEW_CARD.md v1.1",
+    "reviewed": "9225703 f183282 f504a3c + card itself",
+    "level": "FULL",
+    "type": "T9",
+    "verdict": "NOT-COMPLETE",
+    "findings": {
+      "S0": 0,
+      "S1": 2,
+      "S2": 2,
+      "S3": 2
+    },
+    "S1": [
+      "F-1 05.02_…py.bak tracked in 9225703 despite .gitignore (sync engine ignores .gitignore); pure code, no account data",
+      "F-2 docs claimed '.bak ignored' — corrected in PROGRESS/RESUME/card"
+    ],
+    "owner_action_required": "git rm --cached 05.02_genspark_delayed_gifts_manager.py.bak (agent not permitted)",
+    "tests": "19 failed by names == baseline, 1257 passed",
+    "head_unchanged": true
   }
 }
