@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-4-A2 (ALIGNMENT_ONLY) — closed as docs; MAINT-4-B blocked on owner D34–D37 + «ابدأ تنفيذ»",
+    "task": "MAINT-4-A2 + Gist re-review closed as docs; MAINT-4-B (B-0..B-8) blocked on owner D34–D39 + «ابدأ تنفيذ»",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
-    "base": "b51ff24",
+    "base": "00df71e",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint4_a2_done_awaiting_owner_decisions_d34_d37",
+    "status": "maint4_a2_gist_rereview_done_awaiting_owner_decisions_d34_d39",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1080,13 +1080,51 @@
       "D34": "local-outage task-level breaker after 2 consecutive check_balance=-1 (recommend) vs absolute N=1",
       "D35": "balance 0: move only if gift STALE>=14d; FRESH/UNKNOWN keeps 29h (recommend)",
       "D36": "main.py meaning: OS scheduler recommended; daemon/new main.py conflict with A5",
-      "D37": ".gitignore step 0 mandatory before any code (5 patterns)"
+      "D37": ".gitignore step 0 mandatory before any code (5 patterns)",
+      "D38": "limit<=0 => all inside run_revival (recommend) vs scheduler passes -l 100000",
+      "D39": "sys.exit(1) in main() with explicit A5 extension vs stdout scan in scheduler"
     },
     "withdrawn": [
       "D30 (5-min for legitimate 403)",
       "D31 (-1 => 5 min)"
     ],
-    "planned_tests": "p53 35–48; p51 9–13 rewritten"
+    "planned_tests": "p53 35–48; p51 9–13 rewritten",
+    "gist_rereview": {
+      "source": "gist c9691c2ebce8df28fe873162b8107425/ALIGNMENT_ONLY.md",
+      "mode_term": "Zero Blind Execution",
+      "corrections": {
+        "C1": "auth_failed+1800s sites are four: 1567/3492/4042/4085",
+        "C2": "drop COOLDOWN_VAULT_HOURS + cooldown_until_ts + cooldown_hours; rewrite p51 test_18",
+        "C3": "D37 due now: existing *.bak files hold full data outside .gitignore",
+        "C4": "D38 -l default 10 truncates revival; D39 exit code always 0",
+        "C5": "snapshot >72h => UNKNOWN => no move (owner may override in D35)",
+        "C6": "MAINT-4-B split into B-0..B-8 [ ] sub-boxes",
+        "C7": "invocation contract one line + shared lock accounts_cooldown.json.lock"
+      },
+      "code_changed": false
+    }
   },
-  "next": "Owner writes D34–D37 (or «كما أوصيت») + «ابدأ تنفيذ» ⇒ MAINT-4-B step 0 = .gitignore (D37), then p53 red, then 01.33 M1–M4, then 05.02 run_revival R-A/_log_move/lock, rebuild, README, closure by names (baseline 19)."
+  "next": "Owner writes D34–D39 (or «كما أوصيت») + «ابدأ تنفيذ» ⇒ B-0 .gitignore first, then B-1..B-8 in order.",
+  "maint4_a2_gist_checkpoints": {
+    "cp0": {
+      "state": "done",
+      "note": "session on 00df71e; A2 docs confirmed on remote; §3.11.8 missing (interrupted twice) — redo in chunks"
+    },
+    "cp1": {
+      "state": "done",
+      "target": "RESUME §3.11.8 part (أ) card-compliance table"
+    },
+    "cp2": {
+      "state": "done",
+      "target": "RESUME §3.11.8 parts (ب) dual-run readiness + (ج) main.py reading"
+    },
+    "cp3": {
+      "state": "done",
+      "target": "RESUME D38/D39 rows + amend D26/D27/D33/D37 + MODE row"
+    },
+    "cp4": {
+      "state": "done",
+      "target": "PROGRESS: MAINT-4-A2 ticket note + MAINT-4-B split into B-0..B-8 [ ] sub-boxes + header; recovery final"
+    }
+  }
 }
