@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "MAINT-4-C executed+closed 2026-11-01 (owner GO A-G); next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY",
+    "status": "MAINT-4-C fully closed 2026-11-01 (C-0..C-6; sync 90e184d); next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1227,7 +1227,7 @@
       "C-3": "helper _activate_for_bot31 before _merge_by_email; call in run_quarantine HEALTHY + ready_31 tag; call in run_revival; 05.02 865->881 LF (+20/-4)",
       "C-4": "py_compile OK; p54 20/20; guards 160/160; full 19 failed/1277 passed/1 skipped; names == baseline (NEW=0 FIXED=0)",
       "C-5": "README line + PROGRESS [x] + RESUME §3.12.8 + this record",
-      "C-6": "FULL review card report in chat"
+      "C-6": "FULL review card v1.2 delivered 2026-11-01 after sync landed (90e184d): 4 hunks only; D43 regions sha256-identical (905b274a.., 3409e411..); protected files diff=0; full suite names==baseline; verdict=COMPLETE"
     },
     "files_changed": [
       "05.02_genspark_delayed_gifts_manager.py",
@@ -1248,6 +1248,7 @@
       "_trim_account_log",
       "main()"
     ],
-    "status": "closed"
+    "status": "closed (C-0..C-6 complete)",
+    "sync_landed_commit": "90e184d"
   }
 }
