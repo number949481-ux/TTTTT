@@ -129,12 +129,18 @@ class CompactTests(unittest.TestCase):
         self.assertEqual(self.cooldown.call_count, 2)
 
     def test_unknown_balance_after_compact_keeps_existing_no_penalty_policy(self):
-        self.engine.check_balance.side_effect = [99999, -1]
+        # MAINT-4-B D26/D34: unreadable balance (-1) is a blind N=1 vault move (BALANCE_UNREADABLE),
+        # not a free pass — B is moved, work continues on C. One -1 never trips the N=2 breaker.
+        self.engine.check_balance.side_effect = [99999, -1, 99999]
+        move = self.patch("move_account_to_cooldown_vault", return_value=True)
         calls, result, _, _, _ = self.worker_scenario(initial_due=True)
         self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
-        self.assertEqual(calls[-1][1], self.accounts[1]["email"])
+        self.assertEqual(calls[-1][1], self.accounts[2]["email"])
         self.assertEqual(result[1], "COMPLETED")
-        self.cooldown.assert_called_once()  # A only, never punish B for -1.
+        self.cooldown.assert_called_once()  # A only (credit exhaustion); B goes to the vault, not cooldown.
+        move.assert_called_once()
+        self.assertEqual(move.call_args.args[0], self.accounts[1]["email"])
+        self.assertEqual(move.call_args.kwargs.get("reason"), "BALANCE_UNREADABLE")
 
     def test_threshold_uses_monotonic_span_at_exactly_180_seconds(self):
         self.assertEqual(bridge.COMPACT_TRIGGER_SECONDS, 180)
