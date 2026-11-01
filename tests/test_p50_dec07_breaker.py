@@ -267,6 +267,10 @@ class TestFailoverHandling(unittest.TestCase):
         return sends, result
 
     def test_09_empty_stream_failed_cools_1h_and_moves_on(self):
+        # [MAINT-3-B-2 / D10] the primary path is now Cut&Move into accounts_cooldown.json (covered by
+        # tests/test_p51_forbidden_isolation.py 15–16). This test pins the DEC07 *fallback* contract:
+        # when the move is unavailable, the 1h in-place cooldown must still happen exactly as before.
+        self.patch("move_account_to_cooldown_vault", return_value=False)
         sends, (pub_url, status, acc, _ext, _text) = self._run("EMPTY_STREAM_FAILED")
         self.assertEqual(sends.call_count, 2, "second account must be tried in the same call")
         self.assertEqual(status, "COMPLETED")

@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1399
-المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + refresh_cookies_on_401
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1573
+المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + MAINT3: COOLDOWN_VAULT_*/ACCOUNT_LOG_* + _atomic_json_dump + append_account_log + register_forbidden_hit + move_account_to_cooldown_vault (Cut&Move ذري إلى accounts_cooldown.json — الرجوع عبر 05.02 --revive -q) + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 _ENGINE_CACHE = {"mod": None, "path": None}
@@ -769,6 +769,180 @@ def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: s
         "status": "cooldown",
         "active": False
     }, json_path=json_path)
+
+
+# ════════════════════════════════════════════════════════
+# 🧊 [MAINT3] معزل التبريد الموحد accounts_cooldown.json + سجل التدقيق account_log.json
+# ════════════════════════════════════════════════════════
+# لماذا: FORBIDDEN (403) كان يُوسم نجاحاً في ملف الحسابات (RESUME §3.1 T5)، وEMPTY_STREAM_FAILED
+# كان يُبرَّد في المكان. الآن: Cut&Move ذري للحساب إلى accounts_cooldown.json (بجوار الأساسي — D6)،
+# والحساب يعود عبر 05.02 نفسه: `--revive -q <مسار مطلق>/accounts_cooldown.json` (D3/D21؛ فحص دوري
+# كل 12h حصري لهذا الملف — ثابت دستوري D16/D17). بياناتنا داخل quarantine_info (05.02 يحذفه عند الإنعاش).
+# الأقفال: الملفان (الأساسي + المعزل) تحت FILE_LOCK وحده؛ السجل تحت ACCOUNT_LOG_LOCK وحده — لا تداخل أبداً.
+# التعطيل: COOLDOWN_VAULT_REASONS = () يعيد السلوك القديم حرفياً. التوسع: اسم جديد في tuple + ساعات في القاموس.
+COOLDOWN_VAULT_FILENAME = "accounts_cooldown.json"
+ACCOUNT_LOG_FILENAME = "account_log.json"
+ACCOUNT_LOG_RETENTION_DAYS = 30            # D7: تقليم عند الكتابة
+ACCOUNT_LOG_MAX_ENTRIES = 5000             # D7: سقف السجل (عدا سجل schema الدائم)
+ACCOUNT_LOG_LOCK = threading.Lock()        # للسجل فقط — لا يُمسك داخل FILE_LOCK
+COOLDOWN_VAULT_REASONS = ("FORBIDDEN", "EMPTY_STREAM_FAILED")   # tuple فارغ = معطل (مفتاح واحد — A3)
+COOLDOWN_VAULT_HOURS = {"FORBIDDEN": 24.0, "EMPTY_STREAM_FAILED": 1.0}   # D1 / قرار 3 — معلوماتي لـ05.02 (D12)
+FORBIDDEN_MOVE_AFTER_N = 2                 # D19: 403 على مشروعين مختلفين خلال النافذة قبل النقل
+FORBIDDEN_HITS_WINDOW_HOURS = 24           # D19: نافذة العدّ
+ACCOUNT_LOG_SCHEMA_ENTRY = {
+    "event": "schema", "version": 1, "ts": 0,
+    "fields": ["ts", "at", "event", "email", "reason", "http_status", "project_key", "pid",
+               "source_file", "target_file", "bridge"],
+    "events": ["exit_to_cooldown", "move_partial", "duplicate_detected", "return_to_primary"],
+    "note": "accounts_cooldown.json يُفرَز بـ 05.02 --revive -q <abs>/accounts_cooldown.json (12:00/00:00). لا password/cookies هنا أبداً.",
+}
+_ACCOUNT_LOG_FORBIDDEN_KEYS = ("password", "cookies")
+
+
+def _atomic_json_dump(path: pathlib.Path, payload) -> None:
+    """كتابة JSON ذرية بنمط update_account_data (tmp ثابت الاسم ثم replace)."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    tmp.replace(path)
+
+
+def append_account_log(event: str, email: str, reason: str = "", meta: dict | None = None,
+                       base_dir: pathlib.Path | None = None) -> bool:
+    """سجل تدقيق best-effort: schema دائم أولاً + تقليم 30d + سقف 5000. الفشل ⇒ log_event فقط."""
+    try:
+        if base_dir is None:
+            acc_file = get_accounts_file_path()
+            base_dir = acc_file.parent if acc_file else SCRIPT_DIR
+        log_path = pathlib.Path(base_dir) / ACCOUNT_LOG_FILENAME
+        now = time.time()
+        entry = {"ts": now, "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "event": event,
+                 "email": email, "reason": reason}
+        for k, v in (meta or {}).items():
+            if k not in _ACCOUNT_LOG_FORBIDDEN_KEYS and k not in entry:
+                entry[k] = v
+        with ACCOUNT_LOG_LOCK:
+            entries = []
+            if log_path.exists():
+                try:
+                    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                        loaded = json.load(f)
+                    if isinstance(loaded, list):
+                        entries = [e for e in loaded if isinstance(e, dict)]
+                except Exception as e:
+                    log_event("warning", f"[MAINT3] account_log تالف — يُعاد إنشاؤه: {type(e).__name__}")
+            body = [e for e in entries if e.get("event") != "schema"]
+            cutoff = now - ACCOUNT_LOG_RETENTION_DAYS * 86400
+            body = [e for e in body if float(e.get("ts") or 0) >= cutoff]
+            body.append(entry)
+            body = body[-ACCOUNT_LOG_MAX_ENTRIES:]
+            _atomic_json_dump(log_path, [dict(ACCOUNT_LOG_SCHEMA_ENTRY)] + body)
+        return True
+    except Exception as e:
+        log_event("warning", f"[MAINT3] تعذر كتابة account_log: {type(e).__name__}", email=email)
+        return False
+
+
+def register_forbidden_hit(email: str, pid: str, json_path: str | None = None, now: float | None = None) -> int:
+    """D19: يسجّل 403 في forbidden_hits (داخل النافذة) ويُرجع عدد المشاريع المختلفة المتأثرة. 0 = حساب غير موجود."""
+    target_file = get_accounts_file_path(json_path)
+    if not target_file:
+        return 0
+    now_ts = time.time() if now is None else float(now)
+    cutoff = now_ts - FORBIDDEN_HITS_WINDOW_HOURS * 3600
+    with FILE_LOCK:
+        try:
+            with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+                accounts = json.load(f)
+            acc = next((a for a in accounts if isinstance(a, dict) and a.get("email") == email), None) \
+                if isinstance(accounts, list) else None
+            if acc is None:
+                return 0
+            hits = [h for h in (acc.get("forbidden_hits") or [])
+                    if isinstance(h, dict) and float(h.get("ts") or 0) >= cutoff]
+            hits.append({"ts": now_ts, "pid": str(pid or "")})
+            acc["forbidden_hits"] = hits
+            _atomic_json_dump(target_file, accounts)
+            return len({h.get("pid") for h in hits})
+        except Exception as e:
+            log_event("error", f"[MAINT3] فشل تسجيل 403: {type(e).__name__}", email=email)
+            return 0
+
+
+def move_account_to_cooldown_vault(email: str, reason: str, json_path: str | None = None,
+                                   meta: dict | None = None) -> bool:
+    """Cut&Move ذري: نسخ السجل إلى accounts_cooldown.json (بجوار الأساسي) ثم قصّه من الأساسي.
+    False ⇒ الحساب باقٍ في الأساسي (المستدعي يطبّق الاحتياطي القديم). النسخ قبل القص ⇒ لا فقدان أبداً."""
+    target_file = get_accounts_file_path(json_path)
+    if not target_file:
+        log_event("error", "[MAINT3] ملف الحسابات غير موجود — لا نقل", email=email)
+        return False
+    vault_file = target_file.parent / COOLDOWN_VAULT_FILENAME
+    meta = dict(meta or {})
+    now = time.time()
+    hours = float(COOLDOWN_VAULT_HOURS.get(reason, 24.0))
+    audit = None
+    with FILE_LOCK:
+        try:
+            with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+                accounts = json.load(f)
+            if not isinstance(accounts, list):
+                return False
+            acc = next((a for a in accounts if isinstance(a, dict) and a.get("email") == email), None)
+            if acc is None:
+                return False
+            record = dict(acc)
+            record.pop("forbidden_hits", None)
+            record["status"] = "cooldown"
+            record["active"] = False
+            record["quarantine_info"] = {
+                "reason": f"cooldown_{str(reason).lower()}",
+                "http_status": meta.get("http_status"),
+                "moved_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "moved_at_ts": now,
+                "cooldown_until_ts": now + hours * 3600,
+                "source": target_file.name,
+                "project_key": str(meta.get("project_key") or ""),
+                "pid": str(meta.get("pid") or ""),
+            }
+            vault = []
+            if vault_file.exists():
+                try:
+                    with open(vault_file, "r", encoding="utf-8", errors="ignore") as f:
+                        loaded = json.load(f)
+                    vault = [a for a in loaded if isinstance(a, dict)] if isinstance(loaded, list) else []
+                except Exception as e:
+                    log_event("warning", f"[MAINT3] المعزل تالف — يُعاد بناؤه: {type(e).__name__}")
+            key = str(email).lower()
+            dup = next((a for a in vault if str(a.get("email", "")).lower() == key), None)
+            if dup is not None:
+                dup["quarantine_info"] = record["quarantine_info"]
+                audit = ("duplicate_detected", {})
+            else:
+                vault.append(record)
+            _atomic_json_dump(vault_file, vault)                      # 1) نسخ أولاً
+            try:
+                shutil.copy2(target_file, target_file.with_name(target_file.name + ".cooldown_move.bak"))
+                remaining = [a for a in accounts if not (isinstance(a, dict) and a.get("email") == email)]
+                _atomic_json_dump(target_file, remaining)             # 2) ثم قص
+            except Exception as e:
+                log_event("error", f"[MAINT3] نُسخ للمعزل لكن تعذر القص من الأساسي: {type(e).__name__}", email=email)
+                audit = ("move_partial", {"error": type(e).__name__})
+                moved = False
+            else:
+                moved = True
+        except Exception as e:
+            log_event("error", f"[MAINT3] فشل النقل للمعزل: {type(e).__name__}", email=email)
+            return False
+    base_meta = {"http_status": meta.get("http_status"), "project_key": str(meta.get("project_key") or ""),
+                 "pid": str(meta.get("pid") or ""), "source_file": target_file.name,
+                 "target_file": COOLDOWN_VAULT_FILENAME, "cooldown_hours": hours}
+    if audit is not None:
+        append_account_log(audit[0], email, reason=reason, meta={**base_meta, **audit[1]}, base_dir=target_file.parent)
+    if moved:
+        append_account_log("exit_to_cooldown", email, reason=reason, meta=base_meta, base_dir=target_file.parent)
+        log_event("warning", f"[MAINT3] نُقل الحساب إلى {COOLDOWN_VAULT_FILENAME} (سبب: {reason}، {hours:g}h)", email=email)
+    return moved
 
 
 def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None = None) -> dict | None:

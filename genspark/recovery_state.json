@@ -6,7 +6,7 @@
     "base": "latest origin HEAD (no fixed commit ids as execution reference)",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_b2_0133_in_progress_cp2",
+    "status": "maint3_closed_b2_0133_done_next_maint5_alignment_only",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -65,7 +65,7 @@
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": "MAINT-3-B-2 (01.33) requires an owner \"ابدأ تنفيذ\" card with scope 01.33 + tests + bridge_refactor: p51 red tests -> p03 move_account_to_cooldown_vault/append_account_log after 1297 -> p06 replace mark_account_cooldown@3693 + FORBIDDEN branch after 3710/before 3711 (FORBIDDEN_MOVE_AFTER_N=2) -> PARTS shift/rebuild -> README_COOLDOWN_VAULT.md -> closure by names (baseline 19).",
+    "next": "MAINT-3 fully closed. Next first [ ] = MAINT-5 (A3 proposal, NOT approved -> ALIGNMENT_ONLY until owner writes decision), then MAINT-2 (deferred DEC-04). Doc 13 charter pinning awaits owner (D25).",
     "history_notice": "all other keys preserved as prior records; not active instructions",
     "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
     "roadmap_priority": [
@@ -394,8 +394,28 @@
       "cp0": "2026-10-31 started after Layer A @233fa6f; MODE auto=ابدأ تنفيذ per §0 (D1-D25 written, first [ ], scope RESUME §3)",
       "cp1": "DONE (red): tests/test_p51_forbidden_isolation.py written (18 tests) — red on untouched 01.33; P50 test_09 update deferred to cp3",
       "cp2": "DONE: p03 MAINT3 block inserted after mark_account_cooldown (1299-1472, 174 lines): constants + _atomic_json_dump + append_account_log + register_forbidden_hit + move_account_to_cooldown_vault; 01.33 9802->9976 CRLF; py_compile OK; p06 anchors shift +174",
-      "cp3": "pending: 01.33 p06 EMPTY replace + FORBIDDEN branch",
-      "cp4": "pending: PARTS shift + rebuild + parity + README + closure by names (baseline 19)"
+      "cp3": "DONE: p06 EMPTY branch -> move_account_to_cooldown_vault with mark_account_cooldown fallback (D10); FORBIDDEN branch after SUSPENDED/before LOW_BALANCE (3898) with register_forbidden_hit + FORBIDDEN_MOVE_AFTER_N=2 + 5-min fallback (D19); 01.33 9976->10011 CRLF; py_compile OK. Pending in cp3: P50 test_09 conscious update + run P51/P50 | P50 test_09 updated (fallback contract, move patched False); P51 18/18 + P50 19/19 + P52 10/10 green",
+      "cp4": "DONE: PARTS shifted + rebuild idempotent (CRLF, owner file kept) + parity 16/16 + README_COOLDOWN_VAULT.md + full pytest 1242/19/1 by names (0 new) + PROGRESS/RESUME/recovery updated"
+    },
+    "maint3_b2": {
+      "date": "2026-11-01",
+      "base": "55fabea",
+      "scope": "01.33 + tests/test_p51_forbidden_isolation.py + tests/test_p50_dec07_breaker.py::test_09 + scripts/rebuild_refactor.py (PARTS) + bridge_refactor/ regen + README_COOLDOWN_VAULT.md",
+      "p03_block": "1299-1472 (+174): constants + _atomic_json_dump + append_account_log + register_forbidden_hit + move_account_to_cooldown_vault",
+      "p06": "EMPTY branch -> move with mark_account_cooldown fallback (D10); FORBIDDEN branch 3898-3918 before LOW_BALANCE (D19 threshold 2, 5-min fallback, never success-marked = T5 fixed)",
+      "file": "01.33 9802->10011 lines, CRLF 100%, py_compile OK",
+      "parts": "p03 532-1573 | p04 1574-2129 | p05 2130-2682 | p06 2683-4236 | p07 4237-5419 | p08 5420-5984 | p09 5985-7611 | p10 7612-7922 | p11 7923-8457 | p12 8458-10011",
+      "tests": "P51 18/18 (red-first 18F), P50 19/19 (test_09 = fallback contract), P52 10/10, parity 16/16, full 1242 passed / 19 failed / 1 skipped — 19 = known baseline names, 0 new",
+      "untouched": [
+        "05.02",
+        "01.03",
+        "genspark_verifier_engine.py",
+        "توثيق_*"
+      ],
+      "cancelled_per_a5": [
+        "scripts/cooldown_vault_sorter.py",
+        "scripts/return_from_cooldown.py"
+      ]
     }
   },
   "completed_pr9_arena_addendum": {
