@@ -1,4 +1,8 @@
-"""P51 — MAINT-3-B-2: FORBIDDEN / EMPTY_STREAM_FAILED Cut&Move into ``accounts_cooldown.json`` (01.33).
+"""P51 — MAINT-3-B-2 (+ MAINT-4-B rewrite of 9–13/15/18): FORBIDDEN / EMPTY_STREAM_FAILED Cut&Move into ``accounts_cooldown.json`` (01.33).
+
+MAINT-4-B (owner EXECUTE_NOW 2026-11-01, D26–D39): blind N=1 move, no hit cache, jsonl full-data log,
+no timer metadata, shared lockfile. Tests 10–13 (threshold), 15 (cooldown_until_ts) and 18 (contracts) were rewritten;
+09 now asserts the FULL record is logged (D28) — see tests/test_p53_vault_hardening.py for the new surface.
 
 Owner-approved contract (RESUME.md §3.4/§3.6/§3.7/§3.8 + decisions D1–D25 "كما أوصيت", 2026-10-31):
   * p03 (after ``mark_account_cooldown``): ``COOLDOWN_VAULT_FILENAME``, ``ACCOUNT_LOG_FILENAME``,
@@ -92,7 +96,7 @@ class _VaultFixture(unittest.TestCase):
         self.tmp = pathlib.Path(self.stack.enter_context(tempfile.TemporaryDirectory()))
         self.primary = self.tmp / "accounts_genspark.json"
         self.vault = self.tmp / "accounts_cooldown.json"
-        self.log = self.tmp / "account_log.json"
+        self.log = self.tmp / "account_log.jsonl"
         self.accounts = [
             {"email": EMAIL_A, "password": "secret-a", "cookies": {"session_id": "x"}, "last_refresh": 1.0,
              "status": "active", "active": True},
@@ -121,7 +125,9 @@ class _VaultFixture(unittest.TestCase):
         return next((a for a in data if a.get("email") == email), None)
 
     def log_events(self):
-        return [e for e in (self.read(self.log) or []) if isinstance(e, dict)]
+        if not self.log.exists():
+            return []
+        return [json.loads(l) for l in self.log.read_text(encoding="utf-8").splitlines() if l.strip()]
 
     def log_messages(self):
         return [str(c.args[1]) for c in self.logs.call_args_list if len(c.args) > 1]
@@ -204,41 +210,35 @@ class TestMovePrimitive(_VaultFixture):
 # ── 8–10: account_log + forbidden hits ───────────────────────────────────────
 
 class TestAccountLogAndHits(_VaultFixture):
-    def test_08_log_trims_30d_and_caps_but_keeps_schema(self):
+    def test_08_log_is_append_only_jsonl_in_bridge(self):
+        # MAINT-4-B/D32: 01.33 appends one line; trimming (30d/5000) lives in 05.02 run_revival only
         now = time.time()
         old = [{"ts": now - 40 * 86400, "event": "exit_to_cooldown", "email": "old@test.invalid"}]
-        recent = [{"ts": now - 60 - i, "event": "exit_to_cooldown", "email": f"r{i}@test.invalid"}
-                  for i in range(bridge.ACCOUNT_LOG_MAX_ENTRIES + 20)]
-        self.log.write_text(json.dumps([dict(bridge.ACCOUNT_LOG_SCHEMA_ENTRY)] + old + recent), encoding="utf-8")
-        self.assertTrue(bridge.append_account_log("return_to_primary", EMAIL_A, base_dir=self.tmp))
+        self.log.write_text("".join(json.dumps(e) + "\n" for e in old), encoding="utf-8")
+        self.assertTrue(bridge.append_account_log("return_to_primary", {"email": EMAIL_A, "password": "p", "cookies": {}},
+                                                  base_dir=self.tmp))
         events = self.log_events()
-        self.assertEqual(events[0]["event"], "schema")
-        self.assertLessEqual(len(events), bridge.ACCOUNT_LOG_MAX_ENTRIES + 1)
-        self.assertTrue(all(e["ts"] >= now - bridge.ACCOUNT_LOG_RETENTION_DAYS * 86400 for e in events[1:]))
+        self.assertEqual(len(events), 2, "append-only: the 40-day-old line is kept by 01.33")
         self.assertEqual(events[-1]["event"], "return_to_primary")
+        self.assertEqual(events[-1]["email"], EMAIL_A)
 
-    def test_09_log_never_stores_secrets_and_tolerates_corruption(self):
-        self.log.write_text("{not json", encoding="utf-8")
-        ok = bridge.append_account_log("exit_to_cooldown", EMAIL_A, reason="FORBIDDEN",
-                                       meta={"password": "p", "cookies": {"a": 1}, "http_status": 403}, base_dir=self.tmp)
+    def test_09_log_stores_full_account_record_and_tolerates_corruption(self):
+        # D28 (owner's local decision): email + password + cookies are written explicitly, no masking.
+        self.log.write_text("{not json\n", encoding="utf-8")
+        ok = bridge.append_account_log("exit_to_cooldown", self.accounts[0], reason="FORBIDDEN",
+                                       meta={"http_status": 403}, base_dir=self.tmp)
         self.assertTrue(ok)
-        events = self.log_events()
-        for e in events:  # keys only — the schema note may *mention* the words, data must never carry them
-            self.assertFalse({"password", "cookies"} & set(e.keys()), f"secret key leaked into log entry: {e}")
-        self.assertEqual(events[0]["event"], "schema")
-        self.assertEqual(events[-1]["http_status"], 403)
+        last = json.loads(self.log.read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(last["password"], "secret-a")
+        self.assertEqual(last["cookies"], {"session_id": "x"})
+        self.assertEqual(last["http_status"], 403)
+        self.assertEqual(last["reason"], "FORBIDDEN")
 
-    def test_10_register_forbidden_hit_counts_distinct_pids_within_window(self):
-        now = time.time()
-        self.assertEqual(bridge.register_forbidden_hit(EMAIL_A, PID_A, json_path=str(self.primary), now=now), 1)
-        self.assertEqual(bridge.register_forbidden_hit(EMAIL_A, PID_A, json_path=str(self.primary), now=now + 5), 1)
-        self.assertEqual(bridge.register_forbidden_hit(EMAIL_A, PID_B, json_path=str(self.primary), now=now + 10), 2)
-        # outside the 24h window the old hits expire
-        far = now + bridge.FORBIDDEN_HITS_WINDOW_HOURS * 3600 + 60
-        self.assertEqual(bridge.register_forbidden_hit(EMAIL_A, PID_B, json_path=str(self.primary), now=far), 1)
-        acc = next(a for a in self.read(self.primary) if a["email"] == EMAIL_A)
-        self.assertEqual(len(acc["forbidden_hits"]), 1)
-        self.assertEqual(bridge.register_forbidden_hit("ghost@test.invalid", PID_A, json_path=str(self.primary)), 0)
+    def test_10_no_hit_counter_api_exists_anymore(self):
+        # D26: blind N=1 — the D19 counter is deleted, not merely unused
+        self.assertFalse(hasattr(bridge, "register_forbidden_hit"))
+        self.assertFalse(hasattr(bridge, "FORBIDDEN_MOVE_AFTER_N"))
+        self.assertFalse(hasattr(bridge, "FORBIDDEN_HITS_WINDOW_HOURS"))
 
 
 # ── 11–16: failover integration (real files, real FILE_LOCK) ─────────────────
@@ -272,21 +272,16 @@ class TestFailoverIsolation(_VaultFixture):
     def _primary_a(self):
         return next((a for a in self.read(self.primary) if a["email"] == EMAIL_A), None)
 
-    def test_11_first_forbidden_cools_5_minutes_only(self):
+    def test_11_first_forbidden_moves_immediately(self):
         sends, (pub_url, status, acc, _e, _t) = self._run("FORBIDDEN")
         self.assertEqual(sends.call_count, 2)
         self.assertEqual(status, "COMPLETED")
         self.assertEqual(acc["email"], EMAIL_B)
-        a = self._primary_a()
-        self.assertIsNotNone(a, "below threshold the account stays in primary")
-        self.assertAlmostEqual(a["cooldown_until"], time.time() + 300, delta=30)
-        self.assertEqual(len(a["forbidden_hits"]), 1)
-        self.assertNotIn("last_success_at", a)                      # T5 fixed
-        self.assertIsNone(self.vault_record())
+        self.assertIsNone(self._primary_a(), "D26: first 403 cuts the account from primary")
+        self.assertEqual(self.vault_record()["quarantine_info"]["reason"], "cooldown_forbidden")
+        self.assertFalse(self.cooldown.called)
 
-    def test_12_second_forbidden_on_other_project_moves_to_vault(self):
-        self.accounts[0]["forbidden_hits"] = [{"ts": time.time() - 120, "pid": PID_B}]
-        self.write_primary(self.accounts)
+    def test_12_forbidden_move_record_and_log_contract(self):
         sends, (pub_url, status, acc, _e, _t) = self._run("FORBIDDEN", pid=PID_A)
         self.assertEqual(sends.call_count, 2)
         self.assertEqual(acc["email"], EMAIL_B)
@@ -303,8 +298,6 @@ class TestFailoverIsolation(_VaultFixture):
         self.assertIn("last_success_at", b)
 
     def test_13_forbidden_move_failure_falls_back_to_5_minutes(self):
-        self.accounts[0]["forbidden_hits"] = [{"ts": time.time() - 120, "pid": PID_B}]
-        self.write_primary(self.accounts)
         self.patch("move_account_to_cooldown_vault", return_value=False)
         sends, (_u, status, acc, _e, _t) = self._run("FORBIDDEN")
         self.assertEqual(acc["email"], EMAIL_B)
@@ -313,8 +306,6 @@ class TestFailoverIsolation(_VaultFixture):
         self.assertNotIn("last_success_at", a)
 
     def test_14_reasons_disabled_restores_legacy_t5_baseline(self):
-        self.accounts[0]["forbidden_hits"] = [{"ts": time.time() - 120, "pid": PID_B}]
-        self.write_primary(self.accounts)
         with mock.patch.object(bridge, "COOLDOWN_VAULT_REASONS", ()):
             sends, (_u, status, acc, _e, _t) = self._run("FORBIDDEN")
         # legacy: pub_url non-empty → first account marked successful (documented T5 baseline)
@@ -332,7 +323,7 @@ class TestFailoverIsolation(_VaultFixture):
         qi = rec["quarantine_info"]
         self.assertEqual(qi["reason"], "cooldown_empty_stream_failed")
         self.assertIsNone(qi["http_status"])
-        self.assertAlmostEqual(qi["cooldown_until_ts"] - qi["moved_at_ts"], 3600, delta=1)
+        self.assertNotIn("cooldown_until_ts", qi)                 # D27 / C2: no timer metadata
         self.assertFalse(self.cooldown.called, "no in-place cooldown when the move succeeded")
 
     def test_16_empty_stream_fallback_marks_1h_cooldown_when_move_fails(self):
@@ -368,9 +359,9 @@ class TestLocksAndContracts(_VaultFixture):
         body = _extract_func(BRIDGE_SRC, "send_message_with_auto_account_failover")
         self.assertEqual(body.count('status == "FORBIDDEN"'), 1, "exactly one FORBIDDEN branch in the failover")
         self.assertLess(body.index('status == "FORBIDDEN"'), body.index('if pub_url or status == "COMPLETED"'))
-        self.assertIn("register_forbidden_hit", body)
-        self.assertIn("FORBIDDEN_MOVE_AFTER_N", body)
-        self.assertEqual(body.count("move_account_to_cooldown_vault("), 2, "one call per reason, one function")
+        self.assertNotIn("register_forbidden_hit", body)
+        self.assertNotIn("FORBIDDEN_MOVE_AFTER_N", body)
+        self.assertGreaterEqual(body.count("move_account_to_cooldown_vault("), 2, "one function for every reason")
         self.assertEqual(bridge.P44_STRUCTURED_STATUSES, ("CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"))
         for name in ("is_account_ready", "classify_gift_freshness", "get_eligible_accounts", "detect_response_status"):
             self.assertNotIn("MAINT3", _extract_func(BRIDGE_SRC, name))
@@ -379,14 +370,13 @@ class TestLocksAndContracts(_VaultFixture):
         self.assertNotIn("update_account_data(", move_body, "I1: manual read/modify/write under FILE_LOCK")
         self.assertNotIn("read_accounts_safe(", move_body)
         self.assertNotIn("ACCOUNT_LOG_LOCK", move_body.split("append_account_log")[0], "log lock never nested in FILE_LOCK")
-        self.assertEqual(bridge.COOLDOWN_VAULT_REASONS, ("FORBIDDEN", "EMPTY_STREAM_FAILED"))
-        self.assertEqual(bridge.COOLDOWN_VAULT_HOURS, {"FORBIDDEN": 24.0, "EMPTY_STREAM_FAILED": 1.0})
-        self.assertEqual(bridge.FORBIDDEN_MOVE_AFTER_N, 2)
+        self.assertEqual(bridge.COOLDOWN_VAULT_REASONS[:2], ("FORBIDDEN", "EMPTY_STREAM_FAILED"))
+        self.assertFalse(hasattr(bridge, "COOLDOWN_VAULT_HOURS"))
         raw = BRIDGE.read_bytes()
         self.assertEqual(raw.count(b"\n") - raw.count(b"\r\n"), 0, "01.33 must stay pure CRLF")
         m_raw = MANAGER.read_bytes()
         self.assertEqual(m_raw.count(b"\r"), 0, "05.02 must stay pure LF")
-        self.assertNotIn("MAINT3", MANAGER.read_text(encoding="utf-8"), "05.02 untouched by MAINT-3-B-2")
+        self.assertNotIn("MAINT3", MANAGER.read_text(encoding="utf-8"), "05.02 carries MAINT-3-B / MAINT-4-B tags, never MAINT3")
 
 
 if __name__ == "__main__":  # pragma: no cover
