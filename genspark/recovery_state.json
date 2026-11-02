@@ -1356,5 +1356,80 @@
       "Q-10 keep --success-file deprecated one cycle"
     ],
     "code_touched": false
+  },
+  "maint4_e": {
+    "mode": "EXECUTE_MAINT-4-E (owner card + Gist 6ce6268809a57f74f4d9847d01726d45 + voice: execute only if compatible with base)",
+    "base_at_card": "a4008fb (history rewritten; partial sync 9021e03 = 05.02 + p54 only)",
+    "owner_decisions": {
+      "Q7": "APPROVED healthy<=3d bal<100 -> primary as cooldown",
+      "Q9": "APPROVED leave file dead on disk; zero read/write in 05.02",
+      "Q10": "APPROVED --success-file deprecated warning, no crash",
+      "scope": "15 sites + 4 test files",
+      "deferred": [
+        "Q6",
+        "Q8",
+        "-> MAINT-5"
+      ]
+    },
+    "base_compat_check": {
+      "accounts_success_refs_01.33": 0,
+      "accounts_success_refs_bridge_refactor": 0,
+      "Q7_matches_mark_account_cooldown_1286_1297": true
+    },
+    "gist_6ce6_audit": {
+      "claim_doc21_table_updated": false,
+      "doc21_last_commit": "5fe2757",
+      "grep_Q7_Q9_Q10_in_doc21": 0,
+      "decisions_source": "owner text in message, not the gist"
+    },
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT4E.bak",
+      "sha256": "a8a2199d981f91c126ec62e5528a7408807f48cc44e493d0f01b0cdb0effa038",
+      "equals": "05.02 @a4008fb",
+      "note": "lost on sandbox reset; git history is the durable copy"
+    },
+    "post_edit_sha256_05_02": "140b48b07ff7d5d80502af8620550684afa44648071dbcd507d242c6d3da8e8c",
+    "surgery": "17 hunks (git diff -U0 vs a4008fb): docstring 9/421; Config 100 comment replaces SUCCESS_FILE; __init__ 275/286; run_quarantine 429/439/446/455-457 (already_done = quarantined only)/497-505/526/617; run_revival 750/801; main() 840 default=None [DEPRECATED] / 851 conditional warning / 858. 05.02 887->870 LF, CR=0, py_compile OK",
+    "tests_changed": {
+      "p52": "Harness w/o success; _merge_by_email count 4->3; test_30 asserts no success file",
+      "p53": "ctor w/o success_path; test_48 name list unchanged",
+      "tri_state": "5 refs -> primary / not-exists",
+      "p54": "7 legacy refs + 5 new tests 40-44"
+    },
+    "tests": "p54 red-first 5 failed -> 27/27; guards p48-p53+tri_state+parity 160/160; full 19 failed/1284 passed/1 skipped names==baseline (NEW=0)",
+    "d43_function_body_hashes": {
+      "_with_vault_lock": "identical",
+      "_log_move": "identical",
+      "_trim_account_log": "identical",
+      "_merge_by_email": "identical",
+      "_activate_for_bot31": "identical",
+      "check_account_status": "identical",
+      "atomic_save_json": "identical",
+      "load_accounts": "identical",
+      "_commit_moves": "only the removed success merge line"
+    },
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p52_revival_routing.py",
+      "tests/test_p53_vault_hardening.py",
+      "tests/test_p54_bot31_readiness.py",
+      "tests/test_tri_state_isolation.py",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json",
+      "UNIVERSAL_REVIEW_CARD.md"
+    ],
+    "untouched": [
+      "01.33",
+      "bridge_refactor",
+      "05.03",
+      "docs 19/20/21",
+      "01.03",
+      "verifier",
+      ".gitignore",
+      "MAINT-5"
+    ],
+    "next_gate": "MAINT-5 (not approved) -> ALIGNMENT_ONLY; Q6/Q8 pending owner card"
   }
 }

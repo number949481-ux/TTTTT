@@ -9,7 +9,7 @@ What is verified (offline, no network, no repo file touched):
       - bal >= 100  -> status="active", active=True, cooldown_until=0 + cooldown_released_at=ISO (Q-1 / owner A)
       - bal <  100  -> [MAINT-4-D] status="cooldown", active=False, cooldown_until=now+29h (docs 19/20;
                        mirrors 01.33 mark_account_cooldown 1286-1297), no cooldown_released_at
-  * D40  run_quarantine HEALTHY block calls the helper (primary + success carry the flags)
+  * D40  run_quarantine HEALTHY block calls the helper (primary carries the flags; MAINT-4-E: no success file)
   * D41  run_revival HEALTHY<=3d calls the helper (revived record carries the flags)
   * cross-program contract: a vault record exactly as 01.33 writes it
     (status="cooldown", active=False, quarantine_info{reason:"cooldown_*"})
@@ -118,13 +118,12 @@ def _vault_record_as_written_by_0133(email="cool@x.com", **extra):
 
 def _mgr(tmp_path, monkeypatch, vault_path_name="accounts_cooldown.json"):
     primary = tmp_path / "accounts_genspark.json"
-    success = tmp_path / "accounts_success.json"
     vault = tmp_path / vault_path_name
     failed = tmp_path / MOD.Config.FAILED_FILE
     dead = tmp_path / MOD.Config.DEAD_FILE
     monkeypatch.setattr(MOD, "resolve_file_path", lambda name: tmp_path / name)
     mgr = MOD.MasterDelayedGiftsManager(
-        primary_path=primary, success_path=success, quarantine_path=vault,
+        primary_path=primary, quarantine_path=vault,
         failed_path=failed, dead_path=dead, min_delay=0.0, max_delay=0.0,
     )
     return mgr
@@ -206,7 +205,7 @@ class TestHelper:
 # 2) D40 — run_quarantine HEALTHY block
 # ─────────────────────────────────────────────────────────────────────────────
 class TestD40RunQuarantine:
-    def test_10_healthy_rich_account_is_activated_in_primary_and_success(self, tmp_path, monkeypatch):
+    def test_10_healthy_rich_account_is_activated_in_primary(self, tmp_path, monkeypatch):
         mgr = _mgr(tmp_path, monkeypatch, "accounts_delayed_gifts_credits.json")
         _write(mgr.primary_path, [{
             "email": "rich@x.com", "password": "pw", "status": "auth_failed", "active": False,
@@ -216,12 +215,12 @@ class TestD40RunQuarantine:
         _route(monkeypatch, {"rich@x.com": ("HEALTHY", 1, "t", 400, {})})
         res = mgr.run_quarantine()
         assert res["healthy"] == 1
-        for path in (mgr.primary_path, mgr.success_path):
-            a = _by_email(_read(path), "rich@x.com")
-            assert a["status"] == "active" and a["active"] is True
-            assert a["cooldown_until"] == 0 and ISO_RE.match(a["cooldown_released_at"])
-            assert ISO_RE.match(a["last_updated"])
-            assert "quarantine_info" not in a and "quarantined" not in a
+        a = _by_email(_read(mgr.primary_path), "rich@x.com")
+        assert a["status"] == "active" and a["active"] is True
+        assert a["cooldown_until"] == 0 and ISO_RE.match(a["cooldown_released_at"])
+        assert ISO_RE.match(a["last_updated"])
+        assert "quarantine_info" not in a and "quarantined" not in a
+        assert not (tmp_path / "accounts_success.json").exists()  # MAINT-4-E
 
     def test_11_healthy_poor_account_is_cooled_in_place(self, tmp_path, monkeypatch, bridge):
         """[MAINT-4-D] HEALTHY but <100: stays in primary (no move) with cooldown 29h, active=False."""
@@ -254,7 +253,7 @@ class TestD40RunQuarantine:
         _route(monkeypatch, {"rich@x.com": ("HEALTHY", 1, "t", 400, {})})
         before = mgr.primary_path.read_bytes()
         mgr.run_quarantine(dry_run=True)
-        assert mgr.primary_path.read_bytes() == before and not mgr.success_path.exists()
+        assert mgr.primary_path.read_bytes() == before and not (tmp_path / "accounts_success.json").exists()
 
     def test_14_ready_31_tag_printed_only_for_rich(self, tmp_path, monkeypatch, capsys):
         mgr = _mgr(tmp_path, monkeypatch, "accounts_delayed_gifts_credits.json")
@@ -276,7 +275,6 @@ class TestD41RunRevival:
     def _setup(self, tmp_path, monkeypatch, vault, verdicts, bal=1000):
         mgr = _mgr(tmp_path, monkeypatch)
         _write(mgr.primary_path, [])
-        _write(mgr.success_path, [])
         _write(mgr.quarantine_path, vault)
 
         def fake(self, account):
@@ -291,13 +289,13 @@ class TestD41RunRevival:
                           {"cool@x.com": ("HEALTHY", 1)}, bal=1000)
         res = mgr.run_revival(limit=0)
         assert res["revived"] == 1
-        for path in (mgr.primary_path, mgr.success_path):
-            a = _by_email(_read(path), "cool@x.com")
-            assert a["status"] == "active" and a["active"] is True
-            assert a["cooldown_until"] == 0 and ISO_RE.match(a["cooldown_released_at"])
-            assert ISO_RE.match(a["last_updated"])
-            assert "quarantine_info" not in a and "quarantined" not in a
-            assert a["password"] == "pw" and a["cookies"] == {"session_id": "abc"}
+        a = _by_email(_read(mgr.primary_path), "cool@x.com")
+        assert a["status"] == "active" and a["active"] is True
+        assert a["cooldown_until"] == 0 and ISO_RE.match(a["cooldown_released_at"])
+        assert ISO_RE.match(a["last_updated"])
+        assert "quarantine_info" not in a and "quarantined" not in a
+        assert a["password"] == "pw" and a["cookies"] == {"session_id": "abc"}
+        assert not (tmp_path / "accounts_success.json").exists()  # MAINT-4-E
         assert _read(mgr.quarantine_path) == []
 
     def test_21_cross_program_0133_accepts_revived_account(self, tmp_path, monkeypatch, bridge):
@@ -357,7 +355,6 @@ class TestInvariants:
                              "c@x.com": ("HEALTHY", 1, "t", 70, {})})
         mgr.run_quarantine()
         assert [a["email"] for a in _read(mgr.primary_path)] == ["b@x.com", "c@x.com", "a@x.com"]
-        assert [a["email"] for a in _read(mgr.success_path)] == ["b@x.com", "c@x.com", "a@x.com"]
 
     def test_31_d43_sre_primitives_untouched(self):
         for name in ("_with_vault_lock", "_log_move", "_trim_account_log", "_merge_by_email"):

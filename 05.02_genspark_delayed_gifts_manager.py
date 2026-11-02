@@ -97,7 +97,7 @@ class Config:
 
     # 📁 أسماء الملفات الرئيسية الثلاثة + الأساسي
     PRIMARY_FILE: str = "accounts_genspark.json"                  # الملف الأساسي المصفى النظيف
-    # [MAINT-4-E] SUCCESS_FILE مشطوب نهائياً (فويس 104/الوثيقة 21) — المصدر الوحيد للسليم = PRIMARY_FILE
+    # [MAINT-4-E] ملف «الناجح» المنفصل مشطوب نهائياً (فويس 104/الوثيقة 21) — المصدر الوحيد للسليم = PRIMARY_FILE
     QUARANTINE_FILE: str = "accounts_delayed_gifts_credits.json" # 2. الحسابات متأخرة الهدية
     FAILED_FILE: str = "accounts_failed.json"                    # 3. الحسابات الفاشلة والميتة
     DEAD_FILE: str = "dead_accounts.json"                        # مزامنة للملف القديم للرجوع إليه

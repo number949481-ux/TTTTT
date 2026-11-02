@@ -4,7 +4,7 @@ P52 — MAINT-3-B (05.02 surgical fix of gap R1): ``run_revival`` routing.
 Spec: RESUME.md §3.8.3 (S1–S7) + §3.8.8 (tests 27–34). Decisions D21/D23/D24.
 
 What is verified (offline, no network, no repo file touched):
-  * HEALTHY & days <= 3  -> primary + success (legacy behaviour preserved)
+  * HEALTHY & days <= 3  -> primary only (MAINT-4-E: accounts_success.json abolished, voice 104 / doc 21)
   * DEAD                 -> accounts_failed.json, removed from the vault
   * STALE                -> accounts_delayed_gifts_credits.json, removed from the vault
   * AUTH_FAILED/UNKNOWN  -> stays in the vault (undecided is never moved)
@@ -94,19 +94,17 @@ class Harness:
     def __init__(self, tmp_path: Path, monkeypatch, vault_accounts, verdicts):
         self.dir = tmp_path
         self.primary = tmp_path / "accounts_genspark.json"
-        self.success = tmp_path / "accounts_success.json"
         self.vault = tmp_path / "accounts_cooldown.json"
         self.failed = tmp_path / MOD.Config.FAILED_FILE
         self.dead = tmp_path / MOD.Config.DEAD_FILE
         self.delayed = tmp_path / MOD.Config.QUARANTINE_FILE
         _write(self.primary, [_acc("keep.primary@x.com", status="active")])
-        _write(self.success, [])
         _write(self.vault, vault_accounts)
         # C2: with -q <vault> the manager has no delayed-gifts path -> it must
         # resolve Config.QUARANTINE_FILE; we pin resolution into tmp_path.
         monkeypatch.setattr(MOD, "resolve_file_path", lambda name: tmp_path / name)
         self.mgr = MOD.MasterDelayedGiftsManager(
-            primary_path=self.primary, success_path=self.success,
+            primary_path=self.primary,
             quarantine_path=self.vault, failed_path=self.failed, dead_path=self.dead,
             min_delay=0.0, max_delay=0.0,
         )
@@ -158,7 +156,7 @@ def test_29_undecided_stays_in_vault_and_is_counted(tmp_path, monkeypatch):
     assert h.baks(h.vault) == [] and _read(h.failed) is None and _read(h.delayed) is None
 
 
-def test_30_healthy_recent_revived_to_primary_and_success_legacy_preserved(tmp_path, monkeypatch):
+def test_30_healthy_recent_revived_to_primary_only_no_success_file(tmp_path, monkeypatch):
     h = Harness(tmp_path, monkeypatch, [_acc("ok@x.com")], {"ok@x.com": ("HEALTHY", 1)})
     res = h.mgr.run_revival()
     assert res["revived"] == 1
@@ -166,7 +164,7 @@ def test_30_healthy_recent_revived_to_primary_and_success_legacy_preserved(tmp_p
     assert _emails(prim) == ["keep.primary@x.com", "ok@x.com"]
     revived = next(a for a in prim if a["email"] == "ok@x.com")
     assert revived["status"] == "active" and "quarantine_info" not in revived
-    assert _emails(_read(h.success)) == ["ok@x.com"]
+    assert not (tmp_path / "accounts_success.json").exists()  # MAINT-4-E
     assert _emails(_read(h.vault)) == []
 
 
@@ -187,10 +185,10 @@ def test_32_dry_run_writes_nothing(tmp_path, monkeypatch):
     vault = [_acc("ok@x.com"), _acc("dead@x.com"), _acc("stale@x.com")]
     verdicts = {"ok@x.com": ("HEALTHY", 1), "dead@x.com": ("DEAD", None), "stale@x.com": ("STALE", 40)}
     h = Harness(tmp_path, monkeypatch, vault, verdicts)
-    before = {p: _read(p) for p in (h.primary, h.success, h.vault)}
+    before = {p: _read(p) for p in (h.primary, h.vault)}
     res = h.mgr.run_revival(dry_run=True)
     assert (res["revived"], res["moved_to_failed"], res["moved_to_delayed"]) == (1, 1, 1)
-    assert {p: _read(p) for p in (h.primary, h.success, h.vault)} == before
+    assert {p: _read(p) for p in (h.primary, h.vault)} == before
     assert _read(h.failed) is None and _read(h.delayed) is None
     assert not list(tmp_path.glob("*.bak"))
 
@@ -233,4 +231,4 @@ def test_36_file_hygiene_lf_only_and_helper_adjacent_to_run_revival():
     # D24: helper is the single merge primitive -> no ad-hoc dict-merge left in run_revival
     body = inspect.getsource(MOD.MasterDelayedGiftsManager.run_revival)
     assert "p_map" not in body and "s_map" not in body
-    assert body.count("self._merge_by_email(") == 4  # primary, success, failed, delayed
+    assert body.count("self._merge_by_email(") == 3  # primary, failed, delayed (MAINT-4-E: no success)

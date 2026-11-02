@@ -331,13 +331,12 @@ class TestJsonlAndLocks(_VaultFixture):
         folder = self.tmp
         vault = folder / "accounts_cooldown.json"
         primary = folder / "accounts_genspark.json"
-        success = folder / "accounts_success.json"
         failed = folder / "accounts_failed.json"
         vault.write_text(json.dumps([
             {"email": EMAIL_A, "password": "a", "cookies": {}, "quarantine_info": {"reason": "cooldown_forbidden"}},
         ]), encoding="utf-8")
         primary.write_text("[]", encoding="utf-8")
-        m = mgr.MasterDelayedGiftsManager(primary_path=primary, success_path=success, quarantine_path=vault,
+        m = mgr.MasterDelayedGiftsManager(primary_path=primary, quarantine_path=vault,
                                           failed_path=failed, dead_path=folder / "dead.json",
                                           threshold_days=14, sort_by_balance=False, auto_relogin=False,
                                           min_delay=0, max_delay=0)
