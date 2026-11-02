@@ -384,3 +384,72 @@ class TestInvariants:
         assert b"\r" not in raw
         tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout
         assert not [l for l in tracked.splitlines() if l.endswith(".bak")]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5) MAINT-4-E — accounts_success.json abolished (voice 104 / doc 21; Q-7/Q-9/Q-10)
+# ─────────────────────────────────────────────────────────────────────────────
+class TestMaint4ESuccessFileAbolished:
+    def test_40_no_success_file_code_paths_remain(self):
+        src = inspect.getsource(MOD)
+        assert "success_path" not in src
+        assert "SUCCESS_FILE" not in src
+        assert "accounts_success.json" not in src.replace("[DEPRECATED]", "")  # only the deprecation notice may name it
+        assert "success_path" not in inspect.signature(MOD.MasterDelayedGiftsManager.__init__).parameters
+
+    def test_41_quarantine_never_creates_success_file(self, tmp_path, monkeypatch):
+        mgr = _mgr(tmp_path, monkeypatch, "accounts_delayed_gifts_credits.json")
+        _write(mgr.primary_path, [{"email": "rich@x.com", "password": "pw"}])
+        _route(monkeypatch, {"rich@x.com": ("HEALTHY", 1, "t", 400, {})})
+        mgr.run_quarantine()
+        assert not (tmp_path / "accounts_success.json").exists()
+        a = _by_email(_read(mgr.primary_path), "rich@x.com")
+        assert a["status"] == "active" and a["cooldown_until"] == 0
+
+    def test_42_revival_never_creates_success_file_and_q7_poor_goes_primary_as_cooldown(self, tmp_path, monkeypatch, bridge):
+        mgr = _mgr(tmp_path, monkeypatch)
+        _write(mgr.primary_path, [])
+        _write(mgr.quarantine_path, [_vault_record_as_written_by_0133("poor@x.com"),
+                                     _vault_record_as_written_by_0133("rich@x.com")])
+        bal = {"poor@x.com": 20, "rich@x.com": 300}
+
+        def fake(self, account):
+            account["balance"] = bal[account["email"]]
+            return "HEALTHY", 1, "t", bal[account["email"]], None
+        monkeypatch.setattr(MOD.MasterDelayedGiftsManager, "check_account_status", fake)
+        res = mgr.run_revival(limit=0)
+        assert res["revived"] == 2
+        assert not (tmp_path / "accounts_success.json").exists()
+        prim = _read(mgr.primary_path)
+        poor = _by_email(prim, "poor@x.com"); rich = _by_email(prim, "rich@x.com")
+        assert poor["status"] == "cooldown" and poor["active"] is False and bridge.is_account_ready(poor) is False  # Q-7
+        assert rich["status"] == "active" and bridge.is_account_ready(rich) is True
+        assert _read(mgr.quarantine_path) == []
+
+    def test_43_dead_success_file_on_disk_is_never_read_or_touched(self, tmp_path, monkeypatch):
+        """Q-9: a legacy accounts_success.json on disk stays byte-identical; it no longer filters the scan."""
+        mgr = _mgr(tmp_path, monkeypatch, "accounts_delayed_gifts_credits.json")
+        legacy = tmp_path / "accounts_success.json"
+        _write(legacy, [{"email": "rich@x.com", "password": "old", "balance": 1}])
+        before = legacy.read_bytes()
+        _write(mgr.primary_path, [{"email": "rich@x.com", "password": "pw"}])
+        calls = []
+        def fake(self, account):
+            calls.append(account["email"]); account["balance"] = 400
+            return "HEALTHY", 1, "t", 400, {}
+        monkeypatch.setattr(MOD.MasterDelayedGiftsManager, "check_account_status", fake)
+        mgr.run_quarantine()
+        assert calls == ["rich@x.com"]            # not skipped as "already done" via the dead file
+        assert legacy.read_bytes() == before      # untouched
+
+    def test_44_success_file_flag_is_deprecated_warning_not_crash(self, tmp_path, monkeypatch, capsys):
+        """Q-10: --success-file is accepted, ignored, and prints a [DEPRECATED] notice; no success file is created."""
+        monkeypatch.setattr(MOD, "resolve_file_path", lambda name: tmp_path / name)
+        _write(tmp_path / "accounts_genspark.json", [])
+        monkeypatch.setattr(sys, "argv", ["05.02", "--success-file", "whatever.json", "--revive", "-q", "accounts_cooldown.json"])
+        _write(tmp_path / "accounts_cooldown.json", [])
+        MOD.main()
+        out = capsys.readouterr().out
+        assert "[DEPRECATED]" in out and "--success-file" in out
+        assert not (tmp_path / "whatever.json").exists() and not (tmp_path / "accounts_success.json").exists()
+

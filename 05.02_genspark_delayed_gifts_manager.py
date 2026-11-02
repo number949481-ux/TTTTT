@@ -6,7 +6,7 @@
 نظام الإدارة والفرز الثلاثي الموحد لحسابات Genspark
 ════════════════════════════════════════════════════════════════════════════════
 الملفات الناتجة المنفصلة (The 3-File Architecture):
- 1. 🎯 accounts_success.json : الحسابات السليمة والنشطة (شغالة + رصيد + هدية حديثة <= 14 يوم)
+ 1. 🎯 (ملغى — MAINT-4-E/فويس 104) لا ملف «ناجح» منفصل: السليم يبقى في accounts_genspark.json فقط
  2. 📦 accounts_delayed_gifts_credits.json : معزل الحسابات متأخرة الهدية (شغالة وباسورد صح لكن انقطعت هديتها > 14 يوم)
  3. 🗑️ accounts_failed.json   : الحسابات الفاشلة والميتة (باسوورد غلط / حظر / تعليق / دومين محظور)
  4. 📁 accounts_genspark.json : الملف الأساسي المصفى النظيف 100% (مرتب تنازلياً بالرصيد في القمة)
@@ -97,7 +97,7 @@ class Config:
 
     # 📁 أسماء الملفات الرئيسية الثلاثة + الأساسي
     PRIMARY_FILE: str = "accounts_genspark.json"                  # الملف الأساسي المصفى النظيف
-    SUCCESS_FILE: str = "accounts_success.json"                  # 1. الحسابات الناجحة النشطة
+    # [MAINT-4-E] SUCCESS_FILE مشطوب نهائياً (فويس 104/الوثيقة 21) — المصدر الوحيد للسليم = PRIMARY_FILE
     QUARANTINE_FILE: str = "accounts_delayed_gifts_credits.json" # 2. الحسابات متأخرة الهدية
     FAILED_FILE: str = "accounts_failed.json"                    # 3. الحسابات الفاشلة والميتة
     DEAD_FILE: str = "dead_accounts.json"                        # مزامنة للملف القديم للرجوع إليه
@@ -272,7 +272,6 @@ class MasterDelayedGiftsManager:
     def __init__(
         self,
         primary_path: Path,
-        success_path: Path,
         quarantine_path: Path,
         failed_path: Path,
         dead_path: Path,
@@ -283,7 +282,6 @@ class MasterDelayedGiftsManager:
         max_delay: float = 2.5,
     ):
         self.primary_path = primary_path
-        self.success_path = success_path
         self.quarantine_path = quarantine_path
         self.failed_path = failed_path
         self.dead_path = dead_path
@@ -418,7 +416,7 @@ class MasterDelayedGiftsManager:
     def run_quarantine(self, scan_mode: str = "all", limit: int = 10, dry_run: bool = False) -> Dict[str, Any]:
         """
         تشغيل عملية الفرز الثلاثي والقص والنقل (Cut & Move):
-        - السليم والنشط    -> accounts_success.json + يبقى في accounts_genspark.json
+        - السليم والنشط    -> يبقى في accounts_genspark.json (MAINT-4-E: لا ملف ناجح)
         - متأخر الهدية     -> accounts_delayed_gifts_credits.json
         - الميت أو المحظور  -> accounts_failed.json + dead_accounts.json
         """
@@ -426,7 +424,6 @@ class MasterDelayedGiftsManager:
         print(f"{C}{B}🚀 Genspark Master Tri-State Manager & Cleaner (3-File Architecture v2.0){RST}")
         print(f"{C}{B}{'═'*95}{RST}")
         print(f" 📁 1. الملف الأساسي المنظف : {W}{self.primary_path.name}{RST}")
-        print(f" 🎯 2. ملف الحسابات الناجحة : {G}{self.success_path.name}{RST} (نشط + رصيد + هدية حديثة)")
         print(f" 📦 3. معزل متأخري الهدية   : {Y}{self.quarantine_path.name}{RST} (> {self.threshold_days} يوم بدون هدية)")
         print(f" 🗑️ 4. سلة الحسابات الفاشلة : {R}{self.failed_path.name}{RST} (باسورد غلط / حظر / تعليق)")
         print(f" ⏱️ مهلة الهدية المعتمدة    : {M}أكثر من {self.threshold_days} يوماً بدون هدية يومية{RST}")
@@ -436,14 +433,12 @@ class MasterDelayedGiftsManager:
             print(f" ⚠️ {Y}{B}[وضع المعاينة التجريبي DRY-RUN]: لن يتم حفظ أو تعديل أي ملف فعلياً{RST}")
 
         primary_accounts = load_accounts(self.primary_path)
-        success_accounts = load_accounts(self.success_path)
         quarantined_accounts = load_accounts(self.quarantine_path)
         failed_accounts = load_accounts(self.failed_path)
         dead_accounts = load_accounts(self.dead_path)
 
         print(f"\n 📊 إحصائيات الملفات الحالية قبل البدء:")
         print(f"  • الحسابات بالملف الأساسي : {W}{len(primary_accounts)}{RST} حساب")
-        print(f"  • الحسابات بملف الناجح    : {G}{len(success_accounts)}{RST} حساب")
         print(f"  • الحسابات بمعزل الهدية   : {Y}{len(quarantined_accounts)}{RST} حساب")
         print(f"  • الحسابات بملف الفاشل    : {R}{len(failed_accounts)}{RST} حساب\n")
 
@@ -452,9 +447,8 @@ class MasterDelayedGiftsManager:
             return {"error": "No accounts found"}
 
         # استبعاد الحسابات المفحوصة والمحفوظة مسبقاً لتفادي تكرار الفحص
-        already_done = (
-            {a.get("email", "").lower() for a in success_accounts}
-            | {a.get("email", "").lower() for a in quarantined_accounts}
+        already_done = (  # [MAINT-4-E] لا استثناء عبر ملف الناجح — كل حساب في الأساسي يُفحص
+            {a.get("email", "").lower() for a in quarantined_accounts}
             | {a.get("email", "").lower() for a in failed_accounts}
             | {a.get("email", "").lower() for a in dead_accounts}
         )
@@ -494,15 +488,7 @@ class MasterDelayedGiftsManager:
                 if self.sort_by_balance:
                     final_p.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
 
-                # 2. تحديث الناجح
-                s_map = {a.get("email", "").lower(): a for a in load_accounts(self.success_path)}
-                for cut_e in all_cut_emails:
-                    s_map.pop(cut_e, None)
-                for h in healthy_tested:
-                    s_map[h.get("email", "").lower()] = h
-                final_s = list(s_map.values())
-                if self.sort_by_balance:
-                    final_s.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
+                # 2. [MAINT-4-E] لا ملف ناجح — السليم المفعَّل يبقى في الأساسي فقط
 
                 # 3. تحديث المعزل
                 q_map = {a.get("email", "").lower(): a for a in load_accounts(self.quarantine_path)}
@@ -523,7 +509,6 @@ class MasterDelayedGiftsManager:
                     create_backup(self.primary_path)
 
                 atomic_save_json(self.primary_path, final_p)
-                atomic_save_json(self.success_path, final_s)
                 atomic_save_json(self.quarantine_path, final_q)
                 atomic_save_json(self.failed_path, final_f)
                 atomic_save_json(self.dead_path, final_d)
@@ -614,7 +599,7 @@ class MasterDelayedGiftsManager:
         print(f"\n{C}{B}{'═'*95}{RST}")
         print(f"📌 {B}ملخص نتائج الفحص والفرز الختامي:{RST}")
         print(f"  • الحسابات المفحوصة في هذه الدورة       : {len(targets_to_check)}")
-        print(f"  • الحسابات الناجحة (نشطة + هدية حديثة)  : {G}{B}{len(healthy_tested)}{RST} حساب (-> {self.success_path.name})")
+        print(f"  • الحسابات الناجحة (نشطة + هدية حديثة)  : {G}{B}{len(healthy_tested)}{RST} حساب (تبقى في {self.primary_path.name})")
         print(f"  • الحسابات متأخرة الهدية (لقصها للمعزل) : {Y}{B}{len(stale_to_cut)}{RST} حساب (-> {self.quarantine_path.name})")
         print(f"  • الحسابات الفاشلة والميتة (لقصها للميت): {R}{B}{len(dead_to_cut)}{RST} حساب (-> {self.failed_path.name})")
         print(f"  • الحسابات المعلقة بشبكة/مؤقتة          : {M}{auth_failed_count}{RST} حساب")
@@ -747,7 +732,6 @@ class MasterDelayedGiftsManager:
         print(f"{C}{B}{'═'*95}{RST}")
         print(f" 📦 ملف المعزل المفحوص : {Y}{self.quarantine_path.name}{RST}")
         print(f" 📁 ملف الوجهة الأساسي  : {G}{self.primary_path.name}{RST}")
-        print(f" 🎯 ملف الوجهة الناجح   : {G}{self.success_path.name}{RST}")
 
         self._trim_account_log(self.quarantine_path.parent)      # [MAINT-4-B/D32] التقليم هنا فقط
         if limit is None or limit <= 0:                            # [MAINT-4-B/D38] -l 0 = الكل
@@ -798,7 +782,6 @@ class MasterDelayedGiftsManager:
                 # [MAINT-3-B/S5+S6] دمج كل وجهة عبر _merge_by_email (D24) — الوجهة الفارغة لا تُكتب (صفر زيادة على الفاضي)
                 if revived_accounts:
                     self._merge_by_email(self.primary_path, revived_accounts, sort=self.sort_by_balance)
-                    self._merge_by_email(self.success_path, revived_accounts, sort=self.sort_by_balance)
                 if dead_moves:
                     self._merge_by_email(self.failed_path, dead_moves)
                 if stale_moves:
@@ -837,7 +820,7 @@ def main():
     parser.add_argument("-m", "--mode", type=str, default=Config.SCAN_MODE, choices=["all", "first_n", "random"], help=f"نمط الفحص (الافتراضي: {Config.SCAN_MODE})")
     parser.add_argument("-l", "--limit", type=int, default=Config.SCAN_LIMIT, help=f"عدد الحسابات للأنماط المحدودة (الافتراضي: {Config.SCAN_LIMIT})")
     parser.add_argument("-f", "--file", type=str, default=Config.PRIMARY_FILE, help=f"ملف الحسابات الأساسي (الافتراضي: {Config.PRIMARY_FILE})")
-    parser.add_argument("--success-file", type=str, default=Config.SUCCESS_FILE, help=f"ملف الحسابات الناجحة (الافتراضي: {Config.SUCCESS_FILE})")
+    parser.add_argument("--success-file", type=str, default=None, help="[DEPRECATED — MAINT-4-E] مهمَل ويُتجاهَل؛ لا ملف ناجح منفصل")
     parser.add_argument("-q", "--quarantine-file", type=str, default=Config.QUARANTINE_FILE, help=f"ملف المعزل (الافتراضي: {Config.QUARANTINE_FILE})")
     parser.add_argument("--failed-file", type=str, default=Config.FAILED_FILE, help=f"ملف الحسابات الفاشلة (الافتراضي: {Config.FAILED_FILE})")
     parser.add_argument("--no-sort", action="store_true", help="تعطيل الترتيب التنازلي حسب الرصيد")
@@ -848,14 +831,14 @@ def main():
     primary_path = resolve_file_path(args.file)
     folder = primary_path.parent
 
-    success_path = folder / args.success_file
+    if args.success_file is not None:  # [MAINT-4-E/Q-10] توافق خلفي: تحذير بلا انهيار
+        print(f"{Y}⚠️ [DEPRECATED] --success-file مهمَل ويُتجاهَل (فويس 104): السليم يبقى في {primary_path.name} فقط.{RST}")
     quarantine_path = folder / args.quarantine_file
     failed_path = folder / args.failed_file
     dead_path = folder / Config.DEAD_FILE
 
     manager = MasterDelayedGiftsManager(
         primary_path=primary_path,
-        success_path=success_path,
         quarantine_path=quarantine_path,
         failed_path=failed_path,
         dead_path=dead_path,
