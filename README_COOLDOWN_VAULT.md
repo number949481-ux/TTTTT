@@ -45,7 +45,8 @@
 ```
 python "/ABS/PATH/05.02_genspark_delayed_gifts_manager.py" --revive -q "/ABS/PATH/accounts_cooldown.json" -f "/ABS/PATH/accounts_genspark.json" -l 0
 ```
-- **`-l 0` إلزامي** (D38): `limit <= 0` = فحص **كل** المعزل؛ الافتراضي 10 يقطع الإحياء.
+- **`-l 0`** (D38): `limit <= 0` = فحص **كل** المعزل. **[MAINT-5/Q-15]** صار هو **الافتراضي** مع `--revive` عند إغفال `-l` (كتابته صراحةً ما زالت صحيحة)؛ `-l N` صريح يُحترم.
+- **[MAINT-5/Q-14] حارس Rate Limit (الثابت 7.11):** تشغيل 05.02 **بلا** `--revive` (= فحص الأساسي شبكياً) يُرفض بـ`exit 1` ورسالة واضحة ما لم يُمرَّر `--allow-primary-scan` صراحةً — حتى مع `--dry-run` لأن `check_account_status` يتصل بالشبكة. الدورة المجدولة تبقى `--revive -q accounts_cooldown.json` فقط. 01.33 لم يُلمس (Q-11).
 - **كود الخروج (D39):** `0` نجاح · `1` عند أي استثناء أو `result["error"]` (مثل `vault_lock_busy`) — المجدول الخارجي يستطيع اكتشاف الفشل.
 - الدورة (`run_revival`): تقليم السجل → قراءة المعزل → `check_account_status` لكل حساب → `HEALTHY` ← الأساسي · `DEAD` ← `accounts_failed.json` · `STALE` ← `accounts_delayed_gifts_credits.json` · غير المحسوم يبقى. يحذف `quarantine_info`/`quarantined` عند الإنعاش ويضع **`status=active`، `active=True`، `last_updated`، ورصيد ≥100 ⇒ `cooldown_until=0` + `cooldown_released_at`** (MAINT-4-C D40/D41 — نفس الحقول في فحص `run_quarantine` للحساب HEALTHY) فيقبله `is_account_ready` في 01.33 فوراً؛ **ورصيد <100 ⇒ [MAINT-4-D] `status=cooldown`، `active=False`، `cooldown_until=now+29h` في مكانه** (نفس شكل `mark_account_cooldown` في 01.33 — لا نقل لملف خارجي) فيرفضه `is_account_ready` حتى تنزل الهدية. **[MAINT-4-E] لا ملف `accounts_success.json`:** السليم (في `run_revival` و`run_quarantine`) يبقى في `accounts_genspark.json` فقط (فويس 104/الوثيقة 21؛ Q-7/Q-9/Q-10)؛ علم `--success-file` مهمَل يطبع `[DEPRECATED]` ويُتجاهَل بلا انهيار؛ أي ملف ناجح قديم على القرص يُترك ميتاً ولا يُقرأ. ثم خروج فوري.
 - عودة `STALE` من معزل الهدية = يدوياً/جدول المالك (D23) — لا فحص دوري لذلك الملف.

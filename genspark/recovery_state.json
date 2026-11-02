@@ -1486,5 +1486,56 @@
       "UNIVERSAL_REVIEW_CARD.md",
       "genspark/recovery_state.json"
     ]
+  },
+  "maint5": {
+    "mode": "EXECUTE (owner direct-delegation card 2026-11-02 + Gist b6ba8643908d633791babec84a4e5529 voice 113)",
+    "base_at_card": "0831cb6",
+    "owner_decisions": {
+      "Q11": "01.33/01.03 absolute read-only",
+      "Q12": "keep D35+P48; accounts_0_14days.json cancelled",
+      "Q13": "zero new tools (--list-ready cancelled)",
+      "Q14": "rate-limit guard --allow-primary-scan",
+      "Q15": "--revive default -l 0",
+      "Q16": "floating now+29h, no midnight binding",
+      "Q17": "account 498 log closed"
+    },
+    "claims_verified_on_head": {
+      "COOLDOWN_VAULT_REASONS": "1320-1321",
+      "BALANCE_UNREADABLE_move": "3481-3488",
+      "ZERO_BALANCE_STALE_GIFT": "3493",
+      "mark_account_cooldown_call": "3499",
+      "LOGIN_FAILED_move": "3531-3533",
+      "gist_misquote": "L3458-3463 'if balance < 100' is not verbatim; actual P13 gate 3491-3500 (no decision impact)",
+      "lock_name_L620_used_L801": true,
+      "accounts_success_refs": 0
+    },
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT5.bak",
+      "sha256": "140b48b07ff7d5d80502af8620550684afa44648071dbcd507d242c6d3da8e8c",
+      "equals": "05.02 @0831cb6"
+    },
+    "post_edit_sha256_05_02": "c96fe5b1f78263f3ffa0701ac0f080c25e76531a969c29ab06b120798f75479e",
+    "surgery": "main() only: -l default=None -> limit = args.limit or (0 if revive else SCAN_LIMIT); new --allow-primary-scan; guard: not revive and not allow -> print + sys.exit(1) (also under --dry-run). 5 hunks all after 'def main'; pre-main bytes identical; 870->880 LF; CR=0",
+    "tests": "new tests/test_p55_maint5_guards.py red-first 6 failed/6 passed -> 12/12; guards p48-p55+tri_state+parity 199/199; full 19 failed/1296 passed/1 skipped names==baseline (NEW=0)",
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p55_maint5_guards.py",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json",
+      "UNIVERSAL_REVIEW_CARD.md"
+    ],
+    "untouched": [
+      "01.33",
+      "01.03",
+      "bridge_refactor",
+      "05.03",
+      "docs 19-23",
+      "verifier",
+      ".gitignore"
+    ],
+    "delivery_note": "owner card asked for git commit+push; sandbox has no GitHub token (setup_github_environment: none) -> local save + Bridge Sync Engine as in all previous batches",
+    "next_gate": "first [ ] in PROGRESS = MAINT-2 (deferred by DEC-04) -> ALIGNMENT_ONLY"
   }
 }

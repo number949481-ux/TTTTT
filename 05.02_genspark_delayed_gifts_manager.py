@@ -818,7 +818,7 @@ def main():
     )
     parser.add_argument("-d", "--days", type=int, default=Config.STALE_GIFT_DAYS_THRESHOLD, help=f"مهلة الأيام بدون هدية (الافتراضي: {Config.STALE_GIFT_DAYS_THRESHOLD})")
     parser.add_argument("-m", "--mode", type=str, default=Config.SCAN_MODE, choices=["all", "first_n", "random"], help=f"نمط الفحص (الافتراضي: {Config.SCAN_MODE})")
-    parser.add_argument("-l", "--limit", type=int, default=Config.SCAN_LIMIT, help=f"عدد الحسابات للأنماط المحدودة (الافتراضي: {Config.SCAN_LIMIT})")
+    parser.add_argument("-l", "--limit", type=int, default=None, help=f"عدد الحسابات للأنماط المحدودة (الافتراضي: {Config.SCAN_LIMIT}؛ مع --revive الافتراضي 0 = كل المعزل [MAINT-5/Q-15])")
     parser.add_argument("-f", "--file", type=str, default=Config.PRIMARY_FILE, help=f"ملف الحسابات الأساسي (الافتراضي: {Config.PRIMARY_FILE})")
     parser.add_argument("--success-file", type=str, default=None, help="[DEPRECATED — MAINT-4-E] مهمَل ويُتجاهَل؛ لا ملف ناجح منفصل")
     parser.add_argument("-q", "--quarantine-file", type=str, default=Config.QUARANTINE_FILE, help=f"ملف المعزل (الافتراضي: {Config.QUARANTINE_FILE})")
@@ -826,6 +826,7 @@ def main():
     parser.add_argument("--no-sort", action="store_true", help="تعطيل الترتيب التنازلي حسب الرصيد")
     parser.add_argument("--dry-run", action="store_true", help="معاينة تجريبية دون تعديل الملفات")
     parser.add_argument("--revive", action="store_true", help="فحص المعزل واسترجاع الحسابات التي عاد لها الرصيد")
+    parser.add_argument("--allow-primary-scan", action="store_true", help="[MAINT-5/Q-14] إذن صريح لفحص الملف الأساسي شبكياً (بلا --revive). بدونه يُرفض الفحص حمايةً من Rate Limit (7.11)")
     args = parser.parse_args()
 
     primary_path = resolve_file_path(args.file)
@@ -849,14 +850,23 @@ def main():
         max_delay=Config.MAX_DELAY,
     )
 
+    # [MAINT-5/Q-14 — كارت GO 2026-11-02] حارس Rate Limit (الثابت 7.11): الفحص الشبكي الدوري حصري لمعزل التبريد.
+    # فحص الأساسي (الوضع الافتراضي بلا --revive) يحتاج إذناً صريحاً — حتى مع --dry-run لأن check_account_status يتصل بالشبكة.
+    if not args.revive and not args.allow_primary_scan:
+        print(f"{R}⛔ [MAINT-5/Q-14] مرفوض: فحص {primary_path.name} شبكياً بدون --allow-primary-scan (حماية Rate Limit 429).{RST}")
+        print(f"{Y}   الدورة المجدولة = --revive -q accounts_cooldown.json (المعزل فقط). للفحص الكامل للأساسي أضف --allow-primary-scan صراحةً.{RST}")
+        sys.exit(1)
+    # [MAINT-5/Q-15] -l بلا قيمة: --revive ⇒ 0 (كل المعزل، D38)؛ الفحص الأساسي ⇒ SCAN_LIMIT القديم
+    limit = args.limit if args.limit is not None else (0 if args.revive else Config.SCAN_LIMIT)
+
     # [MAINT-4-B/D39 — إذن صريح بتوسيع A5 لـmain()] كود خروج ≠ 0 عند الفشل ليميّزه المجدول/main.py الخارجي
     try:
         if args.revive:
-            result = manager.run_revival(limit=args.limit, dry_run=args.dry_run or Config.DRY_RUN)
+            result = manager.run_revival(limit=limit, dry_run=args.dry_run or Config.DRY_RUN)
         else:
             result = manager.run_quarantine(
                 scan_mode=args.mode,
-                limit=args.limit,
+                limit=limit,
                 dry_run=args.dry_run or Config.DRY_RUN,
             )
     except Exception as e:
