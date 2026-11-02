@@ -6,7 +6,7 @@
     "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "MAINT-4-D executed+closed 2026-11-01 (owner EXECUTE_NOW, docs 19/20 @2406dab); next first [ ] = MAINT-5 unapproved => ALIGNMENT_ONLY; Q-6 open",
+    "status": "ALIGNMENT_ONLY 2026-11-02 (doc 21 @c32b553 + Gist 3c92c3fa): Gist hallucinations detected (current_cd absent; L547 not success-save); matrix 01.33<->05.02<->voice104 in RESUME 3.14; MAINT-4-E proposed awaiting GO (Q-7..Q-10); MAINT-5 unapproved; no code",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -1291,5 +1291,70 @@
     ],
     "open_question_Q6": "unconditional now+29h extends an existing bot cooldown (9h left -> 29h) and resets every 12h cycle for poor accounts; alternatives max(existing, now+29h) or leave-if-running; NO action without owner decision",
     "status": "closed"
+  },
+  "alignment_2026_11_02": {
+    "mode": "ALIGNMENT_ONLY (agent decision under owner delegation)",
+    "head": "c32b553",
+    "gist_audit": {
+      "current_cd_in_05_02": 0,
+      "line_547": "helper call, not success save",
+      "success_save_sites": [
+        526,
+        801
+      ],
+      "success_save_excludes_lt100": false,
+      "Q6_status": "still open"
+    },
+    "success_file_refs": {
+      "01.33": 0,
+      "bridge_refactor": 0,
+      "05.02": 15,
+      "05.02_lines": [
+        9,
+        100,
+        275,
+        286,
+        421,
+        429,
+        439,
+        498,
+        526,
+        617,
+        750,
+        801,
+        840,
+        851,
+        858
+      ],
+      "05.02_outside_A5": [
+        439,
+        498,
+        526,
+        617
+      ],
+      "tests": {
+        "p52": 2,
+        "p53": 3,
+        "p54": 7,
+        "tri_state": 5
+      }
+    },
+    "matrix_conflicts": {
+      "05.02": "accounts_success.json still written (526/801)",
+      "01.33": "zero balance + fresh gift stays in-place 29h (D35 3491-3496) vs voice104 'zero => vault' (Q-8; touches 01.33 => with MAINT-5)"
+    },
+    "doc21_misreads": {
+      "row2": "MAINT-4-D is in-place cooldown, compliant",
+      "row4": "12h cycle already targets accounts_cooldown.json via --revive (D16/D17)"
+    },
+    "proposed": "MAINT-4-E abolish accounts_success.json in 05.02 (needs GO + A5 scope extension + 4 test files)",
+    "open_questions": [
+      "Q-6 extend existing cooldown",
+      "Q-7 revive HEALTHY<=3d with bal<100 to primary",
+      "Q-8 zero+fresh gift => vault in 01.33",
+      "Q-9 delete file on disk or leave dead",
+      "Q-10 keep --success-file deprecated one cycle"
+    ],
+    "code_touched": false
   }
 }
