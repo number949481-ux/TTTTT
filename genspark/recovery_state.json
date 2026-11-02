@@ -1431,5 +1431,60 @@
       "MAINT-5"
     ],
     "next_gate": "MAINT-5 (not approved) -> ALIGNMENT_ONLY; Q6/Q8 pending owner card"
+  },
+  "alignment_2026_11_02_b": {
+    "mode": "ALIGNMENT_ONLY (owner RESUME card; first [ ] = MAINT-5 not approved)",
+    "head": "38a2d2d",
+    "inputs": [
+      "gist b6ba8643908d633791babec84a4e5529",
+      "doc 23 @38a2d2d",
+      "voices 105-111"
+    ],
+    "gist_line_claims": {
+      "LOW_BALANCE_1243_1251": "false -> 3977-3985",
+      "move_vault_1398_1430": "false -> 1408+",
+      "run_revival_0502_632_701": "false -> 725-813",
+      "GIFT_STALE_DAYS_0502_408": "false (01.33:1175)",
+      "moves_at_1192_1232": "false",
+      "SORT_BY_BALANCE_113": "true",
+      "ENDPOINT_RECHARGE_BALANCE": "true (3 matches)"
+    },
+    "findings": {
+      "ping_pong_in_current_code": false,
+      "vault_paths": "COOLDOWN_VAULT_REASONS 1320-1321 only",
+      "balance_lt_100_preflight": "mark_account_cooldown 3499 in place 29h",
+      "zero_plus_fresh_gift": "in place 29h (D35 3491-3497 vaults only zero+STALE) => Q-8",
+      "implicit_14d_immunity": "classify_gift_freshness 1200-1248 on 05.02 snapshot; aged_days>=14 pessimistic => max one vault round-trip per 14d",
+      "300s_writers": [
+        1590,
+        3487,
+        3533,
+        3954,
+        4101,
+        4146,
+        4289
+      ],
+      "sort": "05.02 sorts on write (784, 488-489); 01.33 update_account_data 1068 in-place; selection by last_used 1264/1281",
+      "revive_default_limit": "SCAN_LIMIT=10 at 05.02:821 => scheduler must pass -l 0",
+      "no_code_guard_for_7_11": "run_quarantine scans primary if --revive omitted",
+      "midnight_gift_claim": "0 code matches",
+      "pii_in_public_gist": true
+    },
+    "open_questions": [
+      "Q-11 bot sanctity absolute?",
+      "Q-12 immunity: existing/tag/file",
+      "Q-13 sort: as-is/every-cycle/--list-ready",
+      "Q-14 7.11 code guard",
+      "Q-15 --revive default -l 0",
+      "Q-16 evidence for 12:00AM gift",
+      "Q-17 bridge_bot.log for account 498"
+    ],
+    "code_changed": false,
+    "files_changed": [
+      "RESUME.md",
+      "PROGRESS.md",
+      "UNIVERSAL_REVIEW_CARD.md",
+      "genspark/recovery_state.json"
+    ]
   }
 }
