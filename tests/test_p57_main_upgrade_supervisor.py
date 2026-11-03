@@ -10,6 +10,17 @@ What is verified (offline, no network, no Telegram, no Genspark; children are ti
              and the four fixed slots; each slot fires once per day; overlapping job is skipped, never doubled.
   * D53      SIGINT/SIGTERM => children terminated and reaped (no zombie), bot exit => supervisor exits with same rc.
   * D50      main.py + 01.33 byte-identical to baseline hashes; no existing bridge_refactor file modified.
+
+MAINT-8 (owner card REVIEW_AND_EXECUTE 2026-11-03, Gist a2e84b1d…, voices 143–147; D55–D61) — ``clean_disk_garbage()``:
+  * D55/D56/D57  project triad archive/*.tar.gz (+ .tar.tmp orphan), checkpoints/hot/<id>/ (rmtree), reports/*.json
+                 older than 60 min are removed — no exception (voice 144); age = name-stamp OR mtime (voice 143).
+  * D58          startup run before the bot launches; hourly inside tick.
+  * D59          bridge_bot.log + logs/*.log > 10 MB truncated in place keeping the last 2 MB (same inode: an open
+                 append FileHandler keeps working); idle logs/*.log > 30 days deleted (voice 145).
+  * D60          extracted_webapp/<pid>/, extracted_push_temp/*, webapp*.tar.gz in the bot home — restricted glob.
+  * D61          manifest.json / manifest.bak / queue.json / secrets.local.json / registry.json never touched;
+                 locked / vanished entries => OSError swallowed, counted, supervisor keeps running.
+  * registry discovery mirrors 01.33 resolve_shared_path (local project_registry, then the parent folder).
 """
 from __future__ import annotations
 import hashlib
@@ -26,7 +37,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SUP_FILE = ROOT / "bridge_refactor" / "main_upgrade.py"
-ALLOWED_IMPORTS = {"atexit", "logging", "pathlib", "signal", "subprocess", "sys", "time", "__future__"}
+ALLOWED_IMPORTS = {"atexit", "logging", "os", "pathlib", "shutil", "signal", "subprocess", "sys", "time", "__future__"}
 
 
 def _load(path: Path = SUP_FILE):
@@ -329,3 +340,228 @@ class TestCli:
         mod, tmp = sandbox
         (tmp / "05.02_genspark_delayed_gifts_manager.py").unlink()
         assert mod.main(["--no-bot"]) == 2
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4) MAINT-8 — clean_disk_garbage() (D55–D61, voices 143–147)
+# ─────────────────────────────────────────────────────────────────────────────
+H = 3600.0
+NOW = 1_800_000_000.0           # fixed "now" (2027-01-15 UTC) so name-stamps can be built deterministically
+
+
+def _stamp(ts: float) -> str:
+    return time.strftime("%Y%m%dT%H%M%S", time.gmtime(ts)) + "000000Z"
+
+
+def _age(p: Path, age_s: float, now: float = NOW) -> None:
+    os.utime(p, (now - age_s, now - age_s))
+
+
+def _mk_project(home: Path, key: str, old_id: str, new_id: str, now: float = NOW) -> Path:
+    """One project_registry/<key>/ with the triad: one old (2h) and one fresh (10min) member in each folder."""
+    proj = home / key
+    for name in ("manifest.json", "queue.json", "secrets.local.json", "manifest.bak"):
+        (proj / name).parent.mkdir(parents=True, exist_ok=True)
+        (proj / name).write_text("{}", encoding="utf-8")
+        _age(proj / name, 5 * H, now)                      # old, yet protected (D61)
+    for cid, age in ((old_id, 2 * H), (new_id, 600)):
+        arc = proj / "archive" / f"{cid}.tar.gz"
+        arc.parent.mkdir(parents=True, exist_ok=True)
+        arc.write_bytes(b"x" * 4096)
+        _age(arc, age, now)
+        hot = proj / "checkpoints" / "hot" / cid
+        (hot / "src").mkdir(parents=True)
+        (hot / "src" / "app.py").write_bytes(b"y" * 2048)
+        _age(hot / "src" / "app.py", age, now); _age(hot / "src", age, now); _age(hot, age, now)
+        rep = proj / "reports" / f"{cid}.json"
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text("{}", encoding="utf-8")
+        _age(rep, age, now)
+    return proj
+
+
+@pytest.fixture
+def garbage_env(sandbox, monkeypatch):
+    """sandbox + a local project_registry (with registry.json) + temp dirs + logs; BRIDGE_HOME unset."""
+    mod, tmp = sandbox
+    monkeypatch.delenv("BRIDGE_HOME", raising=False)
+    reg = tmp / "project_registry"
+    reg.mkdir()
+    (reg / "registry.json").write_text("{}", encoding="utf-8")
+    _age(reg / "registry.json", 9 * H)
+    old_id, new_id = _stamp(NOW - 2 * H), _stamp(NOW - 600)
+    proj = _mk_project(reg, "proj_a", old_id, new_id)
+    return mod, tmp, reg, proj, old_id, new_id
+
+
+class TestMaint8DiskGarbage:
+    def test_40_constants_and_protected_names(self):
+        assert MOD.GARBAGE_MAX_AGE_S == 3600 and MOD.GARBAGE_INTERVAL_S == 3600
+        assert MOD.LOG_TRUNCATE_AT == 10 * 1024 * 1024 and MOD.LOG_KEEP_TAIL == 2 * 1024 * 1024
+        assert {"manifest.json", "queue.json", "secrets.local.json", "registry.json"} <= set(MOD.PROTECTED_NAMES)
+        assert MOD.ROOT_ARCHIVE_GLOB.startswith("webapp")           # never a bare *.tar.gz (owner backups safe)
+        assert "except OSError" in SRC and "shutil.rmtree" in SRC
+
+    def test_41_triad_purge_old_only_and_protected_untouched(self, garbage_env):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        stats = mod.clean_disk_garbage(now=NOW)
+        # D55/D56/D57 — old members gone
+        assert not (proj / "archive" / f"{old_id}.tar.gz").exists()
+        assert not (proj / "checkpoints" / "hot" / old_id).exists()
+        assert not (proj / "reports" / f"{old_id}.json").exists()
+        # fresh members kept (53-minute safety belt)
+        assert (proj / "archive" / f"{new_id}.tar.gz").exists()
+        assert (proj / "checkpoints" / "hot" / new_id / "src" / "app.py").exists()
+        assert (proj / "reports" / f"{new_id}.json").exists()
+        # D61 — sovereignty files untouched even though they are 5h old
+        for name in ("manifest.json", "manifest.bak", "queue.json", "secrets.local.json"):
+            assert (proj / name).exists(), name
+        assert (reg / "registry.json").exists()
+        assert stats["removed"] == 3 and stats["projects"] == 1 and stats["errors"] == 0
+        assert stats["freed_bytes"] >= 4096 + 2048 + 2
+
+    def test_42_name_stamp_beats_fresh_mtime_voice_143(self, garbage_env):
+        """copy2 preserves old mtimes and the owner wants old ids gone 'even without a date': a 2h-old id with a
+        brand-new mtime is still garbage; an id-less dir relies on mtime alone."""
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        hot = proj / "checkpoints" / "hot"
+        stale_named = hot / _stamp(NOW - 3 * H)
+        stale_named.mkdir(); _age(stale_named, 0)                       # fresh mtime, old name
+        nameless_old = hot / "manual_copy"
+        nameless_old.mkdir(); _age(nameless_old, 2 * H)
+        nameless_new = hot / "manual_copy_fresh"
+        nameless_new.mkdir(); _age(nameless_new, 60)
+        mod.clean_disk_garbage(now=NOW)
+        assert not stale_named.exists() and not nameless_old.exists()
+        assert nameless_new.exists()
+
+    def test_43_dir_with_fresh_child_is_kept(self, garbage_env):
+        """A download in progress writes new files inside an old-looking folder — it must survive."""
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        ext = tmp / "extracted_webapp" / "pid_live"
+        ext.mkdir(parents=True)
+        (ext / "webapp.tar.gz.tmp").write_bytes(b"z"); _age(ext / "webapp.tar.gz.tmp", 30)
+        _age(ext, 2 * H)
+        dead = tmp / "extracted_webapp" / "pid_dead"
+        dead.mkdir(); (dead / "a").write_bytes(b"z"); _age(dead / "a", 2 * H); _age(dead, 2 * H)
+        mod.clean_disk_garbage(now=NOW)
+        assert ext.exists() and not dead.exists()
+
+    def test_44_temp_dirs_and_restricted_root_archives_D60(self, garbage_env):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        (tmp / "extracted_push_temp").mkdir()
+        junk = tmp / "extracted_push_temp" / "leftover.bin"; junk.write_bytes(b"q"); _age(junk, 2 * H)
+        root_old = tmp / "webapp.tar.gz"; root_old.write_bytes(b"q"); _age(root_old, 2 * H)
+        root_tmp = tmp / "webapp_x.tar.gz.tmp"; root_tmp.write_bytes(b"q"); _age(root_tmp, 2 * H)
+        owner_backup = tmp / "my_backup_2026.tar.gz"; owner_backup.write_bytes(b"q"); _age(owner_backup, 90 * 86400)
+        mod.clean_disk_garbage(now=NOW)
+        assert not junk.exists() and not root_old.exists() and not root_tmp.exists()
+        assert owner_backup.exists()                                   # restricted glob: owner archives are not ours
+
+    def test_45_orphan_tar_tmp_in_archive_is_purged(self, garbage_env):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        orphan = proj / "archive" / f"{old_id}.tar.tmp"; orphan.write_bytes(b"t"); _age(orphan, 2 * H)
+        other = proj / "archive" / "notes.txt"; other.write_text("x"); _age(other, 2 * H)
+        mod.clean_disk_garbage(now=NOW)
+        assert not orphan.exists() and other.exists()                  # only .tar.gz/.tar.tmp are archive garbage
+
+    def test_46_log_truncation_in_place_keeps_tail_and_inode_D59(self, garbage_env, monkeypatch):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        monkeypatch.setattr(mod, "LOG_TRUNCATE_AT", 10_000)
+        monkeypatch.setattr(mod, "LOG_KEEP_TAIL", 2_000)
+        bot_log = tmp / "bridge_bot.log"
+        lines = [f"line {i:05d} " + "x" * 40 + "\n" for i in range(400)]        # ~20 KB
+        bot_log.write_text("".join(lines), encoding="utf-8")
+        ino_before = bot_log.stat().st_ino
+        # an *open append handle* like 01.33's FileHandler keeps writing after truncation
+        with open(bot_log, "a", encoding="utf-8") as live:
+            stats = mod.clean_disk_garbage(now=NOW)
+            live.write("after-truncate\n"); live.flush()
+        data = bot_log.read_text(encoding="utf-8")
+        assert stats["truncated"] == 1 and bot_log.stat().st_ino == ino_before
+        assert len(data.encode()) <= 2_000 + len("after-truncate\n")
+        assert data.startswith("line ") and data.endswith("after-truncate\n")  # whole-line boundary + live tail
+        assert data.splitlines()[-2] == lines[-1].rstrip("\n")
+        small = tmp / "logs" / "scheduler_0502.log"
+        small.parent.mkdir(exist_ok=True); small.write_text("tiny\n"); _age(small, 60)
+        mod.clean_disk_garbage(now=NOW)
+        assert small.read_text() == "tiny\n"                           # below threshold: untouched
+
+    def test_47_idle_logs_older_than_30_days_deleted_live_log_kept(self, garbage_env):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        logs = tmp / "logs"; logs.mkdir(exist_ok=True)
+        idle = logs / "old_run.log"; idle.write_text("x"); _age(idle, 31 * 86400)
+        recent = logs / "scheduler_0502.log"; recent.write_text("x"); _age(recent, 2 * 86400)
+        bot_log = tmp / "bridge_bot.log"; bot_log.write_text("x"); _age(bot_log, 400 * 86400)
+        mod.clean_disk_garbage(now=NOW)
+        assert not idle.exists() and recent.exists()
+        assert bot_log.exists()                                        # the bot's live log is never deleted, only truncated
+
+    def test_48_registry_discovery_mirrors_resolve_shared_path(self, sandbox, monkeypatch, tmp_path):
+        """01.33 L140–157: local project_registry (with registry.json) else parent; both candidates are cleaned."""
+        mod, tmp = sandbox
+        monkeypatch.delenv("BRIDGE_HOME", raising=False)
+        assert mod.registry_homes() == []                                # nothing yet => nothing to clean, no crash
+        parent_reg = tmp.parent / "project_registry"
+        parent_reg.mkdir(exist_ok=True)
+        (parent_reg / "registry.json").write_text("{}")
+        oid = _stamp(NOW - 2 * H)
+        proj = _mk_project(parent_reg, "proj_parent", oid, _stamp(NOW - 100))
+        try:
+            assert parent_reg in mod.registry_homes()
+            mod.clean_disk_garbage(now=NOW)
+            assert not (proj / "archive" / f"{oid}.tar.gz").exists()
+            assert (proj / "manifest.json").exists()
+        finally:
+            import shutil as _sh
+            _sh.rmtree(parent_reg, ignore_errors=True)
+        # BRIDGE_HOME override is honoured too (runtime.py L26)
+        other = tmp_path / "other_home"; (other / "project_registry").mkdir(parents=True)
+        monkeypatch.setenv("BRIDGE_HOME", str(other))
+        assert other / "project_registry" in mod.registry_homes()
+
+    def test_49_locked_or_vanished_entries_do_not_crash(self, garbage_env, monkeypatch):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        real_rmtree = mod.shutil.rmtree
+
+        def locked(path, *a, **k):
+            raise PermissionError(32, "WinError 32: file in use", str(path))
+        monkeypatch.setattr(mod.shutil, "rmtree", locked)
+        real_unlink = Path.unlink
+
+        def vanish(self, *a, **k):
+            if self.suffix == ".json":
+                raise FileNotFoundError(str(self))
+            return real_unlink(self, *a, **k)
+        monkeypatch.setattr(Path, "unlink", vanish)
+        stats = mod.clean_disk_garbage(now=NOW)
+        assert stats["errors"] == 2 and stats["removed"] == 1          # hot locked + report vanished; archive removed
+        assert (proj / "checkpoints" / "hot" / old_id).exists()
+        monkeypatch.setattr(mod.shutil, "rmtree", real_rmtree)
+
+    def test_50_startup_and_hourly_integration_D58(self, garbage_env, monkeypatch):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        calls = []
+        monkeypatch.setattr(mod, "clean_disk_garbage", lambda now=None: calls.append(time.time()) or {})
+        sup = mod.Supervisor(with_bot=False)
+        sup.request_stop("test")
+        sup.run(tick_seconds=0.01)                                      # startup clean (D58) even with zero ticks
+        assert len(calls) == 1
+        t0 = sup.last_clean
+        sup.tick(now=t0 + 1800)
+        assert len(calls) == 1                                          # 30 min: not yet
+        sup.tick(now=t0 + 3600)
+        assert len(calls) == 2                                          # 60 min: hourly run
+        sup.tick(now=t0 + 3601)
+        assert len(calls) == 2
+
+    def test_51_real_startup_purges_before_bot_and_frees_space(self, garbage_env, monkeypatch):
+        mod, tmp, reg, proj, old_id, new_id = garbage_env
+        big = proj / "archive" / f"{_stamp(NOW - 4 * H)}.tar.gz"
+        big.write_bytes(b"\0" * (3 * 1024 * 1024)); _age(big, 4 * H)
+        monkeypatch.setattr(mod.time, "time", lambda: NOW)
+        sup = mod.Supervisor(with_bot=False)
+        sup.request_stop("test")
+        sup.run(tick_seconds=0.01)
+        assert not big.exists() and not (proj / "archive" / f"{old_id}.tar.gz").exists()
+        assert (proj / "archive" / f"{new_id}.tar.gz").exists() and (proj / "queue.json").exists()
