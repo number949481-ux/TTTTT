@@ -1537,5 +1537,50 @@
     ],
     "delivery_note": "owner card asked for git commit+push; sandbox has no GitHub token (setup_github_environment: none) -> local save + Bridge Sync Engine as in all previous batches",
     "next_gate": "first [ ] in PROGRESS = MAINT-2 (deferred by DEC-04) -> ALIGNMENT_ONLY"
+  },
+  "alignment_maint6": {
+    "date": "2026-11-03",
+    "mode": "ALIGNMENT_ONLY (owner card MAINT-6; voices 123-128; doc 23)",
+    "head": "1ce59ab",
+    "code_touched": false,
+    "gist": {
+      "id": "b6ba8643908d633791babec84a4e5529",
+      "lines": 2393,
+      "sha256_16": "67112502c4a8c8d4",
+      "card_lines": "2329-2341",
+      "voice124_line": 1956
+    },
+    "matrix": {
+      "d1_schedule_batch10": "compatible; card '20 requests/day' = 20 accounts (>=3 req/account)",
+      "d2_email_not_id": "already true (0 id usage)",
+      "d3_checkpoint": "GAP; not gitignored",
+      "d4a": "compatible if HEALTHY (Q-18)",
+      "d4b": "CONFLICT card 29h renew vs voice124 leave-as-is (Q-19)",
+      "d4c": "compatible; per-file atomic, no xproc lock in run_quarantine",
+      "d4d": "compatible; AUTH_FAILED untouched (Q-20)",
+      "d5": "zero 01.33 change",
+      "invariant_7_11": "needs D48 amendment"
+    },
+    "proposal": "--sweep CLI in 05.02 main() + RotationCheckpoint class beside _merge_by_email + 3 touch points in run_quarantine (L456/L526/L512) + _with_vault_lock around save_checkpoint + tests/test_p56_rotation_sweep.py",
+    "questions": [
+      "Q-18",
+      "Q-19",
+      "Q-20",
+      "Q-21",
+      "Q-22",
+      "Q-23",
+      "Q-24"
+    ],
+    "scope_extension_needed": [
+      "Config+.gitignore",
+      "run_quarantine selection/loop/save_checkpoint",
+      "_activate_for_bot31 if Q-19(b)"
+    ],
+    "docs": {
+      "RESUME": "3.18 + D48 pending + MODE",
+      "PROGRESS": "[x] alignment line + header",
+      "CARD": "1.7 + 7.20"
+    },
+    "sandbox_reset_mid_session": true
   }
 }
