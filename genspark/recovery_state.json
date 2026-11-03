@@ -1633,5 +1633,49 @@
       "sandbox reset twice mid-session; Layer A redone"
     ],
     "owner_gate": "Task Scheduler 06:00/18:00 --sweep, timeout >= 2h"
+  },
+  "maint7": {
+    "date": "2026-11-03",
+    "mode": "REVIEW_AND_CONDITIONAL_EXECUTE (owner card; voices 134-137)",
+    "base_head": "a1d7afa",
+    "new_files": {
+      "bridge_refactor/main_upgrade.py": "ac8224114341ed4e",
+      "tests/test_p57_main_upgrade_supervisor.py": "51adb2db56920037"
+    },
+    "modified": {
+      "tests/test_refactor_parity.py": "OWNER_FILES_REL += main_upgrade.py (m4 would fail otherwise)",
+      "README_COOLDOWN_VAULT.md": "supervisor section",
+      "PROGRESS.md": "[x] MAINT-7 + [ ] BACKLOG B1-B10",
+      "RESUME.md": "3.20 + D49-D54 + MODE",
+      "UNIVERSAL_REVIEW_CARD.md": "1.9 + 7.22"
+    },
+    "untouched": {
+      "bridge_refactor/main.py": "d083885a9bb352f6",
+      "01.33": "fe039f0f3f90ac8b",
+      "scripts/rebuild_refactor.py": "untouched",
+      "05.02": "2205c7aed47bb464"
+    },
+    "decisions_noted": [
+      "revive argv carries -q accounts_cooldown.json -l 0 (7.11) although card omitted it",
+      "bot exit => supervisor exits same rc (no auto-restart; B3)"
+    ],
+    "tests": {
+      "p57": "21/21 incl. real SIGTERM no-zombie",
+      "parity": "16/16",
+      "full": "19 failed (baseline names) / 1347 passed / 1 skipped; NEW=0"
+    },
+    "backlog": [
+      "B1 first real run on owner machine",
+      "B2 catch-up missed slot",
+      "B3 bot auto-restart w/ backoff (decision)",
+      "B4 log rotation",
+      "B5 05.03 drift",
+      "B6 MAINT-2",
+      "B7 STEP-3 merge_legacy_quarantine",
+      "B8 LINK-R3 merge to main by owner",
+      "B9 one-line job summary on screen",
+      "B10 Windows-side verification of p57"
+    ],
+    "owner_gate": "run main_upgrade.py on Windows; Ctrl+C clean; disable old Task Scheduler jobs"
   }
 }

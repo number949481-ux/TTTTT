@@ -67,6 +67,11 @@ python "/ABS/PATH/05.02_genspark_delayed_gifts_manager.py" --revive -q "/ABS/PAT
 - **التزامن (Q-22):** كتابة الملفات الأربعة تتم تحت القفل المشترك `accounts_cooldown.json.lock` (D33 — نفسه في `--revive` و01.33) وبـ**دمج حقول** 05.02 فوق السجل الطازج من القرص (ما يكتبه 01.33 أثناء الفحص مثل `last_used` لا يُفقد). قفل مشغول ⇒ لا كتابة + `exit 1` (يُعاد في الجولة التالية).
 - **لا يجتمع** `--sweep` مع `--revive`؛ ولا يحتاج `--allow-primary-scan` لأنه محدود بالتصميم. ضبط **مهلة مهمة Task Scheduler ≥ ساعتين** (الوجبة تستغرق 15–50 دقيقة).
 
+### المشغل الموحد المطور — `bridge_refactor/main_upgrade.py` (MAINT-7/D49–D54، فويسات 135–137)
+- **بديل مهام Task Scheduler/cron الأربع كلها:** من مجلد البوت كعادتك: `cd bridge_refactor && python main_upgrade.py` (أو `python bridge_refactor/main_upgrade.py` من أي مكان — المسارات مطلقة من `__file__`). يشغّل `main.py` (البوت 31) كعملية ابن بـ`cwd=bridge_refactor/`، ويطلق 05.02 كعملية ابن منفصلة بـ`cwd=الجذر` في: **00:00/12:00 `--revive -q accounts_cooldown.json -f accounts_genspark.json -l 0`** و**06:00/18:00 `--sweep -f accounts_genspark.json -l 10`** (توقيت الجهاز). مخرجات 05.02 كلها إلى `logs/scheduler_0502.log` (شاشة التيليجرام نظيفة)؛ لوج المشغل `logs/main_upgrade.log`.
+- **الإغلاق (D53):** Ctrl+C / SIGTERM ⇒ إنهاء المهمة الجارية ثم البوت (terminate ثم kill بعد 10s) — صفر Zombie؛ خروج البوت لأي سبب ⇒ المشغل يخرج بنفس الكود (يصلح للمراقبة الخارجية). مهمة متداخلة لا تُضاعَف (تُتخطى بتحذير). `--run-now sweep|revive` لتشغيل مهمة فوراً؛ `--no-bot` للمجدول فقط.
+- **لم يُلمس شيء قائم:** `main.py`/01.33/كل ملفات `bridge_refactor/` كما هي (p57 يثبّت البصمات)؛ مكتبات قياسية فقط. إن بقيت مهام Task Scheduler القديمة فعّالة **عطّلها** حتى لا تتضاعف الدورات.
+
 ## الأقفال والتزامن (D33 R-A/R-B)
 - **داخل 01.33:** الأساسي + المعزل تحت `FILE_LOCK`؛ السجل تحت `ACCOUNT_LOG_LOCK` وحده ويُكتب **بعد** الخروج من `FILE_LOCK` — لا deadlock.
 - **بين العمليتين (R-B):** ملف قفل `accounts_cooldown.json.lock` عبر `os.open(O_CREAT|O_EXCL|O_WRONLY)` — الاسم والثوابت نفسها في الملفين: مهلة **30s** (`COOLDOWN_VAULT_LOCK_TIMEOUT_S`)، قفل أقدم من **60s** يُعدّ يتيماً ويُتجاوز بتحذير (`COOLDOWN_VAULT_LOCK_ORPHAN_S`). 01.33: `_with_vault_lock(lock_path, fn) -> (acquired, result)`؛ 05.02: `_with_vault_lock(self, lock_path, fn)` بالعقد نفسه.

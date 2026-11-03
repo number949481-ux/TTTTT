@@ -173,6 +173,8 @@ import tempfile  # noqa: E402
 
 GENERATOR = webapp_dir / "scripts" / "rebuild_refactor.py"
 OWNER_FILE_REL = pathlib.Path("git") / "github_bulk_sync.py"
+# [MAINT-7/D49] ملفات المالك غير المولَّدة داخل bridge_refactor/ — تُنسخ إلى الشجرة المؤقتة ويجب أن تنجو من التوليد
+OWNER_FILES_REL = (OWNER_FILE_REL, pathlib.Path("main_upgrade.py"))
 
 
 def _load_generator():
@@ -205,9 +207,13 @@ class TestGeneratorSafety(unittest.TestCase):
         self.tmp = pathlib.Path(tempfile.mkdtemp(prefix="maint1_"))
         shutil.copyfile(SRC, self.tmp / SRC.name)
         self.owner_bytes = (webapp_dir / "bridge_refactor" / OWNER_FILE_REL).read_bytes()
-        target = self.tmp / "bridge_refactor" / OWNER_FILE_REL
-        target.parent.mkdir(parents=True)
-        target.write_bytes(self.owner_bytes)
+        self.owner_all = {}
+        for rel in OWNER_FILES_REL:  # [MAINT-7] كل ملفات المالك (github_bulk_sync.py + main_upgrade.py)
+            data = (webapp_dir / "bridge_refactor" / rel).read_bytes()
+            self.owner_all[rel] = data
+            target = self.tmp / "bridge_refactor" / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
         # ملف إضافي غير مولَّد في مجلد آخر — يجب أن ينجو أيضاً
         extra = self.tmp / "bridge_refactor" / "core" / "owner_notes.md"
         extra.parent.mkdir(parents=True)
@@ -220,6 +226,8 @@ class TestGeneratorSafety(unittest.TestCase):
         out = _run_generator_in(self.tmp)
         self.assertEqual((out / OWNER_FILE_REL).read_bytes(), self.owner_bytes,
                          "ملف المالك git/github_bulk_sync.py حُذف أو تغيّر أثناء التوليد")
+        for rel, data in self.owner_all.items():  # [MAINT-7/D50] main_upgrade.py ملف مالك إضافي — ينجو كما هو
+            self.assertEqual((out / rel).read_bytes(), data, f"ملف المالك {rel} حُذف أو تغيّر أثناء التوليد")
         self.assertEqual((out / "core" / "owner_notes.md").read_bytes(), b"owner-only\r\n")
 
     def test_m2_generated_files_are_crlf(self):
@@ -227,7 +235,7 @@ class TestGeneratorSafety(unittest.TestCase):
         gen = _load_generator()
         checked = 0
         for rel, data in _tree_bytes(out).items():
-            if rel == str(OWNER_FILE_REL).replace("\\", "/") or rel.endswith("owner_notes.md"):
+            if rel in {str(r).replace("\\", "/") for r in OWNER_FILES_REL} or rel.endswith("owner_notes.md"):
                 continue
             checked += 1
             bare_lf = data.count(b"\n") - data.count(b"\r\n")
