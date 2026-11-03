@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+""" 
 bridge_refactor/main_upgrade.py — المشغل الموحد المطور (MAINT-7 / D49–D54)
 ==========================================================================
 نقطة انطلاق واحدة بجوار main.py (عادة المالك — فويس 137):
@@ -140,11 +140,27 @@ def registry_homes() -> list[pathlib.Path]:
     return out
 
 
+def _long_path(p: pathlib.Path | str) -> str:
+    """تحويل ديناميكي للمسار على ويندوز لتجاوز حاجز MAX_PATH (260 حرفاً) حتى 32,767 حرفاً عبر بادئة \\?\\.
+    على لينكس/ماك أو إذا كان المسار بادئاً بالفعل بـ \\?\\ يُترك كما هو دون تغيير."""
+    try:
+        s = str(pathlib.Path(p).resolve())
+    except OSError:
+        s = str(p)
+    if sys.platform == "win32" and not s.startswith(("\\\\?\\", "\\\\.\\")):
+        return "\\\\?\\" + s
+    return s
+
+
 def _listdir(path: pathlib.Path) -> list[pathlib.Path]:
     try:
         return list(path.iterdir())
     except OSError:
-        return []
+        try:
+            target = _long_path(path)
+            return [path / entry for entry in os.listdir(target)]
+        except OSError:
+            return []
 
 
 def _stamp_is_old(name: str, cutoff_stamp: str):
@@ -157,14 +173,15 @@ def _stamp_is_old(name: str, cutoff_stamp: str):
 
 def _newest_mtime(path: pathlib.Path):
     """mtime العنصر، وللمجلد الأحدث بينه وبين أبنائه المباشرين (تنزيل جارٍ داخل extracted_webapp/<pid>/ يبقى طازجاً)."""
+    target = _long_path(path)
     try:
-        newest = path.lstat().st_mtime
+        newest = os.lstat(target).st_mtime
     except OSError:
         return None
-    if path.is_dir() and not path.is_symlink():
+    if os.path.isdir(target) and not os.path.islink(target):
         for child in _listdir(path):
             try:
-                newest = max(newest, child.lstat().st_mtime)
+                newest = max(newest, os.lstat(_long_path(child)).st_mtime)
             except OSError:
                 pass
     return newest
@@ -182,13 +199,14 @@ def is_garbage(path: pathlib.Path, now: float, max_age_s: float = GARBAGE_MAX_AG
 
 
 def _tree_bytes(path: pathlib.Path) -> int:
+    target = _long_path(path)
     try:
-        if not path.is_dir() or path.is_symlink():
-            return path.lstat().st_size
+        if not os.path.isdir(target) or os.path.islink(target):
+            return os.lstat(target).st_size
     except OSError:
         return 0
     total = 0
-    for root, _dirs, files in os.walk(path):
+    for root, _dirs, files in os.walk(target):
         for f in files:
             try:
                 total += os.lstat(os.path.join(root, f)).st_size
@@ -198,18 +216,18 @@ def _tree_bytes(path: pathlib.Path) -> int:
 
 
 def _remove(path: pathlib.Path, stats: dict, why: str) -> bool:
-    """حذف واحد محصّن: D61 (الأسماء المحرّمة لا تُلمس) + try/except OSError (أقفال ويندوز WinError 32 ⇒ تخطٍّ، لا انهيار)."""
+    """حذف واحد محصّن: D61 (الأسماء المحرّمة لا تُلمس) + تخطي MAX_PATH ديناميكياً عبر _long_path + try/except OSError (أقفال ويندوز WinError 32 ⇒ تخطٍّ، لا انهيار)."""
     if path.name in PROTECTED_NAMES:
         stats["protected"] += 1
         return False
     size = _tree_bytes(path)
     try:
         if path.is_dir() and not path.is_symlink():
-            shutil.rmtree(path)
+            shutil.rmtree(_long_path(path))
         else:
             path.unlink()
     except OSError as e:
-        remaining = _tree_bytes(path) if path.exists() else 0
+        remaining = _tree_bytes(path) if os.path.exists(_long_path(path)) else 0
         stats["errors"] += 1
         stats["freed_bytes"] += max(0, size - remaining)
         log.warning("🧹 تعذر حذف %s (%s): %s", path, why, e)
