@@ -14,6 +14,8 @@ account_log.json*
 *.lock
 *.cooldown_move.bak
 accounts*.json.tmp*
+# [MAINT-6/Q-23] شيك بوينت الكنس الدوار (بصمات sha256 للبريد) — لا يُرفع أبداً
+genspark_rotation_checkpoint.json*
 *.bak
 *.pem
 *.key

@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -121,6 +122,14 @@ class Config:
     # ⏱️ مهلة التأخير العشوائي بالثواني بين كل فحص حساب (حماية ضد الـ Rate Limit)
     MIN_DELAY: float = 10.0
     MAX_DELAY: float = 60.0
+
+    # 🔁 [MAINT-6/D48] ماكينة الفحص والتنشيط الدوار بالتنقيط (--sweep): وجبة من الأساسي 06:00/18:00 (فويسات 123–133)
+    SWEEP_BATCH_SIZE: int = 10                 # حجم الوجبة الافتراضي
+    SWEEP_MAX_BATCH: int = 20                  # Q-24: سقف إجباري لـ -l مع --sweep
+    SWEEP_SCAN_MODE: str = "first_n"           # Q-21: مسح تسلسلي محكم
+    SWEEP_MIN_DELAY: float = 60.0              # فويس 130: من دقيقة إلى 5 دقائق بين الحسابات أثناء الكنس
+    SWEEP_MAX_DELAY: float = 300.0
+    ROTATION_CHECKPOINT_FILE: str = "genspark_rotation_checkpoint.json"  # Q-23: بصمات sha256 فقط + في .gitignore
 
     # 🧪 وضع المعاينة فقط بدون تعديل أي ملف (False = حفظ فعلي | True = معاينة)
     DRY_RUN: bool = False
@@ -266,6 +275,69 @@ def resolve_file_path(filename: str) -> Path:
 # ════════════════════════════════════════════════════════════════════════════════
 # 🎯 محرك الفحص والفرز الثلاثي (Tri-State Manager Engine)
 # ════════════════════════════════════════════════════════════════════════════════
+class RotationCheckpoint:
+    """[MAINT-6/D48] ملف الحالة الموازي لماكينة الكنس الدوار (فويس 124/130 — Q-23):
+    يسجّل بصمة sha256 لبريد كل حساب فُحص في الدورة الحالية (لا بريد ولا باسورد داخل الملف)،
+    ويُصفَّر تلقائياً عندما يصبح (الأساسي الحالي − المفحوص) فارغاً ⇒ حلقة لا نهائية.
+    حفظ ذري فور كل حساب عبر atomic_save_json (العقبة 3: انقطاع الكهرباء/مهلة المجدول)."""
+    SCHEMA = 1
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        self.state: Dict[str, Any] = self._fresh(1)
+        self.load()
+
+    @staticmethod
+    def _fresh(cycle_no: int) -> Dict[str, Any]:
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        return {"schema": RotationCheckpoint.SCHEMA, "cycle_no": int(cycle_no), "cycle_started_at": now_iso,
+                "last_run_at": now_iso, "checked": []}
+
+    @staticmethod
+    def key(email: str) -> str:
+        """بصمة البريد (lower/strip) — الهوية المستقرة بديلاً عن الـID (فويس 124) وبلا تسريب (Q-23)"""
+        return hashlib.sha256((email or "").strip().lower().encode("utf-8")).hexdigest()
+
+    def load(self) -> None:
+        try:
+            raw = json.loads(self.path.read_text(encoding="utf-8")) if self.path.exists() else None
+        except Exception:
+            raw = None
+        if isinstance(raw, dict) and isinstance(raw.get("checked"), list):
+            self.state = {**self._fresh(raw.get("cycle_no") or 1), **raw}
+            self.state["checked"] = [str(h) for h in raw["checked"]]
+        else:
+            self.state = self._fresh(1)
+
+    def save(self) -> bool:
+        self.state["last_run_at"] = datetime.now().isoformat(timespec="seconds")
+        return atomic_save_json(self.path, self.state)
+
+    @property
+    def checked(self) -> Set[str]:
+        return set(self.state.get("checked") or [])
+
+    def begin_cycle(self, emails: List[str]) -> Set[str]:
+        """يعيد مجموعة البريد (lower) المتبقية للفحص؛ يقلّم البصمات اليتيمة (حسابات غادرت الأساسي — العقبة 2)
+        ويصفّر الدورة إذا اكتملت: المتبقي = الأساسي الحالي − المفحوص == 0 (فويس 130). لا يحفظ بنفسه."""
+        live = {str(e or "").strip().lower() for e in emails if e}
+        live_keys = {self.key(e): e for e in live}
+        kept = [h for h in (self.state.get("checked") or []) if h in live_keys]
+        remaining = {e for h, e in live_keys.items() if h not in set(kept)}
+        if live and not remaining:
+            self.state = self._fresh(int(self.state.get("cycle_no") or 1) + 1)
+            return set(live)
+        self.state["checked"] = kept
+        return remaining
+
+    def mark(self, email: str) -> bool:
+        """تسجيل الحساب كمفحوص + حفظ ذري فوري"""
+        h = self.key(email)
+        if h not in self.checked:
+            self.state.setdefault("checked", []).append(h)
+        return self.save()
+
+
 class MasterDelayedGiftsManager:
     """المحرك الموحد لفرز وقص ونقل الحسابات إلى 3 ملفات رئيسية"""
 
@@ -413,7 +485,8 @@ class MasterDelayedGiftsManager:
 
         return "AUTH_FAILED", None, "خطأ شبكة أثناء قراءة سجل الهدايا", real_balance, None
 
-    def run_quarantine(self, scan_mode: str = "all", limit: int = 10, dry_run: bool = False) -> Dict[str, Any]:
+    def run_quarantine(self, scan_mode: str = "all", limit: int = 10, dry_run: bool = False,
+                       rotation: Optional["RotationCheckpoint"] = None) -> Dict[str, Any]:
         """
         تشغيل عملية الفرز الثلاثي والقص والنقل (Cut & Move):
         - السليم والنشط    -> يبقى في accounts_genspark.json (MAINT-4-E: لا ملف ناجح)
@@ -456,6 +529,13 @@ class MasterDelayedGiftsManager:
         unprocessed = [a for a in primary_accounts if a.get("email", "").lower() not in already_done]
         print(f"  • الحسابات المتبقية المطلوب فحصها : {C}{B}{len(unprocessed)}{RST} حساب (تم تخطي {len(already_done)} مفحوص مسبقاً)\n")
 
+        if rotation is not None:  # [MAINT-6/D48] الدورة اللانهائية: استبعاد مفحوصي الشيك بوينت + تصفير تلقائي عند الاكتمال
+            remaining = rotation.begin_cycle([a.get("email", "") for a in unprocessed])
+            unprocessed = [a for a in unprocessed if a.get("email", "").lower() in remaining]
+            if not dry_run:
+                rotation.save()
+            print(f"  • 🔁 الشيك بوينت الدوار (دورة #{rotation.state.get('cycle_no')}): مفحوص {len(rotation.checked)} | متبقٍ {len(unprocessed)} | {rotation.path.name}\n")
+
         # اختيار الحسابات المطلوب فحصها حسب النمط
         if scan_mode == "first_n":
             targets_to_check = unprocessed[:limit]
@@ -474,16 +554,32 @@ class MasterDelayedGiftsManager:
         print(f"{'-'*33}-+-{'-'*15}-+-{'-'*7}-+-{'-'*35}")
         sys.stdout.flush()
 
-        def save_checkpoint(is_final: bool = False):
-            """حفظ ذري دوري للملفات لحماية التقدم كل 10 حسابات"""
+        # [MAINT-6/Q-22] حقول 05.02 التي تُدمج في سجل الأساسي الطازج بدل استبداله (01.33 قد يكتب last_used/… أثناء الفحص)
+        MERGE_FIELDS = tuple("balance last_checked last_gift_date days_without_gift cookies data_retention_enabled "
+                             "data_retention_status status active cooldown_until cooldown_released_at last_updated".split())
+
+        def save_checkpoint(is_final: bool = False) -> bool:
+            """حفظ ذري دوري للملفات لحماية التقدم (كل 10 حسابات؛ وبعد كل حساب مع --sweep).
+            [MAINT-6/Q-22] تحت القفل المشترك D33 (نفسه في run_revival و01.33) + دمج حقول لا استبدال.
+            يعيد False فقط إذا كان القفل مشغولاً (لم يُحفظ شيء)."""
             all_cut_emails = {a.get("email", "").lower() for a in (stale_to_cut + dead_to_cut)}
-            if not dry_run and (all_cut_emails or healthy_tested):
-                # 1. تحديث الأساسي
+            if dry_run or not (all_cut_emails or healthy_tested):
+                return True
+
+            def _commit() -> bool:
+                # 1. تحديث الأساسي — إعادة تحميل طازجة تحت القفل
                 p_map = {a.get("email", "").lower(): a for a in load_accounts(self.primary_path)}
                 for cut_e in all_cut_emails:
                     p_map.pop(cut_e, None)
                 for h in healthy_tested:
-                    p_map[h.get("email", "").lower()] = h
+                    key = h.get("email", "").lower()
+                    fresh = p_map.get(key)
+                    if isinstance(fresh, dict):
+                        fresh.update({k: h[k] for k in MERGE_FIELDS if k in h})
+                        fresh.pop("quarantine_info", None)
+                        fresh.pop("quarantined", None)
+                    else:
+                        p_map[key] = h
                 final_p = list(p_map.values())
                 if self.sort_by_balance:
                     final_p.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
@@ -492,8 +588,8 @@ class MasterDelayedGiftsManager:
 
                 # 3. تحديث المعزل
                 q_map = {a.get("email", "").lower(): a for a in load_accounts(self.quarantine_path)}
-                for s in stale_to_cut:
-                    q_map[s.get("email", "").lower()] = s
+                for st in stale_to_cut:
+                    q_map[st.get("email", "").lower()] = st
                 final_q = list(q_map.values())
 
                 # 4. تحديث الفاشل والميت
@@ -512,6 +608,12 @@ class MasterDelayedGiftsManager:
                 atomic_save_json(self.quarantine_path, final_q)
                 atomic_save_json(self.failed_path, final_f)
                 atomic_save_json(self.dead_path, final_d)
+                return True
+
+            acquired, _ = self._with_vault_lock(self.primary_path.parent / self.COOLDOWN_VAULT_LOCK_FILENAME, _commit)
+            if not acquired:
+                print(f"  {R}❌ لم يُحفظ: القفل المشترك مشغول ({self.COOLDOWN_VAULT_LOCK_FILENAME}) — يُعاد مع الحساب التالي.{RST}")
+            return bool(acquired)
 
         current_batch: List[Tuple[str, str, int, str]] = []
         batch_num = 1
@@ -564,6 +666,11 @@ class MasterDelayedGiftsManager:
                 tag = f"{M}خطأ اتصال ⚠️{RST}"
                 print(f"{W}{email:<33}{RST} | {tag:<25} | {bal_str:>7} | {diag_msg}")
 
+            if rotation is not None and not dry_run:
+                # [MAINT-6] حفظ ذري للملفات بعد كل حساب ثم تسجيل البصمة (فويس 130/العقبة 3)؛ خطأ الشبكة يُحتسب مفحوصاً (Q-20)
+                if save_checkpoint():
+                    rotation.mark(email)
+
             sys.stdout.flush()
 
             # ── حفظ دوري كل 10 حسابات وعرض ملخص الدفعة ──
@@ -595,7 +702,8 @@ class MasterDelayedGiftsManager:
                 time.sleep(delay_sec)
 
         # ── التقرير الإحصائي الأنيق الختامي ──
-        save_checkpoint(is_final=True)
+        if not save_checkpoint(is_final=True):  # [MAINT-6/Q-22] القفل مشغول ⇒ خطأ معلن (D39: exit 1)
+            return {"error": "vault_lock_busy", "scanned": len(targets_to_check)}
         print(f"\n{C}{B}{'═'*95}{RST}")
         print(f"📌 {B}ملخص نتائج الفحص والفرز الختامي:{RST}")
         print(f"  • الحسابات المفحوصة في هذه الدورة       : {len(targets_to_check)}")
@@ -706,9 +814,17 @@ class MasterDelayedGiftsManager:
             acc["cooldown_until"] = 0
             acc["cooldown_released_at"] = now_iso
         else:
+            now_ts = time.time()
+            try:
+                current_cd = float(acc.get("cooldown_until") or 0)
+            except (TypeError, ValueError):
+                current_cd = 0.0
             acc["status"] = "cooldown"
             acc["active"] = False
-            acc["cooldown_until"] = int(time.time() + 29 * 3600)
+            # [MAINT-6/Q-19 — فويس 124] تبريد سارٍ وضعه 01.33 (الآن < cooldown_until ≤ الآن+29h) يُترك «زي ما هو ولا يُلمس»؛
+            # غير ذلك (منتهٍ / صفر / قيمة شاذة أبعد من 29h) ⇒ now+29h كما في D45
+            if not (now_ts < current_cd <= now_ts + 29 * 3600):
+                acc["cooldown_until"] = int(now_ts + 29 * 3600)
         acc["last_updated"] = now_iso
         acc.pop("quarantine_info", None)
         acc.pop("quarantined", None)
@@ -817,7 +933,7 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument("-d", "--days", type=int, default=Config.STALE_GIFT_DAYS_THRESHOLD, help=f"مهلة الأيام بدون هدية (الافتراضي: {Config.STALE_GIFT_DAYS_THRESHOLD})")
-    parser.add_argument("-m", "--mode", type=str, default=Config.SCAN_MODE, choices=["all", "first_n", "random"], help=f"نمط الفحص (الافتراضي: {Config.SCAN_MODE})")
+    parser.add_argument("-m", "--mode", type=str, default=None, choices=["all", "first_n", "random"], help=f"نمط الفحص (الافتراضي: {Config.SCAN_MODE}؛ مع --sweep الافتراضي {Config.SWEEP_SCAN_MODE} و\"all\" مرفوض)")
     parser.add_argument("-l", "--limit", type=int, default=None, help=f"عدد الحسابات للأنماط المحدودة (الافتراضي: {Config.SCAN_LIMIT}؛ مع --revive الافتراضي 0 = كل المعزل [MAINT-5/Q-15])")
     parser.add_argument("-f", "--file", type=str, default=Config.PRIMARY_FILE, help=f"ملف الحسابات الأساسي (الافتراضي: {Config.PRIMARY_FILE})")
     parser.add_argument("--success-file", type=str, default=None, help="[DEPRECATED — MAINT-4-E] مهمَل ويُتجاهَل؛ لا ملف ناجح منفصل")
@@ -827,6 +943,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="معاينة تجريبية دون تعديل الملفات")
     parser.add_argument("--revive", action="store_true", help="فحص المعزل واسترجاع الحسابات التي عاد لها الرصيد")
     parser.add_argument("--allow-primary-scan", action="store_true", help="[MAINT-5/Q-14] إذن صريح لفحص الملف الأساسي شبكياً (بلا --revive). بدونه يُرفض الفحص حمايةً من Rate Limit (7.11)")
+    parser.add_argument("--sweep", action="store_true", help=f"[MAINT-6/D48] الكنس الدوار بالتنقيط: وجبة ≤{Config.SWEEP_MAX_BATCH} حساب من الأساسي (الافتراضي {Config.SWEEP_BATCH_SIZE}) مع شيك بوينت {Config.ROTATION_CHECKPOINT_FILE} وتصفير تلقائي عند اكتمال الدورة؛ فاصل {Config.SWEEP_MIN_DELAY:g}–{Config.SWEEP_MAX_DELAY:g}s")
     args = parser.parse_args()
 
     primary_path = resolve_file_path(args.file)
@@ -846,26 +963,45 @@ def main():
         threshold_days=args.days,
         sort_by_balance=not args.no_sort and Config.SORT_BY_BALANCE,
         auto_relogin=Config.AUTO_RELOGIN,
-        min_delay=Config.MIN_DELAY,
-        max_delay=Config.MAX_DELAY,
+        min_delay=Config.SWEEP_MIN_DELAY if args.sweep else Config.MIN_DELAY,   # [MAINT-6] فويس 130: 60–300s أثناء الكنس
+        max_delay=Config.SWEEP_MAX_DELAY if args.sweep else Config.MAX_DELAY,
     )
 
     # [MAINT-5/Q-14 — كارت GO 2026-11-02] حارس Rate Limit (الثابت 7.11): الفحص الشبكي الدوري حصري لمعزل التبريد.
     # فحص الأساسي (الوضع الافتراضي بلا --revive) يحتاج إذناً صريحاً — حتى مع --dry-run لأن check_account_status يتصل بالشبكة.
-    if not args.revive and not args.allow_primary_scan:
+    # [MAINT-6/D48] --sweep = الاستثناء المحدود الثاني من 7.11 (وجبة ≤ SWEEP_MAX_BATCH بشيك بوينت دوار) — لا يجتمع مع --revive
+    if args.sweep and args.revive:
+        print(f"{R}⛔ [MAINT-6] --sweep و--revive لا يجتمعان في تشغيل واحد (دورتان مستقلتان: 06/18 للأساسي، 12/00 للمعزل).{RST}")
+        sys.exit(1)
+    if not args.revive and not args.allow_primary_scan and not args.sweep:
         print(f"{R}⛔ [MAINT-5/Q-14] مرفوض: فحص {primary_path.name} شبكياً بدون --allow-primary-scan (حماية Rate Limit 429).{RST}")
         print(f"{Y}   الدورة المجدولة = --revive -q accounts_cooldown.json (المعزل فقط). للفحص الكامل للأساسي أضف --allow-primary-scan صراحةً.{RST}")
         sys.exit(1)
     # [MAINT-5/Q-15] -l بلا قيمة: --revive ⇒ 0 (كل المعزل، D38)؛ الفحص الأساسي ⇒ SCAN_LIMIT القديم
-    limit = args.limit if args.limit is not None else (0 if args.revive else Config.SCAN_LIMIT)
+    limit = args.limit if args.limit is not None else (0 if args.revive else (Config.SWEEP_BATCH_SIZE if args.sweep else Config.SCAN_LIMIT))
+    scan_mode = args.mode if args.mode is not None else (Config.SWEEP_SCAN_MODE if args.sweep else Config.SCAN_MODE)
+    if args.sweep:
+        if scan_mode == "all":
+            print(f"{R}⛔ [MAINT-6/Q-21] --sweep لا يقبل -m all (الوجبة محدودة بالتصميم: first_n أو random).{RST}")
+            sys.exit(1)
+        if limit <= 0 or limit > Config.SWEEP_MAX_BATCH:
+            print(f"{R}⛔ [MAINT-6/Q-24] --sweep يقبل -l بين 1 و{Config.SWEEP_MAX_BATCH} فقط (المطلوب: {limit}).{RST}")
+            sys.exit(1)
 
     # [MAINT-4-B/D39 — إذن صريح بتوسيع A5 لـmain()] كود خروج ≠ 0 عند الفشل ليميّزه المجدول/main.py الخارجي
     try:
         if args.revive:
             result = manager.run_revival(limit=limit, dry_run=args.dry_run or Config.DRY_RUN)
+        elif args.sweep:
+            result = manager.run_quarantine(
+                scan_mode=scan_mode,
+                limit=limit,
+                dry_run=args.dry_run or Config.DRY_RUN,
+                rotation=RotationCheckpoint(folder / Config.ROTATION_CHECKPOINT_FILE),
+            )
         else:
             result = manager.run_quarantine(
-                scan_mode=args.mode,
+                scan_mode=scan_mode,
                 limit=limit,
                 dry_run=args.dry_run or Config.DRY_RUN,
             )
