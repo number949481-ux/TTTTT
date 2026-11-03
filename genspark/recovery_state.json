@@ -1677,5 +1677,53 @@
       "B10 Windows-side verification of p57"
     ],
     "owner_gate": "run main_upgrade.py on Windows; Ctrl+C clean; disable old Task Scheduler jobs"
+  },
+  "maint8": {
+    "status": "executed_closed_2026-11-03",
+    "card": "REVIEW_AND_EXECUTE (Gist a2e84b1d L676-702, voices 143-147); owner pre-instruction: review first, do not start blind",
+    "base": "card f084409e; actual 97506a5 (owner deleted 05.03) -> code synced e3aaab4",
+    "scope": "bridge_refactor/main_upgrade.py only (230->502 LF, sha 475f5919) + tests/test_p57 (33 tests)",
+    "decisions": "D55 archive .tar.gz(+.tar.tmp) >60m; D56 hot rmtree; D57 reports .json; D58 startup purge; D59 in-place truncate 10MB->2MB + idle logs 30d (voice 145); D60 extracted_webapp/extracted_push_temp/webapp*.tar.gz* restricted glob; D61 protected names + never enter project root",
+    "gist_verdicts": {
+      "p07 line numbers 355/885/914/591": "correct",
+      "bot needs triad only during upload": "partial - also read by 3 telegram buttons L6419/6436/6474 (degrade safely); stuck job >1h -> synced with zero files L4893->L5157 (owner accepted voice 144)",
+      "extracted_push_temp": "unverified - 0 matches in repo; kept as harmless no-op",
+      "webapp*.tar.gz in root": "inaccurate - written inside extracted_webapp/<pid>/ L2872/L6768; restricted glob covers both",
+      "omitted": "registry location L140-157 local-then-parent; .tar.tmp orphan L5211; copy2 keeps mtime -> age from name stamp first; BRIDGE_HOME runtime.py L26"
+    },
+    "untouched": {
+      "bridge_refactor/main.py": "d083885a9bb352f6",
+      "01.33": "fe039f0f3f90ac8b",
+      "05.02": "2205c7aed47bb464"
+    },
+    "tests": {
+      "p57": "33/33",
+      "parity": "16/16",
+      "p56": "30/30",
+      "full": "19 failed (baseline names) / 1359 passed / 1 skipped; NEW=0"
+    },
+    "docs": [
+      "README_COOLDOWN_VAULT.md section",
+      "PROGRESS [x] MAINT-8 + BACKLOG B11-B13",
+      "RESUME 3.21 + D55-D61 row + MODE",
+      "card 1.10 + 7.23"
+    ],
+    "backlog_after": [
+      "B1 first real run",
+      "B2 catch-up",
+      "B3 bot auto-restart (decision)",
+      "B8 merge to main by owner",
+      "B9 one-line job summary",
+      "B10 Windows p57",
+      "B11 watch first startup purge line (~2GB)",
+      "B12 optional keep latest report (needs GO, contradicts voice 144)",
+      "B13 account_log.jsonl growth (audit log, owner decision)"
+    ],
+    "closed_by_owner_voice_141": [
+      "B5 05.03 deleted",
+      "B6 MAINT-2 Finish",
+      "B7 STEP-3 Finish"
+    ],
+    "owner_gate": "run main_upgrade.py; check logs/main_upgrade.log line 'clean_disk_garbage: ... MB'; buttons show 'none' after 1h by design"
   }
 }
