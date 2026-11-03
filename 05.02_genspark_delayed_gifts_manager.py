@@ -63,8 +63,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 try:
     from genspark_master_account_manager import do_b2c_login, get_session, check_account_balance
 except ImportError:
-    sys.path.insert(0, str(SCRIPT_DIR))
-    sys.path.insert(0, str(SCRIPT_DIR.parent / "Genspark_Account_Manager"))
+    for cand_dir in (SCRIPT_DIR, SCRIPT_DIR.parent, SCRIPT_DIR.parent.parent, SCRIPT_DIR.parent / "Genspark_Account_Manager", SCRIPT_DIR.parent.parent / "Genspark_Account_Manager"):
+        if cand_dir.exists() and str(cand_dir) not in sys.path:
+            sys.path.insert(0, str(cand_dir))
     from genspark_master_account_manager import do_b2c_login, get_session, check_account_balance
 
 GENSPARK_HOST = "https://www.genspark.ai"
@@ -256,19 +257,40 @@ def load_accounts(file_path: Path) -> List[Dict[str, Any]]:
 
 
 def resolve_file_path(filename: str) -> Path:
-    """تحديد المسار الفعلي للملف والبحث في مجلدات المشروع"""
+    """تحديد المسار الفعلي للملف والبحث الهرمي في مجلدات المشروع عاكساً لـ P23:
+    1. المسار المطلق إن كان موجوداً.
+    2. المحلي جنب السكريبت (SCRIPT_DIR / filename).
+    3. المجلد الأب المركزي (SCRIPT_DIR.parent / filename) — حيث تستقر الحسابات المركزية.
+    4. المرشحات القديمة للتوافق التاريخي.
+    5. إن لم يوجد في أي مكان، يُعاد مسار الأب إذا كان ملف حسابات معروفاً وموجوداً في الأب، وإلا المحلي للإنشاء.
+    """
     p = Path(filename)
     if p.is_absolute() and p.exists():
         return p
+    name = p.name
     candidates = [
         SCRIPT_DIR / filename,
-        SCRIPT_DIR.parent / "Genspark" / "W___webapp" / filename,
-        SCRIPT_DIR.parent / "Genspark" / filename,
-        SCRIPT_DIR.parent / "Genspark_Account_Manager" / filename,
+        SCRIPT_DIR / name,
+        SCRIPT_DIR.parent / filename,
+        SCRIPT_DIR.parent / name,
+        SCRIPT_DIR.parent / "Genspark" / "W___webapp" / name,
+        SCRIPT_DIR.parent / "Genspark" / name,
+        SCRIPT_DIR.parent / "Genspark_Account_Manager" / name,
     ]
+    seen = set()
     for c in candidates:
-        if c.exists():
-            return c
+        try:
+            resolved = c.resolve()
+        except OSError:
+            resolved = c
+        if resolved not in seen:
+            seen.add(resolved)
+            if c.exists():
+                return c
+    if p.is_absolute():
+        return p
+    if (SCRIPT_DIR.parent / filename).exists():
+        return SCRIPT_DIR.parent / filename
     return SCRIPT_DIR / filename
 
 
