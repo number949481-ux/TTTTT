@@ -48,8 +48,24 @@ SCRIPT_DIR = pathlib.Path(__file__).resolve().parent          # bridge_refactor/
 ROOT_DIR = SCRIPT_DIR.parent                                   # جذر المشروع
 BOT_MAIN_PY = SCRIPT_DIR / "main.py"
 ENGINE_0502 = ROOT_DIR / "05.02_genspark_delayed_gifts_manager.py"
-ACCOUNTS_FILE = ROOT_DIR / "accounts_genspark.json"
-COOLDOWN_VAULT = ROOT_DIR / "accounts_cooldown.json"          # D33: بجوار الأساسي
+
+
+def resolve_shared_path(name: str) -> pathlib.Path:
+    """مسار مشترك ذكي عاكس لـ 01.33 P23:
+    لو الملف/المجلد موجود محلياً جنب البوت (ROOT_DIR) يستخدمه (أولوية محلية)،
+    وإلا يلقطه من الفولدر الأب المركزي (ROOT_DIR.parent) — ولو غير موجود في الاثنين يرجع الأب (للإنشاء والتوافق مع الـ Vaults المركزية).
+    """
+    local = ROOT_DIR / name
+    parent = ROOT_DIR.parent / name
+    if local.exists():
+        return local
+    if parent.exists():
+        return parent
+    return parent
+
+
+ACCOUNTS_FILE = resolve_shared_path("accounts_genspark.json")
+COOLDOWN_VAULT = ACCOUNTS_FILE.parent / "accounts_cooldown.json"          # D33: بجوار الأساسي دائماً
 LOGS_DIR = ROOT_DIR / "logs"
 ENGINE_LOG_NAME = "scheduler_0502.log"
 SUPERVISOR_LOG_NAME = "main_upgrade.log"
