@@ -1782,28 +1782,56 @@
     }
   },
   "maint9": {
-    "status": "PLAN_SPECIFICATION_ONLY — awaiting GO",
-    "date": "2026-11-03",
-    "head": "5cb67c5",
-    "code_touched": false,
+    "status": "EXECUTED — SURGICAL_EXECUTION complete (steps 0-12), awaiting owner review",
+    "date": "2026-11-04",
+    "head": "d542d0a+local",
+    "code_touched": true,
     "spec_file": "MAINT9_LIVE_CHECKER_SPEC.md",
     "resume_section": "RESUME.md §3.23",
     "gist": {
       "id": "97327cc1761cfcc956b5247f5a0f3846",
-      "sha256_16": "6ad6deb3a0f982f7",
-      "lines": 2590,
+      "sha256_16": "ed98440a655ad697",
+      "lines": 2715,
       "card_lines": "2484-2524",
-      "voices": "158-184"
+      "voices": "158-184",
+      "go_card_lines": "2683-2700"
     },
     "decisions": "D62-D70 (S1a, S2 copy-not-cut queue, S3, S4 stop file, S5 busy marker, S6 shared lock, S7 hooks, D70 green/red gates)",
-    "open_questions": [
-      "Q-GO-1 queue(b) vs data copy(a)",
-      "Q-GO-2 manual scan = 3rd exception to 7.11",
-      "Q-GO-3 busy defers --revive too",
-      "Q-GO-4 breaker numbers",
-      "Q-GO-5 stop confirm as new message",
-      "Q-GO-6 A5 extended to run_quarantine"
-    ],
-    "exec_steps_on_go": "SPEC §6 steps 0-12, single commit, baseline 19 failures by name"
+    "open_questions": [],
+    "head_before": "f95922c",
+    "go_answers": {
+      "Q-GO-1": "b (fingerprint queue, in-place via RotationCheckpoint)",
+      "Q-GO-2": "yes (3rd exception to 7.11, 60-300s mandatory)",
+      "Q-GO-3": "yes (busy defers sweep+revive)",
+      "Q-GO-4": "yes (5 AUTH_FAILED -> 10min; 3 trips -> self-stop exit 4)",
+      "Q-GO-5": "yes (stop confirm = new message)",
+      "Q-GO-6": "yes (A5 extended to run_quarantine, 4 points)"
+    },
+    "files": {
+      "01.33": {
+        "lines": 10394,
+        "sha256_16": "e5c165bf9dfc4929",
+        "A_p09": 110,
+        "B_p12": 208
+      },
+      "05.02": "run_quarantine(on_account=None, stop_flag=None) + chunked sleep",
+      "main_upgrade.py": "live_check_busy() + start_job skip",
+      "new": [
+        "bridge_refactor/live_account_checker.py (512 LF)",
+        "tests/test_p58_live_checker.py (43 tests)"
+      ],
+      "parts": "p09 6046-7782 | p10 7783-8097 | p11 8098-8632 | p12 8633-10394"
+    },
+    "tests": {
+      "p58": "43/43",
+      "parity": "16/16",
+      "full_suite": "19 failed by name (baseline) + 0 new / 1401 passed",
+      "incident": "sync d542d0a leaked .pytest_cache/ -> removed via git rm --cached (p17 test_01 back to green)"
+    },
+    "remaining_backlog": [
+      "B14 update_account_data outside shared lock (R4)",
+      "B15 first real run on owner machine",
+      "B16 genspark_master_account_manager absent in repo"
+    ]
   }
 }

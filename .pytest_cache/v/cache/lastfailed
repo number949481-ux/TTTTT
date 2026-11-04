@@ -1,3 +1,0 @@
-{
-  "tests/test_p32_account_password_lookup.py::TestPasswordCardRendering::test_06_banned_state_described": true
-}
