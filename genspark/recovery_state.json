@@ -1105,7 +1105,7 @@
       "code_changed": false
     }
   },
-  "next": "Owner writes D34–D39 (or «كما أوصيت») + «ابدأ تنفيذ» ⇒ B-0 .gitignore first, then B-1..B-8 in order.",
+  "next": "First [ ] in PROGRESS = MAINT-10 (candidate). Needs owner answers Q1–Q7 (RESUME §3.24) + explicit GO ⇒ PLAN_SPECIFICATION_ONLY. Until then ALIGNMENT_ONLY; no code.",
   "maint4_a2_gist_checkpoints": {
     "cp0": {
       "state": "done",
@@ -1832,6 +1832,76 @@
       "B14 update_account_data outside shared lock (R4)",
       "B15 first real run on owner machine",
       "B16 genspark_master_account_manager absent in repo"
+    ],
+    "b15_field_evidence": "REPORTED by owner gist L2800+: 2026-11-04 12:36:06 [MAINT-9] live check launched pid=30196 mode=fresh msg=1412 — not verified in sandbox; B15 stays open until owner closes it"
+  },
+  "alignment_lifecycle_2026_11_04": {
+    "status": "DONE — ALIGNMENT_AND_INSPECTION_ONLY (zero code, zero rebuild, zero pytest); docs recorded on owner request",
+    "date": "2026-11-04",
+    "head": "6c35602",
+    "code_touched": false,
+    "cards": {
+      "gist_lifecycle": {
+        "id": "093e9661b43f45050d951930bffa1a7e",
+        "sha256_16": "e32ce7193ee1135e",
+        "lines": 2118
+      },
+      "gist_card": {
+        "id": "db5d6f65a319da3c733827963edc56ed",
+        "sha256_16": "1a110c1f0bdd8763",
+        "lines": 91,
+        "note": "card A = lifecycle 360 (governing); card B = MAINT-9 review @f95922c (stale, MAINT-9 executed)"
+      },
+      "gist_master": {
+        "id": "97327cc1761cfcc956b5247f5a0f3846",
+        "sha256_16": "1028f77c9b74dc06",
+        "lines": 2877,
+        "prev_sha": "ed98440a655ad697",
+        "prev_lines": 2715,
+        "new_content": "MAINT-9 closure report + owner-machine log pid=30196 mode=fresh msg=1412 (B15 reported, unverified)"
+      }
+    },
+    "verified_anchors": {
+      "p06": "L660 send_message_and_make_public | L770-805 P13 gate | L782-788 BALANCE_UNREADABLE | L789-800 <100 return before L803 | L809-834 401 refresh | L836/838 project entry | L1074/1090/1094/1095 counter before claim | L1161-1170 cancel | L1240-1257 FORBIDDEN->vault (D26) | L1261-1274 D34 | L1277-1285 LOW_BALANCE continue | L1564-1578 COMPLETED | L1595 MAX_ATTEMPTS_EXHAUSTED",
+      "p03": "L99-116 claim | L542 update_account_data | L578 is_account_ready | L623-642 reactivate (no balance write) | L651 GIFT_PREFLIGHT_ENABLED | L724-757 get_eligible_accounts (no balance read) | L760-771 mark_account_cooldown (no balance) | L794 COOLDOWN_VAULT_REASONS | L967-1068 refresh_cookies_on_401",
+      "01.03": "L1035-1053 check_balance (-2=401, -1=fail) | L1060 do_login",
+      "05.02": "L64/L69 import master do_b2c_login (file absent in repo) | L418-460 check+relogin+balance write | L842-868 _activate_for_bot31"
+    },
+    "hallucinations_refuted": [
+      "DEAD_COOKIE",
+      "9999999999",
+      "p09_accounts.py",
+      "mark_account_cooldown(email, reason=, hours=)",
+      "login_with_credentials",
+      "05.03_genspark_delayed_gifts_manager.py"
+    ],
+    "maint10_candidate": {
+      "approved": false,
+      "decisions": "D-01 balance:100 on revive | D-02 balance:0 in mark_account_cooldown | D-03 write real balance before LOW_BALANCE return | D-04 cancel after generation started => 0+29h (final wording pending) | D-05 403 => stop+notify Public+no new project+account innocent (conflicts D26) | D-06 COMPLETED => 0+29h no check | D-07 edit 01.33 only + PARTS + sha",
+      "proposal": "offline balance filter in get_eligible_accounts (P48 pattern, fail-open)",
+      "open_questions": [
+        "Q1 D-05 vs D26",
+        "Q2 D-01 vs 05.02/live real-balance writes + filter interplay",
+        "Q3 D-02 zero for all calls or real value",
+        "Q4 define generation_started (no flag exists in p06)",
+        "Q5 engine unification a/b/c (master absent)",
+        "Q6 governing card = A",
+        "Q7 registry recording = done (docs only)"
+      ],
+      "path_on_go": "PLAN_SPECIFICATION_ONLY spec doc first, then second GO for execution"
+    },
+    "unverifiable": [
+      "W___webapp parent folder",
+      "bridge_refactor_36 path",
+      "'fixed immediately' claim at gist head",
+      "two WAV voices",
+      "B15 owner-machine log"
+    ],
+    "docs_touched": [
+      "PROGRESS.md",
+      "RESUME.md",
+      "UNIVERSAL_REVIEW_CARD.md (1.14, 7.28)",
+      "genspark/recovery_state.json"
     ]
   }
 }
