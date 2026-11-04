@@ -174,7 +174,8 @@ import tempfile  # noqa: E402
 GENERATOR = webapp_dir / "scripts" / "rebuild_refactor.py"
 OWNER_FILE_REL = pathlib.Path("git") / "github_bulk_sync.py"
 # [MAINT-7/D49] ملفات المالك غير المولَّدة داخل bridge_refactor/ — تُنسخ إلى الشجرة المؤقتة ويجب أن تنجو من التوليد
-OWNER_FILES_REL = (OWNER_FILE_REL, pathlib.Path("main_upgrade.py"))
+OWNER_FILES_REL = (OWNER_FILE_REL, pathlib.Path("main_upgrade.py"),
+                   pathlib.Path("live_account_checker.py"))  # [MAINT-9/D62] مشغّل الفحص اللايف — ملف مالك ثالث غير مولَّد
 
 
 def _load_generator():
