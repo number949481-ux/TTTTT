@@ -1105,7 +1105,7 @@
       "code_changed": false
     }
   },
-  "next": "First [ ] in PROGRESS = MAINT-10 (candidate). Needs owner answers Q1–Q7 (RESUME §3.24) + explicit GO ⇒ PLAN_SPECIFICATION_ONLY. Until then ALIGNMENT_ONLY; no code.",
+  "next": "First [ ] in PROGRESS = MAINT-10. Governing reference = MAINT-10_MASTER_PLAN.md. Needs owner T0 (answers U-1…U-12) + explicit GO per task Tn. Until then ALIGNMENT_ONLY; no code, no pytest.",
   "maint4_a2_gist_checkpoints": {
     "cp0": {
       "state": "done",
@@ -1901,6 +1901,52 @@
       "PROGRESS.md",
       "RESUME.md",
       "UNIVERSAL_REVIEW_CARD.md (1.14, 7.28)",
+      "genspark/recovery_state.json"
+    ]
+  },
+  "maint10_plan_2026_11_04": {
+    "status": "DONE — MASTER AUDIT (ZERO EXECUTION): MAINT-10_MASTER_PLAN.md written; zero code, zero pytest; STOP awaiting T0 answers (U-1…U-12) + GO per task",
+    "date": "2026-11-04",
+    "head_start": "2dd78ae",
+    "head_resume": "5149f40",
+    "code_touched": false,
+    "plan_file": "MAINT-10_MASTER_PLAN.md",
+    "gists": {
+      "093e9661b43f45050d951930bffa1a7e": {
+        "lines": 5394,
+        "sha256_16": "f1895f25187931a4"
+      },
+      "db5d6f65a319da3c733827963edc56ed": {
+        "lines": 216,
+        "sha256_16": "d4389d2e6c3bcf90"
+      },
+      "97327cc1": {
+        "lines": 2877,
+        "sha256_16": "1028f77c9b74dc06"
+      }
+    },
+    "decisions": {
+      "approved": [
+        "A-1..A-10"
+      ],
+      "conditional": [
+        "C-1 (D-01 balance:100)",
+        "C-2 (D-06 COMPLETED⇒0+29h)"
+      ],
+      "rejected": [
+        "R-1..R-6"
+      ],
+      "pending": [
+        "P-1..P-7"
+      ]
+    },
+    "open_questions": "U-1..U-12 (plan §6)",
+    "tasks": "T0..T8 (plan §2)",
+    "docs_updated": [
+      "MAINT-10_MASTER_PLAN.md",
+      "PROGRESS.md L140",
+      "RESUME.md §3.25 + MODE + D-01–D-07 row",
+      "UNIVERSAL_REVIEW_CARD.md v1.15",
       "genspark/recovery_state.json"
     ]
   }
