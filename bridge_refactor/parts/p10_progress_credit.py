@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7783..8097
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7824..8138
 المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer (P35: فرع MODEL_DECLINED مخصص بـ allow_preview=True — نص الرفض القصير يُعرض للمستخدم)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -304,8 +304,8 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
             "لم يتم تحميل محرك التوليد المطلوب داخل البيئة الحالية.",
         ),
         "FORBIDDEN": (
-            "⛔ <b>توقفت المهمة بسبب رفض الوصول للمشروع.</b>",
-            "تم رفض الاستمرار في المشروع الحالي قبل الوصول إلى ناتج قابل للحفظ.",
+            "⛔ <b>توقفت المهمة: المشروع خاص (Private) — رد السيرفر 403.</b>",
+            "اجعل المشروع <b>Public</b> من إعدادات Genspark ثم أعد الإرسال. الحساب سليم ولم يُعاقب (تبريد احترازي 5 دقائق فقط)، ولن يُنشأ مشروع جديد تلقائياً.",
         ),
     }
     title, note = mapping.get(

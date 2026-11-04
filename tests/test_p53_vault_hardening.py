@@ -195,18 +195,21 @@ class _PreflightFixture(_VaultFixture):
 # ── 35–37: M1 blind FORBIDDEN move ───────────────────────────────────────────
 
 class TestBlindForbidden(_FailoverFixture):
-    def test_35_first_forbidden_moves_immediately_no_hits_cache(self):
+    def test_35_first_forbidden_stops_task_no_vault_no_hits_cache(self):
+        # [MAINT-10/A-1 — فويس 193] 403 ⇒ account innocent: no vault, no hit cache, 5-minute in-place cooldown,
+        # task stops with FORBIDDEN after ONE attempt (D26 cancelled for FORBIDDEN only).
         sends, (pub_url, status, acc, _e, _t) = self._run(["FORBIDDEN", "COMPLETED"])
-        self.assertEqual(sends.call_count, 2)
-        self.assertEqual(status, "COMPLETED")
-        self.assertEqual(acc["email"], EMAIL_B)
-        self.assertIsNone(self.primary_rec(), "N=1: the 403 account is cut from primary on the FIRST hit")
-        rec = self.vault_record()
-        self.assertEqual(rec["quarantine_info"]["reason"], "cooldown_forbidden")
-        self.assertEqual(rec["quarantine_info"]["pid"], PID_A)
+        self.assertEqual(sends.call_count, 1)
+        self.assertEqual(status, "FORBIDDEN")
+        self.assertEqual(acc["email"], EMAIL_A)
+        rec = self.primary_rec()
+        self.assertIsNotNone(rec, "A-1: the 403 account stays in primary")
+        self.assertIsNone(self.vault_record())
         self.assertNotIn("forbidden_hits", rec)
-        self.assertNotIn("cooldown_until_ts", rec["quarantine_info"])          # D27 / C2
+        self.assertNotIn("quarantine_info", rec)
         self.assertNotIn("last_success_at", rec)                               # T5 stays fixed
+        self.assertTrue(rec["active"])
+        self.assertAlmostEqual(rec["cooldown_until"], time.time() + 300, delta=30)
         self.assertFalse(self.cooldown.called)
 
     def test_36_no_threshold_machinery_left_in_source(self):
@@ -222,10 +225,13 @@ class TestBlindForbidden(_FailoverFixture):
         self.assertEqual(body.count('status == "FORBIDDEN"'), 1)
         self.assertLess(body.index('status == "FORBIDDEN"'), body.index('if pub_url or status == "COMPLETED"'))
 
-    def test_37_move_failure_falls_back_to_5_minutes_only(self):
-        self.patch("move_account_to_cooldown_vault", return_value=False)
+    def test_37_forbidden_five_minutes_in_place_never_moves(self):
+        # [MAINT-10/A-1] the vault primitive is never reached for FORBIDDEN; 5 minutes is the rule, not a fallback.
+        move = self.patch("move_account_to_cooldown_vault", return_value=False)
         sends, (_u, status, acc, _e, _t) = self._run(["FORBIDDEN", "COMPLETED"])
-        self.assertEqual(acc["email"], EMAIL_B)
+        self.assertFalse(move.called)
+        self.assertEqual(status, "FORBIDDEN")
+        self.assertEqual(acc["email"], EMAIL_A)
         a = self.primary_rec()
         self.assertAlmostEqual(a["cooldown_until"], time.time() + 300, delta=30)
         self.assertNotIn("last_success_at", a)

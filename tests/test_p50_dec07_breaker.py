@@ -276,9 +276,11 @@ class TestFailoverHandling(unittest.TestCase):
         self.assertEqual(status, "COMPLETED")
         self.assertEqual(acc["email"], EMAIL_B)
         self.cooldown.assert_any_call(EMAIL_A, cooldown_hours=bridge.DEC07_EMPTY_COOLDOWN_HOURS, json_path="unused.json")
-        # no 29h cooldown and no suspension for an empty stream
+        # no 29h cooldown and no suspension for an empty stream (account A only —
+        # [MAINT-10/C-2] the successful account B is cooled 29h by design)
         for call in self.cooldown.call_args_list:
-            self.assertNotEqual(call.kwargs.get("cooldown_hours"), 29.0)
+            if call.args and call.args[0] == EMAIL_A:
+                self.assertNotEqual(call.kwargs.get("cooldown_hours"), 29.0)
         for call in self.updates.call_args_list:
             if call.args and call.args[0] == EMAIL_A:
                 self.assertNotEqual(call.args[1].get("status"), "suspended")

@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2706..4297
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2723..4338
 المحتوى: Archive safety/extraction + download_project_archive (v01.04 Turbo Direct Streaming) + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue | MAINT3: EMPTY_STREAM_FAILED → move_account_to_cooldown_vault مع fallback التبريد القديم (D10) + فرع FORBIDDEN قبل LOW_BALANCE: register_forbidden_hit + عتبة FORBIDDEN_MOVE_AFTER_N=2 + تبريد 5 دقائق احتياطياً — لا وسم نجاح لـ403 (إصلاح T5))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -715,6 +715,10 @@ def send_message_and_make_public(
         nonlocal carry_pid
         if live_pid and not str(live_pid).startswith("__"):
             carry_pid = live_pid
+            try:  # [MAINT-10/A-7] أول حدث بث من السيرفر = بدأ التوليد (بلا لمس 01.03)
+                bridge_cfg.generation_started = True
+            except Exception:
+                pass
             # [P16] النشر العام فور معرفة الـ pid — قبل أي انتظار لاكتمال التوليد
             _early_make_public_async(live_pid)
         if on_project_start_callback is not None:
@@ -796,6 +800,10 @@ def send_message_and_make_public(
                             log_event("warning", "💰 رصيد 0 + هدية راكدة ≥14 يوماً — نُقل للمعزل فوراً (D35)", email=email)
                             return None, "LOW_BALANCE", None, None, None
                     log_event("warning", f"💰 رصيد منخفض ({int(bal_check)} < {_min_balance}) — تبريد 29h وتخطٍ صامت بدون أي إرسال", email=email)
+                    try:  # [MAINT-10/A-4] توثيق الرصيد الفعلي قبل الخروج — يغذّي الفلتر الأوفلاين (A-2)
+                        update_account_data(email, {"balance": int(bal_check)}, json_path=json_path)
+                    except Exception:
+                        pass
                     mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                     return None, "LOW_BALANCE", None, None, None
                 cookies_valid = True
@@ -818,6 +826,10 @@ def send_message_and_make_public(
                         bal_recheck = -1
                     if isinstance(bal_recheck, (int, float)) and 0 <= bal_recheck < _min_balance:
                         log_event("warning", f"💰 رصيد منخفض بعد تجديد الجلسة ({int(bal_recheck)} < {_min_balance}) — تبريد 29h وتخطٍ صامت", email=email)
+                        try:  # [MAINT-10/A-4]
+                            update_account_data(email, {"balance": int(bal_recheck)}, json_path=json_path)
+                        except Exception:
+                            pass
                         mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                         return None, "LOW_BALANCE", None, None, None
             else:
@@ -838,6 +850,10 @@ def send_message_and_make_public(
         if carry_pid:
             project_id = carry_pid
             history = []
+            try:  # [MAINT-10/A-7] استئناف على مشروع ملتقط = التوليد بدأ فعلاً في محاولة سابقة
+                bridge_cfg.generation_started = True
+            except Exception:
+                pass
             log_event("info", f"♻️ استئناف على نفس المشروع الملتقط {str(carry_pid)[:16]}... (محاولة {attempt})", email=email)
             # [P12-C] زر المعاينة الحية يصل فوراً حتى في الاستئناف (السيرفر لا يرسل project_start لمشروع قائم)
             # [P16] النشر العام المبكر قبل/مع إرسال زر المعاينة — الرابط يعمل من أول ضغطة
@@ -947,6 +963,10 @@ def send_message_and_make_public(
                                 bal_mid = -1
                             if isinstance(bal_mid, (int, float)) and 0 <= bal_mid < _min_balance:
                                 log_event("warning", f"💰 رصيد منخفض بعد تجديد 401 أثناء الشات ({int(bal_mid)} < {_min_balance}) — تبريد 29h وتخطٍ صامت", email=email)
+                                try:  # [MAINT-10/A-4 + U-5] المسار الثالث
+                                    update_account_data(email, {"balance": int(bal_mid)}, json_path=json_path)
+                                except Exception:
+                                    pass
                                 mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                                 return None, "LOW_BALANCE", None, None, None
                         time.sleep(1.5)  # مهلة قصيرة لثبات الجلسة الجديدة قبل إعادة الإرسال
@@ -1147,6 +1167,7 @@ def send_message_with_auto_account_failover(
         now_ts = time.time()
         now_str = time.strftime("%Y-%m-%dT%H:%M:%S")
         update_account_data(curr_email, {"last_used": now_ts, "last_used_at": now_str}, json_path=json_path)
+        bridge_cfg.generation_started = False  # [MAINT-10/A-7] محاولة جديدة = لم يبدأ التوليد بعد
 
         try:
             pub_url, status, ext_dir, last_text, extra = send_message_and_make_public(
@@ -1165,6 +1186,11 @@ def send_message_with_auto_account_failover(
                     status=CANCELLED_STATUS,
                     max_attempts=max_attempts,
                 )
+                if getattr(bridge_cfg, "generation_started", False):
+                    # [MAINT-10/A-7] إلغاء بعد أول حدث بث ⇒ الرصيد استُهلك على السيرفر ⇒ 0 + تبريد 29h
+                    log_event("warning", "🛑 [P25/MAINT-10] إلغاء بعد بدء التوليد — تبريد 29h ورصيد 0", email=curr_email)
+                    mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)
+                    return pub_url, CANCELLED_STATUS, curr_acc, ext_dir, last_text
                 log_event("warning", "🛑 [P25] أُلغيت المهمة بواسطة المستخدم — تحرير الحساب فوراً وإنهاء الـ failover", email=curr_email)
                 update_account_data(curr_email, {"last_used": time.time(), "status": "active"}, json_path=json_path)
                 return pub_url, CANCELLED_STATUS, curr_acc, ext_dir, last_text
@@ -1234,27 +1260,20 @@ def send_message_with_auto_account_failover(
                 log_event("error", "[DEC07] ACCOUNT_SUSPENDED — عُزل الحساب (status=suspended, quarantined) والانتقال الفوري للحساب التالي", email=curr_email)
                 continue
 
-            # 🧊 [MAINT-4-B/D26 M1] 403 صريح → لا وسم نجاح أبداً (إصلاح T5) + نقل أعمى فوري N=1 إلى accounts_cooldown.json
-            # بلا كاش ضربات وبلا انتظار (D19 مُلغى). احتياطي 5 دقائق فقط إن فشل النقل نفسه (منع الحلقة الساخنة).
-            # تعطيل الآلية (COOLDOWN_VAULT_REASONS بلا FORBIDDEN) يعيد السلوك القديم حرفياً.
-            if status == "FORBIDDEN" and "FORBIDDEN" in COOLDOWN_VAULT_REASONS:
+            # 🛑 [MAINT-10/A-1 — يلغي D26 لحالة 403 فقط (فويس 193)] المشروع Private ⇒ الحساب بريء:
+            # لا معزل، لا تصفير رصيد، active بلا تغيير. تبريد احترازي 5 دقائق في مكانه (منع الحلقة الساخنة)
+            # + إيقاف المهمة فوراً بحالة FORBIDDEN (لا حساب آخر، لا مشروع جديد) — return لا break
+            # حتى لا نصل إلى MAX_ATTEMPTS_EXHAUSTED في نهاية الحلقة. الإشعار يصيغه p10 (describe_terminal_outcome).
+            if status == "FORBIDDEN":
                 notify_account_selection_observer(
                     bridge_cfg,
-                    "forbidden-isolate",
+                    "forbidden-stop",
                     status="FORBIDDEN",
                     max_attempts=max_attempts,
                 )
-                _pid_403 = extract_project_id(pub_url or active_url or "")
-                moved = move_account_to_cooldown_vault(
-                    curr_email, reason="FORBIDDEN", json_path=json_path,
-                    meta={"http_status": 403, "project_key": str(getattr(bridge_cfg, "selection_project_key", "") or ""),
-                          "pid": _pid_403},
-                )
-                if not moved:
-                    update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
-                _403_action = "نُقل للمعزل فوراً (N=1)" if moved else "تبريد 5 دقائق (فشل النقل)"
-                log_event("warning", f"[MAINT-4-B] FORBIDDEN — {_403_action} والانتقال للحساب التالي", email=curr_email)
-                continue   # active_url/active_query بلا تغيير — عقد LOW_BALANCE
+                update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
+                log_event("warning", "[MAINT-10] FORBIDDEN (403) — المشروع Private؛ تبريد 5 دقائق في مكانه وإيقاف المهمة بلا محاولة حساب آخر", email=curr_email)
+                return pub_url, "FORBIDDEN", curr_acc, ext_dir, last_text
 
             # 🛡️ [MAINT-4-B/D34] قاطع الانقطاع المحلي: الحساب نُقل بالفعل في P13 (D26)؛ −1 لحسابين متتاليين = شبكة محلية
             # لا حسابات ⇒ إيقاف المهمة بلا نقل مزيد (05.02 يعيد المنقولين في أول دورة).
@@ -1373,7 +1392,7 @@ def send_message_with_auto_account_failover(
                 # metadata fails. E2 forbids advancing to another account.
                 if status == "CREDIT_EXHAUSTED":
                     try:
-                        mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
+                        mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)  # [MAINT-10/A-5]
                     except Exception as err:
                         log_event("warning", f"[COMPACT] Credit cooldown save failed: {type(err).__name__}", email=curr_email)
                 return pub_url or active_url, "COMPACT_HANDOFF_BLOCKED", curr_acc, ext_dir, last_text
@@ -1454,7 +1473,7 @@ def send_message_with_auto_account_failover(
                     continuation_index=credit_continuations,
                     continuation_limit=max_credit_continuations,
                 )
-                mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
+                mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)  # [MAINT-10/A-5] نفاد حقيقي ⇒ 0
                 gate = evaluate_credit_checkpoint_gate(
                     bridge_cfg,
                     callback_result=callback_result,
@@ -1575,6 +1594,11 @@ def send_message_with_auto_account_failover(
                     "cooldown_until": 0,
                     "last_success_at": time.strftime("%Y-%m-%dT%H:%M:%S")
                 }, json_path=json_path)
+                # 💤 [MAINT-10/C-2 D-06 فويس 190 + U-6] اكتمال حقيقي (COMPLETED غير مرفوض) ⇒ الحساب استُهلك:
+                # balance 0 + تبريد 29h بلا فحص إضافي. last_success_at يبقى (كُتب أعلاه). رفض الموديل (_declined)
+                # لا يُحتسب استهلاكاً فيبقى الحساب active. الفحص الحي/05.02 يصحّح القيمة لاحقاً (A-3).
+                if status == "COMPLETED" and not is_model_decline_response(last_text):
+                    mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)
                 return pub_url, status, curr_acc, ext_dir, last_text
 
             notify_account_selection_observer(

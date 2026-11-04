@@ -40,6 +40,7 @@ __all__ = [
     "GIFT_GRACE_DAYS",
     "GIFT_SNAPSHOT_MAX_AGE_HOURS",
     "GIFT_LABELS",
+    "OFFLINE_MIN_BALANCE",
     "_parse_local_iso_ts",
     "classify_gift_freshness",
     "get_eligible_accounts",

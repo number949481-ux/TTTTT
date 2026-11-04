@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1596
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1613
 المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + MAINT-4-B: COOLDOWN_VAULT_REASONS (FORBIDDEN/EMPTY_STREAM_FAILED/LOGIN_FAILED/BALANCE_UNREADABLE/ZERO_BALANCE_STALE_GIFT) + COOLDOWN_VAULT_LOCK_FILENAME (accounts_cooldown.json.lock) + BALANCE_UNREADABLE_BREAKER_N=2 + _atomic_json_dump + _with_vault_lock (O_CREAT|O_EXCL + مهلة 30s + تجاوز يتيم >60s) + append_account_log (account_log.jsonl — سطر JSON كامل بالبيانات: email/password/cookies/reason/from_path/to_path/by، إلحاق O(1) بلا قراءة) + move_account_to_cooldown_vault (نقل أعمى فوري N=1 — Cut&Move ذري إلى accounts_cooldown.json تحت القفل المشترك، بلا cooldown_until_ts/ساعات — الرجوع عبر 05.02 --revive -q -l 0) + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -487,6 +487,9 @@ class BridgeConfig:
     selection_attempt_number: int = 0
     selected_account_email: str = ""
     selected_account_claim_state: str = ""
+    # 🛑 [MAINT-10/A-7] راية بدء التوليد للمحاولة الحالية: تُرفع عند أول pid حقيقي من البث (project_start عبر
+    # _pid_capture_callback) أو عند الاستئناف على pid ملتقط؛ تُصفَّر عند كل claim. الإلغاء بعدها ⇒ 0 + 29h.
+    generation_started: bool = False
     # 🧾 [P29] مسار رحلة الحسابات الفعلية للمهمة (لحظة الـ claim فقط — لا Email وهمي)
     account_journey: list = field(default_factory=list)
     # ⏱️ [P30] spans المحاسبة الزمنية لكل claim: فتح عند الـ claim، إغلاق حتمي في finally
@@ -633,12 +636,14 @@ def reactivate_account_if_due(acc: dict, json_path: str | None = None) -> dict:
             "status": "active",
             "active": True,
             "cooldown_until": 0,
-            "cooldown_released_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+            "cooldown_released_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "balance": 100  # [MAINT-10/C-1 D-01] افتراضي بعد 29h (فويس 187/188) — الفحص الحي/05.02 يصحّحه (A-3)
         }, json_path=json_path)
         acc = dict(acc)
         acc["status"] = "active"
         acc["active"] = True
         acc["cooldown_until"] = 0
+        acc["balance"] = 100
     return acc
 
 
@@ -653,6 +658,7 @@ GIFT_STALE_DAYS: int = 14          # الحد شامل (>=) — قرار الم�
 GIFT_GRACE_DAYS: int = 3           # نافذة الإنذار قبل الحد: [STALE-GRACE, STALE)
 GIFT_SNAPSHOT_MAX_AGE_HOURS: int = 72   # أقدم لقطة 05.02 نثق بها؛ أقدم من ذلك = UNKNOWN
 GIFT_LABELS = ("FRESH", "GRACE", "STALE", "UNKNOWN")
+OFFLINE_MIN_BALANCE: int = 100     # [MAINT-10/A-2] فلتر الرصيد الأوفلاين في get_eligible_accounts — مطابق لافتراضي min_preflight_balance
 
 
 def _parse_local_iso_ts(value) -> float | None:
@@ -732,6 +738,11 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
             continue
         if not is_account_ready(acc):
             continue
+        # [MAINT-10/A-2] فلتر الرصيد الأوفلاين: رقم صريح < الحد ⇒ استبعاد بلا شبكة/كتابة؛ None/غير رقمي ⇒ Fail-Open (A-3 يصحّحه حيّاً)
+        _bal = acc.get("balance")
+        if isinstance(_bal, (int, float)) and not isinstance(_bal, bool) and _bal < OFFLINE_MIN_BALANCE:
+            log_event("info", f"[OFFLINE_BALANCE] تخطي حساب رصيده المسجل {int(_bal)} < {OFFLINE_MIN_BALANCE}", email=str(em))
+            continue
         eligible.append(acc)
     _last_used = lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0
     if not GIFT_PREFLIGHT_ENABLED:
@@ -757,18 +768,24 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
     return known + unknown
 
 
-def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None) -> bool:
-    """تسجيل نفاد الكريدت وتعيين cooldown_until = الآن + 29h مع active=False، وتستعاد تلقائياً بـ is_account_ready"""
+def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None,
+                          balance: int | None = None) -> bool:
+    """تسجيل نفاد الكريدت وتعيين cooldown_until = الآن + 29h مع active=False، وتستعاد تلقائياً بـ is_account_ready
+    [MAINT-10/A-5] balance يُكتب فقط إذا مُرِّر صراحةً (0 عند CREDIT_EXHAUSTED/COMPLETED/إلغاء بعد البدء)؛
+    الأعطال المؤقتة (DATA_RETENTION/EMPTY_STREAM/COMPACT) لا تمرّره فيبقى الرصيد كما هو (A-6)."""
     now = time.time()
     cd_until_ts = now + (cooldown_hours * 3600)
-    return update_account_data(email, {
+    _fields = {
         "cooldown_until": cd_until_ts,
         "last_used": now,
         "last_credit_exhausted": now,
         "last_credit_exhausted_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "status": "cooldown",
         "active": False
-    }, json_path=json_path)
+    }
+    if balance is not None:
+        _fields["balance"] = int(balance)
+    return update_account_data(email, _fields, json_path=json_path)
 
 
 # ════════════════════════════════════════════════════════

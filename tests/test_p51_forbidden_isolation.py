@@ -272,46 +272,54 @@ class TestFailoverIsolation(_VaultFixture):
     def _primary_a(self):
         return next((a for a in self.read(self.primary) if a["email"] == EMAIL_A), None)
 
-    def test_11_first_forbidden_moves_immediately(self):
+    # ── [MAINT-10/A-1 — فويس 193] 403 = المشروع Private ⇒ الحساب بريء: لا معزل، لا تصفير،
+    #    تبريد احترازي 5 دقائق في مكانه، وإيقاف المهمة فوراً بحالة FORBIDDEN (لا حساب آخر).
+    #    D26 لحالة FORBIDDEN مُلغى؛ بقية أسباب COOLDOWN_VAULT_REASONS بلا تغيير.
+    def test_11_first_forbidden_stops_task_without_vault_move(self):
         sends, (pub_url, status, acc, _e, _t) = self._run("FORBIDDEN")
-        self.assertEqual(sends.call_count, 2)
-        self.assertEqual(status, "COMPLETED")
-        self.assertEqual(acc["email"], EMAIL_B)
-        self.assertIsNone(self._primary_a(), "D26: first 403 cuts the account from primary")
-        self.assertEqual(self.vault_record()["quarantine_info"]["reason"], "cooldown_forbidden")
-        self.assertFalse(self.cooldown.called)
+        self.assertEqual(sends.call_count, 1, "A-1: no second account is tried after 403")
+        self.assertEqual(status, "FORBIDDEN", "A-1: the failover returns FORBIDDEN, never MAX_ATTEMPTS_EXHAUSTED")
+        self.assertEqual(acc["email"], EMAIL_A)
+        a = self._primary_a()
+        self.assertIsNotNone(a, "A-1: the 403 account stays in primary")
+        self.assertIsNone(self.vault_record(), "A-1: no vault move for 403")
+        self.assertEqual(a["status"], "active")
+        self.assertTrue(a["active"])
+        self.assertAlmostEqual(a["cooldown_until"], time.time() + 300, delta=30)
+        self.assertFalse(self.cooldown.called, "A-1: no 29h cooldown for 403")
 
-    def test_12_forbidden_move_record_and_log_contract(self):
+    def test_12_forbidden_leaves_record_and_log_untouched(self):
         sends, (pub_url, status, acc, _e, _t) = self._run("FORBIDDEN", pid=PID_A)
-        self.assertEqual(sends.call_count, 2)
-        self.assertEqual(acc["email"], EMAIL_B)
-        self.assertIsNone(self._primary_a(), "403 account must be cut from primary")
-        rec = self.vault_record()
-        self.assertEqual(rec["quarantine_info"]["reason"], "cooldown_forbidden")
-        self.assertEqual(rec["quarantine_info"]["project_key"], "pk-51")
-        self.assertEqual(rec["quarantine_info"]["pid"], PID_A)
-        self.assertNotIn("last_success_at", rec)                    # T5 fixed
-        self.assertTrue(any(e.get("event") == "exit_to_cooldown" and e.get("email") == EMAIL_A
-                            for e in self.log_events()))
-        # EMAIL_B succeeded normally
-        b = next(a for a in self.read(self.primary) if a["email"] == EMAIL_B)
-        self.assertIn("last_success_at", b)
+        self.assertEqual(status, "FORBIDDEN")
+        a = self._primary_a()
+        self.assertEqual(a["password"], "secret-a")                  # credentials intact
+        self.assertNotIn("balance", a, "A-6: 403 never writes/zeroes balance")
+        self.assertNotIn("last_success_at", a)                       # T5 stays fixed
+        self.assertNotIn("quarantine_info", a)
+        self.assertFalse(any(e.get("event") == "exit_to_cooldown" and e.get("email") == EMAIL_A
+                             for e in self.log_events()), "no vault JSONL entry for 403")
+        # EMAIL_B was never touched
+        b = next(x for x in self.read(self.primary) if x["email"] == EMAIL_B)
+        self.assertNotIn("last_success_at", b)
+        self.assertNotIn("cooldown_until", b)
 
-    def test_13_forbidden_move_failure_falls_back_to_5_minutes(self):
-        self.patch("move_account_to_cooldown_vault", return_value=False)
+    def test_13_forbidden_never_calls_vault_move(self):
+        move = self.patch("move_account_to_cooldown_vault", return_value=True)
         sends, (_u, status, acc, _e, _t) = self._run("FORBIDDEN")
-        self.assertEqual(acc["email"], EMAIL_B)
+        self.assertFalse(move.called, "A-1: move_account_to_cooldown_vault is not reached for FORBIDDEN")
+        self.assertEqual(status, "FORBIDDEN")
         a = self._primary_a()
         self.assertAlmostEqual(a["cooldown_until"], time.time() + 300, delta=30)
         self.assertNotIn("last_success_at", a)
 
-    def test_14_reasons_disabled_restores_legacy_t5_baseline(self):
+    def test_14_forbidden_behaviour_independent_of_vault_reasons(self):
+        # A-1 does not depend on COOLDOWN_VAULT_REASONS any more: disabling the vault changes nothing for 403.
         with mock.patch.object(bridge, "COOLDOWN_VAULT_REASONS", ()):
             sends, (_u, status, acc, _e, _t) = self._run("FORBIDDEN")
-        # legacy: pub_url non-empty → first account marked successful (documented T5 baseline)
         self.assertEqual(sends.call_count, 1)
+        self.assertEqual(status, "FORBIDDEN")
         self.assertEqual(acc["email"], EMAIL_A)
-        self.assertIn("last_success_at", self._primary_a())
+        self.assertNotIn("last_success_at", self._primary_a())        # T5 baseline never regresses
         self.assertIsNone(self.vault_record())
 
     def test_15_empty_stream_moves_1h_without_mark_cooldown(self):
@@ -324,7 +332,9 @@ class TestFailoverIsolation(_VaultFixture):
         self.assertEqual(qi["reason"], "cooldown_empty_stream_failed")
         self.assertIsNone(qi["http_status"])
         self.assertNotIn("cooldown_until_ts", qi)                 # D27 / C2: no timer metadata
-        self.assertFalse(self.cooldown.called, "no in-place cooldown when the move succeeded")
+        # [MAINT-10/C-2] the successful account B is cooled by design; assert only on A
+        self.assertFalse(any(c.args and c.args[0] == EMAIL_A for c in self.cooldown.call_args_list),
+                         "no in-place cooldown for A when the move succeeded")
 
     def test_16_empty_stream_fallback_marks_1h_cooldown_when_move_fails(self):
         self.patch("move_account_to_cooldown_vault", return_value=False)
