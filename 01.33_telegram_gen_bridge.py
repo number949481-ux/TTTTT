@@ -6891,7 +6891,117 @@ def build_dashboard_keyboard(chat_id: int) -> dict:
             {"text": f"📌 {label}", "callback_data": f"proj:{record['project_key']}"},
             {"text": "⭐ التفاصيل", "callback_data": f"pview:{record['project_key']}"},
         ])
+    # 🔍 [MAINT-9/D62] صف مستقل بزر واحد (عرض كامل) بعد المشاريع — الأخير دائماً
+    rows.append([{"text": LIVE_CHECK_BUTTON_TEXT, "callback_data": LIVE_CHECK_CALLBACK, "style": "primary"}])
     return make_inline_keyboard(rows)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 🔍 [MAINT-9/D62–D70] فحص وتنشيط الحسابات لايف — لوحات الأخضر/الأحمر (فويسات 158–185)
+# المنطق الفعلي في bridge_refactor/live_account_checker.py (عملية مستقلة) — هنا الواجهة فقط.
+# 9 callbacks ثابتة (< 64 بايت): cmd:live_check · lc_pick:resume · lc_pick:reset ·
+# lc_go:fresh|resume|reset · lc_stop · lc_stop_yes · lc_stop_no · lc_cancel
+# ══════════════════════════════════════════════════════════════════════════
+LIVE_CHECK_CALLBACK = "cmd:live_check"
+LIVE_CHECK_BUTTON_TEXT = "🔍 فحص وتنشيط الحسابات لايف ⚡"
+
+
+def build_live_check_confirm_keyboard(kind: str) -> dict:
+    """شاشة التأكيد النهائية: 🟢 تنفيذ (success) + 🔴 إلغاء (danger) — kind ∈ {fresh, resume, reset}"""
+    kind = str(kind or "fresh").strip().lower()
+    if kind not in ("fresh", "resume", "reset"):
+        kind = "fresh"
+    go_label = {"fresh": "🟢 نعم، ابدأ الفحص", "resume": "🟢 نعم، استأنف", "reset": "🟢 نعم، من الصفر"}[kind]
+    return make_inline_keyboard([
+        [{"text": go_label, "callback_data": f"lc_go:{kind}", "style": "success"}],
+        [{"text": "🔴 إلغاء", "callback_data": "lc_cancel", "style": "danger"}],
+    ])
+
+
+def build_live_check_choice_keyboard() -> dict:
+    """دورة سابقة غير مكتملة: استئناف أم من الصفر؟ (D70 — كل خيار يمر بتأكيد ثانٍ)"""
+    return make_inline_keyboard([
+        [
+            {"text": "🔄 استئناف من آخر نقطة", "callback_data": "lc_pick:resume", "style": "primary"},
+            {"text": "🆕 من الصفر", "callback_data": "lc_pick:reset"},
+        ],
+        [{"text": "🔴 رجوع", "callback_data": "lc_cancel", "style": "danger"}],
+    ])
+
+
+def build_live_check_running_keyboard() -> dict:
+    """أسفل رسالة اللايف/شاشة «يعمل الآن»: زر إيقاف واحد أحمر (المشغّل يعيد نفس الزر مع كل تحديث)"""
+    return make_inline_keyboard([
+        [{"text": "🛑 إيقاف الفحص التلقائي", "callback_data": "lc_stop", "style": "danger"}],
+        [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "lc_cancel"}],
+    ])
+
+
+def build_live_check_stop_confirm_keyboard() -> dict:
+    """تأكيد الإيقاف (Q-GO-5: رسالة جديدة مستقلة): 🔴 نعم أوقف / 🟢 لا، استمر"""
+    return make_inline_keyboard([
+        [
+            {"text": "🔴 نعم، أوقف الفحص", "callback_data": "lc_stop_yes", "style": "danger"},
+            {"text": "🟢 لا، استمر", "callback_data": "lc_stop_no", "style": "success"},
+        ],
+    ])
+
+
+def render_live_check_prompt_text(kind: str, snapshot: dict | None = None) -> str:
+    """نصوص المحطات (≤ 4000): running / choice / fresh / resume / reset / stop_confirm / stop_ack / cancelled"""
+    s = snapshot or {}
+    total = int(s.get("total") or 0)
+    checked = int(s.get("checked") or 0)
+    remaining = int(s.get("remaining") if s.get("remaining") is not None else max(0, total - checked))
+    kind = str(kind or "").strip().lower()
+    if kind == "running":
+        c = s.get("counters") or {}
+        return (
+            "🔍 <b>فحص لايف يعمل الآن</b>\n"
+            f"📊 التقدم: <b>{int(c.get('checked') or checked)}</b> من <b>{int(c.get('total') or total)}</b>"
+            f" — بدأ {html_escape(str(s.get('started_at') or '—'))}\n"
+            f"✅ نشط: {c.get('active', 0)} · 🧊 متأخر: {c.get('stale', 0)} · 🗑️ ميت: {c.get('dead', 0)}"
+            f" · ⚠️ شبكة: {c.get('net_err', 0)} · 🎯 صيد: {c.get('hunted', 0)}\n\n"
+            "الرسالة اللايف الأصلية تتحدث مع كل حساب. يمكنك إيقافه من هنا أو من زرها."
+        )
+    if kind == "choice":
+        return (
+            "🔁 <b>توجد دورة فحص سابقة غير مكتملة</b>\n"
+            f"مفحوص <b>{checked}</b> من <b>{total}</b> — المتبقي <b>{remaining}</b> حساباً.\n\n"
+            "هل تستأنف من آخر نقطة أم تبدأ من الصفر؟"
+        )
+    if kind == "resume":
+        return (
+            "🔄 <b>تأكيد الاستئناف</b>\n"
+            f"سيُستأنف الفحص من الحساب رقم <b>{checked + 1}</b> (المتبقي <b>{remaining}</b> من {total}).\n"
+            "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات · البوت يستمر في العمل بلا توقف.\n\n"
+            "هل تريد المتابعة؟"
+        )
+    if kind == "reset":
+        return (
+            "🆕 <b>تأكيد البدء من الصفر</b>\n"
+            f"سيُصفَّر عداد الدورة ويُفحص الأساسي بالكامل: <b>{total}</b> حساباً.\n"
+            "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات (قد يستغرق ساعات) · البوت يستمر في العمل.\n\n"
+            "هل تريد المتابعة؟"
+        )
+    if kind == "stop_confirm":
+        return (
+            "🛑 <b>إيقاف الفحص اللايف؟</b>\n"
+            "سيتوقف بعد الحساب الجاري (≤ 5.5 دقيقة) مع حفظ ذري — ويمكنك الاستئناف لاحقاً من نفس النقطة."
+        )
+    if kind == "stop_ack":
+        return "🛑 <b>تم إرسال أمر الإيقاف</b> — سيتوقف الفحص بعد الحساب الجاري (≤ 5.5 دقيقة) ويصلك ملخص."
+    if kind == "cancelled":
+        return "↩️ تم الإلغاء — لم يبدأ أي فحص."
+    if kind == "none":
+        return "ℹ️ <b>لا توجد حسابات في الملف الأساسي</b> — لا شيء يُفحص."
+    return (
+        "🔍 <b>فحص وتنشيط الحسابات لايف</b>\n"
+        f"سيُفحص الأساسي بالكامل في الخلفية: <b>{total}</b> حساباً (نسخ لا قص — الأساسي يبقى في مكانه).\n"
+        "✅ السليم يُنشَّط فوراً للبوت · 🧊 متأخر الهدية → المعزل · 🗑️ الميت → الفاشل · ⚠️ خطأ الشبكة يبقى.\n"
+        "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات (قد يستغرق ساعات) · البوت يستمر في العمل بلا توقف.\n\n"
+        "هل تريد البدء؟"
+    )
 
 
 # ══════════════════════════════════════════════════════════════
