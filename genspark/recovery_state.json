@@ -1762,6 +1762,23 @@
       "S7 run_quarantine hook scope"
     ],
     "resume_section": "RESUME.md §3.22",
-    "next": "wait owner GO on S1-S7; then plan (no code)"
+    "next": "wait owner GO on S1-S7; then plan (no code)",
+    "second_review": {
+      "date": "2026-11-03",
+      "head": "c06bf64",
+      "level": "FULL (0.2(a) RESUME/CARD/recovery edited; 0.2(d) line numbers)",
+      "corrections": [
+        "FILE_LOCK line L1072->L1073",
+        "primary reader L1036->read_accounts_safe L1052 / claim L625"
+      ],
+      "new_findings": [
+        "F-4 bridge_bot.log tracked (0 bytes) since 859efae (7.14)",
+        "F-6 live checker needs genspark_master_account_manager absent in repo; tests must stub (p56 L41-44)",
+        "F-7 ui.py __all__ re-export: wrapper must patch runtime.ns not ui module",
+        "F-8 Supervisor.start_job guard covers only its own job (L378-383); live checker is foreign process -> busy marker needed"
+      ],
+      "review_verdict": "NOT-COMPLETE (pending owner GO: S1-S7)",
+      "card_principle_added": "7.25"
+    }
   }
 }
