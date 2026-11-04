@@ -1725,5 +1725,43 @@
       "B7 STEP-3 Finish"
     ],
     "owner_gate": "run main_upgrade.py; check logs/main_upgrade.log line 'clean_disk_garbage: ... MB'; buttons show 'none' after 1h by design"
+  },
+  "alignment_live_checker": {
+    "date": "2026-11-03",
+    "mode": "PEER_REVIEW_AND_ALIGNMENT_ONLY (ZERO CODE)",
+    "head": "3b12f96",
+    "code_touched": false,
+    "gist": {
+      "master": "97327cc1761cfcc956b5247f5a0f3846",
+      "master_sha256_16": "8eb0a889fb9f011c",
+      "master_lines": 1717,
+      "card": "db5d6f65a319da3c733827963edc56ed",
+      "card_sha256_16": "dd9a16ef7c2560ac",
+      "card_lines": 59,
+      "voices": "158-175"
+    },
+    "verdicts": {
+      "D62_confirm_resume": "ok",
+      "D63_isolate": "conclusion ok / premise wrong: 01.33 is ThreadPoolExecutor(3) L4301 not asyncio",
+      "D64_auto_redistribute": "WRONG: PARTS fixed ranges L35-47; conflicts D47; sha pinned in p56 L421 / p57 L142",
+      "D65_dry": "ok via --sweep; needs on_account hook in run_quarantine (A5)",
+      "D66_D67": "ok",
+      "D68": "ok",
+      "D69_streaming": "already implemented 05.02 L583-694",
+      "D70_timeout_keep": "already implemented L686-689; no account_log line",
+      "D71_full_email_ui": "owner decision; logs stay redacted",
+      "Q4_ping_pong": "none: _activate_for_bot31 L826-853 == is_account_ready L1104-1145"
+    },
+    "sensitive_pending_GO": [
+      "S1 button location vs READ-ONLY 01.33/PARTS",
+      "S2 voice159 vault copy vs --sweep",
+      "S3 D61 collision -> D62-D73",
+      "S4 windows stop file not signal",
+      "S5 busy marker + skip scheduled sweep",
+      "S6 update_account_data outside shared lock (B14)",
+      "S7 run_quarantine hook scope"
+    ],
+    "resume_section": "RESUME.md §3.22",
+    "next": "wait owner GO on S1-S7; then plan (no code)"
   }
 }
