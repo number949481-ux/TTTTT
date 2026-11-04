@@ -80,6 +80,11 @@ SCHEDULE = (
 SWEEP_BATCH = 10            # D54 (≤ SWEEP_MAX_BATCH=20 في 05.02 — Q-24)
 TICK_SECONDS = 20.0         # دقة الجدول: أقل من دقيقة ⇒ لا تفويت لدقيقة الموعد
 TERMINATE_GRACE_S = 10.0    # مهلة terminate قبل kill (D53)
+# ── [MAINT-9/S5+Q-GO-3] علامة «مشغول» للفحص اللايف (bridge_refactor/live_account_checker.py) ──
+# وجودها بعمر حديث ⇒ تأجيل --sweep و--revive المجدولين (لا تضارب على الأساسي/الخزنة/الشبكة)؛
+# أقدم من LIVE_BUSY_ORPHAN_S = يتيمة (قتل عنيف/انقطاع كهرباء) ⇒ تحذير ومتابعة الجدول.
+LIVE_BUSY_FILE = ACCOUNTS_FILE.parent / "live_check.busy"
+LIVE_BUSY_ORPHAN_S = 900.0  # الحساب الواحد ≤ ~5.5 دقيقة (45s×2 login + 25s×5 + فاصل 300s) ⇒ 15 دقيقة هامش
 
 # ── منظومة النظافة الشاملة (MAINT-8 / D55–D61) ───────────────────────────────
 GARBAGE_MAX_AGE_S = 60 * 60            # D55/D56/D57/D60: ما تجاوز 60 دقيقة يُمسح — بلا استثناء (فويس 144)
@@ -114,6 +119,20 @@ def due_slot(lt: time.struct_time, fired: set) -> tuple:
             if key not in fired:
                 return key, kind
     return None, None
+
+
+def live_check_busy(now: float | None = None, path: pathlib.Path | None = None) -> tuple[bool, str]:
+    """[MAINT-9/S5] (مشغول؟, وصف): True فقط إذا كانت العلامة موجودة وعمر mtime < LIVE_BUSY_ORPHAN_S.
+    علامة يتيمة ⇒ (False, "orphan …") — المستدعي يسجّل تحذيراً ويكمل. لا كتابة ولا حذف هنا (المشغّل وحده يملك الملف)."""
+    p = LIVE_BUSY_FILE if path is None else path
+    try:
+        st = p.stat()
+    except OSError:
+        return False, ""
+    age = (time.time() if now is None else now) - st.st_mtime
+    if age < LIVE_BUSY_ORPHAN_S:
+        return True, f"live_check.busy عمرها {age / 60:.1f} دقيقة"
+    return False, f"orphan live_check.busy عمرها {age / 60:.0f} دقيقة (> {LIVE_BUSY_ORPHAN_S / 60:.0f}) — تُتجاهَل"
 
 
 def _terminate(proc, name: str, grace: float = TERMINATE_GRACE_S) -> None:
@@ -379,6 +398,12 @@ class Supervisor:
             log.warning("تخطي مهمة %s: مهمة %s (pid %s) ما زالت تعمل منذ %.0f دقيقة",
                         kind, self.job_kind, self.job.pid, (time.time() - self.job_started) / 60)
             return False
+        busy, why = live_check_busy()
+        if busy:
+            log.warning("تخطي مهمة %s: فحص لايف يعمل (%s) — [MAINT-9/S5] يُعاد في الموعد التالي", kind, why)
+            return False
+        if why:
+            log.warning("%s", why)
         self.reap_job()
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
         self.job_log = open(LOGS_DIR / ENGINE_LOG_NAME, "a", encoding="utf-8")

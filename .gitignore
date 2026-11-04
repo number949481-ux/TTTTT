@@ -16,6 +16,11 @@ account_log.json*
 accounts*.json.tmp*
 # [MAINT-6/Q-23] شيك بوينت الكنس الدوار (بصمات sha256 للبريد) — لا يُرفع أبداً
 genspark_rotation_checkpoint.json*
+# [MAINT-9/D68-D69] حالة الفحص اللايف (بصمات + عدادات + أعلام) — لا تُرفع أبداً
+live_check_queue.json*
+live_check_state.json*
+live_check.stop
+*.busy
 *.bak
 *.pem
 *.key

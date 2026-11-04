@@ -36,7 +36,7 @@ import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 # ── ضبط تشفير التيرمينال لويندوز لدعم العربية والرموز بأمان ──
 if sys.platform.startswith("win"):
@@ -508,7 +508,9 @@ class MasterDelayedGiftsManager:
         return "AUTH_FAILED", None, "خطأ شبكة أثناء قراءة سجل الهدايا", real_balance, None
 
     def run_quarantine(self, scan_mode: str = "all", limit: int = 10, dry_run: bool = False,
-                       rotation: Optional["RotationCheckpoint"] = None) -> Dict[str, Any]:
+                       rotation: Optional["RotationCheckpoint"] = None,
+                       on_account: Optional[Callable[[str, str, Optional[int], str], None]] = None,
+                       stop_flag: Optional[Path] = None) -> Dict[str, Any]:
         """
         تشغيل عملية الفرز الثلاثي والقص والنقل (Cut & Move):
         - السليم والنشط    -> يبقى في accounts_genspark.json (MAINT-4-E: لا ملف ناجح)
@@ -641,7 +643,8 @@ class MasterDelayedGiftsManager:
         batch_num = 1
 
         for idx, acc in enumerate(targets_to_check, start=1):
-            if not IS_RUNNING:
+            # [MAINT-9/S4+S7] stop_flag: ملف راية يستطلعه المشغّل اللايف بين الحسابات (ويندوز بلا إشارات) — None = سلوك CLI كما هو
+            if not IS_RUNNING or (stop_flag is not None and stop_flag.exists()):
                 print(f"\n{Y}⚠️ تم استلام إشارة إيقاف.. جاري الحفظ الذري والخروج الآمن...{RST}")
                 save_checkpoint()
                 break
@@ -693,6 +696,13 @@ class MasterDelayedGiftsManager:
                 if save_checkpoint():
                     rotation.mark(email)
 
+            # [MAINT-9/S7] خُطّاف اختياري بعد الحفظ الذري (الإشعار لا يسبق الحقيقة على القرص)؛ استثناؤه لا يوقف الحلقة
+            if on_account is not None:
+                try:
+                    on_account(email, status, bal, diag_msg or "")
+                except Exception as hook_err:
+                    print(f"  {Y}⚠️ on_account hook: {type(hook_err).__name__}: {hook_err}{RST}")
+
             sys.stdout.flush()
 
             # ── حفظ دوري كل 10 حسابات وعرض ملخص الدفعة ──
@@ -721,7 +731,13 @@ class MasterDelayedGiftsManager:
             # تأخير أمان عشوائي بين الحسابات
             if idx < len(targets_to_check) and IS_RUNNING:
                 delay_sec = random.uniform(self.min_delay, self.max_delay)
-                time.sleep(delay_sec)
+                if stop_flag is None:
+                    time.sleep(delay_sec)
+                else:
+                    # [MAINT-9/S4] نوم مجزّأ بثانية: الإيقاف بالملف لا ينتظر الفاصل كاملاً (حتى 300s)
+                    deadline = time.monotonic() + delay_sec
+                    while time.monotonic() < deadline and IS_RUNNING and not stop_flag.exists():
+                        time.sleep(min(1.0, max(0.0, deadline - time.monotonic())))
 
         # ── التقرير الإحصائي الأنيق الختامي ──
         if not save_checkpoint(is_final=True):  # [MAINT-6/Q-22] القفل مشغول ⇒ خطأ معلن (D39: exit 1)
