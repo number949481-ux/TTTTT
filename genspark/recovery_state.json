@@ -1780,5 +1780,30 @@
       "review_verdict": "NOT-COMPLETE (pending owner GO: S1-S7)",
       "card_principle_added": "7.25"
     }
+  },
+  "maint9": {
+    "status": "PLAN_SPECIFICATION_ONLY — awaiting GO",
+    "date": "2026-11-03",
+    "head": "5cb67c5",
+    "code_touched": false,
+    "spec_file": "MAINT9_LIVE_CHECKER_SPEC.md",
+    "resume_section": "RESUME.md §3.23",
+    "gist": {
+      "id": "97327cc1761cfcc956b5247f5a0f3846",
+      "sha256_16": "6ad6deb3a0f982f7",
+      "lines": 2590,
+      "card_lines": "2484-2524",
+      "voices": "158-184"
+    },
+    "decisions": "D62-D70 (S1a, S2 copy-not-cut queue, S3, S4 stop file, S5 busy marker, S6 shared lock, S7 hooks, D70 green/red gates)",
+    "open_questions": [
+      "Q-GO-1 queue(b) vs data copy(a)",
+      "Q-GO-2 manual scan = 3rd exception to 7.11",
+      "Q-GO-3 busy defers --revive too",
+      "Q-GO-4 breaker numbers",
+      "Q-GO-5 stop confirm as new message",
+      "Q-GO-6 A5 extended to run_quarantine"
+    ],
+    "exec_steps_on_go": "SPEC §6 steps 0-12, single commit, baseline 19 failures by name"
   }
 }
