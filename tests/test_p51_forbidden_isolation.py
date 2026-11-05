@@ -4,6 +4,12 @@ MAINT-4-B (owner EXECUTE_NOW 2026-11-01, D26–D39): blind N=1 move, no hit cach
 no timer metadata, shared lockfile. Tests 10–13 (threshold), 15 (cooldown_until_ts) and 18 (contracts) were rewritten;
 09 now asserts the FULL record is logged (D28) — see tests/test_p53_vault_hardening.py for the new surface.
 
+[MAINT-10/A-1 — 2026-11-04, owner GO card db5d L384-402] D26 is CANCELLED for FORBIDDEN only: a 403 means the project
+is Private, the account is innocent — no vault move, no hit cache, no balance change, ``active`` untouched, a 5-minute
+in-place ``cooldown_until`` and the task stops with status FORBIDDEN (``return``, never MAX_ATTEMPTS_EXHAUSTED).
+Tests 11–14 and 15 below reflect that contract (bridge sha 8728ac134b037f9d); the FORBIDDEN bullets in the legacy
+contract text that follows are historical. See tests/test_p59_maint10_lifecycle.py for the full MAINT-10 surface.
+
 Owner-approved contract (RESUME.md §3.4/§3.6/§3.7/§3.8 + decisions D1–D25 "كما أوصيت", 2026-10-31):
   * p03 (after ``mark_account_cooldown``): ``COOLDOWN_VAULT_FILENAME``, ``ACCOUNT_LOG_FILENAME``,
     ``ACCOUNT_LOG_RETENTION_DAYS=30``, ``ACCOUNT_LOG_MAX_ENTRIES=5000``, ``ACCOUNT_LOG_LOCK``,

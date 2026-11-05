@@ -1105,7 +1105,7 @@
       "code_changed": false
     }
   },
-  "next": "First [ ] in PROGRESS = MAINT-10. Governing reference = MAINT-10_MASTER_PLAN.md. Needs owner T0 (answers U-1…U-12) + explicit GO per task Tn. Until then ALIGNMENT_ONLY; no code, no pytest.",
+  "next": "MAINT-10 CLOSED. First [ ] in PROGRESS = BACKLOG (each item needs owner GO) => ALIGNMENT_ONLY.",
   "maint4_a2_gist_checkpoints": {
     "cp0": {
       "state": "done",
@@ -1948,6 +1948,61 @@
       "RESUME.md §3.25 + MODE + D-01–D-07 row",
       "UNIVERSAL_REVIEW_CARD.md v1.15",
       "genspark/recovery_state.json"
+    ]
+  },
+  "maint10_exec_2026_11_04": {
+    "status": "DONE — MAINT-10 SURGICAL_EXECUTION (unified GO T1…T8 = U-12); CLOSED",
+    "date": "2026-11-04",
+    "go_card": "gist db5d6f65 L384-402 + L463-485 (506 lines, sha bb6ce59035c89e0b)",
+    "head_syncs": [
+      "45a938d",
+      "80105ba",
+      "96529ff",
+      "0947cc8",
+      "928d38d"
+    ],
+    "bridge": {
+      "lines_crlf": 10436,
+      "sha256_16": "8728ac134b037f9d",
+      "previous": [
+        "e5c165bf9dfc4929",
+        "d08d6c13c440c880"
+      ]
+    },
+    "parts": {
+      "p06": [
+        2723,
+        4339
+      ],
+      "p07": [
+        4340,
+        5522
+      ],
+      "p12": [
+        8675,
+        10436
+      ],
+      "parity": "16/16"
+    },
+    "tests": {
+      "new": "tests/test_p59_maint10_lifecycle.py 24/24",
+      "rewritten_403": [
+        "p51 t11-t15",
+        "p53 t35/t37"
+      ],
+      "narrowed_c2": [
+        "p50 t09",
+        "p51 t15",
+        "test_auto_compact x7 penalty_cooldowns(mock, finisher_email)"
+      ],
+      "sha_guards": "p56 L421 / p57 L142",
+      "suite": "1426 passed / 19 failed == baseline a8d79bc by names / 0 new"
+    },
+    "deviation": "generation_started guarded by compact_in_progress (L3436) — /compact maintenance is not consumption (A-6)",
+    "untouched": [
+      "01.03Genspark_claude-opus-5-code.py",
+      "genspark_verifier_engine.py",
+      "05.02 (e1216b5186d99420)"
     ]
   }
 }
