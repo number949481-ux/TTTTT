@@ -1105,7 +1105,7 @@
       "code_changed": false
     }
   },
-  "next": "MAINT-11 (403/Private) PLAN_AND_AUDIT_ONLY (2026-11-05): first [ ] in PROGRESS = MAINT-11 => ALIGNMENT_ONLY until owner GO + evidence answers Q-1..Q-7. Zero code.",
+  "next": "MAINT-11 (403/Private) PLAN_AND_AUDIT_ONLY @ 26909ae: 5 docs updated (pass 3). BLOCKED on owner: resolve 5 card conflicts (Q-2/Q-3/Q-4/Q-6) + upload download11.har (Q-1). Zero code until explicit GO.",
   "maint4_a2_gist_checkpoints": {
     "cp0": {
       "state": "done",
@@ -2033,14 +2033,16 @@
     ]
   },
   "maint11_403_plan_2026_11_05": {
-    "status": "PLAN_AND_AUDIT_ONLY (2 review passes) — awaiting owner GO + evidence answers Q-1..Q-7 (Q-5 largely answered by code)",
+    "status": "PLAN_AND_AUDIT_ONLY — مراجعة ثالثة مكتملة @ 26909ae؛ صفر تنفيذ؛ بانتظار حسم تعارضات الكروت + رفع HAR",
     "cards": {
       "db5d": "L1437-1464 R11, L1484-1520 P48_PRIVATE_PROJECT_403_GATE_360, L1538-1683 GO_SURGICAL_FIX_403",
-      "093e": "L5393-7734 voices 205-212, L6622-6760 API map, L7288-7414 MASTER-360-PLAN"
+      "093e": "L7760+ كارت GO#1، L7947+ كارت GO#2، L8643+ مانديت PLAN_AND_AUDIT_ONLY (الأحدث)",
+      "ad8b": "L1-273 مانديت MAINT-11 (PLAN_AND_AUDIT_ONLY §1-§11) — الأحدث زمنياً 18:11Z"
     },
     "gists": {
-      "db5d": "1695/73bd4b5dcd5710ff",
-      "093e": "7734/0b45ba672894c4f7"
+      "093e": "9173/e2d4bfd6d70e5803",
+      "ad8b": "273/de2993c5823e1d5e",
+      "db5d": "1695/73bd4b5dcd5710ff"
     },
     "finding": "403 from ask_proxy is swallowed in 01.03 L2281-2282 -> (None,None,None) -> 01.33 L3713-3716 'FAILED' -> failover has no FAILED branch -> L4326-4336 continue -> MAX_ATTEMPTS_EXHAUSTED. A-1 guard L3989 never reached.",
     "proofs": {
@@ -2055,13 +2057,13 @@
     ],
     "plan_file": "MAINT-11_403_PRIVATE_PROJECT_GATE_PLAN.md",
     "open_questions": [
-      "Q-1 payload shape of private /api/project",
-      "Q-2 unknown-probe policy or 01.03 one-line edit (Q5 breach)",
-      "Q-3 cancel A-1 300s?",
-      "Q-4 naming MAINT-11/p60",
-      "Q-5 telegram observer during incident",
-      "Q-6 zero-emails scope includes local log?",
-      "Q-7 field log excerpt"
+      "Q-1 شكل رد GET /api/project (خاص وعام) — يحتاج رفع HAR",
+      "Q-2 probe=unknown ⇒ FORBIDDEN أم FAILED (3 كروت تتعارض)",
+      "Q-3 تبريد 300ث يُبقى أم يُلغى (2⟂2)",
+      "Q-4 اسم ملف الاختبار",
+      "Q-5 أُجيب: بطاقة كاذبة + تعديلات صامتة (يطابق الكود)",
+      "Q-6 هل a***@gmail.com مقبول أم حجب الدومين كاملاً",
+      "Q-7 لوج ميداني مقنّع"
     ],
     "r11": {
       "V1": "PASS",
@@ -2087,6 +2089,44 @@
       "cancel_innocence": "PASS: generation_started only via SSE (L3441) or carry_pid (L3576); neither before 403 => L3916-3918",
       "t1_lite": "fingerprint _last_fetch_status==200 & _last_fetch_authoritative & _last_project_status None & history==[] — NOT recommended without Q-1 (public empty project may match)",
       "backlog_candidate": "B-403-2: treat __INVALID_PROJECT__ (404/410/500) as project-error not account-error (today FAILED + rotation L3713)"
+    },
+    "review_pass_3": {
+      "head": "26909ae",
+      "method": "mandate ad8b §4 — claim/evidence/verdict table",
+      "claims_tabulated": 15,
+      "card_conflicts": 5,
+      "conflict_detail": [
+        "Q-2: لمس 01.03 ممنوع ⟂ المسار 🅰️ يقترح تعديل L2281/L1737",
+        "Q-3: إبقاء 300ث ⟂ إلغاء cooldown:0 (2⟂2)",
+        "Q-4: test_p60_403_private_gate.py ⟂ test_p60_maint11_private_project_gate.py",
+        "Q-6: redact_email ⟂ redact_email() ⟂ masked_email (غير موجودة)",
+        "موضع الإدراج: L3604 ⟂ L3590 ⟂ L3713"
+      ],
+      "proven_errors": [
+        "masked_email غير موجودة في 01.33 (grep -c = 0) — تنفيذ Q-6 حرفياً = NameError",
+        "max_timeout_retries في 01.33 L990 (يُقرأ L3393، حلقة L3452) لا 01.03 L2265",
+        "orig_pid تُعيَّن فقط في L3589 ⇒ T2 كان سيرمي UnboundLocalError",
+        "بطاقة البدء الكاذبة 3 مواضع: L3446-3450، L3583-3586، L3606-3610",
+        "حارس 403 في L3593-3596 ميت: 01.03 L1787-1790 يبتلع الاستثناء ويعيد []",
+        "redact_email L83-90 يُبقي الدومين كاملاً (a***@gmail.com)",
+        "FORBIDDEN_KEYWORDS L2261 بلا مستهلك (grep -c = 1)"
+      ],
+      "evidence_gaps": [
+        "download11.har غير موجود في الشجرة (find -iname '*.har' فارغ) ⇒ Q-1 غير مُتحقَّق",
+        "bridge_bot.log الميداني غير مرفق ⇒ Q-7 مُبلَّغ فقط"
+      ],
+      "path_recommendation": "B (بوابة في 01.33) مشروطة: Q-1 + إدراج قبل L3583 + orig_pid=None + Fail-Open",
+      "executed": false,
+      "code_changed": false,
+      "files_updated": [
+        "MAINT-11_403_PRIVATE_PROJECT_GATE_PLAN.md",
+        "PROGRESS.md",
+        "RESUME.md",
+        "UNIVERSAL_REVIEW_CARD.md",
+        "genspark/recovery_state.json"
+      ],
+      "new_principle": "7.33 الكارت الخارجي ليس دليلاً",
+      "card_version": "1.19"
     }
   }
 }
