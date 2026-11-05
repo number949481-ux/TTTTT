@@ -216,8 +216,9 @@ class TestBlindForbidden(_FailoverFixture):
         for token in ("register_forbidden_hit", "FORBIDDEN_MOVE_AFTER_N", "FORBIDDEN_HITS_WINDOW_HOURS",
                       "COOLDOWN_VAULT_HOURS", "_ACCOUNT_LOG_FORBIDDEN_KEYS", "cooldown_until_ts", "forbidden_hits"):
             self.assertNotIn(token, BRIDGE_SRC, f"D26/D27: {token} must be gone from 01.33")
-        for reason in ("FORBIDDEN", "EMPTY_STREAM_FAILED", "LOGIN_FAILED", "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT"):
+        for reason in ("EMPTY_STREAM_FAILED", "LOGIN_FAILED", "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT"):
             self.assertIn(reason, bridge.COOLDOWN_VAULT_REASONS)
+        self.assertNotIn("FORBIDDEN", bridge.COOLDOWN_VAULT_REASONS)   # [MAINT-10/Q3 LOCKOUT-FIX] 403 never vaulted (A-1)
         self.assertTrue(bridge.ACCOUNT_LOG_FILENAME.endswith(".jsonl"), "D28/D32: JSON Lines")
         self.assertEqual(bridge.COOLDOWN_VAULT_LOCK_FILENAME, LOCK_NAME)
         self.assertEqual(bridge.BALANCE_UNREADABLE_BREAKER_N, 2)

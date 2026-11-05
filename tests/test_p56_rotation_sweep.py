@@ -418,4 +418,4 @@ class TestContracts:
 
     def test_54_bridge_untouched(self):
         """01.33 must stay byte-identical to the MAINT-5 baseline (owner red line)."""
-        assert hashlib.sha256(BRIDGE_FILE.read_bytes()).hexdigest().startswith("8728ac134b037f9d")
+        assert hashlib.sha256(BRIDGE_FILE.read_bytes()).hexdigest().startswith("aa17a8a980fd2a20")

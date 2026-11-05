@@ -338,7 +338,7 @@ class TestForbiddenSourceContracts(_FailoverFixture):
         self.assertLess(blk_start, FAILOVER_SRC.index('status == "COMPLETED"'))
 
     def test_15_other_vault_reasons_and_breaker_unchanged(self):
-        self.assertIn("FORBIDDEN", bridge.COOLDOWN_VAULT_REASONS)   # tuple itself untouched (A-1 bypasses it)
+        self.assertNotIn("FORBIDDEN", bridge.COOLDOWN_VAULT_REASONS)   # [Q3 LOCKOUT-FIX] dead entry removed (A-1 never vaults 403)
         for r in ("EMPTY_STREAM_FAILED", "LOGIN_FAILED", "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT"):
             self.assertIn(r, bridge.COOLDOWN_VAULT_REASONS)
         self.assertEqual(bridge.P44_STRUCTURED_STATUSES, ("CREDIT_EXHAUSTED", "DATA_RETENTION", "SESSION_EXPIRED", "FORBIDDEN"))
@@ -450,6 +450,67 @@ class TestCompletedConsumesAccount(_FailoverFixture):
             self.assertNotIn('status == "DATA_RETENTION"', ctx)
             self.assertNotIn("DEC07_EMPTY_COOLDOWN_HOURS", ctx)
         self.assertEqual(SEND_PUBLIC_SRC.count("balance=0)"), 0, "no zeroing inside the pre-flight layer")
+
+
+# ── 24–27: LOCKOUT-FIX (Q1) — full lifecycle: consume -> 29h/0 -> expiry -> eligible -> reactivate 100 ──
+
+class TestLockoutFixFullLifecycle(_Fixture):
+    """Audit FAIL #3 (post-execution zero-base audit): the offline filter (A-2) ran *before* the claim,
+    so an account cooled with balance:0 (A-5/A-7/C-2) was never passed to reactivate_account_if_due (C-1)
+    and stayed locked forever. Q1: an expired cooldown bypasses the offline filter."""
+
+    def _consume(self):
+        # step 1: real consumption writes balance 0 + 29h (same call used by C-2 / CREDIT_EXHAUSTED / cancel-after-start)
+        self.assertTrue(bridge.mark_account_cooldown(EMAIL_A, cooldown_hours=29.0, json_path=str(self.primary), balance=0))
+        rec = self.rec()
+        self.assertEqual((rec["status"], rec["active"], rec["balance"]), ("cooldown", False, 0))
+        self.assertGreater(rec["cooldown_until"], time.time() + 28 * 3600)
+        return rec
+
+    def test_24_still_cooling_stays_out_of_the_queue(self):
+        self._consume()
+        with mock.patch.object(bridge, "GIFT_PREFLIGHT_ENABLED", False):
+            self.assertEqual(bridge.get_eligible_accounts(self.read(), set()), [self.read()[1]])
+
+    def test_25_expired_cooldown_with_balance_zero_is_eligible_again(self):
+        self._consume()
+        real_time = time.time
+        with mock.patch.object(bridge.time, "time", lambda: real_time() + 29 * 3600 + 5), \
+             mock.patch.object(bridge, "GIFT_PREFLIGHT_ENABLED", False):
+            out = bridge.get_eligible_accounts(self.read(), set())
+        self.assertIn(EMAIL_A, [a["email"] for a in out], "Q1: expired cooldown must not be dropped by the offline filter")
+        self.assertFalse(any("[OFFLINE_BALANCE]" in str(c.args[1]) for c in self.logs.call_args_list if len(c.args) > 1))
+
+    def test_26_full_cycle_claim_then_reactivate_writes_100(self):
+        self._consume()
+        real_time = time.time
+        with mock.patch.object(bridge.time, "time", lambda: real_time() + 29 * 3600 + 5), \
+             mock.patch.object(bridge, "GIFT_PREFLIGHT_ENABLED", False), \
+             mock.patch.object(bridge, "claim_account_selection", return_value=True):
+            acc, pool, reason = bridge.claim_eligible_account_for_owner(
+                [a for a in self.read() if a["email"] == EMAIL_A], set(), "tok-26")
+            self.assertEqual(reason, "claimed")
+            # same call order as send_message_with_auto_account_failover: claim -> reactivate_account_if_due
+            acc = bridge.reactivate_account_if_due(acc, json_path=str(self.primary))
+        self.assertEqual((acc["status"], acc["active"], acc["cooldown_until"], acc["balance"]), ("active", True, 0, 100))
+        rec = self.rec()
+        self.assertEqual((rec["status"], rec["active"], rec["cooldown_until"], rec["balance"]), ("active", True, 0, 100))
+        self.assertIn("cooldown_released_at", rec)
+        # and the revived account is now a normal active account for the filter (100 >= OFFLINE_MIN_BALANCE)
+        with mock.patch.object(bridge, "GIFT_PREFLIGHT_ENABLED", False):
+            self.assertIn(EMAIL_A, [a["email"] for a in bridge.get_eligible_accounts(self.read(), set())])
+
+    def test_27_active_low_balance_is_still_filtered_and_tuple_is_clean(self):
+        # the bypass is strictly for expired cooldown/auth_failed/disabled — an *active* account with 0 is still skipped
+        active_zero = {"email": EMAIL_A, "status": "active", "active": True, "balance": 0, "last_used": 1.0}
+        with mock.patch.object(bridge, "GIFT_PREFLIGHT_ENABLED", False):
+            self.assertEqual(bridge.get_eligible_accounts([active_zero], set()), [])
+        self.assertTrue(any("[OFFLINE_BALANCE]" in str(c.args[1]) for c in self.logs.call_args_list if len(c.args) > 1))
+        self.assertIn("_due_reactivation", ELIGIBLE_SRC)
+        self.assertIn("[MAINT-10/LOCKOUT-FIX Q1]", ELIGIBLE_SRC)
+        self.assertEqual(bridge.COOLDOWN_VAULT_REASONS,
+                         ("EMPTY_STREAM_FAILED", "LOGIN_FAILED", "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT"))
+        self.assertIn("[مصدَّق Q2 LOCKOUT-FIX]", SEND_PUBLIC_SRC)   # ratified compact_in_progress guard
 
 
 # ── 23: untouched surfaces ───────────────────────────────────────────────────

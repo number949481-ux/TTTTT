@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1613
-المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + MAINT-4-B: COOLDOWN_VAULT_REASONS (FORBIDDEN/EMPTY_STREAM_FAILED/LOGIN_FAILED/BALANCE_UNREADABLE/ZERO_BALANCE_STALE_GIFT) + COOLDOWN_VAULT_LOCK_FILENAME (accounts_cooldown.json.lock) + BALANCE_UNREADABLE_BREAKER_N=2 + _atomic_json_dump + _with_vault_lock (O_CREAT|O_EXCL + مهلة 30s + تجاوز يتيم >60s) + append_account_log (account_log.jsonl — سطر JSON كامل بالبيانات: email/password/cookies/reason/from_path/to_path/by، إلحاق O(1) بلا قراءة) + move_account_to_cooldown_vault (نقل أعمى فوري N=1 — Cut&Move ذري إلى accounts_cooldown.json تحت القفل المشترك، بلا cooldown_until_ts/ساعات — الرجوع عبر 05.02 --revive -q -l 0) + refresh_cookies_on_401
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1617
+المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + MAINT-4-B: COOLDOWN_VAULT_REASONS (EMPTY_STREAM_FAILED/LOGIN_FAILED/BALANCE_UNREADABLE/ZERO_BALANCE_STALE_GIFT — FORBIDDEN أُزيل MAINT-10/Q3) + MAINT-10: OFFLINE_MIN_BALANCE + فلتر أوفلاين مع استثناء التبريد المنتهي (LOCKOUT-FIX Q1) + COOLDOWN_VAULT_LOCK_FILENAME (accounts_cooldown.json.lock) + BALANCE_UNREADABLE_BREAKER_N=2 + _atomic_json_dump + _with_vault_lock (O_CREAT|O_EXCL + مهلة 30s + تجاوز يتيم >60s) + append_account_log (account_log.jsonl — سطر JSON كامل بالبيانات: email/password/cookies/reason/from_path/to_path/by، إلحاق O(1) بلا قراءة) + move_account_to_cooldown_vault (نقل أعمى فوري N=1 — Cut&Move ذري إلى accounts_cooldown.json تحت القفل المشترك، بلا cooldown_until_ts/ساعات — الرجوع عبر 05.02 --revive -q -l 0) + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 _ENGINE_CACHE = {"mod": None, "path": None}
@@ -739,8 +739,12 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
         if not is_account_ready(acc):
             continue
         # [MAINT-10/A-2] فلتر الرصيد الأوفلاين: رقم صريح < الحد ⇒ استبعاد بلا شبكة/كتابة؛ None/غير رقمي ⇒ Fail-Open (A-3 يصحّحه حيّاً)
+        # [MAINT-10/LOCKOUT-FIX Q1] تبريد منتهٍ (status cooldown/auth_failed/disabled وقد اجتاز is_account_ready) ⇒ الفلتر لا يُطبَّق:
+        # الحساب مستحق لـ reactivate_account_if_due (balance:100 — C-1) ثم البوابة الحية؛ وإلا حُبس بـ balance:0 للأبد (فخ A-2⇄C-1)
         _bal = acc.get("balance")
-        if isinstance(_bal, (int, float)) and not isinstance(_bal, bool) and _bal < OFFLINE_MIN_BALANCE:
+        _due_reactivation = str(acc.get("status", "active")).lower().strip() in ("cooldown", "auth_failed", "disabled")
+        if (not _due_reactivation and isinstance(_bal, (int, float)) and not isinstance(_bal, bool)
+                and _bal < OFFLINE_MIN_BALANCE):
             log_event("info", f"[OFFLINE_BALANCE] تخطي حساب رصيده المسجل {int(_bal)} < {OFFLINE_MIN_BALANCE}", email=str(em))
             continue
         eligible.append(acc)
@@ -791,8 +795,8 @@ def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: s
 # ════════════════════════════════════════════════════════
 # 🧊 [MAINT3/MAINT-4-B] معزل التبريد الموحد accounts_cooldown.json + سجل الحركات account_log.jsonl
 # ════════════════════════════════════════════════════════
-# لماذا: FORBIDDEN (403) كان يُوسم نجاحاً في ملف الحسابات (RESUME §3.1 T5). الآن (D26 — النقل الأعمى الفوري N=1):
-# أي رفض/403، أو LOGIN_FAILED بعد تسلسل (الجلسة ← الإيميل/الباسورد)، أو تعذر قراءة الرصيد، أو رصيد 0 مع هدية
+# لماذا: FORBIDDEN (403) كان يُوسم نجاحاً في ملف الحسابات (RESUME §3.1 T5). الآن (D26 — النقل الأعمى الفوري N=1؛
+# [MAINT-10/A-1] 403 خرج من المعزل نهائياً = براءة + تبريد 5 دقائق في مكانه): LOGIN_FAILED بعد تسلسل (الجلسة ← الإيميل/الباسورد)، أو تعذر قراءة الرصيد، أو رصيد 0 مع هدية
 # راكدة ≥14 يوماً ⇒ Cut&Move ذري فوري إلى accounts_cooldown.json (بجوار الأساسي — D6) بلا كاش وبلا انتظار.
 # D27: المعزل دائم — لا إحياء زمني هنا ولا بيانات مواقيت في السجل؛ العودة حصرياً عبر 05.02:
 #   `--revive -q <مسار مطلق>/accounts_cooldown.json -l 0` (D3/D21/D38؛ فحص 12:00/00:00 حصري لهذا الملف — D16/D17).
@@ -808,7 +812,7 @@ COOLDOWN_VAULT_LOCK_TIMEOUT_S = 30.0                           # انتظار ا
 COOLDOWN_VAULT_LOCK_ORPHAN_S = 60.0                            # قفل أقدم من هذا = يتيم ⇒ يُتجاوز بتحذير
 ACCOUNT_LOG_FILENAME = "account_log.jsonl"                     # D28/D32: JSON Lines append-only
 ACCOUNT_LOG_LOCK = threading.Lock()                            # للسجل فقط — لا يُمسك داخل FILE_LOCK
-COOLDOWN_VAULT_REASONS = ("FORBIDDEN", "EMPTY_STREAM_FAILED", "LOGIN_FAILED",
+COOLDOWN_VAULT_REASONS = ("EMPTY_STREAM_FAILED", "LOGIN_FAILED",   # [MAINT-10/Q3] FORBIDDEN أُزيل: 403 = براءة (A-1) لا معزل
                           "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT")   # tuple فارغ = معطل (مفتاح واحد — A3)
 BALANCE_UNREADABLE_BREAKER_N = 2            # D34: −1 لحسابين متتاليين في نفس المهمة ⇒ NETWORK_DOWN (لا نقل مزيد)
 ACCOUNT_LOG_FIELDS = ("ts", "at", "event", "email", "password", "cookies", "reason", "from_path", "to_path", "by")

@@ -1265,8 +1265,12 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
         if not is_account_ready(acc):
             continue
         # [MAINT-10/A-2] فلتر الرصيد الأوفلاين: رقم صريح < الحد ⇒ استبعاد بلا شبكة/كتابة؛ None/غير رقمي ⇒ Fail-Open (A-3 يصحّحه حيّاً)
+        # [MAINT-10/LOCKOUT-FIX Q1] تبريد منتهٍ (status cooldown/auth_failed/disabled وقد اجتاز is_account_ready) ⇒ الفلتر لا يُطبَّق:
+        # الحساب مستحق لـ reactivate_account_if_due (balance:100 — C-1) ثم البوابة الحية؛ وإلا حُبس بـ balance:0 للأبد (فخ A-2⇄C-1)
         _bal = acc.get("balance")
-        if isinstance(_bal, (int, float)) and not isinstance(_bal, bool) and _bal < OFFLINE_MIN_BALANCE:
+        _due_reactivation = str(acc.get("status", "active")).lower().strip() in ("cooldown", "auth_failed", "disabled")
+        if (not _due_reactivation and isinstance(_bal, (int, float)) and not isinstance(_bal, bool)
+                and _bal < OFFLINE_MIN_BALANCE):
             log_event("info", f"[OFFLINE_BALANCE] تخطي حساب رصيده المسجل {int(_bal)} < {OFFLINE_MIN_BALANCE}", email=str(em))
             continue
         eligible.append(acc)
@@ -1317,8 +1321,8 @@ def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: s
 # ════════════════════════════════════════════════════════
 # 🧊 [MAINT3/MAINT-4-B] معزل التبريد الموحد accounts_cooldown.json + سجل الحركات account_log.jsonl
 # ════════════════════════════════════════════════════════
-# لماذا: FORBIDDEN (403) كان يُوسم نجاحاً في ملف الحسابات (RESUME §3.1 T5). الآن (D26 — النقل الأعمى الفوري N=1):
-# أي رفض/403، أو LOGIN_FAILED بعد تسلسل (الجلسة ← الإيميل/الباسورد)، أو تعذر قراءة الرصيد، أو رصيد 0 مع هدية
+# لماذا: FORBIDDEN (403) كان يُوسم نجاحاً في ملف الحسابات (RESUME §3.1 T5). الآن (D26 — النقل الأعمى الفوري N=1؛
+# [MAINT-10/A-1] 403 خرج من المعزل نهائياً = براءة + تبريد 5 دقائق في مكانه): LOGIN_FAILED بعد تسلسل (الجلسة ← الإيميل/الباسورد)، أو تعذر قراءة الرصيد، أو رصيد 0 مع هدية
 # راكدة ≥14 يوماً ⇒ Cut&Move ذري فوري إلى accounts_cooldown.json (بجوار الأساسي — D6) بلا كاش وبلا انتظار.
 # D27: المعزل دائم — لا إحياء زمني هنا ولا بيانات مواقيت في السجل؛ العودة حصرياً عبر 05.02:
 #   `--revive -q <مسار مطلق>/accounts_cooldown.json -l 0` (D3/D21/D38؛ فحص 12:00/00:00 حصري لهذا الملف — D16/D17).
@@ -1334,7 +1338,7 @@ COOLDOWN_VAULT_LOCK_TIMEOUT_S = 30.0                           # انتظار ا
 COOLDOWN_VAULT_LOCK_ORPHAN_S = 60.0                            # قفل أقدم من هذا = يتيم ⇒ يُتجاوز بتحذير
 ACCOUNT_LOG_FILENAME = "account_log.jsonl"                     # D28/D32: JSON Lines append-only
 ACCOUNT_LOG_LOCK = threading.Lock()                            # للسجل فقط — لا يُمسك داخل FILE_LOCK
-COOLDOWN_VAULT_REASONS = ("FORBIDDEN", "EMPTY_STREAM_FAILED", "LOGIN_FAILED",
+COOLDOWN_VAULT_REASONS = ("EMPTY_STREAM_FAILED", "LOGIN_FAILED",   # [MAINT-10/Q3] FORBIDDEN أُزيل: 403 = براءة (A-1) لا معزل
                           "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT")   # tuple فارغ = معطل (مفتاح واحد — A3)
 BALANCE_UNREADABLE_BREAKER_N = 2            # D34: −1 لحسابين متتاليين في نفس المهمة ⇒ NETWORK_DOWN (لا نقل مزيد)
 ACCOUNT_LOG_FIELDS = ("ts", "at", "event", "email", "password", "cookies", "reason", "from_path", "to_path", "by")
@@ -3433,7 +3437,7 @@ def send_message_and_make_public(
         if live_pid and not str(live_pid).startswith("__"):
             carry_pid = live_pid
             try:  # [MAINT-10/A-7] أول حدث بث من السيرفر = بدأ التوليد (بلا لمس 01.03)
-                if not getattr(bridge_cfg, "compact_in_progress", False):  # صيانة /compact ليست استهلاكاً (A-6) — لا ترفع الراية
+                if not getattr(bridge_cfg, "compact_in_progress", False):  # صيانة /compact ليست استهلاكاً (A-6) — لا ترفع الراية [مصدَّق Q2 LOCKOUT-FIX]
                     bridge_cfg.generation_started = True
             except Exception:
                 pass

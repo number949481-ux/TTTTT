@@ -7,7 +7,7 @@ no timer metadata, shared lockfile. Tests 10–13 (threshold), 15 (cooldown_unti
 [MAINT-10/A-1 — 2026-11-04, owner GO card db5d L384-402] D26 is CANCELLED for FORBIDDEN only: a 403 means the project
 is Private, the account is innocent — no vault move, no hit cache, no balance change, ``active`` untouched, a 5-minute
 in-place ``cooldown_until`` and the task stops with status FORBIDDEN (``return``, never MAX_ATTEMPTS_EXHAUSTED).
-Tests 11–14 and 15 below reflect that contract (bridge sha 8728ac134b037f9d); the FORBIDDEN bullets in the legacy
+Tests 11–14 and 15 below reflect that contract (bridge sha aa17a8a980fd2a20); the FORBIDDEN bullets in the legacy
 contract text that follows are historical. See tests/test_p59_maint10_lifecycle.py for the full MAINT-10 surface.
 
 Owner-approved contract (RESUME.md §3.4/§3.6/§3.7/§3.8 + decisions D1–D25 "كما أوصيت", 2026-10-31):
@@ -386,7 +386,9 @@ class TestLocksAndContracts(_VaultFixture):
         self.assertNotIn("update_account_data(", move_body, "I1: manual read/modify/write under FILE_LOCK")
         self.assertNotIn("read_accounts_safe(", move_body)
         self.assertNotIn("ACCOUNT_LOG_LOCK", move_body.split("append_account_log")[0], "log lock never nested in FILE_LOCK")
-        self.assertEqual(bridge.COOLDOWN_VAULT_REASONS[:2], ("FORBIDDEN", "EMPTY_STREAM_FAILED"))
+        # [MAINT-10/Q3 LOCKOUT-FIX] "FORBIDDEN" removed from the tuple (403 = innocent, never vaulted — A-1)
+        self.assertNotIn("FORBIDDEN", bridge.COOLDOWN_VAULT_REASONS)
+        self.assertEqual(bridge.COOLDOWN_VAULT_REASONS[:2], ("EMPTY_STREAM_FAILED", "LOGIN_FAILED"))
         self.assertFalse(hasattr(bridge, "COOLDOWN_VAULT_HOURS"))
         raw = BRIDGE.read_bytes()
         self.assertEqual(raw.count(b"\n") - raw.count(b"\r\n"), 0, "01.33 must stay pure CRLF")

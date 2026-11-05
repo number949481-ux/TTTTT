@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p06_engine_flow
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2723..4339
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 2727..4343
 المحتوى: Archive safety/extraction + download_project_archive (v01.04 Turbo Direct Streaming) + make_project_always_public + get_public_forked_pid + send_message_and_make_public (P40: Decline Fast-Path — _declined قبل المسارات المكلفة: تخطي download_project_archive وmake_project_always_public عند الرفض + الرابط المباشر بلا شبكة + save_project_branch بلا حراسة | P43: skip_archive = _declined or fast_lean_skip — الترتيب الحرفي للحدية 5 + إبقاء make_project_always_public في fast mode (D2) + Telemetry FAST_MODE_SKIP (D7)) + send_message_with_auto_account_failover (P12: carry_pid resume + stream-interrupt | P13: pre-flight balance gate + LOW_BALANCE silent skip | P16: early make-public فور التقاط pid | P17: تجديد فوري للجلسة المنتهية -2 + بوابة رصيد بعد تجديد 401 أثناء الشات | P18: وقف فوري عند تغيّر مؤشر النشاط أثناء polling المتابعة | P25: إلغاء تعاوني قهري — فحص cancel_event قبل الإرسال/في المتابعة + نوم متقطع Event.wait + CANCELLED بلا عقوبة في الـ failover | P30: فتح span لحظة الـ claim + إغلاق حتمي في finally + عزل spans لكل تشغيل | DEC07: صمام الرد الفارغ في monitor_chat_completion — 3 قراءات فارغة متتالية + ≥30s بلا مؤشر نشاط ← EMPTY_STREAM_FAILED، وعلامة suspended في النص ← ACCOUNT_SUSPENDED (readiness/maintenance/unconfirmed لا تُكسر) + فرعا failover: cooldown ساعة للفارغ (mark_account_cooldown) وحجر suspended/quarantined/cookies={} للمحظور ثم continue | MAINT3: EMPTY_STREAM_FAILED → move_account_to_cooldown_vault مع fallback التبريد القديم (D10) + فرع FORBIDDEN قبل LOW_BALANCE: register_forbidden_hit + عتبة FORBIDDEN_MOVE_AFTER_N=2 + تبريد 5 دقائق احتياطياً — لا وسم نجاح لـ403 (إصلاح T5))
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -716,7 +716,7 @@ def send_message_and_make_public(
         if live_pid and not str(live_pid).startswith("__"):
             carry_pid = live_pid
             try:  # [MAINT-10/A-7] أول حدث بث من السيرفر = بدأ التوليد (بلا لمس 01.03)
-                if not getattr(bridge_cfg, "compact_in_progress", False):  # صيانة /compact ليست استهلاكاً (A-6) — لا ترفع الراية
+                if not getattr(bridge_cfg, "compact_in_progress", False):  # صيانة /compact ليست استهلاكاً (A-6) — لا ترفع الراية [مصدَّق Q2 LOCKOUT-FIX]
                     bridge_cfg.generation_started = True
             except Exception:
                 pass
