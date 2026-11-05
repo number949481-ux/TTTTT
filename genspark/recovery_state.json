@@ -1105,7 +1105,7 @@
       "code_changed": false
     }
   },
-  "next": "MAINT-10 + LOCKOUT-FIX CLOSED (2026-11-05). First [ ] in PROGRESS = BACKLOG (each item needs owner GO) => ALIGNMENT_ONLY.",
+  "next": "MAINT-11 (403/Private) PLAN_AND_AUDIT_ONLY (2026-11-05): first [ ] in PROGRESS = MAINT-11 => ALIGNMENT_ONLY until owner GO + evidence answers Q-1..Q-7. Zero code.",
   "maint4_a2_gist_checkpoints": {
     "cp0": {
       "state": "done",
@@ -2031,5 +2031,49 @@
       "05.02_genspark_delayed_gifts_manager.py",
       "bridge_refactor owner files"
     ]
+  },
+  "maint11_403_plan_2026_11_05": {
+    "status": "PLAN_AND_AUDIT_ONLY — awaiting owner GO + evidence answers Q-1..Q-7",
+    "cards": {
+      "db5d": "L1437-1464 R11, L1484-1520 P48_PRIVATE_PROJECT_403_GATE_360, L1538-1683 GO_SURGICAL_FIX_403",
+      "093e": "L5393-7734 voices 205-212, L6622-6760 API map, L7288-7414 MASTER-360-PLAN"
+    },
+    "gists": {
+      "db5d": "1695/73bd4b5dcd5710ff",
+      "093e": "7734/0b45ba672894c4f7"
+    },
+    "finding": "403 from ask_proxy is swallowed in 01.03 L2281-2282 -> (None,None,None) -> 01.33 L3713-3716 'FAILED' -> failover has no FAILED branch -> L4326-4336 continue -> MAX_ATTEMPTS_EXHAUSTED. A-1 guard L3989 never reached.",
+    "proofs": {
+      "A": "(None,'FAILED',..) -> sends=2/2 MAX_ATTEMPTS_EXHAUSTED",
+      "B": "FORBIDDEN -> sends=1",
+      "C": "fake engine (None,None,None) -> send_chat x2/account, status 'FAILED'"
+    },
+    "card_code_rejected_because": [
+      "cfg._last_project_status is data.status (01.03 L1737), top-level status -13 never read",
+      "answer is None so text checks are false",
+      "_last_fetch_status=200"
+    ],
+    "plan_file": "MAINT-11_403_PRIVATE_PROJECT_GATE_PLAN.md",
+    "open_questions": [
+      "Q-1 payload shape of private /api/project",
+      "Q-2 unknown-probe policy or 01.03 one-line edit (Q5 breach)",
+      "Q-3 cancel A-1 300s?",
+      "Q-4 naming MAINT-11/p60",
+      "Q-5 telegram observer during incident",
+      "Q-6 zero-emails scope includes local log?",
+      "Q-7 field log excerpt"
+    ],
+    "r11": {
+      "V1": "PASS",
+      "V2": "PASS",
+      "V3": "PASS",
+      "V4": "FAIL",
+      "V5": "PASS",
+      "V6": "PASS",
+      "V7": "WARNING L1103/1564/3562/4152/4175"
+    },
+    "suite": "1430 passed / 19 failed == baseline a8d79bc (0 new); parity 16/16",
+    "code_changed": false,
+    "base_head": "4e22e23"
   }
 }
