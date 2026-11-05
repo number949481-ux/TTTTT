@@ -28,7 +28,7 @@ pip install -r requirements.txt
 * **403 / Private project:** the account is innocent — no vault move, no balance change, `active` untouched; a 5-minute in-place `cooldown_until` and the task stops with `FORBIDDEN` ("make the project **Public** and resend"). No other account is tried.
 * **Offline balance filter:** `get_eligible_accounts` skips accounts whose recorded `balance` is a number `< OFFLINE_MIN_BALANCE` (100); `None`/non-numeric values fail open (the live check / 05.02 corrects them).
 * **Recorded balance is the real one:** every in-place `LOW_BALANCE` exit writes the actual balance first; `mark_account_cooldown(..., balance=0)` is used only for genuine consumption — `CREDIT_EXHAUSTED`, a real `COMPLETED` (model declines excluded; `last_success_at` is kept), and a user cancel **after** generation started (`BridgeConfig.generation_started`; `/compact` maintenance never raises it). Temporary faults keep the balance as-is.
-* **Reactivation after 29h:** `reactivate_account_if_due` restores `active: true`, `cooldown_until: 0` and a default `balance: 100`.
+* **Reactivation after 29h:** `reactivate_account_if_due` restores `active: true`, `cooldown_until: 0` and a default `balance: 100`. **LOCKOUT-FIX (2026-11-05):** an account whose cooldown has expired (`status` cooldown/auth_failed/disabled) is *exempt* from the offline balance filter so it can be claimed and reactivated — otherwise a `balance: 0` written at consumption would lock it out forever. `"FORBIDDEN"` is no longer in `COOLDOWN_VAULT_REASONS` (403 is never vaulted).
 * Governing plan: `MAINT-10_MASTER_PLAN.md`; tests: `tests/test_p59_maint10_lifecycle.py`.
 
 ---

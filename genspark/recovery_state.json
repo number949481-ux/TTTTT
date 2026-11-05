@@ -1105,7 +1105,7 @@
       "code_changed": false
     }
   },
-  "next": "MAINT-10 CLOSED. First [ ] in PROGRESS = BACKLOG (each item needs owner GO) => ALIGNMENT_ONLY.",
+  "next": "MAINT-10 + LOCKOUT-FIX CLOSED (2026-11-05). First [ ] in PROGRESS = BACKLOG (each item needs owner GO) => ALIGNMENT_ONLY.",
   "maint4_a2_gist_checkpoints": {
     "cp0": {
       "state": "done",
@@ -2003,6 +2003,33 @@
       "01.03Genspark_claude-opus-5-code.py",
       "genspark_verifier_engine.py",
       "05.02 (e1216b5186d99420)"
+    ]
+  },
+  "lockout_fix_2026_11_05": {
+    "status": "DONE/CLOSED",
+    "go_card": "Gist db5d6f65 L1173-1200 [MANDATE: GO_SURGICAL_FIX_LOCKOUT] + ratification Q1-Q4 L1110-1130 (gist 1348 lines sha 00c809ec5db945a5)",
+    "voice": "198 (== 203 / 10 in gist; same text)",
+    "base_head": "2daa22d",
+    "code_sync": "89456e7",
+    "finding": "Zero-base audit FAIL: offline filter A-2 (before claim) drops balance:0 accounts after 29h so reactivate_account_if_due (C-1, after claim) never runs -> permanent lockout; only 05.02 could rescue",
+    "q1": "01.33 L1268-1273 _due_reactivation (status cooldown/auth_failed/disabled passed is_account_ready) => offline filter skipped",
+    "q2": "compact_in_progress guard L3440 ratified (tag [مصدَّق Q2 LOCKOUT-FIX])",
+    "q3": "FORBIDDEN removed from COOLDOWN_VAULT_REASONS L1341 + header comment L1322-1323; rebuild_refactor p03 description updated",
+    "q4": "tests/test_p59_maint10_lifecycle.py 24->28 TestLockoutFixFullLifecycle t24-t27",
+    "coupled_tests": "p51 L389 tuple[:2]; p53 test_36; p59 test_15; sha guards p51/p56/p57 -> aa17a8a980fd2a20",
+    "bridge": {
+      "sha16": "aa17a8a980fd2a20",
+      "lines": 10440,
+      "crlf": true
+    },
+    "parts": "p03 532-1617, p04 1618-2173, p05 2174-2726, p06 2727-4343, p07 4344-5526, p08 5527-6091, p09 6092-7828, p10 7829-8143, p11 8144-8678, p12 8679-10440; parity 16/16",
+    "suite": "19 failed (== baseline a8d79bc by names, worktree rebuilt) / 1430 passed / 1 skipped",
+    "docs": "PROGRESS L140 tail, RESUME L25 + 3.26 tail + D-09, review card v1.17 + 7.31 + §14, plan STATUS, README, recovery_state",
+    "untouched": [
+      "01.03Genspark_claude-opus-5-code.py",
+      "genspark_verifier_engine.py",
+      "05.02_genspark_delayed_gifts_manager.py",
+      "bridge_refactor owner files"
     ]
   }
 }
