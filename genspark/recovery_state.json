@@ -2033,7 +2033,7 @@
     ]
   },
   "maint11_403_plan_2026_11_05": {
-    "status": "PLAN_AND_AUDIT_ONLY — awaiting owner GO + evidence answers Q-1..Q-7",
+    "status": "PLAN_AND_AUDIT_ONLY (2 review passes) — awaiting owner GO + evidence answers Q-1..Q-7 (Q-5 largely answered by code)",
     "cards": {
       "db5d": "L1437-1464 R11, L1484-1520 P48_PRIVATE_PROJECT_403_GATE_360, L1538-1683 GO_SURGICAL_FIX_403",
       "093e": "L5393-7734 voices 205-212, L6622-6760 API map, L7288-7414 MASTER-360-PLAN"
@@ -2074,6 +2074,19 @@
     },
     "suite": "1430 passed / 19 failed == baseline a8d79bc (0 new); parity 16/16",
     "code_changed": false,
-    "base_head": "4e22e23"
+    "base_head": "4e22e23",
+    "review_pass_2": {
+      "head": "c6946ae",
+      "new_findings": {
+        "F-8": "every tried account gets cooldown_until+300 (L4335) => whole fleet frozen 5 min; real terminal with N<50 accounts = ALL_ACCOUNTS_IN_COOLDOWN (L3844-3853, msg L8079), not MAX_ATTEMPTS_EXHAUSTED",
+        "F-9": "L3606-3610 fires on_project_start_callback(orig_pid) before send_chat => false 'project started' card + cancel button (L8470-8495); T1 before L3604 prevents it",
+        "W-2": "FORBIDDEN_KEYWORDS L2261 dead since P46 (consumer L2306-2307 pass); T8 optional"
+      },
+      "sweep_7_32": "17 failover guards; all have producers (4 via final_status L3274/L3728/L3733); FORBIDDEN's only live producer L3214 requires pid",
+      "q5_code_answer": "observer attached L8204-8208; first event new msg, later events silent edits w/ 7s throttle (L2038-2050); owner likely saw false start card + one status card, no standalone failure msg; confirm",
+      "cancel_innocence": "PASS: generation_started only via SSE (L3441) or carry_pid (L3576); neither before 403 => L3916-3918",
+      "t1_lite": "fingerprint _last_fetch_status==200 & _last_fetch_authoritative & _last_project_status None & history==[] — NOT recommended without Q-1 (public empty project may match)",
+      "backlog_candidate": "B-403-2: treat __INVALID_PROJECT__ (404/410/500) as project-error not account-error (today FAILED + rotation L3713)"
+    }
   }
 }
