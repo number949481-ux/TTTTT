@@ -139,7 +139,7 @@ class TestStaticContracts:
         assert MOD.ENGINE_0502 == ROOT / "05.02_genspark_delayed_gifts_manager.py"
 
     def test_04_bot31_and_main_py_untouched(self):
-        assert hashlib.sha256((ROOT / "01.33_telegram_gen_bridge.py").read_bytes()).hexdigest().startswith("d08d6c13c440c880")
+        assert hashlib.sha256((ROOT / "01.33_telegram_gen_bridge.py").read_bytes()).hexdigest().startswith("8728ac134b037f9d")
         assert hashlib.sha256((ROOT / "bridge_refactor" / "main.py").read_bytes()).hexdigest().startswith("d083885a9bb352f6")
         assert "main_upgrade" not in (ROOT / "bridge_refactor" / "main.py").read_text(encoding="utf-8")
 

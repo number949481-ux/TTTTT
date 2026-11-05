@@ -3433,7 +3433,8 @@ def send_message_and_make_public(
         if live_pid and not str(live_pid).startswith("__"):
             carry_pid = live_pid
             try:  # [MAINT-10/A-7] أول حدث بث من السيرفر = بدأ التوليد (بلا لمس 01.03)
-                bridge_cfg.generation_started = True
+                if not getattr(bridge_cfg, "compact_in_progress", False):  # صيانة /compact ليست استهلاكاً (A-6) — لا ترفع الراية
+                    bridge_cfg.generation_started = True
             except Exception:
                 pass
             # [P16] النشر العام فور معرفة الـ pid — قبل أي انتظار لاكتمال التوليد
