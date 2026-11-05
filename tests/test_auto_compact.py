@@ -15,6 +15,18 @@ SUMMARY = {"role": "assistant", "id": "fresh-summary", "content": "Verified summ
 OLD_SUMMARY = {**SUMMARY, "id": "old-summary", "content": "Old summary"}
 
 
+def penalty_cooldowns(cooldown_mock, finisher_email):
+    """[MAINT-10/C-2 D-06] mark_account_cooldown calls that are maintenance/credit penalties.
+
+    A real COMPLETED now also consumes the finishing account (``balance=0`` + 29h, owner GO card
+    db5d L384-402); these tests assert only on the penalty cooldowns, so that single consumption call
+    (finisher email + ``balance=0``) is excluded. CREDIT_EXHAUSTED penalties also carry ``balance=0``
+    (A-5) but belong to other accounts, so they stay counted.
+    """
+    return [c for c in cooldown_mock.call_args_list
+            if not (c.args and c.args[0] == finisher_email and c.kwargs.get("balance") == 0)]
+
+
 class CompactTests(unittest.TestCase):
     patch = base.CreditRecoveryTests.patch
     archive = base.CreditRecoveryTests.archive
@@ -68,7 +80,7 @@ class CompactTests(unittest.TestCase):
         calls, result, _, _, _ = self.worker_scenario(initial_due=True, restored_state=state)
         self.assertEqual([c[0] for c in calls], ["User modification"])
         self.assertEqual(result[1], "COMPLETED")
-        self.cooldown.assert_not_called()
+        self.assertEqual(penalty_cooldowns(self.cooldown, calls[-1][1]), [])  # [MAINT-10/C-2] only the COMPLETED consumption call
 
     def test_untagged_due_is_cleared_and_never_compacts(self):
         calls, result, _, reg, _ = self.worker_scenario(initial_due=True, restored_state={
@@ -126,7 +138,7 @@ class CompactTests(unittest.TestCase):
         self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
         self.assertEqual(calls[-1][1], self.accounts[2]["email"])
         self.assertEqual(result[1], "COMPLETED")
-        self.assertEqual(self.cooldown.call_count, 2)
+        self.assertEqual(len(penalty_cooldowns(self.cooldown, calls[-1][1])), 2)  # [MAINT-10/C-2] consumption of C excluded
 
     def test_unknown_balance_after_compact_keeps_existing_no_penalty_policy(self):
         # MAINT-4-B D26/D34: unreadable balance (-1) is a blind N=1 vault move (BALANCE_UNREADABLE),
@@ -137,7 +149,7 @@ class CompactTests(unittest.TestCase):
         self.assertEqual([c[0] for c in calls], ["/compact", "User modification"])
         self.assertEqual(calls[-1][1], self.accounts[2]["email"])
         self.assertEqual(result[1], "COMPLETED")
-        self.cooldown.assert_called_once()  # A only (credit exhaustion); B goes to the vault, not cooldown.
+        self.assertEqual(len(penalty_cooldowns(self.cooldown, calls[-1][1])), 1)  # A only (credit exhaustion); B goes to the vault, not cooldown. [MAINT-10/C-2] C consumption excluded
         move.assert_called_once()
         self.assertEqual(move.call_args.args[0], self.accounts[1]["email"])
         self.assertEqual(move.call_args.kwargs.get("reason"), "BALANCE_UNREADABLE")
@@ -462,7 +474,7 @@ class CompactTests(unittest.TestCase):
         self.assertNotEqual(calls[0][1], calls[1][1])
         self.assertEqual(result[1], "COMPLETED")
         self.assertFalse(bridge.ProjectRegistry(reg.key).get_compact_state()["due"])
-        self.cooldown.assert_called_once()
+        self.assertEqual(len(penalty_cooldowns(self.cooldown, calls[-1][1])), 1)  # [MAINT-10/C-2]
 
     def test_finished_noop_on_receiver_rotates_then_sends_resume_once(self):
         calls, result, _, reg, _ = self.worker_scenario(failure=True)
@@ -471,7 +483,7 @@ class CompactTests(unittest.TestCase):
         self.assertEqual(calls[2][1], self.accounts[2]["email"])
         self.assertEqual(result[1], "COMPLETED")
         self.assertFalse(reg.get_compact_state()["due"])
-        self.assertEqual(self.cooldown.call_count, 2)
+        self.assertEqual(len(penalty_cooldowns(self.cooldown, calls[-1][1])), 2)  # [MAINT-10/C-2]
 
     def test_deferred_session_survives_new_worker_without_recompacting(self):
         calls, result, _, reg, _ = self.worker_scenario(initial_due=True, failure=True, restart=True)
@@ -641,7 +653,7 @@ class CompactTests(unittest.TestCase):
         self.assertEqual(reg.get_compact_state()["trigger_status"], "COMPLETED")
         self.assertNotEqual(calls[0][1], calls[1][1])
         self.assertIn("تم التوليد بنجاح", str(sends.call_args_list))
-        self.cooldown.assert_called_once()
+        self.assertEqual(len(penalty_cooldowns(self.cooldown, calls[-1][1])), 1)  # [MAINT-10/C-2]
 
 
     def test_har_user_role_compact_summary_is_verified_and_accepted_by_engine(self):
@@ -814,7 +826,7 @@ class ApprovedCompactPolicyTests(unittest.TestCase):
         self.assertEqual(sender.call_args.kwargs["query"], "Original work")
         self.assertEqual(sender.call_args.kwargs["url"], latest)
         self.assertNotEqual(sender.call_args_list[0].kwargs["email"], sender.call_args.kwargs["email"])
-        self.cooldown.assert_called_once()
+        self.assertEqual(len(penalty_cooldowns(self.cooldown, sender.call_args.kwargs["email"])), 1)  # [MAINT-10/C-2]
         self.assertEqual(self.cfg.last_credit_continuations, 0)
         self.assertEqual(self.release.call_count, 2)
 
