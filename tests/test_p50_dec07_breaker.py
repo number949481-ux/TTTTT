@@ -267,14 +267,20 @@ class TestFailoverHandling(unittest.TestCase):
         return sends, result
 
     def test_09_empty_stream_failed_cools_1h_and_moves_on(self):
+        # [MAINT-3-B-2 / D10] the primary path is now Cut&Move into accounts_cooldown.json (covered by
+        # tests/test_p51_forbidden_isolation.py 15–16). This test pins the DEC07 *fallback* contract:
+        # when the move is unavailable, the 1h in-place cooldown must still happen exactly as before.
+        self.patch("move_account_to_cooldown_vault", return_value=False)
         sends, (pub_url, status, acc, _ext, _text) = self._run("EMPTY_STREAM_FAILED")
         self.assertEqual(sends.call_count, 2, "second account must be tried in the same call")
         self.assertEqual(status, "COMPLETED")
         self.assertEqual(acc["email"], EMAIL_B)
         self.cooldown.assert_any_call(EMAIL_A, cooldown_hours=bridge.DEC07_EMPTY_COOLDOWN_HOURS, json_path="unused.json")
-        # no 29h cooldown and no suspension for an empty stream
+        # no 29h cooldown and no suspension for an empty stream (account A only —
+        # [MAINT-10/C-2] the successful account B is cooled 29h by design)
         for call in self.cooldown.call_args_list:
-            self.assertNotEqual(call.kwargs.get("cooldown_hours"), 29.0)
+            if call.args and call.args[0] == EMAIL_A:
+                self.assertNotEqual(call.kwargs.get("cooldown_hours"), 29.0)
         for call in self.updates.call_args_list:
             if call.args and call.args[0] == EMAIL_A:
                 self.assertNotEqual(call.args[1].get("status"), "suspended")

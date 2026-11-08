@@ -1861,42 +1861,39 @@ def apply_model_contract(payload: dict, model: str | None, msg_id: str | None = 
         p(Fore.YELLOW, f"  ⚠️ [ROUTING BUG] Protected model '{m}' reached generic apply_contract adapter")
         return payload
 
-    # 2. العقود المعتمدة
-    if m in ("claude-fable-5-1", "claude-fable-5.1", "claude fable 5.1", "fable 5.1", "claude-fable-5", "claude fable 5", "fable 5"):
-        payload["models"] = ["gpt-4.1"]
-        payload["use_model"] = "claude-fable-5-1"
+    # 2. العقود المعتمدة (نمط code_sandbox الخالص)
+    if m in ("grok-4.7", "grok 4.7", "grok-4-7", "grok4.7", "grok", "claude-fable-5-1", "claude-fable-5.1", "claude fable 5.1", "fable 5.1", "claude-fable-5", "claude fable 5", "fable 5"):
+        payload["models"] = ["grok-4.7"]
+        payload["use_model"] = "grok-4.7"
         if msg_id:
             payload["client_message_id"] = msg_id
-    elif m in ("gpt-6-astra", "gpt 6 astra", "astra"):
-        payload["models"] = ["gpt-4.1"]
-        payload["use_model"] = "gpt-6-astra"
+    elif m in ("muse-spark-open", "muse spark open", "muse", "claude-opus-5-5", "claude-opus-5.5", "claude opus 5.5", "opus 5.5", "claude-opus-5", "claude opus 5", "opus 5"):
+        payload["models"] = ["muse-spark-open"]
+        payload["use_model"] = "muse-spark-open"
         if msg_id:
             payload["client_message_id"] = msg_id
-    elif m in ("claude-opus-5-5", "claude-opus-5.5", "claude opus 5.5", "opus 5.5", "claude-opus-5", "claude opus 5", "opus 5"):
-        payload["models"] = ["gpt-4.1"]
-        payload["use_model"] = "claude-opus-5-5"
+    elif m in ("claude-sonnet-5-5", "claude-sonnet-5.5", "claude sonnet 5.5", "sonnet 5.5", "claude-sonnet-5", "claude sonnet 5", "sonnet 5"):
+        payload["models"] = ["claude-sonnet-5-5"]
+        payload["use_model"] = "claude-sonnet-5-5"
         if msg_id:
             payload["client_message_id"] = msg_id
-    elif m in ("claude-sonnet-5", "claude sonnet 5", "sonnet 5"):
-        payload["models"] = ["claude-sonnet-5"]
-        payload["use_model"] = "claude-sonnet-5"
-        payload["ai_chat_model"] = "claude-sonnet-5"
+    elif m in ("gemini-4-argon", "gemini 4 argon", "gemini 4", "gemini-4", "gpt-6-astra", "gpt 6 astra", "astra"):
+        payload["models"] = ["gemini-4-argon"]
+        payload["use_model"] = "gemini-4-argon"
         if msg_id:
             payload["client_message_id"] = msg_id
-    elif m in ("gpt-5.6-sol", "gpt 5.6 sol", "gpt 5.6"):
-        payload["models"] = ["gpt-5.6-sol"]
-        payload["use_model"] = "gpt-5.6-sol"
-        payload["ai_chat_model"] = "gpt-5.6-sol"
+    elif m in ("gpt-6.1-sol", "gpt 6.1 sol", "gpt-6.1", "gpt 6.1", "sol", "gpt-5.6-sol", "gpt 5.6 sol", "gpt 5.6"):
+        payload["models"] = ["gpt-6.1-sol"]
+        payload["use_model"] = "gpt-6.1-sol"
         if msg_id:
             payload["client_message_id"] = msg_id
-    elif m in ("kimi-k3", "kimi k3", "k3"):
-        payload["models"] = ["kimi-k3"]
-        payload["use_model"] = "kimi-k3"
-        payload["ai_chat_model"] = "kimi-k3"
+    elif m in ("kimi-k3.1-pro", "kimi k3.1 pro", "kimi 3.1", "kimi", "kimi-k3", "kimi k3", "k3"):
+        payload["models"] = ["kimi-k3.1-pro"]
+        payload["use_model"] = "kimi-k3.1-pro"
         if msg_id:
             payload["client_message_id"] = msg_id
     else:
-        payload["models"] = [model] if model else ["claude-fable-5-1"]
+        payload["models"] = [model] if model else ["grok-4.7"]
 
     return payload
 

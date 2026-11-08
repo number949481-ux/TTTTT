@@ -248,11 +248,15 @@ class TestSourceContracts(unittest.TestCase):
         self.assertNotIn("GIFT_PREFLIGHT", body)
 
     def test_04_single_injection_point(self):
-        # classify is referenced only in: its own def + get_eligible_accounts
+        # classify is referenced only in: its own def + get_eligible_accounts (P48 selection)
+        # + send_message_and_make_public (MAINT-4-B D35: balance 0 + STALE gift ⇒ vault move). Nowhere else.
         refs = [m.start() for m in re.finditer(r"classify_gift_freshness\(", BRIDGE_SRC)]
         elig = _extract_func(BRIDGE_SRC, "get_eligible_accounts")
-        self.assertEqual(len(refs), 1 + elig.count("classify_gift_freshness("))
+        smp = _extract_func(BRIDGE_SRC, "send_message_and_make_public")
+        self.assertEqual(len(refs), 1 + elig.count("classify_gift_freshness(") + smp.count("classify_gift_freshness("))
         self.assertGreaterEqual(elig.count("classify_gift_freshness("), 1)
+        self.assertEqual(smp.count("classify_gift_freshness("), 1, "D35: exactly one zero+STALE check site")
+        self.assertIn("ZERO_BALANCE_STALE_GIFT", smp)
 
     def test_05_is_account_ready_unchanged_signature(self):
         self.assertIn("def is_account_ready(acc: dict) -> bool:", BRIDGE_SRC)

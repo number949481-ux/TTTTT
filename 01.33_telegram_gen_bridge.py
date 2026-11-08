@@ -266,34 +266,35 @@ PROJECT_REGISTRY_INDEX_FILE = PROJECT_REGISTRY_HOME / "registry.json"
 CONTRACT_VERSION = "v15"
 
 AVAILABLE_MODELS = [
-    "claude-fable-5-1",
-    "claude-opus-5-5",
-    "claude-sonnet-5",
-    "gpt-6-astra",
-    "gpt-5.6-sol",
-    "kimi-k3",
+    "grok-4.7",
+    "muse-spark-open",
+    "claude-sonnet-5-5",
+    "gemini-4-argon",
+    "gpt-6.1-sol",
+    "kimi-k3.1-pro",
 ]
-DEFAULT_PROJECT_MODEL = "claude-fable-5-1"
+DEFAULT_PROJECT_MODEL = "grok-4.7"
 PROTECTED_MODELS = frozenset({"gpt-5.5", "claude-opus-4-8"})
 
 MODEL_DISPLAY_NAMES = {
-    "claude-fable-5-1": "🧠 Claude Fable 5.1",
-    "claude-opus-5-5": "👑 Claude Opus 5.5",
-    "claude-sonnet-5": "🎭 Claude Sonnet 5",
-    "gpt-6-astra": "⚡ GPT-6 Astra",
-    "gpt-5.6-sol": "☀️ GPT-5.6 Sol",
-    "kimi-k3": "🚀 Kimi K3",
+    "grok-4.7": "🌌 Grok 4.7",
+    "muse-spark-open": "🎨 Muse Spark Open",
+    "claude-sonnet-5-5": "🎭 Claude Sonnet 5.5",
+    "gemini-4-argon": "💎 Gemini 4 Argon",
+    "gpt-6.1-sol": "☀️ GPT-6.1 Sol",
+    "kimi-k3.1-pro": "🚀 Kimi K3.1 Pro",
 }
 
 MODEL_ALIASES = {
-    "claude-fable-5-1": "claude-fable-5-1", "claude-fable-5.1": "claude-fable-5-1", "claude fable 5.1": "claude-fable-5-1", "claude-fable-5": "claude-fable-5-1", "claude fable 5": "claude-fable-5-1",
-    "fable 5.1": "claude-fable-5-1", "fable 5": "claude-fable-5-1", "🧠 claude fable 5.1": "claude-fable-5-1",
-    "claude-opus-5-5": "claude-opus-5-5", "claude-opus-5.5": "claude-opus-5-5", "claude opus 5.5": "claude-opus-5-5", "opus 5.5": "claude-opus-5-5", "👑 claude opus 5.5": "claude-opus-5-5",
-    "claude-opus-5": "claude-opus-5-5", "claude opus 5": "claude-opus-5-5", "opus 5": "claude-opus-5-5", "👑 claude opus 5": "claude-opus-5-5",
-    "claude-sonnet-5": "claude-sonnet-5", "claude sonnet 5": "claude-sonnet-5", "sonnet 5": "claude-sonnet-5", "🎭 claude sonnet 5": "claude-sonnet-5",
-    "gpt-6-astra": "gpt-6-astra", "gpt-6 astra": "gpt-6-astra", "gpt 6 astra": "gpt-6-astra", "astra": "gpt-6-astra", "⚡ gpt-6 astra": "gpt-6-astra", "⚡ gpt-6-astra": "gpt-6-astra",
-    "gpt-5.6-sol": "gpt-5.6-sol", "gpt 5.6 sol": "gpt-5.6-sol", "gpt 5.6": "gpt-5.6-sol", "☀️ gpt-5.6 sol": "gpt-5.6-sol",
-    "kimi-k3": "kimi-k3", "kimi k3": "kimi-k3", "k3": "kimi-k3", "🚀 kimi k3": "kimi-k3",
+    "grok-4.7": "grok-4.7", "grok 4.7": "grok-4.7", "grok": "grok-4.7", "🌌 grok 4.7": "grok-4.7",
+    "claude-fable-5-1": "grok-4.7", "claude-fable-5.1": "grok-4.7", "claude fable 5.1": "grok-4.7", "fable 5.1": "grok-4.7", "fable 5": "grok-4.7",
+    "muse-spark-open": "muse-spark-open", "muse spark open": "muse-spark-open", "muse": "muse-spark-open", "🎨 muse spark open": "muse-spark-open",
+    "claude-opus-5-5": "muse-spark-open", "claude-opus-5.5": "muse-spark-open", "opus 5.5": "muse-spark-open", "claude-opus-5": "muse-spark-open", "opus 5": "muse-spark-open",
+    "claude-sonnet-5-5": "claude-sonnet-5-5", "claude-sonnet-5.5": "claude-sonnet-5-5", "claude sonnet 5.5": "claude-sonnet-5-5", "🎭 claude sonnet 5.5": "claude-sonnet-5-5", "claude-sonnet-5": "claude-sonnet-5-5", "claude sonnet 5": "claude-sonnet-5-5", "sonnet 5": "claude-sonnet-5-5",
+    "gemini-4-argon": "gemini-4-argon", "gemini 4 argon": "gemini-4-argon", "gemini 4": "gemini-4-argon", "💎 gemini 4 argon": "gemini-4-argon",
+    "gpt-6-astra": "gemini-4-argon", "gpt-6 astra": "gemini-4-argon", "gpt 6 astra": "gemini-4-argon", "astra": "gemini-4-argon", "⚡ gpt-6 astra": "gemini-4-argon",
+    "gpt-6.1-sol": "gpt-6.1-sol", "gpt 6.1 sol": "gpt-6.1-sol", "gpt-6.1": "gpt-6.1-sol", "☀️ gpt-6.1 sol": "gpt-6.1-sol", "gpt-5.6-sol": "gpt-6.1-sol", "gpt 5.6 sol": "gpt-6.1-sol", "gpt 5.6": "gpt-6.1-sol",
+    "kimi-k3.1-pro": "kimi-k3.1-pro", "kimi k3.1 pro": "kimi-k3.1-pro", "kimi 3.1": "kimi-k3.1-pro", "🚀 kimi k3.1 pro": "kimi-k3.1-pro", "kimi-k3": "kimi-k3.1-pro", "kimi k3": "kimi-k3.1-pro", "k3": "kimi-k3.1-pro",
     "gpt-5.5": "gpt-5.5", "gpt 5.5": "gpt-5.5", "gpt5.5": "gpt-5.5",
     "claude-opus-4-8": "claude-opus-4-8", "claude opus 4.8": "claude-opus-4-8", "claude opus 4.8 pro": "claude-opus-4-8",
 }
@@ -301,13 +302,12 @@ MODEL_ALIASES = {
 # ── عقود الموديلات (CONTRACTS) — SSOT موحد ──────────────────────────────
 # model_slug → (models_list, use_model, ai_chat_model, inject_msg_id)
 CONTRACTS = {
-    "claude-fable-5-1":  (["gpt-4.1"],          "claude-fable-5-1",  None,              True),
-    "claude-opus-5-5": (["gpt-4.1"],          "claude-opus-5-5", None,              True),
-    "claude-opus-5":   (["gpt-4.1"],          "claude-opus-5-5", None,              True),
-    "claude-sonnet-5": (["claude-sonnet-5"],  "claude-sonnet-5", "claude-sonnet-5", True),
-    "gpt-6-astra":     (["gpt-4.1"],          "gpt-6-astra",     None,              True),
-    "gpt-5.6-sol":     (["gpt-5.6-sol"],      "gpt-5.6-sol",     "gpt-5.6-sol",     True),
-    "kimi-k3":         (["kimi-k3"],          "kimi-k3",         "kimi-k3",         True),
+    "grok-4.7":          (["grok-4.7"],          "grok-4.7",          None, True),
+    "muse-spark-open":   (["muse-spark-open"],   "muse-spark-open",   None, True),
+    "claude-sonnet-5-5": (["claude-sonnet-5-5"], "claude-sonnet-5-5", None, True),
+    "gemini-4-argon":    (["gemini-4-argon"],    "gemini-4-argon",    None, True),
+    "gpt-6.1-sol":       (["gpt-6.1-sol"],       "gpt-6.1-sol",       None, True),
+    "kimi-k3.1-pro":     (["kimi-k3.1-pro"],     "kimi-k3.1-pro",     None, True),
 }
 
 def is_protected(model: str | None) -> bool:
@@ -1013,6 +1013,9 @@ class BridgeConfig:
     selection_attempt_number: int = 0
     selected_account_email: str = ""
     selected_account_claim_state: str = ""
+    # 🛑 [MAINT-10/A-7] راية بدء التوليد للمحاولة الحالية: تُرفع عند أول pid حقيقي من البث (project_start عبر
+    # _pid_capture_callback) أو عند الاستئناف على pid ملتقط؛ تُصفَّر عند كل claim. الإلغاء بعدها ⇒ 0 + 29h.
+    generation_started: bool = False
     # 🧾 [P29] مسار رحلة الحسابات الفعلية للمهمة (لحظة الـ claim فقط — لا Email وهمي)
     account_journey: list = field(default_factory=list)
     # ⏱️ [P30] spans المحاسبة الزمنية لكل claim: فتح عند الـ claim، إغلاق حتمي في finally
@@ -1159,12 +1162,14 @@ def reactivate_account_if_due(acc: dict, json_path: str | None = None) -> dict:
             "status": "active",
             "active": True,
             "cooldown_until": 0,
-            "cooldown_released_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+            "cooldown_released_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "balance": 100  # [MAINT-10/C-1 D-01] افتراضي بعد 29h (فويس 187/188) — الفحص الحي/05.02 يصحّحه (A-3)
         }, json_path=json_path)
         acc = dict(acc)
         acc["status"] = "active"
         acc["active"] = True
         acc["cooldown_until"] = 0
+        acc["balance"] = 100
     return acc
 
 
@@ -1179,6 +1184,7 @@ GIFT_STALE_DAYS: int = 14          # الحد شامل (>=) — قرار الم�
 GIFT_GRACE_DAYS: int = 3           # نافذة الإنذار قبل الحد: [STALE-GRACE, STALE)
 GIFT_SNAPSHOT_MAX_AGE_HOURS: int = 72   # أقدم لقطة 05.02 نثق بها؛ أقدم من ذلك = UNKNOWN
 GIFT_LABELS = ("FRESH", "GRACE", "STALE", "UNKNOWN")
+OFFLINE_MIN_BALANCE: int = 100     # [MAINT-10/A-2] فلتر الرصيد الأوفلاين في get_eligible_accounts — مطابق لافتراضي min_preflight_balance
 
 
 def _parse_local_iso_ts(value) -> float | None:
@@ -1258,6 +1264,15 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
             continue
         if not is_account_ready(acc):
             continue
+        # [MAINT-10/A-2] فلتر الرصيد الأوفلاين: رقم صريح < الحد ⇒ استبعاد بلا شبكة/كتابة؛ None/غير رقمي ⇒ Fail-Open (A-3 يصحّحه حيّاً)
+        # [MAINT-10/LOCKOUT-FIX Q1] تبريد منتهٍ (status cooldown/auth_failed/disabled وقد اجتاز is_account_ready) ⇒ الفلتر لا يُطبَّق:
+        # الحساب مستحق لـ reactivate_account_if_due (balance:100 — C-1) ثم البوابة الحية؛ وإلا حُبس بـ balance:0 للأبد (فخ A-2⇄C-1)
+        _bal = acc.get("balance")
+        _due_reactivation = str(acc.get("status", "active")).lower().strip() in ("cooldown", "auth_failed", "disabled")
+        if (not _due_reactivation and isinstance(_bal, (int, float)) and not isinstance(_bal, bool)
+                and _bal < OFFLINE_MIN_BALANCE):
+            log_event("info", f"[OFFLINE_BALANCE] تخطي حساب رصيده المسجل {int(_bal)} < {OFFLINE_MIN_BALANCE}", email=str(em))
+            continue
         eligible.append(acc)
     _last_used = lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0
     if not GIFT_PREFLIGHT_ENABLED:
@@ -1283,18 +1298,217 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
     return known + unknown
 
 
-def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None) -> bool:
-    """تسجيل نفاد الكريدت وتعيين cooldown_until = الآن + 29h مع active=False، وتستعاد تلقائياً بـ is_account_ready"""
+def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None,
+                          balance: int | None = None) -> bool:
+    """تسجيل نفاد الكريدت وتعيين cooldown_until = الآن + 29h مع active=False، وتستعاد تلقائياً بـ is_account_ready
+    [MAINT-10/A-5] balance يُكتب فقط إذا مُرِّر صراحةً (0 عند CREDIT_EXHAUSTED/COMPLETED/إلغاء بعد البدء)؛
+    الأعطال المؤقتة (DATA_RETENTION/EMPTY_STREAM/COMPACT) لا تمرّره فيبقى الرصيد كما هو (A-6)."""
     now = time.time()
     cd_until_ts = now + (cooldown_hours * 3600)
-    return update_account_data(email, {
+    _fields = {
         "cooldown_until": cd_until_ts,
         "last_used": now,
         "last_credit_exhausted": now,
         "last_credit_exhausted_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "status": "cooldown",
         "active": False
-    }, json_path=json_path)
+    }
+    if balance is not None:
+        _fields["balance"] = int(balance)
+    return update_account_data(email, _fields, json_path=json_path)
+
+
+# ════════════════════════════════════════════════════════
+# 🧊 [MAINT3/MAINT-4-B] معزل التبريد الموحد accounts_cooldown.json + سجل الحركات account_log.jsonl
+# ════════════════════════════════════════════════════════
+# لماذا: FORBIDDEN (403) كان يُوسم نجاحاً في ملف الحسابات (RESUME §3.1 T5). الآن (D26 — النقل الأعمى الفوري N=1؛
+# [MAINT-10/A-1] 403 خرج من المعزل نهائياً = براءة + تبريد 5 دقائق في مكانه): LOGIN_FAILED بعد تسلسل (الجلسة ← الإيميل/الباسورد)، أو تعذر قراءة الرصيد، أو رصيد 0 مع هدية
+# راكدة ≥14 يوماً ⇒ Cut&Move ذري فوري إلى accounts_cooldown.json (بجوار الأساسي — D6) بلا كاش وبلا انتظار.
+# D27: المعزل دائم — لا إحياء زمني هنا ولا بيانات مواقيت في السجل؛ العودة حصرياً عبر 05.02:
+#   `--revive -q <مسار مطلق>/accounts_cooldown.json -l 0` (D3/D21/D38؛ فحص 12:00/00:00 حصري لهذا الملف — D16/D17).
+# D28/D32: account_log.jsonl = JSON Lines، سطر لكل حركة، ببيانات الحساب الكاملة (إيميل/باسورد/كوكيز/وقت/سبب/مسار)
+#   بقرار المالك المحلي وبلا حجب؛ 01.33 يُلحق فقط O(1) — التقليم (30 يوماً/5000) داخل 05.02 run_revival عند بدئها.
+#   ⚠️ D37: الملف وكل *.bak/*.lock في .gitignore — لا يُرفع أبداً.
+# D33 (R-B): قفل مشترك عبر العمليات accounts_cooldown.json.lock (O_CREAT|O_EXCL) يستخدمه 01.33 و05.02 معاً؛
+#   مهلة ثم تجاوز اليتيم (>60s) مع تحذير. داخل العملية: الملفان تحت FILE_LOCK؛ السجل تحت ACCOUNT_LOG_LOCK — لا تداخل.
+# التعطيل: COOLDOWN_VAULT_REASONS = () يعيد السلوك القديم حرفياً. التوسع: اسم جديد في الـtuple فقط.
+COOLDOWN_VAULT_FILENAME = "accounts_cooldown.json"
+COOLDOWN_VAULT_LOCK_FILENAME = "accounts_cooldown.json.lock"   # D33/R-B — الاسم نفسه في 05.02
+COOLDOWN_VAULT_LOCK_TIMEOUT_S = 30.0                           # انتظار القفل قبل الاستسلام
+COOLDOWN_VAULT_LOCK_ORPHAN_S = 60.0                            # قفل أقدم من هذا = يتيم ⇒ يُتجاوز بتحذير
+ACCOUNT_LOG_FILENAME = "account_log.jsonl"                     # D28/D32: JSON Lines append-only
+ACCOUNT_LOG_LOCK = threading.Lock()                            # للسجل فقط — لا يُمسك داخل FILE_LOCK
+COOLDOWN_VAULT_REASONS = ("EMPTY_STREAM_FAILED", "LOGIN_FAILED",   # [MAINT-10/Q3] FORBIDDEN أُزيل: 403 = براءة (A-1) لا معزل
+                          "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT")   # tuple فارغ = معطل (مفتاح واحد — A3)
+BALANCE_UNREADABLE_BREAKER_N = 2            # D34: −1 لحسابين متتاليين في نفس المهمة ⇒ NETWORK_DOWN (لا نقل مزيد)
+ACCOUNT_LOG_FIELDS = ("ts", "at", "event", "email", "password", "cookies", "reason", "from_path", "to_path", "by")
+
+
+def _atomic_json_dump(path: pathlib.Path, payload) -> None:
+    """كتابة JSON ذرية بنمط update_account_data (tmp ثابت الاسم ثم replace)."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    tmp.replace(path)
+
+
+def _with_vault_lock(lock_path: pathlib.Path, fn, timeout_s: float | None = None, orphan_s: float | None = None):
+    """[MAINT-4-B/D33 R-B] قفل عبر العمليات بملف O_CREAT|O_EXCL (بلا مكتبات) — يشاركه 05.02 بنفس الاسم.
+    ينتظر حتى timeout؛ قفل أقدم من orphan_s يُعتبر يتيماً ويُزال بتحذير. يُرجع (acquired, result)."""
+    timeout_s = COOLDOWN_VAULT_LOCK_TIMEOUT_S if timeout_s is None else float(timeout_s)
+    orphan_s = COOLDOWN_VAULT_LOCK_ORPHAN_S if orphan_s is None else float(orphan_s)
+    deadline = time.time() + timeout_s
+    fd = None
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            break
+        except FileExistsError:
+            try:
+                age = time.time() - lock_path.stat().st_mtime
+            except OSError:
+                age = 0.0
+            if age > orphan_s:
+                log_event("warning", f"[MAINT-4-B] قفل يتيم (orphan lock) عمره {age:.0f}s — يُتجاوز: {lock_path.name}")
+                try:
+                    lock_path.unlink()
+                except OSError:
+                    pass
+                continue
+            if time.time() >= deadline:
+                log_event("error", f"[MAINT-4-B] تعذر الحصول على القفل المشترك خلال {timeout_s:g}s: {lock_path.name}")
+                return False, None
+            time.sleep(0.1)
+        except OSError as e:
+            log_event("error", f"[MAINT-4-B] فشل إنشاء ملف القفل: {type(e).__name__}")
+            return False, None
+    try:
+        try:
+            os.write(fd, f"{os.getpid()} 01.33 {time.strftime('%Y-%m-%dT%H:%M:%S')}".encode("utf-8"))
+        finally:
+            os.close(fd)
+        return True, fn()
+    finally:
+        try:
+            lock_path.unlink()
+        except OSError:
+            pass
+
+
+def append_account_log(event: str, account: dict | str, reason: str = "", meta: dict | None = None,
+                       base_dir: pathlib.Path | None = None, from_path: str = "", to_path: str = "",
+                       by: str = "01.33") -> bool:
+    """[D28/D32] سطر JSON واحد لكل حركة في account_log.jsonl — ببيانات الحساب الكاملة صريحة محلياً
+    (إيميل، باسورد، كوكيز، وقت، سبب، مسار) بقرار المالك وبلا حجب. إلحاق O(1) فقط؛ لا قراءة ولا تقليم هنا
+    (التقليم في 05.02 run_revival). الفشل ⇒ log_event فقط (best-effort)."""
+    try:
+        acc = account if isinstance(account, dict) else {"email": str(account or "")}
+        if base_dir is None:
+            acc_file = get_accounts_file_path()
+            base_dir = acc_file.parent if acc_file else SCRIPT_DIR
+        log_path = pathlib.Path(base_dir) / ACCOUNT_LOG_FILENAME
+        now = time.time()
+        entry = {"ts": now, "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "event": event,
+                 "email": acc.get("email", ""), "password": acc.get("password", ""),
+                 "cookies": acc.get("cookies", {}), "reason": reason,
+                 "from_path": str(from_path or ""), "to_path": str(to_path or ""), "by": by}
+        for k, v in (meta or {}).items():
+            if k not in entry:
+                entry[k] = v
+        line = json.dumps(entry, ensure_ascii=False, default=str) + "\n"
+        with ACCOUNT_LOG_LOCK:
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(line)
+        return True
+    except Exception as e:
+        log_event("warning", f"[MAINT-4-B] تعذر كتابة account_log.jsonl: {type(e).__name__}",
+                  email=str(account.get("email", "") if isinstance(account, dict) else account))
+        return False
+
+
+def move_account_to_cooldown_vault(email: str, reason: str, json_path: str | None = None,
+                                   meta: dict | None = None) -> bool:
+    """[D26/D27] Cut&Move ذري فوري: نسخ السجل إلى accounts_cooldown.json (بجوار الأساسي) ثم قصّه من الأساسي —
+    تحت القفل المشترك عبر العمليات (R-B) ثم FILE_LOCK. لا بيانات مواقيت في السجل (D27: المعزل دائم).
+    False ⇒ الحساب باقٍ في الأساسي (المستدعي يطبّق احتياطي 5 دقائق فقط لمنع الحلقة الساخنة)."""
+    target_file = get_accounts_file_path(json_path)
+    if not target_file:
+        log_event("error", "[MAINT-4-B] ملف الحسابات غير موجود — لا نقل", email=email)
+        return False
+    vault_file = target_file.parent / COOLDOWN_VAULT_FILENAME
+    lock_file = target_file.parent / COOLDOWN_VAULT_LOCK_FILENAME
+    meta = dict(meta or {})
+    now = time.time()
+    state = {"audit": None, "moved": False, "record": None}
+
+    def _do_move():
+        with FILE_LOCK:
+            with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+                accounts = json.load(f)
+            if not isinstance(accounts, list):
+                return False
+            acc = next((a for a in accounts if isinstance(a, dict) and a.get("email") == email), None)
+            if acc is None:
+                return False
+            record = dict(acc)
+            record["status"] = "cooldown"
+            record["active"] = False
+            record["quarantine_info"] = {
+                "reason": f"cooldown_{str(reason).lower()}",
+                "http_status": meta.get("http_status"),
+                "moved_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "moved_at_ts": now,
+                "source": target_file.name,
+                "project_key": str(meta.get("project_key") or ""),
+                "pid": str(meta.get("pid") or ""),
+            }
+            state["record"] = record
+            vault = []
+            if vault_file.exists():
+                try:
+                    with open(vault_file, "r", encoding="utf-8", errors="ignore") as f:
+                        loaded = json.load(f)
+                    vault = [a for a in loaded if isinstance(a, dict)] if isinstance(loaded, list) else []
+                except Exception as e:
+                    log_event("warning", f"[MAINT-4-B] المعزل تالف — يُعاد بناؤه: {type(e).__name__}")
+            key = str(email).lower()
+            dup = next((a for a in vault if str(a.get("email", "")).lower() == key), None)
+            if dup is not None:
+                dup["quarantine_info"] = record["quarantine_info"]
+                state["audit"] = ("duplicate_detected", {})
+            else:
+                vault.append(record)
+            _atomic_json_dump(vault_file, vault)                      # 1) نسخ أولاً
+            try:
+                shutil.copy2(target_file, target_file.with_name(target_file.name + ".cooldown_move.bak"))
+                remaining = [a for a in accounts if not (isinstance(a, dict) and a.get("email") == email)]
+                _atomic_json_dump(target_file, remaining)             # 2) ثم قص
+            except Exception as e:
+                log_event("error", f"[MAINT-4-B] نُسخ للمعزل لكن تعذر القص من الأساسي: {type(e).__name__}", email=email)
+                state["audit"] = ("move_partial", {"error": type(e).__name__})
+                return False
+            state["moved"] = True
+            return True
+
+    try:
+        acquired, moved = _with_vault_lock(lock_file, _do_move)
+    except Exception as e:
+        log_event("error", f"[MAINT-4-B] فشل النقل للمعزل: {type(e).__name__}", email=email)
+        return False
+    if not acquired:
+        return False
+    moved = bool(moved)
+    record = state["record"] or {"email": email}
+    base_meta = {"http_status": meta.get("http_status"), "project_key": str(meta.get("project_key") or ""),
+                 "pid": str(meta.get("pid") or "")}
+    if state["audit"] is not None:
+        append_account_log(state["audit"][0], record, reason=reason, meta={**base_meta, **state["audit"][1]},
+                           base_dir=target_file.parent, from_path=str(target_file), to_path=str(vault_file))
+    if moved:
+        append_account_log("exit_to_cooldown", record, reason=reason, meta=base_meta,
+                           base_dir=target_file.parent, from_path=str(target_file), to_path=str(vault_file))
+        log_event("warning", f"[MAINT-4-B] نُقل الحساب فوراً إلى {COOLDOWN_VAULT_FILENAME} (سبب: {reason}) — العودة عبر 05.02 فقط", email=email)
+    return moved
 
 
 def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None = None) -> dict | None:
@@ -1387,13 +1601,17 @@ def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None
 
         except Exception as e:
             log_event("error", f"فشل تجديد كوكيز الجلسة: {e}", email=email)
-            update_account_data(email, {
-                "status": "auth_failed",
-                "active": False,
-                "cooldown_until": time.time() + 1800,
-                "last_auth_error": str(e),
-                "last_auth_error_at": time.strftime("%Y-%m-%dT%H:%M:%S")
-            }, json_path=json_path)
+            # [MAINT-4-B/D26 C1] الجلسة ثم الإيميل/الباسورد فشلا ⇒ نقل فوري للمعزل (لا حظر 30 دقيقة)
+            _moved = ("LOGIN_FAILED" in COOLDOWN_VAULT_REASONS) and move_account_to_cooldown_vault(
+                email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": None, "error": str(e)[:200]})
+            if not _moved:
+                update_account_data(email, {
+                    "status": "auth_failed",
+                    "active": False,
+                    "cooldown_until": time.time() + 300,
+                    "last_auth_error": str(e),
+                    "last_auth_error_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                }, json_path=json_path)
         return None
 
 
@@ -2823,6 +3041,73 @@ def make_project_always_public(
     return public_url
 
 
+def _check_project_permission_fast(project_id: str, cookies: dict, timeout: float = 3.0, email: str = "") -> tuple[bool, int, str]:
+    """
+    [MAINT-11] فحص استباقي خفيف وسريع لصلاحية الوصول للمشروع على Genspark.
+    يرجع: (is_accessible, http_status, reason)
+    - لو المشروع خاص: (False, 403, "PRIVATE_PROJECT")
+    - لو الحساب غير مسجل: (False, 401, "SESSION_EXPIRED")
+    - لو متاح أو غير مؤكد: (True, 200, "OK" / "FAIL_OPEN")
+    """
+    if not project_id or not isinstance(project_id, str) or not project_id.strip():
+        return True, 200, "NEW_PROJECT"
+
+    clean_pid = project_id.strip()
+    url = f"https://www.genspark.ai/api/project?id={clean_pid}"
+    try:
+        from curl_cffi import requests as cffi_requests
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        if email:
+            try:
+                fp = get_account_fingerprint(email)
+                if fp and isinstance(fp, dict):
+                    ua = fp.get("user_agent", ua)
+            except Exception:
+                pass
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "User-Agent": ua,
+            "Referer": f"https://www.genspark.ai/project/{clean_pid}",
+        }
+        resp = cffi_requests.get(url, cookies=cookies, headers=headers, timeout=timeout, impersonate="chrome124")
+
+        # 1. فحص انتهاء الجلسة
+        if resp.status_code == 401:
+            return False, 401, "SESSION_EXPIRED"
+
+        # 2. فحص الـ 403 الصريح
+        if resp.status_code == 403:
+            c_type = resp.headers.get("Content-Type", "").lower()
+            if "application/json" in c_type:
+                return False, 403, "PRIVATE_PROJECT"
+            try:
+                data = resp.json()
+                return False, 403, "PRIVATE_PROJECT"
+            except Exception:
+                # 🛡️ [Hostile Design Fix] التحقق من بصمات كلاودفلير الفعلية
+                resp_text = (getattr(resp, "text", "") or "").lower()
+                is_cf = ("cf-ray" in resp.headers) or ("cloudflare" in resp_text) or ("turnstile" in resp_text) or ("text/html" in c_type)
+                if is_cf:
+                    return True, 403, "CF_CHALLENGE_FAIL_OPEN"
+                return False, 403, "PRIVATE_PROJECT"
+
+        # 3. فحص كود 200 مع JSON يحمل status: -13 أو no permission
+        if resp.status_code == 200:
+            try:
+                data = resp.json()
+                if isinstance(data, dict):
+                    status_code = data.get("status")
+                    msg = str(data.get("message", "")).lower()
+                    if status_code == -13 or "no permission" in msg or "forbidden" in msg:
+                        return False, 403, "PRIVATE_PROJECT"
+            except Exception:
+                pass
+
+        return True, resp.status_code, "OK"
+    except Exception as e:
+        return True, 0, f"FAIL_OPEN_EXC_{e}"
+
+
 def get_public_forked_pid(
     orig_pid: str,
     cookies: dict,
@@ -3218,6 +3503,11 @@ def send_message_and_make_public(
         nonlocal carry_pid
         if live_pid and not str(live_pid).startswith("__"):
             carry_pid = live_pid
+            try:  # [MAINT-10/A-7] أول حدث بث من السيرفر = بدأ التوليد (بلا لمس 01.03)
+                if not getattr(bridge_cfg, "compact_in_progress", False):  # صيانة /compact ليست استهلاكاً (A-6) — لا ترفع الراية [مصدَّق Q2 LOCKOUT-FIX]
+                    bridge_cfg.generation_started = True
+            except Exception:
+                pass
             # [P16] النشر العام فور معرفة الـ pid — قبل أي انتظار لاكتمال التوليد
             _early_make_public_async(live_pid)
         if on_project_start_callback is not None:
@@ -3281,9 +3571,28 @@ def send_message_and_make_public(
                 bal_check = mod.check_balance(cookies)
             except Exception:
                 bal_check = -1
+            # [MAINT-4-B/D26 M3] تعذر قراءة الرصيد (−1 استثناء/شبكة) ⇒ نقل أعمى فوري للمعزل (D34: المستدعي يقطع بعد اثنين متتاليين)
+            if bal_check == -1 and "BALANCE_UNREADABLE" in COOLDOWN_VAULT_REASONS:
+                _moved = move_account_to_cooldown_vault(email, reason="BALANCE_UNREADABLE", json_path=json_path,
+                                                        meta={"http_status": None})
+                log_event("warning", f"[MAINT-4-B] تعذر قراءة الرصيد — {'نُقل للمعزل' if _moved else 'تبريد 5 دقائق (فشل النقل)'}", email=email)
+                if not _moved:
+                    update_account_data(email, {"cooldown_until": time.time() + 300}, json_path=json_path)
+                return None, "BALANCE_UNREADABLE", None, None, None
             if isinstance(bal_check, (int, float)) and bal_check >= 0:
                 if bal_check < _min_balance:
+                    # [MAINT-4-B/D26 M4 + D35] رصيد 0 + هدية راكدة ≥14 يوماً (لقطة 05.02) ⇒ نقل فوري؛ غير ذلك ⇒ 29h القديمة
+                    _gift_state = classify_gift_freshness(acc)[0] if acc else "UNKNOWN"
+                    if int(bal_check) == 0 and _gift_state == "STALE" and "ZERO_BALANCE_STALE_GIFT" in COOLDOWN_VAULT_REASONS:
+                        if move_account_to_cooldown_vault(email, reason="ZERO_BALANCE_STALE_GIFT", json_path=json_path,
+                                                          meta={"http_status": None}):
+                            log_event("warning", "💰 رصيد 0 + هدية راكدة ≥14 يوماً — نُقل للمعزل فوراً (D35)", email=email)
+                            return None, "LOW_BALANCE", None, None, None
                     log_event("warning", f"💰 رصيد منخفض ({int(bal_check)} < {_min_balance}) — تبريد 29h وتخطٍ صامت بدون أي إرسال", email=email)
+                    try:  # [MAINT-10/A-4] توثيق الرصيد الفعلي قبل الخروج — يغذّي الفلتر الأوفلاين (A-2)
+                        update_account_data(email, {"balance": int(bal_check)}, json_path=json_path)
+                    except Exception:
+                        pass
                     mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                     return None, "LOW_BALANCE", None, None, None
                 cookies_valid = True
@@ -3306,6 +3615,10 @@ def send_message_and_make_public(
                         bal_recheck = -1
                     if isinstance(bal_recheck, (int, float)) and 0 <= bal_recheck < _min_balance:
                         log_event("warning", f"💰 رصيد منخفض بعد تجديد الجلسة ({int(bal_recheck)} < {_min_balance}) — تبريد 29h وتخطٍ صامت", email=email)
+                        try:  # [MAINT-10/A-4]
+                            update_account_data(email, {"balance": int(bal_recheck)}, json_path=json_path)
+                        except Exception:
+                            pass
                         mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                         return None, "LOW_BALANCE", None, None, None
             else:
@@ -3315,14 +3628,26 @@ def send_message_and_make_public(
                 if acc_chk.get("quarantined") is True or acc_chk.get("status") == "suspended":
                     log_event("warning", f"الحساب {email} معزول نهائياً — لن يتم تعيين كول داون مؤقت", email=email)
                     return None, "ACCOUNT_QUARANTINED", None, None, None
-                update_account_data(email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 1800}, json_path=json_path)
+                # [MAINT-4-B/D26 C1] الجلسة ثم الإيميل/الباسورد فشلا ⇒ نقل فوري للمعزل (refresh قد نقله بالفعل)
+                if acc_chk and "LOGIN_FAILED" in COOLDOWN_VAULT_REASONS:
+                    if not move_account_to_cooldown_vault(email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": 401}):
+                        update_account_data(email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 300}, json_path=json_path)
                 return None, "LOGIN_FAILED", None, None, None
 
         # ⚡ [P12] لو معانا مشروع ملتقط من محاولة سابقة → نستأنف عليه مباشرة
         # (بدون fork جديد وبدون شات جديد) — هذا جوهر إصلاح مشكلة chat id الجديد.
         if carry_pid:
+            # 🛡️ [MAINT-11] فحص استباقي للمشروع المستأنف قبل كارت البدء
+            is_acc, p_code, p_reason = _check_project_permission_fast(carry_pid, cookies, email=email)
+            if not is_acc and p_code == 403:
+                log_event("warning", f"🚫 [MAINT-11] المشروع المستأنف {str(carry_pid)[:16]} خاص (Private) ولا يمكن الوصول إليه.", email=email)
+                return None, "FORBIDDEN", None, None, "المشروع خاص (Private) ولا يمكن للبوت الوصول إليه. يرجى تحويله إلى عام (Public) وإعادة المحاولة."
             project_id = carry_pid
             history = []
+            try:  # [MAINT-10/A-7] استئناف على مشروع ملتقط = التوليد بدأ فعلاً في محاولة سابقة
+                bridge_cfg.generation_started = True
+            except Exception:
+                pass
             log_event("info", f"♻️ استئناف على نفس المشروع الملتقط {str(carry_pid)[:16]}... (محاولة {attempt})", email=email)
             # [P12-C] زر المعاينة الحية يصل فوراً حتى في الاستئناف (السيرفر لا يرسل project_start لمشروع قائم)
             # [P16] النشر العام المبكر قبل/مع إرسال زر المعاينة — الرابط يعمل من أول ضغطة
@@ -3335,6 +3660,11 @@ def send_message_and_make_public(
         elif url and isinstance(url, str) and url.strip():
             orig_pid = extract_project_id(url.strip())
             if orig_pid:
+                # 🛡️ [MAINT-11] فحص استباقي مبكر قبل جلب الرسائل وقبل التفريع وقبل كارت البدء
+                is_acc, p_code, p_reason = _check_project_permission_fast(orig_pid, cookies, email=email)
+                if not is_acc and p_code == 403:
+                    log_event("warning", f"🚫 [MAINT-11] المشروع {orig_pid} خاص (Private) ولا يمكن الوصول إليه.", email=email)
+                    return None, "FORBIDDEN", None, None, "المشروع خاص (Private) ولا يمكن للبوت الوصول إليه. يرجى تحويله إلى عام (Public) وإعادة المحاولة."
                 try:
                     history = mod.fetch_project_messages(orig_pid, cookies, cfg)
                 except Exception as h_err:
@@ -3432,6 +3762,10 @@ def send_message_and_make_public(
                                 bal_mid = -1
                             if isinstance(bal_mid, (int, float)) and 0 <= bal_mid < _min_balance:
                                 log_event("warning", f"💰 رصيد منخفض بعد تجديد 401 أثناء الشات ({int(bal_mid)} < {_min_balance}) — تبريد 29h وتخطٍ صامت", email=email)
+                                try:  # [MAINT-10/A-4 + U-5] المسار الثالث
+                                    update_account_data(email, {"balance": int(bal_mid)}, json_path=json_path)
+                                except Exception:
+                                    pass
                                 mark_account_cooldown(email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
                                 return None, "LOW_BALANCE", None, None, None
                         time.sleep(1.5)  # مهلة قصيرة لثبات الجلسة الجديدة قبل إعادة الإرسال
@@ -3441,6 +3775,21 @@ def send_message_and_make_public(
                 break
 
         if chat_failed:
+            # 🛡️ [MAINT-11 / Hostile Design Fix] حراسة استثناء الشات: ترقية فورية إلى FORBIDDEN لو الاستثناء ناتج عن 403
+            err_str = str(last_chat_err or "").lower()
+            is_403_chat = any(k in err_str for k in ("403", "forbidden", "not authorized", "no permission"))
+            target_check_pid = project_id or carry_pid or extract_project_id(url or "")
+            if not is_403_chat and target_check_pid:
+                try:
+                    p_ok, p_code, _ = _check_project_permission_fast(target_check_pid, cookies, timeout=5.0, email=email)
+                    if not p_ok and p_code == 403:
+                        is_403_chat = True
+                except Exception:
+                    pass
+            if is_403_chat:
+                log_event("warning", "🚫 [MAINT-11] استثناء الشات ناتج عن 403/مشروع خاص — ترقية فورية إلى FORBIDDEN لمنع حرق الأسطول", email=email)
+                return None, "FORBIDDEN", None, None, "المشروع خاص (Private) ولا يمكن للبوت الوصول إليه. يرجى تحويله إلى عام (Public) وإعادة المحاولة."
+
             if attempt < max_retries:
                 continue
             return None, "CHAT_ERROR", None, None, last_chat_err
@@ -3454,6 +3803,26 @@ def send_message_and_make_public(
             return None, CANCELLED_STATUS, None, None, None
 
         if not pid or pid == "__INVALID_PROJECT__":
+            # 🛡️ [MAINT-11] خط الدفاع الثاني: إذا فشل الشات بسبب 403 أو مشروع خاص يتم الترقية لـ FORBIDDEN فوراً
+            ans_str = str(answer or "").lower()
+            last_err_str = str(getattr(cfg, "_last_chat_err", "") or "").lower()
+            is_403_err = ("403" in ans_str or "not authorized" in ans_str or "no permission" in ans_str or
+                          "403" in last_err_str or "not authorized" in last_err_str or "no permission" in last_err_str)
+
+            # 🛡️ [Goldfish Fix] فحص استدراكي حقيقي ضد Fail-Open: لو المحرك 01.03 رجع فشل بدون pid، نفحص فوراً هل المشروع خاص
+            target_check_pid = project_id or carry_pid or extract_project_id(url or "")
+            if not is_403_err and target_check_pid:
+                try:
+                    p_ok, p_code, _ = _check_project_permission_fast(target_check_pid, cookies, timeout=5.0, email=email)
+                    if not p_ok and p_code == 403:
+                        is_403_err = True
+                except Exception:
+                    pass
+
+            if is_403_err:
+                log_event("warning", "🚫 [MAINT-11] خط الدفاع الثاني رصد 403 من محرك الشات — ترقية الحالة إلى FORBIDDEN", email=email)
+                return None, "FORBIDDEN", None, None, "المشروع خاص (Private) ولا يمكن للبوت الوصول إليه. يرجى تحويله إلى عام (Public) وإعادة المحاولة."
+
             if attempt < max_retries:
                 continue
             return None, "FAILED", None, None, str(answer or "")
@@ -3555,6 +3924,7 @@ def send_message_with_auto_account_failover(
     tried_emails = set()
     state_refresh = {}
     attempt = 0
+    _unreadable_streak = 0   # [MAINT-4-B/D34]
     max_attempts = getattr(bridge_cfg, "max_account_attempts", 50)
     credit_continuations = 0
     max_credit_continuations = get_credit_continuation_limit(bridge_cfg)
@@ -3631,6 +4001,7 @@ def send_message_with_auto_account_failover(
         now_ts = time.time()
         now_str = time.strftime("%Y-%m-%dT%H:%M:%S")
         update_account_data(curr_email, {"last_used": now_ts, "last_used_at": now_str}, json_path=json_path)
+        bridge_cfg.generation_started = False  # [MAINT-10/A-7] محاولة جديدة = لم يبدأ التوليد بعد
 
         try:
             pub_url, status, ext_dir, last_text, extra = send_message_and_make_public(
@@ -3649,6 +4020,11 @@ def send_message_with_auto_account_failover(
                     status=CANCELLED_STATUS,
                     max_attempts=max_attempts,
                 )
+                if getattr(bridge_cfg, "generation_started", False):
+                    # [MAINT-10/A-7] إلغاء بعد أول حدث بث ⇒ الرصيد استُهلك على السيرفر ⇒ 0 + تبريد 29h
+                    log_event("warning", "🛑 [P25/MAINT-10] إلغاء بعد بدء التوليد — تبريد 29h ورصيد 0", email=curr_email)
+                    mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)
+                    return pub_url, CANCELLED_STATUS, curr_acc, ext_dir, last_text
                 log_event("warning", "🛑 [P25] أُلغيت المهمة بواسطة المستخدم — تحرير الحساب فوراً وإنهاء الـ failover", email=curr_email)
                 update_account_data(curr_email, {"last_used": time.time(), "status": "active"}, json_path=json_path)
                 return pub_url, CANCELLED_STATUS, curr_acc, ext_dir, last_text
@@ -3689,11 +4065,21 @@ def send_message_with_auto_account_failover(
                     status=EMPTY_STREAM_FAILED_STATUS,
                     max_attempts=max_attempts,
                 )
-                try:
-                    mark_account_cooldown(curr_email, cooldown_hours=DEC07_EMPTY_COOLDOWN_HOURS, json_path=json_path)
-                except Exception as err:
-                    log_event("warning", f"[DEC07] Cooldown save failed: {type(err).__name__}", email=curr_email)
-                log_event("warning", f"[DEC07] EMPTY_STREAM_FAILED — تبريد {DEC07_EMPTY_COOLDOWN_HOURS}h والانتقال الفوري للحساب التالي", email=curr_email)
+                # 🧊 [MAINT3] D10: Cut&Move إلى accounts_cooldown.json (1h معلوماتية)؛ الاحتياطي = التبريد القديم في المكان
+                moved = False
+                if EMPTY_STREAM_FAILED_STATUS in COOLDOWN_VAULT_REASONS:
+                    moved = move_account_to_cooldown_vault(
+                        curr_email, reason=EMPTY_STREAM_FAILED_STATUS, json_path=json_path,
+                        meta={"http_status": None, "project_key": str(getattr(bridge_cfg, "selection_project_key", "") or ""),
+                              "pid": extract_project_id(pub_url or active_url or "")},
+                    )
+                if not moved:
+                    try:
+                        mark_account_cooldown(curr_email, cooldown_hours=DEC07_EMPTY_COOLDOWN_HOURS, json_path=json_path)
+                    except Exception as err:
+                        log_event("warning", f"[DEC07] Cooldown save failed: {type(err).__name__}", email=curr_email)
+                _empty_action = "نُقل للمعزل" if moved else f"تبريد {DEC07_EMPTY_COOLDOWN_HOURS}h"
+                log_event("warning", f"[DEC07] EMPTY_STREAM_FAILED — {_empty_action} والانتقال الفوري للحساب التالي", email=curr_email)
                 continue
 
             # 🛡️ [DEC07] حساب محظور (نصّياً) → عزل دائم بلا تبريد زمني وانتقال فوري (قرار 3/4)
@@ -3707,6 +4093,39 @@ def send_message_with_auto_account_failover(
                 update_account_data(curr_email, {"status": "suspended", "quarantined": True, "cookies": {}, "active": False}, json_path=json_path)
                 log_event("error", "[DEC07] ACCOUNT_SUSPENDED — عُزل الحساب (status=suspended, quarantined) والانتقال الفوري للحساب التالي", email=curr_email)
                 continue
+
+            # 🛑 [MAINT-10/A-1 — يلغي D26 لحالة 403 فقط (فويس 193)] المشروع Private ⇒ الحساب بريء:
+            # لا معزل، لا تصفير رصيد، active بلا تغيير. تبريد احترازي 5 دقائق في مكانه (منع الحلقة الساخنة)
+            # + إيقاف المهمة فوراً بحالة FORBIDDEN (لا حساب آخر، لا مشروع جديد) — return لا break
+            # حتى لا نصل إلى MAX_ATTEMPTS_EXHAUSTED في نهاية الحلقة. الإشعار يصيغه p10 (describe_terminal_outcome).
+            if status == "FORBIDDEN":
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "forbidden-stop",
+                    status="FORBIDDEN",
+                    max_attempts=max_attempts,
+                )
+                update_account_data(curr_email, {"cooldown_until": time.time() + 300}, json_path=json_path)
+                log_event("warning", "[MAINT-10] FORBIDDEN (403) — المشروع Private؛ تبريد 5 دقائق في مكانه وإيقاف المهمة بلا محاولة حساب آخر", email=curr_email)
+                return pub_url, "FORBIDDEN", curr_acc, ext_dir, last_text
+
+            # 🛡️ [MAINT-4-B/D34] قاطع الانقطاع المحلي: الحساب نُقل بالفعل في P13 (D26)؛ −1 لحسابين متتاليين = شبكة محلية
+            # لا حسابات ⇒ إيقاف المهمة بلا نقل مزيد (05.02 يعيد المنقولين في أول دورة).
+            if status == "BALANCE_UNREADABLE":
+                _unreadable_streak += 1
+                notify_account_selection_observer(
+                    bridge_cfg,
+                    "balance-unreadable-skip",
+                    status="BALANCE_UNREADABLE",
+                    max_attempts=max_attempts,
+                )
+                if _unreadable_streak >= BALANCE_UNREADABLE_BREAKER_N:
+                    log_event("error", f"[MAINT-4-B] تعذر قراءة الرصيد لـ{_unreadable_streak} حسابات متتالية — NETWORK_DOWN: إيقاف المهمة بلا نقل مزيد")
+                    release_account_selection(bridge_cfg, owner_token, curr_email)
+                    bridge_cfg.selected_account_claim_state = "released"
+                    return None, "NETWORK_DOWN", None, None, None
+                continue
+            _unreadable_streak = 0
 
             if status == "LOW_BALANCE":
                 notify_account_selection_observer(
@@ -3807,7 +4226,7 @@ def send_message_with_auto_account_failover(
                 # metadata fails. E2 forbids advancing to another account.
                 if status == "CREDIT_EXHAUSTED":
                     try:
-                        mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
+                        mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)  # [MAINT-10/A-5]
                     except Exception as err:
                         log_event("warning", f"[COMPACT] Credit cooldown save failed: {type(err).__name__}", email=curr_email)
                 return pub_url or active_url, "COMPACT_HANDOFF_BLOCKED", curr_acc, ext_dir, last_text
@@ -3829,8 +4248,10 @@ def send_message_with_auto_account_failover(
                         status="auth_failed",
                         refresh_count=refresh_count,
                     )
-                    log_event("error", "الحساب فشل بعد التجديد مرة واحدة -> وضع الحظر المؤقت", email=curr_email)
-                    update_account_data(curr_email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 1800}, json_path=json_path)
+                    log_event("error", "الحساب فشل بعد التجديد مرة واحدة -> نقل فوري للمعزل (D26)", email=curr_email)
+                    if not (("LOGIN_FAILED" in COOLDOWN_VAULT_REASONS) and move_account_to_cooldown_vault(
+                            curr_email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": 401})):
+                        update_account_data(curr_email, {"status": "auth_failed", "active": False, "cooldown_until": time.time() + 300}, json_path=json_path)
                     continue
 
                 state_refresh[curr_email] = refresh_count + 1
@@ -3873,7 +4294,9 @@ def send_message_with_auto_account_failover(
                     status="auth_failed",
                     refresh_count=state_refresh.get(curr_email, 0),
                 )
-                update_account_data(curr_email, {"cooldown_until": time.time() + 1800, "status": "auth_failed", "active": False}, json_path=json_path)
+                if not (("LOGIN_FAILED" in COOLDOWN_VAULT_REASONS) and move_account_to_cooldown_vault(
+                        curr_email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": 401})):
+                    update_account_data(curr_email, {"cooldown_until": time.time() + 300, "status": "auth_failed", "active": False}, json_path=json_path)
                 continue
 
             if status == "CREDIT_EXHAUSTED":
@@ -3884,7 +4307,7 @@ def send_message_with_auto_account_failover(
                     continuation_index=credit_continuations,
                     continuation_limit=max_credit_continuations,
                 )
-                mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path)
+                mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)  # [MAINT-10/A-5] نفاد حقيقي ⇒ 0
                 gate = evaluate_credit_checkpoint_gate(
                     bridge_cfg,
                     callback_result=callback_result,
@@ -4005,6 +4428,11 @@ def send_message_with_auto_account_failover(
                     "cooldown_until": 0,
                     "last_success_at": time.strftime("%Y-%m-%dT%H:%M:%S")
                 }, json_path=json_path)
+                # 💤 [MAINT-10/C-2 D-06 فويس 190 + U-6] اكتمال حقيقي (COMPLETED غير مرفوض) ⇒ الحساب استُهلك:
+                # balance 0 + تبريد 29h بلا فحص إضافي. last_success_at يبقى (كُتب أعلاه). رفض الموديل (_declined)
+                # لا يُحتسب استهلاكاً فيبقى الحساب active. الفحص الحي/05.02 يصحّح القيمة لاحقاً (A-3).
+                if status == "COMPLETED" and not is_model_decline_response(last_text):
+                    mark_account_cooldown(curr_email, cooldown_hours=bridge_cfg.cooldown_hours, json_path=json_path, balance=0)
                 return pub_url, status, curr_acc, ext_dir, last_text
 
             notify_account_selection_observer(
@@ -6621,7 +7049,117 @@ def build_dashboard_keyboard(chat_id: int) -> dict:
             {"text": f"📌 {label}", "callback_data": f"proj:{record['project_key']}"},
             {"text": "⭐ التفاصيل", "callback_data": f"pview:{record['project_key']}"},
         ])
+    # 🔍 [MAINT-9/D62] صف مستقل بزر واحد (عرض كامل) بعد المشاريع — الأخير دائماً
+    rows.append([{"text": LIVE_CHECK_BUTTON_TEXT, "callback_data": LIVE_CHECK_CALLBACK, "style": "primary"}])
     return make_inline_keyboard(rows)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 🔍 [MAINT-9/D62–D70] فحص وتنشيط الحسابات لايف — لوحات الأخضر/الأحمر (فويسات 158–185)
+# المنطق الفعلي في bridge_refactor/live_account_checker.py (عملية مستقلة) — هنا الواجهة فقط.
+# 9 callbacks ثابتة (< 64 بايت): cmd:live_check · lc_pick:resume · lc_pick:reset ·
+# lc_go:fresh|resume|reset · lc_stop · lc_stop_yes · lc_stop_no · lc_cancel
+# ══════════════════════════════════════════════════════════════════════════
+LIVE_CHECK_CALLBACK = "cmd:live_check"
+LIVE_CHECK_BUTTON_TEXT = "🔍 فحص وتنشيط الحسابات لايف ⚡"
+
+
+def build_live_check_confirm_keyboard(kind: str) -> dict:
+    """شاشة التأكيد النهائية: 🟢 تنفيذ (success) + 🔴 إلغاء (danger) — kind ∈ {fresh, resume, reset}"""
+    kind = str(kind or "fresh").strip().lower()
+    if kind not in ("fresh", "resume", "reset"):
+        kind = "fresh"
+    go_label = {"fresh": "🟢 نعم، ابدأ الفحص", "resume": "🟢 نعم، استأنف", "reset": "🟢 نعم، من الصفر"}[kind]
+    return make_inline_keyboard([
+        [{"text": go_label, "callback_data": f"lc_go:{kind}", "style": "success"}],
+        [{"text": "🔴 إلغاء", "callback_data": "lc_cancel", "style": "danger"}],
+    ])
+
+
+def build_live_check_choice_keyboard() -> dict:
+    """دورة سابقة غير مكتملة: استئناف أم من الصفر؟ (D70 — كل خيار يمر بتأكيد ثانٍ)"""
+    return make_inline_keyboard([
+        [
+            {"text": "🔄 استئناف من آخر نقطة", "callback_data": "lc_pick:resume", "style": "primary"},
+            {"text": "🆕 من الصفر", "callback_data": "lc_pick:reset"},
+        ],
+        [{"text": "🔴 رجوع", "callback_data": "lc_cancel", "style": "danger"}],
+    ])
+
+
+def build_live_check_running_keyboard() -> dict:
+    """أسفل رسالة اللايف/شاشة «يعمل الآن»: زر إيقاف واحد أحمر (المشغّل يعيد نفس الزر مع كل تحديث)"""
+    return make_inline_keyboard([
+        [{"text": "🛑 إيقاف الفحص التلقائي", "callback_data": "lc_stop", "style": "danger"}],
+        [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "lc_cancel"}],
+    ])
+
+
+def build_live_check_stop_confirm_keyboard() -> dict:
+    """تأكيد الإيقاف (Q-GO-5: رسالة جديدة مستقلة): 🔴 نعم أوقف / 🟢 لا، استمر"""
+    return make_inline_keyboard([
+        [
+            {"text": "🔴 نعم، أوقف الفحص", "callback_data": "lc_stop_yes", "style": "danger"},
+            {"text": "🟢 لا، استمر", "callback_data": "lc_stop_no", "style": "success"},
+        ],
+    ])
+
+
+def render_live_check_prompt_text(kind: str, snapshot: dict | None = None) -> str:
+    """نصوص المحطات (≤ 4000): running / choice / fresh / resume / reset / stop_confirm / stop_ack / cancelled"""
+    s = snapshot or {}
+    total = int(s.get("total") or 0)
+    checked = int(s.get("checked") or 0)
+    remaining = int(s.get("remaining") if s.get("remaining") is not None else max(0, total - checked))
+    kind = str(kind or "").strip().lower()
+    if kind == "running":
+        c = s.get("counters") or {}
+        return (
+            "🔍 <b>فحص لايف يعمل الآن</b>\n"
+            f"📊 التقدم: <b>{int(c.get('checked') or checked)}</b> من <b>{int(c.get('total') or total)}</b>"
+            f" — بدأ {html_escape(str(s.get('started_at') or '—'))}\n"
+            f"✅ نشط: {c.get('active', 0)} · 🧊 متأخر: {c.get('stale', 0)} · 🗑️ ميت: {c.get('dead', 0)}"
+            f" · ⚠️ شبكة: {c.get('net_err', 0)} · 🎯 صيد: {c.get('hunted', 0)}\n\n"
+            "الرسالة اللايف الأصلية تتحدث مع كل حساب. يمكنك إيقافه من هنا أو من زرها."
+        )
+    if kind == "choice":
+        return (
+            "🔁 <b>توجد دورة فحص سابقة غير مكتملة</b>\n"
+            f"مفحوص <b>{checked}</b> من <b>{total}</b> — المتبقي <b>{remaining}</b> حساباً.\n\n"
+            "هل تستأنف من آخر نقطة أم تبدأ من الصفر؟"
+        )
+    if kind == "resume":
+        return (
+            "🔄 <b>تأكيد الاستئناف</b>\n"
+            f"سيُستأنف الفحص من الحساب رقم <b>{checked + 1}</b> (المتبقي <b>{remaining}</b> من {total}).\n"
+            "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات · البوت يستمر في العمل بلا توقف.\n\n"
+            "هل تريد المتابعة؟"
+        )
+    if kind == "reset":
+        return (
+            "🆕 <b>تأكيد البدء من الصفر</b>\n"
+            f"سيُصفَّر عداد الدورة ويُفحص الأساسي بالكامل: <b>{total}</b> حساباً.\n"
+            "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات (قد يستغرق ساعات) · البوت يستمر في العمل.\n\n"
+            "هل تريد المتابعة؟"
+        )
+    if kind == "stop_confirm":
+        return (
+            "🛑 <b>إيقاف الفحص اللايف؟</b>\n"
+            "سيتوقف بعد الحساب الجاري (≤ 5.5 دقيقة) مع حفظ ذري — ويمكنك الاستئناف لاحقاً من نفس النقطة."
+        )
+    if kind == "stop_ack":
+        return "🛑 <b>تم إرسال أمر الإيقاف</b> — سيتوقف الفحص بعد الحساب الجاري (≤ 5.5 دقيقة) ويصلك ملخص."
+    if kind == "cancelled":
+        return "↩️ تم الإلغاء — لم يبدأ أي فحص."
+    if kind == "none":
+        return "ℹ️ <b>لا توجد حسابات في الملف الأساسي</b> — لا شيء يُفحص."
+    return (
+        "🔍 <b>فحص وتنشيط الحسابات لايف</b>\n"
+        f"سيُفحص الأساسي بالكامل في الخلفية: <b>{total}</b> حساباً (نسخ لا قص — الأساسي يبقى في مكانه).\n"
+        "✅ السليم يُنشَّط فوراً للبوت · 🧊 متأخر الهدية → المعزل · 🗑️ الميت → الفاشل · ⚠️ خطأ الشبكة يبقى.\n"
+        "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات (قد يستغرق ساعات) · البوت يستمر في العمل بلا توقف.\n\n"
+        "هل تريد البدء؟"
+    )
 
 
 # ══════════════════════════════════════════════════════════════
@@ -7465,7 +8003,7 @@ def should_capture_project_update(stage_url: str | None, stage_status: str | Non
 
 NON_ACTIONABLE_PROGRESS_STATUSES = {
     "NO_ENGINE", "LOGIN_FAILED", "SESSION_EXPIRED", "FORBIDDEN",
-    "FAILED", "CHAT_ERROR", "TIMEOUT",
+    "FAILED", "CHAT_ERROR", "TIMEOUT", "NETWORK_DOWN", "BALANCE_UNREADABLE",
 }
 
 
@@ -7672,6 +8210,10 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
             "🧬 <b>توقفت المحاولة بسبب خطأ AI Data Retention على الحساب.</b>",
             "الموديل يتطلب تفعيل AI Data Retention من إعدادات الحساب (Settings → Data Controls)؛ عومل الحساب كنفاد رصيد وتم تبريده، وأعيد إرسال نفس آخر رسالة على حساب آخر إن وُجد.",
         ),
+        "NETWORK_DOWN": (
+            "🌐 <b>توقفت المهمة: تعذر قراءة الرصيد لحسابين متتاليين (انقطاع شبكة محلي على الأرجح).</b>",
+            "لم يُنقل مزيد من الحسابات (D34). تحقق من الاتصال ثم أعد الإرسال؛ الحسابان المنقولان يعودان عبر 05.02.",
+        ),
         "LOGIN_FAILED": (
             "⛔ <b>فشل التنفيذ بسبب مشكلة تسجيل دخول بالحسابات.</b>",
             "لم يتم الوصول إلى جلسة صالحة لإكمال الطلب؛ راجع حالة الحسابات أو جرّب لاحقاً.",
@@ -7697,8 +8239,8 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
             "لم يتم تحميل محرك التوليد المطلوب داخل البيئة الحالية.",
         ),
         "FORBIDDEN": (
-            "⛔ <b>توقفت المهمة بسبب رفض الوصول للمشروع.</b>",
-            "تم رفض الاستمرار في المشروع الحالي قبل الوصول إلى ناتج قابل للحفظ.",
+            "⛔ <b>توقفت المهمة: المشروع خاص (Private) — رد السيرفر 403.</b>",
+            "اجعل المشروع <b>Public</b> من إعدادات Genspark ثم أعد الإرسال. الحساب سليم ولم يُعاقب (الحساب سليم ونشط ولم يُعاقب)، ولن يُنشأ مشروع جديد تلقائياً.",
         ),
     }
     title, note = mapping.get(
@@ -8395,6 +8937,206 @@ def handle_prompt_context_collision(chat_id: int, state: dict, text: str, action
     return True
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 🔍 [MAINT-9/D62–D70] فحص وتنشيط الحسابات لايف — المساعدون (الحقيقة في الملفات، لا في user_state)
+# الملفات بجوار accounts_genspark.json (الأب عادةً): live_check.busy / live_check.stop /
+# live_check_state.json / live_check_queue.json / genspark_rotation_checkpoint.json (05.02)
+# المشغّل: bridge_refactor/live_account_checker.py — عملية مستقلة (Popen) لا تعطّل البوت ثانية (فويس 181)
+# ══════════════════════════════════════════════════════════════════════════
+LIVE_CHECK_BUSY_FILENAME = "live_check.busy"
+LIVE_CHECK_STOP_FILENAME = "live_check.stop"
+LIVE_CHECK_STATE_FILENAME = "live_check_state.json"
+LIVE_CHECK_CHECKPOINT_FILENAME = "genspark_rotation_checkpoint.json"   # = Config.ROTATION_CHECKPOINT_FILE في 05.02
+LIVE_CHECK_BUSY_ORPHAN_S = 900.0                                        # = LIVE_BUSY_ORPHAN_S في main_upgrade.py
+LIVE_CHECK_RUNNER = SCRIPT_DIR / "bridge_refactor" / "live_account_checker.py"
+LIVE_CHECK_LOG_NAME = "live_check.log"
+
+
+def live_check_paths() -> dict:
+    """مسارات ملفات الفحص اللايف بجوار الملف الأساسي (أو الأب افتراضياً إن غاب الأساسي)"""
+    primary = get_accounts_file_path()
+    folder = primary.parent if primary else SCRIPT_DIR.parent
+    return {
+        "primary": primary,
+        "folder": folder,
+        "busy": folder / LIVE_CHECK_BUSY_FILENAME,
+        "stop": folder / LIVE_CHECK_STOP_FILENAME,
+        "state": folder / LIVE_CHECK_STATE_FILENAME,
+        "checkpoint": folder / LIVE_CHECK_CHECKPOINT_FILENAME,
+    }
+
+
+def read_live_check_state() -> dict:
+    """قراءة live_check_state.json بأمان (قد يكتبه المشغّل الآن ذرياً) — {} عند الغياب/التلف"""
+    try:
+        p = live_check_paths()["state"]
+        if p.exists():
+            data = json.loads(p.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        pass
+    return {}
+
+
+def is_live_check_running(now: float | None = None) -> bool:
+    """علامة «مشغول» موجودة وحديثة (heartbeat ≤ 15 دقيقة) — أقدم = يتيمة (قتل عنيف) وتُعامل كغير جارية"""
+    try:
+        busy = live_check_paths()["busy"]
+        if not busy.exists():
+            return False
+        age = (time.time() if now is None else now) - busy.stat().st_mtime
+        return age < LIVE_CHECK_BUSY_ORPHAN_S
+    except OSError:
+        return False
+
+
+def live_check_remaining() -> dict:
+    """لقطة الدورة الحالية: total (الأساسي) / checked (بصمات الشيك بوينت الموجودة في الأساسي) / remaining.
+    البصمة = sha256(email.strip().lower()) — مطابقة حرفياً لـ RotationCheckpoint.key في 05.02؛ اليتيمة تُهمل."""
+    paths = live_check_paths()
+    emails = [str(a.get("email") or "").strip().lower() for a in read_accounts_safe() if a.get("email")]
+    live_keys = {hashlib.sha256(e.encode("utf-8")).hexdigest() for e in emails}
+    checked_keys: set = set()
+    cycle_no = 1
+    try:
+        if paths["checkpoint"].exists():
+            raw = json.loads(paths["checkpoint"].read_text(encoding="utf-8"))
+            if isinstance(raw, dict) and isinstance(raw.get("checked"), list):
+                checked_keys = {str(h) for h in raw["checked"]} & live_keys
+                cycle_no = int(raw.get("cycle_no") or 1)
+    except Exception:
+        checked_keys = set()
+    total = len(live_keys)
+    checked = len(checked_keys)
+    return {"total": total, "checked": checked, "remaining": max(0, total - checked), "cycle_no": cycle_no}
+
+
+def launch_live_checker(chat_id: int, mode: str) -> dict:
+    """يرسل رسالة اللايف أولاً (ليحصل على message_id) ثم يطلق المشغّل كعملية مستقلة.
+    يعيد {"ok", "message_id", "pid", "error"}. حارس الضغط المزدوج: busy يُفحص قبل Popen."""
+    mode = "fresh" if str(mode).lower() in ("fresh", "reset") else "resume"
+    if is_live_check_running():
+        return {"ok": False, "message_id": None, "pid": None, "error": "ALREADY_RUNNING"}
+    if not LIVE_CHECK_RUNNER.exists():
+        log_event("error", f"[MAINT-9] المشغّل غير موجود: {LIVE_CHECK_RUNNER.name}")
+        return {"ok": False, "message_id": None, "pid": None, "error": "RUNNER_MISSING"}
+    snap = live_check_remaining()
+    first_text = (
+        "🔍 <b>فحص وتنشيط الحسابات لايف — جارٍ البدء…</b>\n"
+        f"📊 التقدم: <b>0</b> من <b>{snap['remaining'] if mode == 'resume' else snap['total']}</b>\n"
+        "⏳ أول حساب خلال لحظات — هذه الرسالة تتحدث مع كل حساب."
+    )
+    sent = send_telegram_message_detailed(chat_id, first_text, reply_markup=build_live_check_running_keyboard())
+    message_id = sent.get("message_id") if isinstance(sent, dict) else None
+    cmd = [sys.executable, str(LIVE_CHECK_RUNNER), "--chat-id", str(int(chat_id)),
+           "--message-id", str(int(message_id or 0)), "--mode", mode]
+    logs_dir = SCRIPT_DIR / "logs"
+    popen_kwargs: dict = {"cwd": str(SCRIPT_DIR), "stdin": subprocess.DEVNULL}
+    if sys.platform.startswith("win"):
+        popen_kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    try:
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        log_fh = open(logs_dir / LIVE_CHECK_LOG_NAME, "a", encoding="utf-8", errors="replace")
+        popen_kwargs["stdout"] = log_fh
+        popen_kwargs["stderr"] = subprocess.STDOUT
+        proc = subprocess.Popen(cmd, **popen_kwargs)
+        log_fh.close()  # الابن ورث المقبض؛ الأب لا يحتاجه
+        log_event("info", f"[MAINT-9] أُطلق الفحص اللايف pid={proc.pid} mode={mode} msg={message_id}")
+        return {"ok": True, "message_id": message_id, "pid": proc.pid, "error": ""}
+    except Exception as e:
+        log_event("error", f"[MAINT-9] فشل إطلاق المشغّل: {type(e).__name__}: {e}")
+        if message_id:
+            edit_telegram_message_text(chat_id, message_id, f"❌ <b>تعذر إطلاق الفحص اللايف</b>: {html_escape(type(e).__name__)}", reply_markup=None)
+        return {"ok": False, "message_id": message_id, "pid": None, "error": f"{type(e).__name__}"}
+
+
+def request_live_check_stop() -> bool:
+    """كتابة راية الإيقاف live_check.stop (المشغّل يستطلعها بين الحسابات وداخل الفاصل المجزّأ)"""
+    try:
+        live_check_paths()["stop"].write_text(
+            json.dumps({"requested_at": datetime.now().isoformat(timespec="seconds"), "by": "bot31"}), encoding="utf-8"
+        )
+        return True
+    except OSError as e:
+        log_event("error", f"[MAINT-9] تعذر كتابة راية الإيقاف: {type(e).__name__}")
+        return False
+
+
+def handle_live_check_callback(chat_id: int, data: str, msg_info: dict) -> None:
+    """آلة الحالات (SPEC §5): cmd:live_check / lc_pick:* / lc_go:* / lc_stop / lc_stop_yes / lc_stop_no / lc_cancel.
+    عديمة الحالة: الحقيقة في الملفات؛ ضغطة قديمة تُجاب بأدب. شاشة تأكيد الإيقاف رسالة جديدة (Q-GO-5)."""
+    card_msg_id = msg_info.get("message_id")
+    if data == LIVE_CHECK_CALLBACK:
+        if is_live_check_running():
+            st = read_live_check_state()
+            send_telegram_message(chat_id, render_live_check_prompt_text("running", st), reply_markup=build_live_check_running_keyboard())
+            return
+        snap = live_check_remaining()
+        if snap["total"] <= 0:
+            send_telegram_message(chat_id, render_live_check_prompt_text("none", snap), reply_markup=get_main_keyboard(chat_id))
+            return
+        if snap["remaining"] > 0 and snap["checked"] > 0:
+            send_telegram_message(chat_id, render_live_check_prompt_text("choice", snap), reply_markup=build_live_check_choice_keyboard())
+            return
+        send_telegram_message(chat_id, render_live_check_prompt_text("fresh", snap), reply_markup=build_live_check_confirm_keyboard("fresh"))
+        return
+    if data.startswith("lc_pick:"):
+        kind = "resume" if data.endswith(":resume") else "reset"
+        snap = live_check_remaining()
+        text = render_live_check_prompt_text(kind, snap)
+        if card_msg_id:
+            edit_telegram_message_text(chat_id, card_msg_id, text, reply_markup=build_live_check_confirm_keyboard(kind))
+        else:
+            send_telegram_message(chat_id, text, reply_markup=build_live_check_confirm_keyboard(kind))
+        return
+    if data.startswith("lc_go:"):
+        kind = data.partition(":")[2].strip().lower()
+        if card_msg_id:
+            edit_telegram_message_reply_markup(chat_id, card_msg_id, None)   # منع الضغط المزدوج على الأخضر
+        if is_live_check_running():
+            send_telegram_message(chat_id, "ℹ️ فحص لايف يعمل بالفعل — لا يُطلق فحص ثانٍ.", reply_markup=build_live_check_running_keyboard())
+            return
+        res = launch_live_checker(chat_id, "fresh" if kind in ("fresh", "reset") else "resume")
+        if not res.get("ok"):
+            err = res.get("error") or "UNKNOWN"
+            if err == "ALREADY_RUNNING":
+                send_telegram_message(chat_id, "ℹ️ فحص لايف يعمل بالفعل — لا يُطلق فحص ثانٍ.", reply_markup=build_live_check_running_keyboard())
+            elif err == "RUNNER_MISSING":
+                send_telegram_message(chat_id, "❌ المشغّل bridge_refactor/live_account_checker.py غير موجود بجوار البوت.", reply_markup=get_main_keyboard(chat_id))
+            else:
+                send_telegram_message(chat_id, f"❌ تعذر إطلاق الفحص اللايف ({html_escape(str(err))}).", reply_markup=get_main_keyboard(chat_id))
+        return
+    if data == "lc_stop":
+        if not is_live_check_running():
+            send_telegram_message(chat_id, "ℹ️ لا يوجد فحص لايف جارٍ الآن.", reply_markup=get_main_keyboard(chat_id))
+            return
+        # Q-GO-5: رسالة جديدة مستقلة — رسالة اللايف يعيد المشغّل كتابتها كل حساب فلا نُعدّلها هنا
+        send_telegram_message(chat_id, render_live_check_prompt_text("stop_confirm"), reply_markup=build_live_check_stop_confirm_keyboard())
+        return
+    if data == "lc_stop_yes":
+        if not is_live_check_running():
+            text = "ℹ️ الفحص انتهى بالفعل — لا شيء لإيقافه."
+        elif request_live_check_stop():
+            text = render_live_check_prompt_text("stop_ack")
+        else:
+            text = "❌ تعذر كتابة راية الإيقاف — راجع صلاحيات المجلد."
+        if card_msg_id:
+            edit_telegram_message_text(chat_id, card_msg_id, text, reply_markup=None)
+        else:
+            send_telegram_message(chat_id, text)
+        return
+    if data == "lc_stop_no":
+        if card_msg_id:
+            edit_telegram_message_text(chat_id, card_msg_id, "🟢 الفحص مستمر.", reply_markup=None)
+        return
+    if data == "lc_cancel":
+        if card_msg_id:
+            edit_telegram_message_reply_markup(chat_id, card_msg_id, None)
+        send_telegram_message(chat_id, render_live_check_prompt_text("cancelled"), reply_markup=get_main_keyboard(chat_id))
+        return
+    send_telegram_message(chat_id, "ℹ️ زر فحص لايف غير معروف أو منتهٍ.", reply_markup=get_main_keyboard(chat_id))
+
+
 def handle_telegram_update(update: dict):
     if "callback_query" in update:
         cb = update["callback_query"]
@@ -8406,6 +9148,14 @@ def handle_telegram_update(update: dict):
         # [P17] مسار callback: نحكم بالجروب أو بهوية الضاغط نفسه (cb.from)
         if not is_chat_allowed(chat_id, (cb.get("from") or {}).get("id")):
             send_telegram_message(chat_id, "⛔ غير مصرح لك باستخدام هذا البوت.")
+            return
+
+        # ══════════════════════════════════════════════════════
+        # 🔍 [MAINT-9] فحص وتنشيط الحسابات لايف — كتلة معزولة مبكرة (نمط P25)
+        # 9 callbacks: cmd:live_check + lc_* — الحقيقة في الملفات، لا تلامس user_state ولا السلسلة أدناه
+        # ══════════════════════════════════════════════════════
+        if data == LIVE_CHECK_CALLBACK or data.startswith("lc_"):
+            handle_live_check_callback(chat_id, data, msg_info)
             return
 
         # ══════════════════════════════════════════════════════

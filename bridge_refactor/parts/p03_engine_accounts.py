@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p03_engine_accounts
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1399
-المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + refresh_cookies_on_401
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 532..1617
+المحتوى: Engine loader + account locks/claims + fingerprint + BridgeConfig (P25: cancel_event/cancel_token | P29: account_journey + record_account_journey/format_account_journey_line + Immutable Event Snapshots | P30: account_journey_spans + open/close_account_timing_span + format_arabic_duration + P40: format_compact_duration (المدة المضغوطة 45s/12m 17s/1h 5m — الكتلة تستخدمها في المواضع الثلاثة والقديمة باقية) + aggregate_journey_spans_per_email | P39: PRODUCTIVE_SPAN_MIN_SECONDS=60 + filter_productive_account_entries (فلترة الحسابات المنتجة: عتبة الدقيقة + تحصين الحساب المُنجِز + Fail-Open عند إفراغ القائمة) + format_account_timing_block المطوَّرة (عنوان الحسابات الفعلية عند الفلترة/عنوان P30 عند Fail-Open + أدوار البداية/استئناف k/🌟 الحساب المنجز + السطر المدمج ⏱️ إجمالي زمن التوليد (N حسابات منتجة | 🔁 M استئناف) + 🕒 الزمن الكلي — التوقيع لم يتغير)) + accounts I/O + readiness + P48: GIFT_PREFLIGHT_* + classify_gift_freshness (تصنيف أوفلاين نقي FRESH/GRACE/STALE/UNKNOWN من بيانات 05.02) + get_eligible_accounts (STALE يُستبعد عند الاختيار فقط، UNKNOWN في الذيل Fail-Open) + cooldown + MAINT-4-B: COOLDOWN_VAULT_REASONS (EMPTY_STREAM_FAILED/LOGIN_FAILED/BALANCE_UNREADABLE/ZERO_BALANCE_STALE_GIFT — FORBIDDEN أُزيل MAINT-10/Q3) + MAINT-10: OFFLINE_MIN_BALANCE + فلتر أوفلاين مع استثناء التبريد المنتهي (LOCKOUT-FIX Q1) + COOLDOWN_VAULT_LOCK_FILENAME (accounts_cooldown.json.lock) + BALANCE_UNREADABLE_BREAKER_N=2 + _atomic_json_dump + _with_vault_lock (O_CREAT|O_EXCL + مهلة 30s + تجاوز يتيم >60s) + append_account_log (account_log.jsonl — سطر JSON كامل بالبيانات: email/password/cookies/reason/from_path/to_path/by، إلحاق O(1) بلا قراءة) + move_account_to_cooldown_vault (نقل أعمى فوري N=1 — Cut&Move ذري إلى accounts_cooldown.json تحت القفل المشترك، بلا cooldown_until_ts/ساعات — الرجوع عبر 05.02 --revive -q -l 0) + refresh_cookies_on_401
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 _ENGINE_CACHE = {"mod": None, "path": None}
@@ -487,6 +487,9 @@ class BridgeConfig:
     selection_attempt_number: int = 0
     selected_account_email: str = ""
     selected_account_claim_state: str = ""
+    # 🛑 [MAINT-10/A-7] راية بدء التوليد للمحاولة الحالية: تُرفع عند أول pid حقيقي من البث (project_start عبر
+    # _pid_capture_callback) أو عند الاستئناف على pid ملتقط؛ تُصفَّر عند كل claim. الإلغاء بعدها ⇒ 0 + 29h.
+    generation_started: bool = False
     # 🧾 [P29] مسار رحلة الحسابات الفعلية للمهمة (لحظة الـ claim فقط — لا Email وهمي)
     account_journey: list = field(default_factory=list)
     # ⏱️ [P30] spans المحاسبة الزمنية لكل claim: فتح عند الـ claim، إغلاق حتمي في finally
@@ -633,12 +636,14 @@ def reactivate_account_if_due(acc: dict, json_path: str | None = None) -> dict:
             "status": "active",
             "active": True,
             "cooldown_until": 0,
-            "cooldown_released_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+            "cooldown_released_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "balance": 100  # [MAINT-10/C-1 D-01] افتراضي بعد 29h (فويس 187/188) — الفحص الحي/05.02 يصحّحه (A-3)
         }, json_path=json_path)
         acc = dict(acc)
         acc["status"] = "active"
         acc["active"] = True
         acc["cooldown_until"] = 0
+        acc["balance"] = 100
     return acc
 
 
@@ -653,6 +658,7 @@ GIFT_STALE_DAYS: int = 14          # الحد شامل (>=) — قرار الم�
 GIFT_GRACE_DAYS: int = 3           # نافذة الإنذار قبل الحد: [STALE-GRACE, STALE)
 GIFT_SNAPSHOT_MAX_AGE_HOURS: int = 72   # أقدم لقطة 05.02 نثق بها؛ أقدم من ذلك = UNKNOWN
 GIFT_LABELS = ("FRESH", "GRACE", "STALE", "UNKNOWN")
+OFFLINE_MIN_BALANCE: int = 100     # [MAINT-10/A-2] فلتر الرصيد الأوفلاين في get_eligible_accounts — مطابق لافتراضي min_preflight_balance
 
 
 def _parse_local_iso_ts(value) -> float | None:
@@ -732,6 +738,15 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
             continue
         if not is_account_ready(acc):
             continue
+        # [MAINT-10/A-2] فلتر الرصيد الأوفلاين: رقم صريح < الحد ⇒ استبعاد بلا شبكة/كتابة؛ None/غير رقمي ⇒ Fail-Open (A-3 يصحّحه حيّاً)
+        # [MAINT-10/LOCKOUT-FIX Q1] تبريد منتهٍ (status cooldown/auth_failed/disabled وقد اجتاز is_account_ready) ⇒ الفلتر لا يُطبَّق:
+        # الحساب مستحق لـ reactivate_account_if_due (balance:100 — C-1) ثم البوابة الحية؛ وإلا حُبس بـ balance:0 للأبد (فخ A-2⇄C-1)
+        _bal = acc.get("balance")
+        _due_reactivation = str(acc.get("status", "active")).lower().strip() in ("cooldown", "auth_failed", "disabled")
+        if (not _due_reactivation and isinstance(_bal, (int, float)) and not isinstance(_bal, bool)
+                and _bal < OFFLINE_MIN_BALANCE):
+            log_event("info", f"[OFFLINE_BALANCE] تخطي حساب رصيده المسجل {int(_bal)} < {OFFLINE_MIN_BALANCE}", email=str(em))
+            continue
         eligible.append(acc)
     _last_used = lambda x: x.get("last_used", 0) if isinstance(x.get("last_used"), (int, float)) else 0
     if not GIFT_PREFLIGHT_ENABLED:
@@ -757,18 +772,217 @@ def get_eligible_accounts(all_accounts: list, tried_emails: set) -> list:
     return known + unknown
 
 
-def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None) -> bool:
-    """تسجيل نفاد الكريدت وتعيين cooldown_until = الآن + 29h مع active=False، وتستعاد تلقائياً بـ is_account_ready"""
+def mark_account_cooldown(email: str, cooldown_hours: float = 29.0, json_path: str | None = None,
+                          balance: int | None = None) -> bool:
+    """تسجيل نفاد الكريدت وتعيين cooldown_until = الآن + 29h مع active=False، وتستعاد تلقائياً بـ is_account_ready
+    [MAINT-10/A-5] balance يُكتب فقط إذا مُرِّر صراحةً (0 عند CREDIT_EXHAUSTED/COMPLETED/إلغاء بعد البدء)؛
+    الأعطال المؤقتة (DATA_RETENTION/EMPTY_STREAM/COMPACT) لا تمرّره فيبقى الرصيد كما هو (A-6)."""
     now = time.time()
     cd_until_ts = now + (cooldown_hours * 3600)
-    return update_account_data(email, {
+    _fields = {
         "cooldown_until": cd_until_ts,
         "last_used": now,
         "last_credit_exhausted": now,
         "last_credit_exhausted_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "status": "cooldown",
         "active": False
-    }, json_path=json_path)
+    }
+    if balance is not None:
+        _fields["balance"] = int(balance)
+    return update_account_data(email, _fields, json_path=json_path)
+
+
+# ════════════════════════════════════════════════════════
+# 🧊 [MAINT3/MAINT-4-B] معزل التبريد الموحد accounts_cooldown.json + سجل الحركات account_log.jsonl
+# ════════════════════════════════════════════════════════
+# لماذا: FORBIDDEN (403) كان يُوسم نجاحاً في ملف الحسابات (RESUME §3.1 T5). الآن (D26 — النقل الأعمى الفوري N=1؛
+# [MAINT-10/A-1] 403 خرج من المعزل نهائياً = براءة + تبريد 5 دقائق في مكانه): LOGIN_FAILED بعد تسلسل (الجلسة ← الإيميل/الباسورد)، أو تعذر قراءة الرصيد، أو رصيد 0 مع هدية
+# راكدة ≥14 يوماً ⇒ Cut&Move ذري فوري إلى accounts_cooldown.json (بجوار الأساسي — D6) بلا كاش وبلا انتظار.
+# D27: المعزل دائم — لا إحياء زمني هنا ولا بيانات مواقيت في السجل؛ العودة حصرياً عبر 05.02:
+#   `--revive -q <مسار مطلق>/accounts_cooldown.json -l 0` (D3/D21/D38؛ فحص 12:00/00:00 حصري لهذا الملف — D16/D17).
+# D28/D32: account_log.jsonl = JSON Lines، سطر لكل حركة، ببيانات الحساب الكاملة (إيميل/باسورد/كوكيز/وقت/سبب/مسار)
+#   بقرار المالك المحلي وبلا حجب؛ 01.33 يُلحق فقط O(1) — التقليم (30 يوماً/5000) داخل 05.02 run_revival عند بدئها.
+#   ⚠️ D37: الملف وكل *.bak/*.lock في .gitignore — لا يُرفع أبداً.
+# D33 (R-B): قفل مشترك عبر العمليات accounts_cooldown.json.lock (O_CREAT|O_EXCL) يستخدمه 01.33 و05.02 معاً؛
+#   مهلة ثم تجاوز اليتيم (>60s) مع تحذير. داخل العملية: الملفان تحت FILE_LOCK؛ السجل تحت ACCOUNT_LOG_LOCK — لا تداخل.
+# التعطيل: COOLDOWN_VAULT_REASONS = () يعيد السلوك القديم حرفياً. التوسع: اسم جديد في الـtuple فقط.
+COOLDOWN_VAULT_FILENAME = "accounts_cooldown.json"
+COOLDOWN_VAULT_LOCK_FILENAME = "accounts_cooldown.json.lock"   # D33/R-B — الاسم نفسه في 05.02
+COOLDOWN_VAULT_LOCK_TIMEOUT_S = 30.0                           # انتظار القفل قبل الاستسلام
+COOLDOWN_VAULT_LOCK_ORPHAN_S = 60.0                            # قفل أقدم من هذا = يتيم ⇒ يُتجاوز بتحذير
+ACCOUNT_LOG_FILENAME = "account_log.jsonl"                     # D28/D32: JSON Lines append-only
+ACCOUNT_LOG_LOCK = threading.Lock()                            # للسجل فقط — لا يُمسك داخل FILE_LOCK
+COOLDOWN_VAULT_REASONS = ("EMPTY_STREAM_FAILED", "LOGIN_FAILED",   # [MAINT-10/Q3] FORBIDDEN أُزيل: 403 = براءة (A-1) لا معزل
+                          "BALANCE_UNREADABLE", "ZERO_BALANCE_STALE_GIFT")   # tuple فارغ = معطل (مفتاح واحد — A3)
+BALANCE_UNREADABLE_BREAKER_N = 2            # D34: −1 لحسابين متتاليين في نفس المهمة ⇒ NETWORK_DOWN (لا نقل مزيد)
+ACCOUNT_LOG_FIELDS = ("ts", "at", "event", "email", "password", "cookies", "reason", "from_path", "to_path", "by")
+
+
+def _atomic_json_dump(path: pathlib.Path, payload) -> None:
+    """كتابة JSON ذرية بنمط update_account_data (tmp ثابت الاسم ثم replace)."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    tmp.replace(path)
+
+
+def _with_vault_lock(lock_path: pathlib.Path, fn, timeout_s: float | None = None, orphan_s: float | None = None):
+    """[MAINT-4-B/D33 R-B] قفل عبر العمليات بملف O_CREAT|O_EXCL (بلا مكتبات) — يشاركه 05.02 بنفس الاسم.
+    ينتظر حتى timeout؛ قفل أقدم من orphan_s يُعتبر يتيماً ويُزال بتحذير. يُرجع (acquired, result)."""
+    timeout_s = COOLDOWN_VAULT_LOCK_TIMEOUT_S if timeout_s is None else float(timeout_s)
+    orphan_s = COOLDOWN_VAULT_LOCK_ORPHAN_S if orphan_s is None else float(orphan_s)
+    deadline = time.time() + timeout_s
+    fd = None
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            break
+        except FileExistsError:
+            try:
+                age = time.time() - lock_path.stat().st_mtime
+            except OSError:
+                age = 0.0
+            if age > orphan_s:
+                log_event("warning", f"[MAINT-4-B] قفل يتيم (orphan lock) عمره {age:.0f}s — يُتجاوز: {lock_path.name}")
+                try:
+                    lock_path.unlink()
+                except OSError:
+                    pass
+                continue
+            if time.time() >= deadline:
+                log_event("error", f"[MAINT-4-B] تعذر الحصول على القفل المشترك خلال {timeout_s:g}s: {lock_path.name}")
+                return False, None
+            time.sleep(0.1)
+        except OSError as e:
+            log_event("error", f"[MAINT-4-B] فشل إنشاء ملف القفل: {type(e).__name__}")
+            return False, None
+    try:
+        try:
+            os.write(fd, f"{os.getpid()} 01.33 {time.strftime('%Y-%m-%dT%H:%M:%S')}".encode("utf-8"))
+        finally:
+            os.close(fd)
+        return True, fn()
+    finally:
+        try:
+            lock_path.unlink()
+        except OSError:
+            pass
+
+
+def append_account_log(event: str, account: dict | str, reason: str = "", meta: dict | None = None,
+                       base_dir: pathlib.Path | None = None, from_path: str = "", to_path: str = "",
+                       by: str = "01.33") -> bool:
+    """[D28/D32] سطر JSON واحد لكل حركة في account_log.jsonl — ببيانات الحساب الكاملة صريحة محلياً
+    (إيميل، باسورد، كوكيز، وقت، سبب، مسار) بقرار المالك وبلا حجب. إلحاق O(1) فقط؛ لا قراءة ولا تقليم هنا
+    (التقليم في 05.02 run_revival). الفشل ⇒ log_event فقط (best-effort)."""
+    try:
+        acc = account if isinstance(account, dict) else {"email": str(account or "")}
+        if base_dir is None:
+            acc_file = get_accounts_file_path()
+            base_dir = acc_file.parent if acc_file else SCRIPT_DIR
+        log_path = pathlib.Path(base_dir) / ACCOUNT_LOG_FILENAME
+        now = time.time()
+        entry = {"ts": now, "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "event": event,
+                 "email": acc.get("email", ""), "password": acc.get("password", ""),
+                 "cookies": acc.get("cookies", {}), "reason": reason,
+                 "from_path": str(from_path or ""), "to_path": str(to_path or ""), "by": by}
+        for k, v in (meta or {}).items():
+            if k not in entry:
+                entry[k] = v
+        line = json.dumps(entry, ensure_ascii=False, default=str) + "\n"
+        with ACCOUNT_LOG_LOCK:
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(line)
+        return True
+    except Exception as e:
+        log_event("warning", f"[MAINT-4-B] تعذر كتابة account_log.jsonl: {type(e).__name__}",
+                  email=str(account.get("email", "") if isinstance(account, dict) else account))
+        return False
+
+
+def move_account_to_cooldown_vault(email: str, reason: str, json_path: str | None = None,
+                                   meta: dict | None = None) -> bool:
+    """[D26/D27] Cut&Move ذري فوري: نسخ السجل إلى accounts_cooldown.json (بجوار الأساسي) ثم قصّه من الأساسي —
+    تحت القفل المشترك عبر العمليات (R-B) ثم FILE_LOCK. لا بيانات مواقيت في السجل (D27: المعزل دائم).
+    False ⇒ الحساب باقٍ في الأساسي (المستدعي يطبّق احتياطي 5 دقائق فقط لمنع الحلقة الساخنة)."""
+    target_file = get_accounts_file_path(json_path)
+    if not target_file:
+        log_event("error", "[MAINT-4-B] ملف الحسابات غير موجود — لا نقل", email=email)
+        return False
+    vault_file = target_file.parent / COOLDOWN_VAULT_FILENAME
+    lock_file = target_file.parent / COOLDOWN_VAULT_LOCK_FILENAME
+    meta = dict(meta or {})
+    now = time.time()
+    state = {"audit": None, "moved": False, "record": None}
+
+    def _do_move():
+        with FILE_LOCK:
+            with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+                accounts = json.load(f)
+            if not isinstance(accounts, list):
+                return False
+            acc = next((a for a in accounts if isinstance(a, dict) and a.get("email") == email), None)
+            if acc is None:
+                return False
+            record = dict(acc)
+            record["status"] = "cooldown"
+            record["active"] = False
+            record["quarantine_info"] = {
+                "reason": f"cooldown_{str(reason).lower()}",
+                "http_status": meta.get("http_status"),
+                "moved_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "moved_at_ts": now,
+                "source": target_file.name,
+                "project_key": str(meta.get("project_key") or ""),
+                "pid": str(meta.get("pid") or ""),
+            }
+            state["record"] = record
+            vault = []
+            if vault_file.exists():
+                try:
+                    with open(vault_file, "r", encoding="utf-8", errors="ignore") as f:
+                        loaded = json.load(f)
+                    vault = [a for a in loaded if isinstance(a, dict)] if isinstance(loaded, list) else []
+                except Exception as e:
+                    log_event("warning", f"[MAINT-4-B] المعزل تالف — يُعاد بناؤه: {type(e).__name__}")
+            key = str(email).lower()
+            dup = next((a for a in vault if str(a.get("email", "")).lower() == key), None)
+            if dup is not None:
+                dup["quarantine_info"] = record["quarantine_info"]
+                state["audit"] = ("duplicate_detected", {})
+            else:
+                vault.append(record)
+            _atomic_json_dump(vault_file, vault)                      # 1) نسخ أولاً
+            try:
+                shutil.copy2(target_file, target_file.with_name(target_file.name + ".cooldown_move.bak"))
+                remaining = [a for a in accounts if not (isinstance(a, dict) and a.get("email") == email)]
+                _atomic_json_dump(target_file, remaining)             # 2) ثم قص
+            except Exception as e:
+                log_event("error", f"[MAINT-4-B] نُسخ للمعزل لكن تعذر القص من الأساسي: {type(e).__name__}", email=email)
+                state["audit"] = ("move_partial", {"error": type(e).__name__})
+                return False
+            state["moved"] = True
+            return True
+
+    try:
+        acquired, moved = _with_vault_lock(lock_file, _do_move)
+    except Exception as e:
+        log_event("error", f"[MAINT-4-B] فشل النقل للمعزل: {type(e).__name__}", email=email)
+        return False
+    if not acquired:
+        return False
+    moved = bool(moved)
+    record = state["record"] or {"email": email}
+    base_meta = {"http_status": meta.get("http_status"), "project_key": str(meta.get("project_key") or ""),
+                 "pid": str(meta.get("pid") or "")}
+    if state["audit"] is not None:
+        append_account_log(state["audit"][0], record, reason=reason, meta={**base_meta, **state["audit"][1]},
+                           base_dir=target_file.parent, from_path=str(target_file), to_path=str(vault_file))
+    if moved:
+        append_account_log("exit_to_cooldown", record, reason=reason, meta=base_meta,
+                           base_dir=target_file.parent, from_path=str(target_file), to_path=str(vault_file))
+        log_event("warning", f"[MAINT-4-B] نُقل الحساب فوراً إلى {COOLDOWN_VAULT_FILENAME} (سبب: {reason}) — العودة عبر 05.02 فقط", email=email)
+    return moved
 
 
 def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None = None) -> dict | None:
@@ -861,13 +1075,17 @@ def refresh_cookies_on_401(mod, email: str, password: str, json_path: str | None
 
         except Exception as e:
             log_event("error", f"فشل تجديد كوكيز الجلسة: {e}", email=email)
-            update_account_data(email, {
-                "status": "auth_failed",
-                "active": False,
-                "cooldown_until": time.time() + 1800,
-                "last_auth_error": str(e),
-                "last_auth_error_at": time.strftime("%Y-%m-%dT%H:%M:%S")
-            }, json_path=json_path)
+            # [MAINT-4-B/D26 C1] الجلسة ثم الإيميل/الباسورد فشلا ⇒ نقل فوري للمعزل (لا حظر 30 دقيقة)
+            _moved = ("LOGIN_FAILED" in COOLDOWN_VAULT_REASONS) and move_account_to_cooldown_vault(
+                email, reason="LOGIN_FAILED", json_path=json_path, meta={"http_status": None, "error": str(e)[:200]})
+            if not _moved:
+                update_account_data(email, {
+                    "status": "auth_failed",
+                    "active": False,
+                    "cooldown_until": time.time() + 300,
+                    "last_auth_error": str(e),
+                    "last_auth_error_at": time.strftime("%Y-%m-%dT%H:%M:%S")
+                }, json_path=json_path)
         return None
 
 

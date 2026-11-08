@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p09_github_dashboard
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 5776..7402
-المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات) + P33: build_completed_message_keyboard (كيبورد الاكتمال المركزي: الأزرار الخمسة القديمة + ▶️ كمل الآن cont:{pid} بصف مستقل + ⬅️ رجوع للوحة التحكم cmd:dashboard أسفل الكيبورد) + P35: build_model_decline_keyboard (كيبورد رسالة الرفض: ✒️ أعد صياغة البرومبت primary + ⬅️ رجوع danger فوق أزرار الاكتمال المعتادة عبر build_completed_message_keyboard بلا نسخ | P37: الزر الأزرق يحمل مفتاح المشروع cmd:decline_retry:{project_key} مع تعقيم وحد 64 بايت وfallback للحرفية القديمة | P43: زر ⚡/📦 pset:fastmode:{key} في لوحة إعدادات المشروع (D4) + سطر حالة الوضع السريع في الداشبورد والكارت + زر ⬇️ تنزيل الساندبوكس الآن pctl:fetch:{key} في كارت المشروع (D6 — التنزيل المتأخر بالدوال القائمة بلا نسخ) + build_new_project_fast_mode_keyboard (خطوة Wizard اختيار وضع الملفات — الافتراضي 📦 متكامل D5/R2) + معامل fast_mode في finalize_new_project_setup + pending_fast_mode لا يسري إلا مع GitHub معطل (D3))
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 6204..7940
+المحتوى: GitHub inspection + dashboards + keyboards + project settings panels + finalize flows + resume decision + P19: copy_project_settings_to_new_project + generate_sequential_project_name + لوحة اختيار المصدر + P26: زر حذف المشروع + كيبورد التأكيد بخطوتي أمان + شاشة النجاح + P27: PROJECTS_PER_PAGE + compute_projects_page_bounds + render_projects_page_text + build_projects_page_keyboard (تصفح المشاريع بنظام الصفحات) + P32: زر 🔐 استخراج باسورد الحساب في اللوحة + ACCOUNTS_PER_PAGE + list_lookup_accounts + compute_accounts_page_bounds + find_account_by_email + describe_account_state + render_account_lookup_text + build_account_lookup_keyboard + render_account_password_card + كيبوردات الكارت وإعادة المحاولة (بحث هجين يدوي + تصفح بالصفحات) + P33: build_completed_message_keyboard (كيبورد الاكتمال المركزي: الأزرار الخمسة القديمة + ▶️ كمل الآن cont:{pid} بصف مستقل + ⬅️ رجوع للوحة التحكم cmd:dashboard أسفل الكيبورد) + P35: build_model_decline_keyboard (كيبورد رسالة الرفض: ✒️ أعد صياغة البرومبت primary + ⬅️ رجوع danger فوق أزرار الاكتمال المعتادة عبر build_completed_message_keyboard بلا نسخ | P37: الزر الأزرق يحمل مفتاح المشروع cmd:decline_retry:{project_key} مع تعقيم وحد 64 بايت وfallback للحرفية القديمة | P43: زر ⚡/📦 pset:fastmode:{key} في لوحة إعدادات المشروع (D4) + سطر حالة الوضع السريع في الداشبورد والكارت + زر ⬇️ تنزيل الساندبوكس الآن pctl:fetch:{key} في كارت المشروع (D6 — التنزيل المتأخر بالدوال القائمة بلا نسخ) + build_new_project_fast_mode_keyboard (خطوة Wizard اختيار وضع الملفات — الافتراضي 📦 متكامل D5/R2) + معامل fast_mode في finalize_new_project_setup + pending_fast_mode لا يسري إلا مع GitHub معطل (D3)) + MAINT-9/D62–D70: صف 🔍 فحص وتنشيط الحسابات لايف في اللوحة + LIVE_CHECK_CALLBACK/LIVE_CHECK_BUTTON_TEXT + build_live_check_confirm/choice/running/stop_confirm_keyboard + render_live_check_prompt_text
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 def parse_github_repository_ref(text: str | None) -> str:
@@ -851,7 +851,117 @@ def build_dashboard_keyboard(chat_id: int) -> dict:
             {"text": f"📌 {label}", "callback_data": f"proj:{record['project_key']}"},
             {"text": "⭐ التفاصيل", "callback_data": f"pview:{record['project_key']}"},
         ])
+    # 🔍 [MAINT-9/D62] صف مستقل بزر واحد (عرض كامل) بعد المشاريع — الأخير دائماً
+    rows.append([{"text": LIVE_CHECK_BUTTON_TEXT, "callback_data": LIVE_CHECK_CALLBACK, "style": "primary"}])
     return make_inline_keyboard(rows)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 🔍 [MAINT-9/D62–D70] فحص وتنشيط الحسابات لايف — لوحات الأخضر/الأحمر (فويسات 158–185)
+# المنطق الفعلي في bridge_refactor/live_account_checker.py (عملية مستقلة) — هنا الواجهة فقط.
+# 9 callbacks ثابتة (< 64 بايت): cmd:live_check · lc_pick:resume · lc_pick:reset ·
+# lc_go:fresh|resume|reset · lc_stop · lc_stop_yes · lc_stop_no · lc_cancel
+# ══════════════════════════════════════════════════════════════════════════
+LIVE_CHECK_CALLBACK = "cmd:live_check"
+LIVE_CHECK_BUTTON_TEXT = "🔍 فحص وتنشيط الحسابات لايف ⚡"
+
+
+def build_live_check_confirm_keyboard(kind: str) -> dict:
+    """شاشة التأكيد النهائية: 🟢 تنفيذ (success) + 🔴 إلغاء (danger) — kind ∈ {fresh, resume, reset}"""
+    kind = str(kind or "fresh").strip().lower()
+    if kind not in ("fresh", "resume", "reset"):
+        kind = "fresh"
+    go_label = {"fresh": "🟢 نعم، ابدأ الفحص", "resume": "🟢 نعم، استأنف", "reset": "🟢 نعم، من الصفر"}[kind]
+    return make_inline_keyboard([
+        [{"text": go_label, "callback_data": f"lc_go:{kind}", "style": "success"}],
+        [{"text": "🔴 إلغاء", "callback_data": "lc_cancel", "style": "danger"}],
+    ])
+
+
+def build_live_check_choice_keyboard() -> dict:
+    """دورة سابقة غير مكتملة: استئناف أم من الصفر؟ (D70 — كل خيار يمر بتأكيد ثانٍ)"""
+    return make_inline_keyboard([
+        [
+            {"text": "🔄 استئناف من آخر نقطة", "callback_data": "lc_pick:resume", "style": "primary"},
+            {"text": "🆕 من الصفر", "callback_data": "lc_pick:reset"},
+        ],
+        [{"text": "🔴 رجوع", "callback_data": "lc_cancel", "style": "danger"}],
+    ])
+
+
+def build_live_check_running_keyboard() -> dict:
+    """أسفل رسالة اللايف/شاشة «يعمل الآن»: زر إيقاف واحد أحمر (المشغّل يعيد نفس الزر مع كل تحديث)"""
+    return make_inline_keyboard([
+        [{"text": "🛑 إيقاف الفحص التلقائي", "callback_data": "lc_stop", "style": "danger"}],
+        [{"text": "⬅️ رجوع للوحة التحكم", "callback_data": "lc_cancel"}],
+    ])
+
+
+def build_live_check_stop_confirm_keyboard() -> dict:
+    """تأكيد الإيقاف (Q-GO-5: رسالة جديدة مستقلة): 🔴 نعم أوقف / 🟢 لا، استمر"""
+    return make_inline_keyboard([
+        [
+            {"text": "🔴 نعم، أوقف الفحص", "callback_data": "lc_stop_yes", "style": "danger"},
+            {"text": "🟢 لا، استمر", "callback_data": "lc_stop_no", "style": "success"},
+        ],
+    ])
+
+
+def render_live_check_prompt_text(kind: str, snapshot: dict | None = None) -> str:
+    """نصوص المحطات (≤ 4000): running / choice / fresh / resume / reset / stop_confirm / stop_ack / cancelled"""
+    s = snapshot or {}
+    total = int(s.get("total") or 0)
+    checked = int(s.get("checked") or 0)
+    remaining = int(s.get("remaining") if s.get("remaining") is not None else max(0, total - checked))
+    kind = str(kind or "").strip().lower()
+    if kind == "running":
+        c = s.get("counters") or {}
+        return (
+            "🔍 <b>فحص لايف يعمل الآن</b>\n"
+            f"📊 التقدم: <b>{int(c.get('checked') or checked)}</b> من <b>{int(c.get('total') or total)}</b>"
+            f" — بدأ {html_escape(str(s.get('started_at') or '—'))}\n"
+            f"✅ نشط: {c.get('active', 0)} · 🧊 متأخر: {c.get('stale', 0)} · 🗑️ ميت: {c.get('dead', 0)}"
+            f" · ⚠️ شبكة: {c.get('net_err', 0)} · 🎯 صيد: {c.get('hunted', 0)}\n\n"
+            "الرسالة اللايف الأصلية تتحدث مع كل حساب. يمكنك إيقافه من هنا أو من زرها."
+        )
+    if kind == "choice":
+        return (
+            "🔁 <b>توجد دورة فحص سابقة غير مكتملة</b>\n"
+            f"مفحوص <b>{checked}</b> من <b>{total}</b> — المتبقي <b>{remaining}</b> حساباً.\n\n"
+            "هل تستأنف من آخر نقطة أم تبدأ من الصفر؟"
+        )
+    if kind == "resume":
+        return (
+            "🔄 <b>تأكيد الاستئناف</b>\n"
+            f"سيُستأنف الفحص من الحساب رقم <b>{checked + 1}</b> (المتبقي <b>{remaining}</b> من {total}).\n"
+            "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات · البوت يستمر في العمل بلا توقف.\n\n"
+            "هل تريد المتابعة؟"
+        )
+    if kind == "reset":
+        return (
+            "🆕 <b>تأكيد البدء من الصفر</b>\n"
+            f"سيُصفَّر عداد الدورة ويُفحص الأساسي بالكامل: <b>{total}</b> حساباً.\n"
+            "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات (قد يستغرق ساعات) · البوت يستمر في العمل.\n\n"
+            "هل تريد المتابعة؟"
+        )
+    if kind == "stop_confirm":
+        return (
+            "🛑 <b>إيقاف الفحص اللايف؟</b>\n"
+            "سيتوقف بعد الحساب الجاري (≤ 5.5 دقيقة) مع حفظ ذري — ويمكنك الاستئناف لاحقاً من نفس النقطة."
+        )
+    if kind == "stop_ack":
+        return "🛑 <b>تم إرسال أمر الإيقاف</b> — سيتوقف الفحص بعد الحساب الجاري (≤ 5.5 دقيقة) ويصلك ملخص."
+    if kind == "cancelled":
+        return "↩️ تم الإلغاء — لم يبدأ أي فحص."
+    if kind == "none":
+        return "ℹ️ <b>لا توجد حسابات في الملف الأساسي</b> — لا شيء يُفحص."
+    return (
+        "🔍 <b>فحص وتنشيط الحسابات لايف</b>\n"
+        f"سيُفحص الأساسي بالكامل في الخلفية: <b>{total}</b> حساباً (نسخ لا قص — الأساسي يبقى في مكانه).\n"
+        "✅ السليم يُنشَّط فوراً للبوت · 🧊 متأخر الهدية → المعزل · 🗑️ الميت → الفاشل · ⚠️ خطأ الشبكة يبقى.\n"
+        "⏱️ فاصل عشوائي 60–300 ثانية بين الحسابات (قد يستغرق ساعات) · البوت يستمر في العمل بلا توقف.\n\n"
+        "هل تريد البدء؟"
+    )
 
 
 # ══════════════════════════════════════════════════════════════

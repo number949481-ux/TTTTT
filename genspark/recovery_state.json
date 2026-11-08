@@ -1,12 +1,12 @@
 {
   "current_execution": {
-    "task": "MAINT-3-A/A2/A3/A4 done (ALIGNMENT_ONLY). A4 = owner's non-negotiable Exclusive Cooldown-Vault Scan Invariant fixed in RESUME §3.7.2 + D16/D17 (final) + §3.7.6 + D21; PROGRESS protocol block added. Gap R1: 05.02 --revive returns HEALTHY only -> dedicated vault sorter tool needed. Next = MAINT-3-B after D1-D21.",
+    "task": "MAINT-4-B B-0..B-8 (owner card: D26-D39 + C1-C7 approved; D34(b) breaker, D35 STALE-only, D36 external, D37 gitignore, D38 -l 0, D39 sys.exit)",
     "date": "2026-10-31",
     "branch": "genspark_ai_developer",
-    "base": "latest origin HEAD (no fixed commit ids as execution reference)",
+    "base": "4275714",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/9",
     "pr_draft_must_stay": true,
-    "status": "maint3_a4_invariant_fixed_awaiting_owner_decisions_d1_d21",
+    "status": "ALIGNMENT_ONLY 2026-11-02 (doc 21 @c32b553 + Gist 3c92c3fa): Gist hallucinations detected (current_cd absent; L547 not success-save); matrix 01.33<->05.02<->voice104 in RESUME 3.14; MAINT-4-E proposed awaiting GO (Q-7..Q-10); MAINT-5 unapproved; no code",
     "delivery_mode": "local save in /home/user/webapp; external Bridge Sync Engine pushes automatically; agent never pushes; no ZIP",
     "owner_decisions": {
       "path": "(a) tri-state gift",
@@ -60,38 +60,14 @@
       "parity": "scripts/rebuild_refactor.py PARTS map updated to 9660 lines; test_parts_reassemble_to_original green; github_bulk_sync.py restored; CRLF restored on 36 generated files",
       "docs_integrity": "exit 0"
     },
-    "baseline_failing_names": {
-      "historical_12": [
-        "test_auto_compact x5",
-        "test_credit_completion_recovery x3",
-        "test_p2_model_routing x2",
-        "test_p32 test_06_banned_state_described",
-        "test_p3_regression test_opus5_matches_new_contract"
-      ],
-      "owner_drift_14": [
-        "p17 test_02_bridge_log_untracked",
-        "p17 test_04_p20_decision_documented",
-        "p20 test_08",
-        "p24 x2",
-        "p26 test_06",
-        "p31 x5",
-        "p33 test_01",
-        "p46 test_full_isolated_metrics_display",
-        "p47 curl_cffi (env)"
-      ],
-      "rule": "compare by names, never by count"
-    },
+    "baseline_failing_names": "19 (2026-10-31 after owner 1f90790): auto_compact x5, credit_completion_recovery x3, p2 x2 (format_model_display_label, opus5_has_no_ai_chat_model), p32 test_06_banned_state_described, p3 test_opus5_matches_new_contract, p17 test_02_bridge_log_untracked + test_04_p20_decision_documented, p20 test_08, p26 test_06_index_cleanup_under_registry_lock, p33 test_01_worker_calls_central_builder, p46 test_full_isolated_metrics_display, p47 test_p47_automatic_429_backoff_recovery",
     "rebuild_refactor_caveats": [
       "script rmtree's bridge_refactor/ -> owner file git/github_bulk_sync.py must be restored after each run",
       "script writes LF; committed generated files are CRLF -> convert back"
     ],
-    "next": {
-      "ticket": "MAINT-3-B",
-      "blocked_on": "owner decisions D1-D21 in RESUME §4 (or 'as recommended')",
-      "plan": "tests red-first (p51 x26 + conscious P50 test_09 update) -> p03 constants+move+log fns after 1297 -> p06: replace 3627 + FORBIDDEN branch after 3642 with threshold -> PARTS shift -> rebuild (safe) -> scripts/cooldown_vault_sorter.py (vault-only input; HEALTHY/DEAD/STALE routing; --max-network-checks; --prune-backups) -> README_COOLDOWN_VAULT.md (single scheduled command, absolute paths) -> closure by names + 3 docs"
-    },
+    "next": "MAINT-4-B only after owner writes D26-D33 (or \"كما أوصيت\") + explicit ابدأ تنفيذ card. Then MAINT-5 (unapproved), MAINT-2 (deferred). D25 doc13 pinning still awaits owner.",
     "history_notice": "all other keys preserved as prior records; not active instructions",
-    "mode": "docs-only for S4-A; no code in 01.33 until owner approval + new 'start execution'",
+    "mode": "EXECUTE_NOW",
     "roadmap_priority": [
       {
         "id": "STEP-1",
@@ -345,7 +321,9 @@
         "exit": "immediate, exit 0, no threads/cache/network beyond per-cycle cap",
         "evidence_gap_R1": "05.02 --revive returns HEALTHY only (662-667); no failed_path/DEAD/STALE routing in 644-701; running 05.02 without --revive scans primary (436-462) = violation",
         "implication": "dedicated scripts/cooldown_vault_sorter.py (no 05.02 edits); D21 recommends hybrid offline-first + capped network via spec_from_file_location reuse of 05.02 check_account_status"
-      }
+      },
+      "file_05_02_policy": "surgical edits ONLY inside run_revival body (632-701); tests-first; LF preserved; .bak before edit (owner A5 2026-10-31)",
+      "no_parallel_scripts_to_05_02": "never create scripts parallel to 05.02 (DRY / anti-complexity) — cooldown_vault_sorter.py and return_from_cooldown.py cancelled"
     },
     "maint3_a4": {
       "changed": [
@@ -356,7 +334,127 @@
         "PROGRESS protocol block + A4 [x]"
       ],
       "extra_tests": "(22)-(26)"
-    }
+    },
+    "maint3_a5_checkpoints": {
+      "cp0": "started 2026-10-31 after Layer A @94587ea; previous A5 write never landed (verified: 0 markers)",
+      "cp1": "DONE: charter pinned byte-identical in PROGRESS.md (before ## بروتوكول الاستئناف) + RESUME.md (before first ---)",
+      "cp2": "DONE: RESUME §3.8 (C1/C2, amendment, S1-S7, D23 gate, crash table, anchor shift +66, pinning proposal, tests 27-34) + D3/D18/D21 rewritten + D22-D25 + MODE row + PROGRESS A5 ticket/MAINT-3-B rewrite/row 5b/governance/resume header"
+    },
+    "maint3_a5": {
+      "date": "2026-10-31",
+      "mode": "ALIGNMENT_ONLY (no code written or run)",
+      "base": "genspark_ai_developer @ 94587ea (owner commits 976b017..94587ea: Turbo v01.04 merge into 01.33/01.03, Docs 17/18)",
+      "corrections": {
+        "C1": "function is run_revival (05.02:632-701), not revive_accounts",
+        "C2": "with -q <vault> manager has no delayed-gifts path (285-289) -> resolve_file_path(Config.QUARANTINE_FILE) inside the surgery"
+      },
+      "surgical_spec": "S1-S7 in RESUME §3.8.3; honest budget 12-16 lines inline or ~10 + _merge_by_email helper (D24)",
+      "cancelled": [
+        "scripts/cooldown_vault_sorter.py",
+        "scripts/return_from_cooldown.py"
+      ],
+      "anchor_shift": "01.33 now 9802 lines CRLF; p06 2509-4027; EMPTY branch 3685-3699 (mark_account_cooldown 3693); SUSPENDED 3700-3710; LOW_BALANCE 3711; success check 3994; finally 4021; EXECUTOR 4031; p03 anchors unchanged (1286/1297); 05.02 unchanged 756 LF",
+      "charter_pinned": {
+        "PROGRESS.md": "before ## بروتوكول الاستئناف",
+        "RESUME.md": "before first ---",
+        "doc13": "awaiting owner permission (D25)",
+        "guard": "D22 -> verify_docs_integrity.py in MAINT-3-B"
+      },
+      "new_decisions": [
+        "D22 charter guard",
+        "D23 STALE return policy",
+        "D24 helper vs inline",
+        "D25 doc13 pinning"
+      ],
+      "verification": "verify_docs_integrity.py Exit 0; charter byte-identical in both files; git status shows only PROGRESS.md/RESUME.md/recovery_state.json"
+    },
+    "maint3_b_checkpoints": {
+      "cp0": "2026-10-31 started @25c7cef; owner card: D1-D25 approved as recommended; scope = 05.02 + tests/test_p52_revival_routing.py + scripts/verify_docs_integrity.py ONLY (01.33 phase deferred to a later card)",
+      "cp1": "DONE: tests/test_p52_revival_routing.py written (10 tests 27-36) and RED against untouched 05.02",
+      "cp2": "DONE: 05.02 surgery S1-S7 + _merge_by_email (D24) applied; 756->763 lines, LF pure, py_compile OK; P52 10/10 + tri_state_isolation 34/34 green; pre-surgery .bak at /tmp/05.02_pre_maint3b_*.bak (outside repo)",
+      "cp3": "DONE: D22 charter guard in verify_docs_integrity.py (Exit 0 clean; detects tamper/missing); full pytest 1224 passed/19 failed/1 skipped — 19 all within known 26, 0 new; p24x2+p31x5 now pass after owner 1f90790 -> new baseline = 19 names; PROGRESS/RESUME updated"
+    },
+    "maint3_b1": {
+      "date": "2026-10-31",
+      "base": "25c7cef",
+      "scope": "05.02 + tests/test_p52_revival_routing.py + scripts/verify_docs_integrity.py (owner card)",
+      "surgery": "_merge_by_email 632-638 (D24) + S1 653-656 + S2 678-683 + S3/S4 690-692 + S5/S6 694-701 + S7 707-708; 756->763 lines LF; p_map/s_map removed from run_revival",
+      "tests": "P52 10/10 (red-first 8F/2P), tri_state_isolation 34/34, full 1224/19/1 by names, 0 new",
+      "d22_guard": "verify_charter_identity() — once per file + byte-identical PROGRESS/RESUME",
+      "untouched": [
+        "01.33",
+        "01.03",
+        "genspark_verifier_engine.py",
+        "bridge_refactor/",
+        "توثيق_*"
+      ],
+      "backup": "/tmp/05.02_pre_maint3b_*.bak (outside repo)"
+    },
+    "maint3_b2_checkpoints": {
+      "cp0": "2026-10-31 started after Layer A @233fa6f; MODE auto=ابدأ تنفيذ per §0 (D1-D25 written, first [ ], scope RESUME §3)",
+      "cp1": "DONE (red): tests/test_p51_forbidden_isolation.py written (18 tests) — red on untouched 01.33; P50 test_09 update deferred to cp3",
+      "cp2": "DONE: p03 MAINT3 block inserted after mark_account_cooldown (1299-1472, 174 lines): constants + _atomic_json_dump + append_account_log + register_forbidden_hit + move_account_to_cooldown_vault; 01.33 9802->9976 CRLF; py_compile OK; p06 anchors shift +174",
+      "cp3": "DONE: p06 EMPTY branch -> move_account_to_cooldown_vault with mark_account_cooldown fallback (D10); FORBIDDEN branch after SUSPENDED/before LOW_BALANCE (3898) with register_forbidden_hit + FORBIDDEN_MOVE_AFTER_N=2 + 5-min fallback (D19); 01.33 9976->10011 CRLF; py_compile OK. Pending in cp3: P50 test_09 conscious update + run P51/P50 | P50 test_09 updated (fallback contract, move patched False); P51 18/18 + P50 19/19 + P52 10/10 green",
+      "cp4": "DONE: PARTS shifted + rebuild idempotent (CRLF, owner file kept) + parity 16/16 + README_COOLDOWN_VAULT.md + full pytest 1242/19/1 by names (0 new) + PROGRESS/RESUME/recovery updated"
+    },
+    "maint3_b2": {
+      "date": "2026-11-01",
+      "base": "55fabea",
+      "scope": "01.33 + tests/test_p51_forbidden_isolation.py + tests/test_p50_dec07_breaker.py::test_09 + scripts/rebuild_refactor.py (PARTS) + bridge_refactor/ regen + README_COOLDOWN_VAULT.md",
+      "p03_block": "1299-1472 (+174): constants + _atomic_json_dump + append_account_log + register_forbidden_hit + move_account_to_cooldown_vault",
+      "p06": "EMPTY branch -> move with mark_account_cooldown fallback (D10); FORBIDDEN branch 3898-3918 before LOW_BALANCE (D19 threshold 2, 5-min fallback, never success-marked = T5 fixed)",
+      "file": "01.33 9802->10011 lines, CRLF 100%, py_compile OK",
+      "parts": "p03 532-1573 | p04 1574-2129 | p05 2130-2682 | p06 2683-4236 | p07 4237-5419 | p08 5420-5984 | p09 5985-7611 | p10 7612-7922 | p11 7923-8457 | p12 8458-10011",
+      "tests": "P51 18/18 (red-first 18F), P50 19/19 (test_09 = fallback contract), P52 10/10, parity 16/16, full 1242 passed / 19 failed / 1 skipped — 19 = known baseline names, 0 new",
+      "untouched": [
+        "05.02",
+        "01.03",
+        "genspark_verifier_engine.py",
+        "توثيق_*"
+      ],
+      "cancelled_per_a5": [
+        "scripts/cooldown_vault_sorter.py",
+        "scripts/return_from_cooldown.py"
+      ]
+    },
+    "maint4_checkpoints": {
+      "cp0": "2026-11-01 Layer A @92fc449 clean; previous MAINT-4 write never landed (0 markers); evidence re-read (01.33 10011 CRLF / 05.02 763 LF / 01.03 4176 LF read-only); MODE=ALIGNMENT_ONLY (owner card D26-D29 + 3 risks)",
+      "cp1": "DONE: RESUME §3.10 header + 3.10.1 (D26) + 3.10.2 (D27) + 3.10.3 (D28)",
+      "cp2": "DONE: RESUME §3.10.4 (race/locks R-A/R-B) + 3.10.5 (log growth/jsonl) + 3.10.6 (transient vs real 403 + D29 verdict) + 3.10.7 (opinion) + 3.10.8 (tests 35-46)",
+      "cp3": "DONE: RESUME D26-D33 rows + §4 header + MODE row",
+      "cp4": "DONE: PROGRESS MAINT-4 [x] study + MAINT-4-B [ ] + table row 5c + resume header; recovery updated"
+    },
+    "maint4": {
+      "date": "2026-11-01",
+      "mode": "ALIGNMENT_ONLY (no code)",
+      "base": "92fc449",
+      "spec": "RESUME §3.10.1-8",
+      "decisions_new": [
+        "D26 N=1 with ownership probe",
+        "D27 proven, guard test only",
+        "D28 _log_move in 05.02",
+        "D29 terminal marker = documentation not code",
+        "D30 keep 5-min fallback",
+        "D31 check_balance -1 -> 5 min no move",
+        "D32 jsonl append-only",
+        "D33 R-A mandatory + R-B lockfile + run_quarantine permission"
+      ],
+      "owner_risks": {
+        "race": "atomic writes both sides => no corruption; lost-update real (window = revival cycle minutes) => R-A + R-B",
+        "log_growth": "bounded 1.2MB but O(n) => jsonl",
+        "transient_vs_403": "network drop never yields FORBIDDEN (01.03:1707/1728 -> status 0 -> continue 3171; send_chat never returns 403; monitor exceptions continue 3230)"
+      },
+      "tests_planned": "p53 35-46",
+      "untouched": [
+        "01.33",
+        "05.02",
+        "01.03",
+        "verifier",
+        "bridge_refactor",
+        "توثيق_*"
+      ]
+    },
+    "post_work_review_rule": "UNIVERSAL_REVIEW_CARD.md mandatory after every output; agent may edit only card/PROGRESS/RESUME/recovery after review"
   },
   "completed_pr9_arena_addendum": {
     "task": "PR9 Arena addendum, corrected review and reset-safe documentation delivery",
@@ -933,5 +1031,1005 @@
     "history_notice": "completed_compact_credit_execution and older review/active fields are historical",
     "secrets": "Never persist credentials in repository or remote URL",
     "pull_request": "https://github.com/number949481-ux/TTTTT/pull/8"
+  },
+  "charter": {
+    "version": 1,
+    "pinned_in": [
+      "PROGRESS.md",
+      "RESUME.md"
+    ],
+    "proposed_for": [
+      "توثيق_…MAX_PATH/13_*.md (owner permission D25)"
+    ],
+    "items": [
+      "360° comprehensive vision before any decision",
+      "10 golden principles",
+      "active invariants: 12h scan exclusive to accounts_cooldown.json; no parallel scripts to 05.02; 01.03/verifier read-only; 05.02 surgical run_revival only; decisions in PROGRESS before code"
+    ]
+  },
+  "maint4_a2_checkpoints": {
+    "cp0": {
+      "state": "done",
+      "evidence": "no main.py in repo root (only bridge_refactor/main.py = bot runner); 05.02 login seq 318-345 (session first, then B2C email/password); threshold_days=14 (279/290/408); 01.33 P13 preflight 3445-3493; GIFT_STALE_DAYS=14 (1178); LOGIN_FAILED 3493/4024; .gitignore line 10 accounts*.json only; 05.02 argparse 719-732 no loop/daemon"
+    },
+    "cp1": {
+      "state": "done",
+      "target": "RESUME §3.11 (3.11.1-3.11.7) inserted before ## 4)"
+    },
+    "cp2": {
+      "state": "done",
+      "target": "RESUME D26/D28/D30/D31/D32/D33 rewritten + D34–D37 + §4 header + MODE row; PROGRESS MAINT-4-A2 [x] + MAINT-4-B rewritten (step 0 .gitignore) + row 5c + header; recovery final"
+    }
+  },
+  "maint4_a2": {
+    "mode": "ALIGNMENT_ONLY",
+    "code_changed": false,
+    "docs": [
+      "RESUME.md §3.11",
+      "RESUME.md §4 D26–D37",
+      "PROGRESS.md (header L41, 5c, MAINT-4-A2, MAINT-4-B)",
+      "genspark/recovery_state.json"
+    ],
+    "owner_constitutional": {
+      "D26": "blind N=1 instant move",
+      "D27": "persistent vault, revival only via 05.02",
+      "D28": "account_log.jsonl full account data, no masking (local decision)",
+      "D32": "jsonl append-only",
+      "D33": "dual-run 12:00/00:00 + R-A/R-B"
+    },
+    "open_decisions": {
+      "D34": "local-outage task-level breaker after 2 consecutive check_balance=-1 (recommend) vs absolute N=1",
+      "D35": "balance 0: move only if gift STALE>=14d; FRESH/UNKNOWN keeps 29h (recommend)",
+      "D36": "main.py meaning: OS scheduler recommended; daemon/new main.py conflict with A5",
+      "D37": ".gitignore step 0 mandatory before any code (5 patterns)",
+      "D38": "limit<=0 => all inside run_revival (recommend) vs scheduler passes -l 100000",
+      "D39": "sys.exit(1) in main() with explicit A5 extension vs stdout scan in scheduler"
+    },
+    "withdrawn": [
+      "D30 (5-min for legitimate 403)",
+      "D31 (-1 => 5 min)"
+    ],
+    "planned_tests": "p53 35–48; p51 9–13 rewritten",
+    "gist_rereview": {
+      "source": "gist c9691c2ebce8df28fe873162b8107425/ALIGNMENT_ONLY.md",
+      "mode_term": "Zero Blind Execution",
+      "corrections": {
+        "C1": "auth_failed+1800s sites are four: 1567/3492/4042/4085",
+        "C2": "drop COOLDOWN_VAULT_HOURS + cooldown_until_ts + cooldown_hours; rewrite p51 test_18",
+        "C3": "D37 due now: existing *.bak files hold full data outside .gitignore",
+        "C4": "D38 -l default 10 truncates revival; D39 exit code always 0",
+        "C5": "snapshot >72h => UNKNOWN => no move (owner may override in D35)",
+        "C6": "MAINT-4-B split into B-0..B-8 [ ] sub-boxes",
+        "C7": "invocation contract one line + shared lock accounts_cooldown.json.lock"
+      },
+      "code_changed": false
+    }
+  },
+  "next": "MAINT-10 + LOCKOUT-FIX CLOSED (2026-11-05). First [ ] in PROGRESS = BACKLOG (each item needs owner GO) => ALIGNMENT_ONLY.",
+  "maint4_a2_gist_checkpoints": {
+    "cp0": {
+      "state": "done",
+      "note": "session on 00df71e; A2 docs confirmed on remote; §3.11.8 missing (interrupted twice) — redo in chunks"
+    },
+    "cp1": {
+      "state": "done",
+      "target": "RESUME §3.11.8 part (أ) card-compliance table"
+    },
+    "cp2": {
+      "state": "done",
+      "target": "RESUME §3.11.8 parts (ب) dual-run readiness + (ج) main.py reading"
+    },
+    "cp3": {
+      "state": "done",
+      "target": "RESUME D38/D39 rows + amend D26/D27/D33/D37 + MODE row"
+    },
+    "cp4": {
+      "state": "done",
+      "target": "PROGRESS: MAINT-4-A2 ticket note + MAINT-4-B split into B-0..B-8 [ ] sub-boxes + header; recovery final"
+    }
+  },
+  "maint4_b_checkpoints": {
+    "B0": {
+      "state": "done",
+      "proof": "git check-ignore 7/7 IGNORED; git ls-files .bak/.lock/.jsonl=0",
+      "docs": "PROGRESS ticked; RESUME D34-D39 approved rows"
+    },
+    "B1": {
+      "state": "done",
+      "p53": "15 tests (35-49) written, 12 red/3 green before code",
+      "p51": "rewritten 8-13,15,18 + jsonl fixture; 10 red/8 green before code"
+    },
+    "B2": {
+      "state": "done",
+      "note": "p03 rewritten: constants (reasons+lock+breaker), _with_vault_lock, jsonl append_account_log(full record), move w/o timer metadata; py_compile OK; 10030 CRLF"
+    },
+    "B3": {
+      "state": "done",
+      "note": "p06: M1 blind FORBIDDEN, M2 four LOGIN_FAILED sites (1586/P13/4061/4104) -> move, M3 BALANCE_UNREADABLE move + D34 breaker NETWORK_DOWN, M4 zero+STALE move; statuses dict; py_compile OK; 10076 CRLF; 0 x 1800s"
+    },
+    "B4": {
+      "state": "done",
+      "note": "05.02: constants+_with_vault_lock+_log_move+_trim_account_log beside _merge_by_email; run_revival trim-at-start, limit<=0=all, R-A reload under shared lock, _log_move per move; main() sys.exit(1) (D39); py_compile OK; 865 LF; p52 10/10"
+    },
+    "B5": {
+      "state": "done",
+      "note": "PARTS 12 bounds updated (p03 532-1596 … p12 8523-10076, total 10076) + p03 desc MAINT-4-B; rebuild_refactor OK CRLF; py_compile 01.33 + bridge_refactor OK; test_refactor_parity 16/16"
+    },
+    "B6": {
+      "state": "done",
+      "note": "README_COOLDOWN_VAULT.md rewritten for MAINT-4-B: N=1 blind, jsonl full data (D28), lock name/30s/60s, D29 documentary, 12:00 OS / 00:00 external main.py + -l 0 + exit code, D34 breaker, D37 .gitignore, test list p50-p53+parity; test_46 green"
+    },
+    "B7": {
+      "state": "done",
+      "note": "full pytest: 19 failed / 1257 passed / 1 skipped; failures == 19-name baseline exactly (0 new, 0 fixed). Two tests updated to MAINT-4-B contracts: test_auto_compact::test_unknown_balance (-1 => BALANCE_UNREADABLE vault move of B, continue on C) + test_p48::test_04 (second classify site in send_message_and_make_public = D35)"
+    },
+    "B8": {
+      "state": "done",
+      "note": "PROGRESS (hdr L41, row 5c [x], MAINT-4-B parent + B-1..B-8 [x], log+scheduling doc) synced f183282; RESUME MODE row + D26-D39 executed markers + §3.11.9 closure + §4 heading; verify_docs_integrity Exit 0"
+    }
+  },
+  "review_verdict": {
+    "date": "2026-11-01",
+    "card": "UNIVERSAL_REVIEW_CARD.md v1.1",
+    "reviewed": "9225703 f183282 f504a3c + card itself",
+    "level": "FULL",
+    "type": "T9",
+    "verdict": "NOT-COMPLETE",
+    "findings": {
+      "S0": 0,
+      "S1": 2,
+      "S2": 2,
+      "S3": 2
+    },
+    "S1": [
+      "F-1 05.02_…py.bak tracked in 9225703 despite .gitignore (sync engine ignores .gitignore); pure code, no account data",
+      "F-2 docs claimed '.bak ignored' — corrected in PROGRESS/RESUME/card"
+    ],
+    "owner_action_required": "git rm --cached 05.02_genspark_delayed_gifts_manager.py.bak (agent not permitted)",
+    "tests": "19 failed by names == baseline, 1257 passed",
+    "head_unchanged": true
+  },
+  "maint4_c": {
+    "date": "2026-11-01",
+    "mode": "EXECUTE_NOW (owner GO card, decisions A-G = all recommendations)",
+    "base": "43fa2bc",
+    "owner_card": "[RESUME] MAINT-4-C D40-D44 + Gist 314ac479 + 05.03 (43fa2bc, 768 lines CRLF)",
+    "lineage": "05.03 = 00df71e:05.02 + 83 diff lines (pre-MAINT-4-B); vs HEAD 05.02 = 207 lines; direction graft 05.03->05.02 only",
+    "targets": {
+      "D40": "run_quarantine HEALTHY block 545-550 (card name check_and_clean_all does not exist)",
+      "D41": "run_revival clean_acc 753-756; proven gap: vault record active=False (01.33:1434) not cleared -> is_account_ready 1143 rejects",
+      "D42": "already implemented (494-505, 712, 778-779) -> zero code",
+      "D43": "protected 640-714 / 772-800 / 859-861; guards p52+p53 (96/96 green)",
+      "D44": "git rm (not --cached) recommended; blob 66bd67a == 00df71e:05.02"
+    },
+    "recommended_impl": "helper _activate_for_bot31(acc, bal) beside _merge_by_email + one call at 547 and 755",
+    "open_questions_for_GO": [
+      "Q-1 D41 >=100 condition",
+      "Q-2 git rm vs --cached",
+      "Q-3 extend A5 to run_quarantine HEALTHY block",
+      "Q-4 .bak in /tmp + sha256",
+      "Q-5 tests/test_p54_bot31_readiness.py red-first"
+    ],
+    "exec_sequence_after_GO": "C-0 D44 -> C-1 /tmp bak -> C-2 p54 red -> C-3 surgery LF -> C-4 compile+p54+96+full by names -> C-5 docs -> C-6 FULL review card",
+    "code_touched": true,
+    "base_at_go": "73084c3",
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT4C.bak",
+      "sha256": "4713913bf2b6379d9992fdee202e0467fcd5f6b3894e70f0c473f293235ded31",
+      "equals": "05.02 @73084c3",
+      "note": "lost on sandbox reset; git history is the durable copy"
+    },
+    "post_edit_sha256_05_02": "c7468e518f1007465db4d14d28545c8597681bf11a22cfd6393dea834b2cc0e4",
+    "checkpoints": {
+      "C-0": "git rm .bak done; tracked .bak = 0",
+      "C-1": "/tmp backup + sha256",
+      "C-2": "tests/test_p54_bot31_readiness.py red-first 13 failed/7 passed",
+      "C-3": "helper _activate_for_bot31 before _merge_by_email; call in run_quarantine HEALTHY + ready_31 tag; call in run_revival; 05.02 865->881 LF (+20/-4)",
+      "C-4": "py_compile OK; p54 20/20; guards 160/160; full 19 failed/1277 passed/1 skipped; names == baseline (NEW=0 FIXED=0)",
+      "C-5": "README line + PROGRESS [x] + RESUME §3.12.8 + this record",
+      "C-6": "FULL review card v1.2 delivered 2026-11-01 after sync landed (90e184d): 4 hunks only; D43 regions sha256-identical (905b274a.., 3409e411..); protected files diff=0; full suite names==baseline; verdict=COMPLETE"
+    },
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p54_bot31_readiness.py (new)",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json",
+      "05.02_genspark_delayed_gifts_manager.py.bak (deleted)"
+    ],
+    "untouched": [
+      "05.03",
+      "01.33",
+      "01.03",
+      "verifier",
+      "_with_vault_lock",
+      "_log_move",
+      "_trim_account_log",
+      "main()"
+    ],
+    "status": "closed (C-0..C-6 complete)",
+    "sync_landed_commit": "90e184d"
+  },
+  "maint4_d": {
+    "mode": "EXECUTE_NOW",
+    "base_at_card": "2406dab",
+    "owner_docs": [
+      "19_…توافق_360_مع_بوت_31.md",
+      "20_…حسم_ملف_التبريد.md"
+    ],
+    "review_verdict": "gap real (helper set active=True for bal<100); doc-19 consequence (CREDIT_EXHAUSTED crash) inaccurate — 01.33 P13 preflight gate 3472-3500 blocks send; real harm = wasted check_balance + blind vault move on -1 (D26 M3) + contract mismatch with mark_account_cooldown 1286-1297; doc-19 file names wrong (accounts_genspark_failed/success vs accounts_failed/success.json); doc-20 substantively correct (p06 line numbers shifted)",
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT4D.bak",
+      "sha256": "c7468e518f1007465db4d14d28545c8597681bf11a22cfd6393dea834b2cc0e4",
+      "equals": "05.02 @90e184d",
+      "note": "lost on sandbox reset; git history is the durable copy"
+    },
+    "post_edit_sha256_05_02": "a8a2199d981f91c126ec62e5528a7408807f48cc44e493d0f01b0cdb0effa038",
+    "surgery": "only inside _activate_for_bot31 body (git diff -U0 = 4 hunks within 712-726); else-branch: status=cooldown, active=False, cooldown_until=int(time.time()+29*3600); 05.02 881->887 LF (+10/-4)",
+    "tests": "p54 red-first 6 failed/16 passed -> 22/22; guards 182/182; full 19 failed/1279 passed/1 skipped names==baseline (NEW=0)",
+    "d43_byte_identical": {
+      "1-711": "same",
+      "642-707": "905b274a",
+      "HEAD 726-881 == local 732-887": "359271ee"
+    },
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p54_bot31_readiness.py",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json"
+    ],
+    "untouched": [
+      "01.33",
+      "05.03",
+      "docs 19/20",
+      "01.03",
+      "verifier",
+      "MAINT-5"
+    ],
+    "open_question_Q6": "unconditional now+29h extends an existing bot cooldown (9h left -> 29h) and resets every 12h cycle for poor accounts; alternatives max(existing, now+29h) or leave-if-running; NO action without owner decision",
+    "status": "closed"
+  },
+  "alignment_2026_11_02": {
+    "mode": "ALIGNMENT_ONLY (agent decision under owner delegation)",
+    "head": "c32b553",
+    "gist_audit": {
+      "current_cd_in_05_02": 0,
+      "line_547": "helper call, not success save",
+      "success_save_sites": [
+        526,
+        801
+      ],
+      "success_save_excludes_lt100": false,
+      "Q6_status": "still open"
+    },
+    "success_file_refs": {
+      "01.33": 0,
+      "bridge_refactor": 0,
+      "05.02": 15,
+      "05.02_lines": [
+        9,
+        100,
+        275,
+        286,
+        421,
+        429,
+        439,
+        498,
+        526,
+        617,
+        750,
+        801,
+        840,
+        851,
+        858
+      ],
+      "05.02_outside_A5": [
+        439,
+        498,
+        526,
+        617
+      ],
+      "tests": {
+        "p52": 2,
+        "p53": 3,
+        "p54": 7,
+        "tri_state": 5
+      }
+    },
+    "matrix_conflicts": {
+      "05.02": "accounts_success.json still written (526/801)",
+      "01.33": "zero balance + fresh gift stays in-place 29h (D35 3491-3496) vs voice104 'zero => vault' (Q-8; touches 01.33 => with MAINT-5)"
+    },
+    "doc21_misreads": {
+      "row2": "MAINT-4-D is in-place cooldown, compliant",
+      "row4": "12h cycle already targets accounts_cooldown.json via --revive (D16/D17)"
+    },
+    "proposed": "MAINT-4-E abolish accounts_success.json in 05.02 (needs GO + A5 scope extension + 4 test files)",
+    "open_questions": [
+      "Q-6 extend existing cooldown",
+      "Q-7 revive HEALTHY<=3d with bal<100 to primary",
+      "Q-8 zero+fresh gift => vault in 01.33",
+      "Q-9 delete file on disk or leave dead",
+      "Q-10 keep --success-file deprecated one cycle"
+    ],
+    "code_touched": false
+  },
+  "maint4_e": {
+    "mode": "EXECUTE_MAINT-4-E (owner card + Gist 6ce6268809a57f74f4d9847d01726d45 + voice: execute only if compatible with base)",
+    "base_at_card": "a4008fb (history rewritten; partial sync 9021e03 = 05.02 + p54 only)",
+    "owner_decisions": {
+      "Q7": "APPROVED healthy<=3d bal<100 -> primary as cooldown",
+      "Q9": "APPROVED leave file dead on disk; zero read/write in 05.02",
+      "Q10": "APPROVED --success-file deprecated warning, no crash",
+      "scope": "15 sites + 4 test files",
+      "deferred": [
+        "Q6",
+        "Q8",
+        "-> MAINT-5"
+      ]
+    },
+    "base_compat_check": {
+      "accounts_success_refs_01.33": 0,
+      "accounts_success_refs_bridge_refactor": 0,
+      "Q7_matches_mark_account_cooldown_1286_1297": true
+    },
+    "gist_6ce6_audit": {
+      "claim_doc21_table_updated": false,
+      "doc21_last_commit": "5fe2757",
+      "grep_Q7_Q9_Q10_in_doc21": 0,
+      "decisions_source": "owner text in message, not the gist"
+    },
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT4E.bak",
+      "sha256": "a8a2199d981f91c126ec62e5528a7408807f48cc44e493d0f01b0cdb0effa038",
+      "equals": "05.02 @a4008fb",
+      "note": "lost on sandbox reset; git history is the durable copy"
+    },
+    "post_edit_sha256_05_02": "140b48b07ff7d5d80502af8620550684afa44648071dbcd507d242c6d3da8e8c",
+    "surgery": "17 hunks (git diff -U0 vs a4008fb): docstring 9/421; Config 100 comment replaces SUCCESS_FILE; __init__ 275/286; run_quarantine 429/439/446/455-457 (already_done = quarantined only)/497-505/526/617; run_revival 750/801; main() 840 default=None [DEPRECATED] / 851 conditional warning / 858. 05.02 887->870 LF, CR=0, py_compile OK",
+    "tests_changed": {
+      "p52": "Harness w/o success; _merge_by_email count 4->3; test_30 asserts no success file",
+      "p53": "ctor w/o success_path; test_48 name list unchanged",
+      "tri_state": "5 refs -> primary / not-exists",
+      "p54": "7 legacy refs + 5 new tests 40-44"
+    },
+    "tests": "p54 red-first 5 failed -> 27/27; guards p48-p53+tri_state+parity 160/160; full 19 failed/1284 passed/1 skipped names==baseline (NEW=0)",
+    "d43_function_body_hashes": {
+      "_with_vault_lock": "identical",
+      "_log_move": "identical",
+      "_trim_account_log": "identical",
+      "_merge_by_email": "identical",
+      "_activate_for_bot31": "identical",
+      "check_account_status": "identical",
+      "atomic_save_json": "identical",
+      "load_accounts": "identical",
+      "_commit_moves": "only the removed success merge line"
+    },
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p52_revival_routing.py",
+      "tests/test_p53_vault_hardening.py",
+      "tests/test_p54_bot31_readiness.py",
+      "tests/test_tri_state_isolation.py",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json",
+      "UNIVERSAL_REVIEW_CARD.md"
+    ],
+    "untouched": [
+      "01.33",
+      "bridge_refactor",
+      "05.03",
+      "docs 19/20/21",
+      "01.03",
+      "verifier",
+      ".gitignore",
+      "MAINT-5"
+    ],
+    "next_gate": "MAINT-5 (not approved) -> ALIGNMENT_ONLY; Q6/Q8 pending owner card"
+  },
+  "alignment_2026_11_02_b": {
+    "mode": "ALIGNMENT_ONLY (owner RESUME card; first [ ] = MAINT-5 not approved)",
+    "head": "38a2d2d",
+    "inputs": [
+      "gist b6ba8643908d633791babec84a4e5529",
+      "doc 23 @38a2d2d",
+      "voices 105-111"
+    ],
+    "gist_line_claims": {
+      "LOW_BALANCE_1243_1251": "false -> 3977-3985",
+      "move_vault_1398_1430": "false -> 1408+",
+      "run_revival_0502_632_701": "false -> 725-813",
+      "GIFT_STALE_DAYS_0502_408": "false (01.33:1175)",
+      "moves_at_1192_1232": "false",
+      "SORT_BY_BALANCE_113": "true",
+      "ENDPOINT_RECHARGE_BALANCE": "true (3 matches)"
+    },
+    "findings": {
+      "ping_pong_in_current_code": false,
+      "vault_paths": "COOLDOWN_VAULT_REASONS 1320-1321 only",
+      "balance_lt_100_preflight": "mark_account_cooldown 3499 in place 29h",
+      "zero_plus_fresh_gift": "in place 29h (D35 3491-3497 vaults only zero+STALE) => Q-8",
+      "implicit_14d_immunity": "classify_gift_freshness 1200-1248 on 05.02 snapshot; aged_days>=14 pessimistic => max one vault round-trip per 14d",
+      "300s_writers": [
+        1590,
+        3487,
+        3533,
+        3954,
+        4101,
+        4146,
+        4289
+      ],
+      "sort": "05.02 sorts on write (784, 488-489); 01.33 update_account_data 1068 in-place; selection by last_used 1264/1281",
+      "revive_default_limit": "SCAN_LIMIT=10 at 05.02:821 => scheduler must pass -l 0",
+      "no_code_guard_for_7_11": "run_quarantine scans primary if --revive omitted",
+      "midnight_gift_claim": "0 code matches",
+      "pii_in_public_gist": true
+    },
+    "open_questions": [
+      "Q-11 bot sanctity absolute?",
+      "Q-12 immunity: existing/tag/file",
+      "Q-13 sort: as-is/every-cycle/--list-ready",
+      "Q-14 7.11 code guard",
+      "Q-15 --revive default -l 0",
+      "Q-16 evidence for 12:00AM gift",
+      "Q-17 bridge_bot.log for account 498"
+    ],
+    "code_changed": false,
+    "files_changed": [
+      "RESUME.md",
+      "PROGRESS.md",
+      "UNIVERSAL_REVIEW_CARD.md",
+      "genspark/recovery_state.json"
+    ]
+  },
+  "maint5": {
+    "mode": "EXECUTE (owner direct-delegation card 2026-11-02 + Gist b6ba8643908d633791babec84a4e5529 voice 113)",
+    "base_at_card": "0831cb6",
+    "owner_decisions": {
+      "Q11": "01.33/01.03 absolute read-only",
+      "Q12": "keep D35+P48; accounts_0_14days.json cancelled",
+      "Q13": "zero new tools (--list-ready cancelled)",
+      "Q14": "rate-limit guard --allow-primary-scan",
+      "Q15": "--revive default -l 0",
+      "Q16": "floating now+29h, no midnight binding",
+      "Q17": "account 498 log closed"
+    },
+    "claims_verified_on_head": {
+      "COOLDOWN_VAULT_REASONS": "1320-1321",
+      "BALANCE_UNREADABLE_move": "3481-3488",
+      "ZERO_BALANCE_STALE_GIFT": "3493",
+      "mark_account_cooldown_call": "3499",
+      "LOGIN_FAILED_move": "3531-3533",
+      "gist_misquote": "L3458-3463 'if balance < 100' is not verbatim; actual P13 gate 3491-3500 (no decision impact)",
+      "lock_name_L620_used_L801": true,
+      "accounts_success_refs": 0
+    },
+    "pre_edit_backup": {
+      "path": "/tmp/05.02_pre_MAINT5.bak",
+      "sha256": "140b48b07ff7d5d80502af8620550684afa44648071dbcd507d242c6d3da8e8c",
+      "equals": "05.02 @0831cb6"
+    },
+    "post_edit_sha256_05_02": "c96fe5b1f78263f3ffa0701ac0f080c25e76531a969c29ab06b120798f75479e",
+    "surgery": "main() only: -l default=None -> limit = args.limit or (0 if revive else SCAN_LIMIT); new --allow-primary-scan; guard: not revive and not allow -> print + sys.exit(1) (also under --dry-run). 5 hunks all after 'def main'; pre-main bytes identical; 870->880 LF; CR=0",
+    "tests": "new tests/test_p55_maint5_guards.py red-first 6 failed/6 passed -> 12/12; guards p48-p55+tri_state+parity 199/199; full 19 failed/1296 passed/1 skipped names==baseline (NEW=0)",
+    "files_changed": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      "tests/test_p55_maint5_guards.py",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json",
+      "UNIVERSAL_REVIEW_CARD.md"
+    ],
+    "untouched": [
+      "01.33",
+      "01.03",
+      "bridge_refactor",
+      "05.03",
+      "docs 19-23",
+      "verifier",
+      ".gitignore"
+    ],
+    "delivery_note": "owner card asked for git commit+push; sandbox has no GitHub token (setup_github_environment: none) -> local save + Bridge Sync Engine as in all previous batches",
+    "next_gate": "first [ ] in PROGRESS = MAINT-2 (deferred by DEC-04) -> ALIGNMENT_ONLY"
+  },
+  "alignment_maint6": {
+    "date": "2026-11-03",
+    "mode": "ALIGNMENT_ONLY (owner card MAINT-6; voices 123-128; doc 23)",
+    "head": "1ce59ab",
+    "code_touched": false,
+    "gist": {
+      "id": "b6ba8643908d633791babec84a4e5529",
+      "lines": 2393,
+      "sha256_16": "67112502c4a8c8d4",
+      "card_lines": "2329-2341",
+      "voice124_line": 1956
+    },
+    "matrix": {
+      "d1_schedule_batch10": "compatible; card '20 requests/day' = 20 accounts (>=3 req/account)",
+      "d2_email_not_id": "already true (0 id usage)",
+      "d3_checkpoint": "GAP; not gitignored",
+      "d4a": "compatible if HEALTHY (Q-18)",
+      "d4b": "CONFLICT card 29h renew vs voice124 leave-as-is (Q-19)",
+      "d4c": "compatible; per-file atomic, no xproc lock in run_quarantine",
+      "d4d": "compatible; AUTH_FAILED untouched (Q-20)",
+      "d5": "zero 01.33 change",
+      "invariant_7_11": "needs D48 amendment"
+    },
+    "proposal": "--sweep CLI in 05.02 main() + RotationCheckpoint class beside _merge_by_email + 3 touch points in run_quarantine (L456/L526/L512) + _with_vault_lock around save_checkpoint + tests/test_p56_rotation_sweep.py",
+    "questions": [
+      "Q-18",
+      "Q-19",
+      "Q-20",
+      "Q-21",
+      "Q-22",
+      "Q-23",
+      "Q-24"
+    ],
+    "scope_extension_needed": [
+      "Config+.gitignore",
+      "run_quarantine selection/loop/save_checkpoint",
+      "_activate_for_bot31 if Q-19(b)"
+    ],
+    "docs": {
+      "RESUME": "3.18 + D48 pending + MODE",
+      "PROGRESS": "[x] alignment line + header",
+      "CARD": "1.7 + 7.20"
+    },
+    "sandbox_reset_mid_session": true
+  },
+  "maint6": {
+    "date": "2026-11-03",
+    "mode": "REVIEW_AND_EXECUTE (owner card; voices 129-133)",
+    "base_head": "195316b",
+    "backup": {
+      "path": "/tmp/05.02_pre_MAINT6.bak",
+      "sha256_16": "c96fe5b1f78263f3",
+      "equals": "05.02@195316b (git durable)"
+    },
+    "after": {
+      "05.02_lines": 1016,
+      "05.02_sha256_16": "2205c7aed47bb464",
+      "0133_sha256_16": "fe039f0f3f90ac8b",
+      "0133_touched": false
+    },
+    "decisions": [
+      "D48",
+      "Q-18 cut",
+      "Q-19 voice124 leave running cooldown",
+      "Q-20 net counts",
+      "Q-21 first_n",
+      "Q-22 lock+merge",
+      "Q-23 gitignore+sha256",
+      "Q-24 <=20",
+      "A5 extended",
+      "delay 60-300s",
+      "full inclusion",
+      "save per account"
+    ],
+    "files": [
+      "05.02_genspark_delayed_gifts_manager.py",
+      ".gitignore",
+      "tests/test_p56_rotation_sweep.py",
+      "README_COOLDOWN_VAULT.md",
+      "PROGRESS.md",
+      "RESUME.md",
+      "genspark/recovery_state.json",
+      "UNIVERSAL_REVIEW_CARD.md"
+    ],
+    "tests": {
+      "p56": "30/30 (red-first 22 failed vs BASE)",
+      "guards_p52_p55_tri": "98/98",
+      "full": "19 failed (baseline names) / 1326 passed / 1 skipped; NEW=0 FIXED=0"
+    },
+    "notes": [
+      "Q-19 window now<cd<=now+29h; absurd far-future normalised to now+29h",
+      "card '20 requests/day' = 20 accounts (>=3 req each)",
+      "sandbox reset twice mid-session; Layer A redone"
+    ],
+    "owner_gate": "Task Scheduler 06:00/18:00 --sweep, timeout >= 2h"
+  },
+  "maint7": {
+    "date": "2026-11-03",
+    "mode": "REVIEW_AND_CONDITIONAL_EXECUTE (owner card; voices 134-137)",
+    "base_head": "a1d7afa",
+    "new_files": {
+      "bridge_refactor/main_upgrade.py": "ac8224114341ed4e",
+      "tests/test_p57_main_upgrade_supervisor.py": "51adb2db56920037"
+    },
+    "modified": {
+      "tests/test_refactor_parity.py": "OWNER_FILES_REL += main_upgrade.py (m4 would fail otherwise)",
+      "README_COOLDOWN_VAULT.md": "supervisor section",
+      "PROGRESS.md": "[x] MAINT-7 + [ ] BACKLOG B1-B10",
+      "RESUME.md": "3.20 + D49-D54 + MODE",
+      "UNIVERSAL_REVIEW_CARD.md": "1.9 + 7.22"
+    },
+    "untouched": {
+      "bridge_refactor/main.py": "d083885a9bb352f6",
+      "01.33": "fe039f0f3f90ac8b",
+      "scripts/rebuild_refactor.py": "untouched",
+      "05.02": "2205c7aed47bb464"
+    },
+    "decisions_noted": [
+      "revive argv carries -q accounts_cooldown.json -l 0 (7.11) although card omitted it",
+      "bot exit => supervisor exits same rc (no auto-restart; B3)"
+    ],
+    "tests": {
+      "p57": "21/21 incl. real SIGTERM no-zombie",
+      "parity": "16/16",
+      "full": "19 failed (baseline names) / 1347 passed / 1 skipped; NEW=0"
+    },
+    "backlog": [
+      "B1 first real run on owner machine",
+      "B2 catch-up missed slot",
+      "B3 bot auto-restart w/ backoff (decision)",
+      "B4 log rotation",
+      "B5 05.03 drift",
+      "B6 MAINT-2",
+      "B7 STEP-3 merge_legacy_quarantine",
+      "B8 LINK-R3 merge to main by owner",
+      "B9 one-line job summary on screen",
+      "B10 Windows-side verification of p57"
+    ],
+    "owner_gate": "run main_upgrade.py on Windows; Ctrl+C clean; disable old Task Scheduler jobs"
+  },
+  "maint8": {
+    "status": "executed_closed_2026-11-03",
+    "card": "REVIEW_AND_EXECUTE (Gist a2e84b1d L676-702, voices 143-147); owner pre-instruction: review first, do not start blind",
+    "base": "card f084409e; actual 97506a5 (owner deleted 05.03) -> code synced e3aaab4",
+    "scope": "bridge_refactor/main_upgrade.py only (230->502 LF, sha 475f5919) + tests/test_p57 (33 tests)",
+    "decisions": "D55 archive .tar.gz(+.tar.tmp) >60m; D56 hot rmtree; D57 reports .json; D58 startup purge; D59 in-place truncate 10MB->2MB + idle logs 30d (voice 145); D60 extracted_webapp/extracted_push_temp/webapp*.tar.gz* restricted glob; D61 protected names + never enter project root",
+    "gist_verdicts": {
+      "p07 line numbers 355/885/914/591": "correct",
+      "bot needs triad only during upload": "partial - also read by 3 telegram buttons L6419/6436/6474 (degrade safely); stuck job >1h -> synced with zero files L4893->L5157 (owner accepted voice 144)",
+      "extracted_push_temp": "unverified - 0 matches in repo; kept as harmless no-op",
+      "webapp*.tar.gz in root": "inaccurate - written inside extracted_webapp/<pid>/ L2872/L6768; restricted glob covers both",
+      "omitted": "registry location L140-157 local-then-parent; .tar.tmp orphan L5211; copy2 keeps mtime -> age from name stamp first; BRIDGE_HOME runtime.py L26"
+    },
+    "untouched": {
+      "bridge_refactor/main.py": "d083885a9bb352f6",
+      "01.33": "fe039f0f3f90ac8b",
+      "05.02": "2205c7aed47bb464"
+    },
+    "tests": {
+      "p57": "33/33",
+      "parity": "16/16",
+      "p56": "30/30",
+      "full": "19 failed (baseline names) / 1359 passed / 1 skipped; NEW=0"
+    },
+    "docs": [
+      "README_COOLDOWN_VAULT.md section",
+      "PROGRESS [x] MAINT-8 + BACKLOG B11-B13",
+      "RESUME 3.21 + D55-D61 row + MODE",
+      "card 1.10 + 7.23"
+    ],
+    "backlog_after": [
+      "B1 first real run",
+      "B2 catch-up",
+      "B3 bot auto-restart (decision)",
+      "B8 merge to main by owner",
+      "B9 one-line job summary",
+      "B10 Windows p57",
+      "B11 watch first startup purge line (~2GB)",
+      "B12 optional keep latest report (needs GO, contradicts voice 144)",
+      "B13 account_log.jsonl growth (audit log, owner decision)"
+    ],
+    "closed_by_owner_voice_141": [
+      "B5 05.03 deleted",
+      "B6 MAINT-2 Finish",
+      "B7 STEP-3 Finish"
+    ],
+    "owner_gate": "run main_upgrade.py; check logs/main_upgrade.log line 'clean_disk_garbage: ... MB'; buttons show 'none' after 1h by design"
+  },
+  "alignment_live_checker": {
+    "date": "2026-11-03",
+    "mode": "PEER_REVIEW_AND_ALIGNMENT_ONLY (ZERO CODE)",
+    "head": "3b12f96",
+    "code_touched": false,
+    "gist": {
+      "master": "97327cc1761cfcc956b5247f5a0f3846",
+      "master_sha256_16": "8eb0a889fb9f011c",
+      "master_lines": 1717,
+      "card": "db5d6f65a319da3c733827963edc56ed",
+      "card_sha256_16": "dd9a16ef7c2560ac",
+      "card_lines": 59,
+      "voices": "158-175"
+    },
+    "verdicts": {
+      "D62_confirm_resume": "ok",
+      "D63_isolate": "conclusion ok / premise wrong: 01.33 is ThreadPoolExecutor(3) L4301 not asyncio",
+      "D64_auto_redistribute": "WRONG: PARTS fixed ranges L35-47; conflicts D47; sha pinned in p56 L421 / p57 L142",
+      "D65_dry": "ok via --sweep; needs on_account hook in run_quarantine (A5)",
+      "D66_D67": "ok",
+      "D68": "ok",
+      "D69_streaming": "already implemented 05.02 L583-694",
+      "D70_timeout_keep": "already implemented L686-689; no account_log line",
+      "D71_full_email_ui": "owner decision; logs stay redacted",
+      "Q4_ping_pong": "none: _activate_for_bot31 L826-853 == is_account_ready L1104-1145"
+    },
+    "sensitive_pending_GO": [
+      "S1 button location vs READ-ONLY 01.33/PARTS",
+      "S2 voice159 vault copy vs --sweep",
+      "S3 D61 collision -> D62-D73",
+      "S4 windows stop file not signal",
+      "S5 busy marker + skip scheduled sweep",
+      "S6 update_account_data outside shared lock (B14)",
+      "S7 run_quarantine hook scope"
+    ],
+    "resume_section": "RESUME.md §3.22",
+    "next": "wait owner GO on S1-S7; then plan (no code)",
+    "second_review": {
+      "date": "2026-11-03",
+      "head": "c06bf64",
+      "level": "FULL (0.2(a) RESUME/CARD/recovery edited; 0.2(d) line numbers)",
+      "corrections": [
+        "FILE_LOCK line L1072->L1073",
+        "primary reader L1036->read_accounts_safe L1052 / claim L625"
+      ],
+      "new_findings": [
+        "F-4 bridge_bot.log tracked (0 bytes) since 859efae (7.14)",
+        "F-6 live checker needs genspark_master_account_manager absent in repo; tests must stub (p56 L41-44)",
+        "F-7 ui.py __all__ re-export: wrapper must patch runtime.ns not ui module",
+        "F-8 Supervisor.start_job guard covers only its own job (L378-383); live checker is foreign process -> busy marker needed"
+      ],
+      "review_verdict": "NOT-COMPLETE (pending owner GO: S1-S7)",
+      "card_principle_added": "7.25"
+    }
+  },
+  "maint9": {
+    "status": "EXECUTED — SURGICAL_EXECUTION complete (steps 0-12), awaiting owner review",
+    "date": "2026-11-04",
+    "head": "d542d0a+local",
+    "code_touched": true,
+    "spec_file": "MAINT9_LIVE_CHECKER_SPEC.md",
+    "resume_section": "RESUME.md §3.23",
+    "gist": {
+      "id": "97327cc1761cfcc956b5247f5a0f3846",
+      "sha256_16": "ed98440a655ad697",
+      "lines": 2715,
+      "card_lines": "2484-2524",
+      "voices": "158-184",
+      "go_card_lines": "2683-2700"
+    },
+    "decisions": "D62-D70 (S1a, S2 copy-not-cut queue, S3, S4 stop file, S5 busy marker, S6 shared lock, S7 hooks, D70 green/red gates)",
+    "open_questions": [],
+    "head_before": "f95922c",
+    "go_answers": {
+      "Q-GO-1": "b (fingerprint queue, in-place via RotationCheckpoint)",
+      "Q-GO-2": "yes (3rd exception to 7.11, 60-300s mandatory)",
+      "Q-GO-3": "yes (busy defers sweep+revive)",
+      "Q-GO-4": "yes (5 AUTH_FAILED -> 10min; 3 trips -> self-stop exit 4)",
+      "Q-GO-5": "yes (stop confirm = new message)",
+      "Q-GO-6": "yes (A5 extended to run_quarantine, 4 points)"
+    },
+    "files": {
+      "01.33": {
+        "lines": 10394,
+        "sha256_16": "e5c165bf9dfc4929",
+        "A_p09": 110,
+        "B_p12": 208
+      },
+      "05.02": "run_quarantine(on_account=None, stop_flag=None) + chunked sleep",
+      "main_upgrade.py": "live_check_busy() + start_job skip",
+      "new": [
+        "bridge_refactor/live_account_checker.py (512 LF)",
+        "tests/test_p58_live_checker.py (43 tests)"
+      ],
+      "parts": "p09 6046-7782 | p10 7783-8097 | p11 8098-8632 | p12 8633-10394"
+    },
+    "tests": {
+      "p58": "43/43",
+      "parity": "16/16",
+      "full_suite": "19 failed by name (baseline) + 0 new / 1401 passed",
+      "incident": "sync d542d0a leaked .pytest_cache/ -> removed via git rm --cached (p17 test_01 back to green)"
+    },
+    "remaining_backlog": [
+      "B14 update_account_data outside shared lock (R4)",
+      "B15 first real run on owner machine",
+      "B16 genspark_master_account_manager absent in repo"
+    ],
+    "b15_field_evidence": "REPORTED by owner gist L2800+: 2026-11-04 12:36:06 [MAINT-9] live check launched pid=30196 mode=fresh msg=1412 — not verified in sandbox; B15 stays open until owner closes it"
+  },
+  "alignment_lifecycle_2026_11_04": {
+    "status": "DONE — ALIGNMENT_AND_INSPECTION_ONLY (zero code, zero rebuild, zero pytest); docs recorded on owner request",
+    "date": "2026-11-04",
+    "head": "6c35602",
+    "code_touched": false,
+    "cards": {
+      "gist_lifecycle": {
+        "id": "093e9661b43f45050d951930bffa1a7e",
+        "sha256_16": "e32ce7193ee1135e",
+        "lines": 2118
+      },
+      "gist_card": {
+        "id": "db5d6f65a319da3c733827963edc56ed",
+        "sha256_16": "1a110c1f0bdd8763",
+        "lines": 91,
+        "note": "card A = lifecycle 360 (governing); card B = MAINT-9 review @f95922c (stale, MAINT-9 executed)"
+      },
+      "gist_master": {
+        "id": "97327cc1761cfcc956b5247f5a0f3846",
+        "sha256_16": "1028f77c9b74dc06",
+        "lines": 2877,
+        "prev_sha": "ed98440a655ad697",
+        "prev_lines": 2715,
+        "new_content": "MAINT-9 closure report + owner-machine log pid=30196 mode=fresh msg=1412 (B15 reported, unverified)"
+      }
+    },
+    "verified_anchors": {
+      "p06": "L660 send_message_and_make_public | L770-805 P13 gate | L782-788 BALANCE_UNREADABLE | L789-800 <100 return before L803 | L809-834 401 refresh | L836/838 project entry | L1074/1090/1094/1095 counter before claim | L1161-1170 cancel | L1240-1257 FORBIDDEN->vault (D26) | L1261-1274 D34 | L1277-1285 LOW_BALANCE continue | L1564-1578 COMPLETED | L1595 MAX_ATTEMPTS_EXHAUSTED",
+      "p03": "L99-116 claim | L542 update_account_data | L578 is_account_ready | L623-642 reactivate (no balance write) | L651 GIFT_PREFLIGHT_ENABLED | L724-757 get_eligible_accounts (no balance read) | L760-771 mark_account_cooldown (no balance) | L794 COOLDOWN_VAULT_REASONS | L967-1068 refresh_cookies_on_401",
+      "01.03": "L1035-1053 check_balance (-2=401, -1=fail) | L1060 do_login",
+      "05.02": "L64/L69 import master do_b2c_login (file absent in repo) | L418-460 check+relogin+balance write | L842-868 _activate_for_bot31"
+    },
+    "hallucinations_refuted": [
+      "DEAD_COOKIE",
+      "9999999999",
+      "p09_accounts.py",
+      "mark_account_cooldown(email, reason=, hours=)",
+      "login_with_credentials",
+      "05.03_genspark_delayed_gifts_manager.py"
+    ],
+    "maint10_candidate": {
+      "approved": false,
+      "decisions": "D-01 balance:100 on revive | D-02 balance:0 in mark_account_cooldown | D-03 write real balance before LOW_BALANCE return | D-04 cancel after generation started => 0+29h (final wording pending) | D-05 403 => stop+notify Public+no new project+account innocent (conflicts D26) | D-06 COMPLETED => 0+29h no check | D-07 edit 01.33 only + PARTS + sha",
+      "proposal": "offline balance filter in get_eligible_accounts (P48 pattern, fail-open)",
+      "open_questions": [
+        "Q1 D-05 vs D26",
+        "Q2 D-01 vs 05.02/live real-balance writes + filter interplay",
+        "Q3 D-02 zero for all calls or real value",
+        "Q4 define generation_started (no flag exists in p06)",
+        "Q5 engine unification a/b/c (master absent)",
+        "Q6 governing card = A",
+        "Q7 registry recording = done (docs only)"
+      ],
+      "path_on_go": "PLAN_SPECIFICATION_ONLY spec doc first, then second GO for execution"
+    },
+    "unverifiable": [
+      "W___webapp parent folder",
+      "bridge_refactor_36 path",
+      "'fixed immediately' claim at gist head",
+      "two WAV voices",
+      "B15 owner-machine log"
+    ],
+    "docs_touched": [
+      "PROGRESS.md",
+      "RESUME.md",
+      "UNIVERSAL_REVIEW_CARD.md (1.14, 7.28)",
+      "genspark/recovery_state.json"
+    ]
+  },
+  "maint10_plan_2026_11_04": {
+    "status": "DONE — MASTER AUDIT (ZERO EXECUTION): MAINT-10_MASTER_PLAN.md written; zero code, zero pytest; STOP awaiting T0 answers (U-1…U-12) + GO per task",
+    "date": "2026-11-04",
+    "head_start": "2dd78ae",
+    "head_resume": "5149f40",
+    "code_touched": false,
+    "plan_file": "MAINT-10_MASTER_PLAN.md",
+    "gists": {
+      "093e9661b43f45050d951930bffa1a7e": {
+        "lines": 5394,
+        "sha256_16": "f1895f25187931a4"
+      },
+      "db5d6f65a319da3c733827963edc56ed": {
+        "lines": 216,
+        "sha256_16": "d4389d2e6c3bcf90"
+      },
+      "97327cc1": {
+        "lines": 2877,
+        "sha256_16": "1028f77c9b74dc06"
+      }
+    },
+    "decisions": {
+      "approved": [
+        "A-1..A-10"
+      ],
+      "conditional": [
+        "C-1 (D-01 balance:100)",
+        "C-2 (D-06 COMPLETED⇒0+29h)"
+      ],
+      "rejected": [
+        "R-1..R-6"
+      ],
+      "pending": [
+        "P-1..P-7"
+      ]
+    },
+    "open_questions": "U-1..U-12 (plan §6)",
+    "tasks": "T0..T8 (plan §2)",
+    "docs_updated": [
+      "MAINT-10_MASTER_PLAN.md",
+      "PROGRESS.md L140",
+      "RESUME.md §3.25 + MODE + D-01–D-07 row",
+      "UNIVERSAL_REVIEW_CARD.md v1.15",
+      "genspark/recovery_state.json"
+    ]
+  },
+  "maint10_exec_2026_11_04": {
+    "status": "DONE — MAINT-10 SURGICAL_EXECUTION (unified GO T1…T8 = U-12); CLOSED",
+    "date": "2026-11-04",
+    "go_card": "gist db5d6f65 L384-402 + L463-485 (506 lines, sha bb6ce59035c89e0b)",
+    "head_syncs": [
+      "45a938d",
+      "80105ba",
+      "96529ff",
+      "0947cc8",
+      "928d38d"
+    ],
+    "bridge": {
+      "lines_crlf": 10436,
+      "sha256_16": "8728ac134b037f9d",
+      "previous": [
+        "e5c165bf9dfc4929",
+        "d08d6c13c440c880"
+      ]
+    },
+    "parts": {
+      "p06": [
+        2723,
+        4339
+      ],
+      "p07": [
+        4340,
+        5522
+      ],
+      "p12": [
+        8675,
+        10436
+      ],
+      "parity": "16/16"
+    },
+    "tests": {
+      "new": "tests/test_p59_maint10_lifecycle.py 24/24",
+      "rewritten_403": [
+        "p51 t11-t15",
+        "p53 t35/t37"
+      ],
+      "narrowed_c2": [
+        "p50 t09",
+        "p51 t15",
+        "test_auto_compact x7 penalty_cooldowns(mock, finisher_email)"
+      ],
+      "sha_guards": "p56 L421 / p57 L142",
+      "suite": "1426 passed / 19 failed == baseline a8d79bc by names / 0 new"
+    },
+    "deviation": "generation_started guarded by compact_in_progress (L3436) — /compact maintenance is not consumption (A-6)",
+    "untouched": [
+      "01.03Genspark_claude-opus-5-code.py",
+      "genspark_verifier_engine.py",
+      "05.02 (e1216b5186d99420)"
+    ]
+  },
+  "lockout_fix_2026_11_05": {
+    "status": "DONE/CLOSED",
+    "go_card": "Gist db5d6f65 L1173-1200 [MANDATE: GO_SURGICAL_FIX_LOCKOUT] + ratification Q1-Q4 L1110-1130 (gist 1348 lines sha 00c809ec5db945a5)",
+    "voice": "198 (== 203 / 10 in gist; same text)",
+    "base_head": "2daa22d",
+    "code_sync": "89456e7",
+    "finding": "Zero-base audit FAIL: offline filter A-2 (before claim) drops balance:0 accounts after 29h so reactivate_account_if_due (C-1, after claim) never runs -> permanent lockout; only 05.02 could rescue",
+    "q1": "01.33 L1268-1273 _due_reactivation (status cooldown/auth_failed/disabled passed is_account_ready) => offline filter skipped",
+    "q2": "compact_in_progress guard L3440 ratified (tag [مصدَّق Q2 LOCKOUT-FIX])",
+    "q3": "FORBIDDEN removed from COOLDOWN_VAULT_REASONS L1341 + header comment L1322-1323; rebuild_refactor p03 description updated",
+    "q4": "tests/test_p59_maint10_lifecycle.py 24->28 TestLockoutFixFullLifecycle t24-t27",
+    "coupled_tests": "p51 L389 tuple[:2]; p53 test_36; p59 test_15; sha guards p51/p56/p57 -> aa17a8a980fd2a20",
+    "bridge": {
+      "sha16": "aa17a8a980fd2a20",
+      "lines": 10440,
+      "crlf": true
+    },
+    "parts": "p03 532-1617, p04 1618-2173, p05 2174-2726, p06 2727-4343, p07 4344-5526, p08 5527-6091, p09 6092-7828, p10 7829-8143, p11 8144-8678, p12 8679-10440; parity 16/16",
+    "suite": "19 failed (== baseline a8d79bc by names, worktree rebuilt) / 1430 passed / 1 skipped",
+    "docs": "PROGRESS L140 tail, RESUME L25 + 3.26 tail + D-09, review card v1.17 + 7.31 + §14, plan STATUS, README, recovery_state",
+    "untouched": [
+      "01.03Genspark_claude-opus-5-code.py",
+      "genspark_verifier_engine.py",
+      "05.02_genspark_delayed_gifts_manager.py",
+      "bridge_refactor owner files"
+    ]
   }
 }

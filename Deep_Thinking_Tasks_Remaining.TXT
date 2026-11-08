@@ -19,13 +19,13 @@ Genspark Multi-Project WebApp Bridge System
 (بوت Telegram يربط المستخدمين بمحرك توليد WebApps).
 
 حقائق ثابتة لا تُناقش:
-- الإصدار النشط: 01.33 — الملف الرئيسي: 01.33_telegram_gen_bridge.py (~8422 سطراً).
+- الإصدار النشط: 01.33 — الملف الرئيسي: 01.33_telegram_gen_bridge.py (10532 سطراً).
 - المحرك: 01.03Genspark_claude-opus-5-code.py.
 - الريبو/الفرع: number949481-ux/TTTTT / genspark_ai_developer.
 - العقيدة المعمارية: Single-File Doctrine + Self-Contained Architecture —
   ممنوع تفتيت الملف الرئيسي لموديولات جديدة، وممنوع أي Refactor خارج نقاط
   التعديل المطلوبة نصاً.
-- خط الأساس المقدس: كل الاختبارات الحالية (962/962 PASS +12 subtests) + بوابة
+- خط الأساس المقدس: كل الاختبارات الحالية (1014/1014 PASS +12 subtests) + بوابة
   scripts/hadith_sijil.py بـ Exit Code 0. كسر أي اختبار قائم = فشل كامل.
 - مصدر الحقيقة الوحيد (SSOT): docs/engineering/PROGRESS.md.
 - الجلسات تُرقّم تسلسلياً (S67, S68, ...) — كل جلسة جديدة تأخذ الرقم التالي.
@@ -102,16 +102,32 @@ EXECUTE → TEST → VERIFY → DOCUMENT → COMMIT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏸️ BLOCKED-ON-OWNER — بانتظار مهمة جديدة من المالك (S78+)
 لا توجد مهمة نشطة. آخر مرحلة مكتملة: PHASE 44 (DEC-040 — أرشيف 7.7-ج
-أدناه). Baseline المعتمد: 974/974 PASS (+12 subtests) + hadith_sijil
-Exit 0 + Parity 11/11 + شجرة نظيفة. الملف النشط: 01.33 (8585 سطراً).
+أدناه). Baseline المعتمد: 1014/1014 PASS (+12 subtests) + hadith_sijil
+Exit 0 + Parity 11/11 + شجرة نظيفة. الملف النشط: 01.33 (10532 سطراً).
 المتبقي على المالك: اختبار E2E حي لمسارَي P44 (تعديل برومبت الاستئناف
 أثناء جلسة حية + مراقبة البوابة على مهمة طويلة التفكير) + دفع commits
 نظافة git للريموت قبل أي إعادة استنساخ (شرط عدم عودة .pytest_cache/
 bridge_bot.log للتتبع — راجع S72).
 
+### 7.7-هـ) أرشيف MAINT-11 (مُقفلة — DEC-042)
+MAINT-11 — PRIVATE PROJECT 403 FAST GATE & FLEET SHIELD: ✅ مُنجزة ومُقفلة
+في 2026-11-07 (كل البوابات خضراء: 1014/1014 PASS + Parity 16/16 + Zero Mutation
+للمحرك 01.03 + 12 فحصاً كاملاً في tests/test_p60_maint11_private_project_gate.py).
+المشكلة: المشاريع الخاصة تسبب دوران حلقة failover واستهلاك 50 حساباً مع تبريد 5 دقائق
+لكل حساب. الحل: فحص استباقي pre-flight بـ curl_cffi Chrome 124 قبل بدء التوليد،
+وقف فوري بحالة FORBIDDEN، تبريد الحساب البريء 300ث موضعياً بلا نقل للـ vault وبلا
+مساس بالرصيد، ودفاع بالعمق في send_message_and_make_public.
+
+### 7.7-د) أرشيف MAINT-10 (مُقفلة — DEC-041)
+MAINT-10 — ACCOUNT LIFECYCLE & VAULT HARDENING: ✅ مُنجزة ومُقفلة
+في 2026-11-04 (28 فحصاً كاملاً في tests/test_p59_maint10_lifecycle.py).
+المشكلة: استنزاف الحسابات ونقلها للـ vault بأخطاء مؤقتة. الحل: قفل الـ vault
+لحالات نفاد الرصيد الصريحة فقط، تبريد 29 ساعة مع إعفاء الحسابات من فلتر الرصيد الأوفلاين
+عند انتهاء مهلة التبريد (LOCKOUT-FIX).
+
 ### 7.7-ج) أرشيف PHASE 44 (مُقفلة — DEC-040)
 PHASE 44 — RESUME PIPELINE INTEGRITY: ✅ مُنجزة ومُقفلة في S72–S78
-(كل Checkpoints CP0–CP9 [x] + البوابات كلها خضراء: 974/974 PASS
+(كل Checkpoints CP0–CP9 [x] + البوابات كلها خضراء: 1014/1014 PASS
 «962+12، +12 subtests، صفر Skip» + hadith_sijil Exit 0 + Parity 11/11
 + Zero-Regression: 158 اختبار P35/P40/P18 كلها PASS). المشكلتان
 (عرضان لعلة واحدة): B1 توقف الحلقة مبكراً على رد وسطي ➔ حُلّت بـ
@@ -130,7 +146,7 @@ P18 لا تُلمس (تغليف فقط) + المحرك 01.03 READ-ONLY.
 ### 7.7-ب) أرشيف PHASE 43 (مُقفلة — DEC-039)
 PHASE 43 — FAST LEAN MODE & ARTIFACTS/DIFF BYPASS: ✅ مُنجزة ومُقفلة
 في S69–S71 (كل Checkpoints CP0–CP9 [x] + البوابات السبع خضراء:
-962/962 PASS «946+16، +12 subtests» + hadith_sijil Exit 0 + Parity
+1014/1014 PASS «946+16، +12 subtests» + hadith_sijil Exit 0 + Parity
 11/11 + Zero-Regression بايت-ببايت لـ fast=False + D3: GitHub مفعّل =
 تنزيل إلزامي دائماً + الكارت الشفاف بلا Diff مزيف). التفاصيل الكاملة
 محفوظة في 17_FAST_LEAN_MODE_AND_ARTIFACTS_BYPASS.MD (كل Checkboxes

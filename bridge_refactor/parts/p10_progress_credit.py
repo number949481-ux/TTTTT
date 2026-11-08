@@ -1,5 +1,5 @@
 """[VERBATIM SLICE] p10_progress_credit
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7403..7713
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 7941..8255
 المحتوى: Stage artifacts + progress gate + credit checkpoint gate + terminal outcome describer (P35: فرع MODEL_DECLINED مخصص بـ allow_preview=True — نص الرفض القصير يُعرض للمستخدم)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
@@ -68,7 +68,7 @@ def should_capture_project_update(stage_url: str | None, stage_status: str | Non
 
 NON_ACTIONABLE_PROGRESS_STATUSES = {
     "NO_ENGINE", "LOGIN_FAILED", "SESSION_EXPIRED", "FORBIDDEN",
-    "FAILED", "CHAT_ERROR", "TIMEOUT",
+    "FAILED", "CHAT_ERROR", "TIMEOUT", "NETWORK_DOWN", "BALANCE_UNREADABLE",
 }
 
 
@@ -275,6 +275,10 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
             "🧬 <b>توقفت المحاولة بسبب خطأ AI Data Retention على الحساب.</b>",
             "الموديل يتطلب تفعيل AI Data Retention من إعدادات الحساب (Settings → Data Controls)؛ عومل الحساب كنفاد رصيد وتم تبريده، وأعيد إرسال نفس آخر رسالة على حساب آخر إن وُجد.",
         ),
+        "NETWORK_DOWN": (
+            "🌐 <b>توقفت المهمة: تعذر قراءة الرصيد لحسابين متتاليين (انقطاع شبكة محلي على الأرجح).</b>",
+            "لم يُنقل مزيد من الحسابات (D34). تحقق من الاتصال ثم أعد الإرسال؛ الحسابان المنقولان يعودان عبر 05.02.",
+        ),
         "LOGIN_FAILED": (
             "⛔ <b>فشل التنفيذ بسبب مشكلة تسجيل دخول بالحسابات.</b>",
             "لم يتم الوصول إلى جلسة صالحة لإكمال الطلب؛ راجع حالة الحسابات أو جرّب لاحقاً.",
@@ -300,8 +304,8 @@ def describe_terminal_outcome(status: str | None, pub_url: str | None, bridge_cf
             "لم يتم تحميل محرك التوليد المطلوب داخل البيئة الحالية.",
         ),
         "FORBIDDEN": (
-            "⛔ <b>توقفت المهمة بسبب رفض الوصول للمشروع.</b>",
-            "تم رفض الاستمرار في المشروع الحالي قبل الوصول إلى ناتج قابل للحفظ.",
+            "⛔ <b>توقفت المهمة: المشروع خاص (Private) — رد السيرفر 403.</b>",
+            "اجعل المشروع <b>Public</b> من إعدادات Genspark ثم أعد الإرسال. الحساب سليم ولم يُعاقب (الحساب سليم ونشط ولم يُعاقب)، ولن يُنشأ مشروع جديد تلقائياً.",
         ),
     }
     title, note = mapping.get(

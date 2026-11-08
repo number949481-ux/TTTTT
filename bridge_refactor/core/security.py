@@ -16,6 +16,7 @@ __all__ = [
     "format_archive_diagnostic",
     "download_project_archive",
     "make_project_always_public",
+    "_check_project_permission_fast",
     "get_public_forked_pid",
     "COMPACT_TRIGGER_SECONDS",
     "current_account_duration",

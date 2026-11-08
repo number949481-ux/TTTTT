@@ -6,7 +6,7 @@
 نظام الإدارة والفرز الثلاثي الموحد لحسابات Genspark
 ════════════════════════════════════════════════════════════════════════════════
 الملفات الناتجة المنفصلة (The 3-File Architecture):
- 1. 🎯 accounts_success.json : الحسابات السليمة والنشطة (شغالة + رصيد + هدية حديثة <= 14 يوم)
+ 1. 🎯 (ملغى — MAINT-4-E/فويس 104) لا ملف «ناجح» منفصل: السليم يبقى في accounts_genspark.json فقط
  2. 📦 accounts_delayed_gifts_credits.json : معزل الحسابات متأخرة الهدية (شغالة وباسورد صح لكن انقطعت هديتها > 14 يوم)
  3. 🗑️ accounts_failed.json   : الحسابات الفاشلة والميتة (باسوورد غلط / حظر / تعليق / دومين محظور)
  4. 📁 accounts_genspark.json : الملف الأساسي المصفى النظيف 100% (مرتب تنازلياً بالرصيد في القمة)
@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -35,7 +36,7 @@ import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 # ── ضبط تشفير التيرمينال لويندوز لدعم العربية والرموز بأمان ──
 if sys.platform.startswith("win"):
@@ -62,8 +63,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 try:
     from genspark_master_account_manager import do_b2c_login, get_session, check_account_balance
 except ImportError:
-    sys.path.insert(0, str(SCRIPT_DIR))
-    sys.path.insert(0, str(SCRIPT_DIR.parent / "Genspark_Account_Manager"))
+    for cand_dir in (SCRIPT_DIR, SCRIPT_DIR.parent, SCRIPT_DIR.parent.parent, SCRIPT_DIR.parent / "Genspark_Account_Manager", SCRIPT_DIR.parent.parent / "Genspark_Account_Manager"):
+        if cand_dir.exists() and str(cand_dir) not in sys.path:
+            sys.path.insert(0, str(cand_dir))
     from genspark_master_account_manager import do_b2c_login, get_session, check_account_balance
 
 GENSPARK_HOST = "https://www.genspark.ai"
@@ -97,7 +99,7 @@ class Config:
 
     # 📁 أسماء الملفات الرئيسية الثلاثة + الأساسي
     PRIMARY_FILE: str = "accounts_genspark.json"                  # الملف الأساسي المصفى النظيف
-    SUCCESS_FILE: str = "accounts_success.json"                  # 1. الحسابات الناجحة النشطة
+    # [MAINT-4-E] ملف «الناجح» المنفصل مشطوب نهائياً (فويس 104/الوثيقة 21) — المصدر الوحيد للسليم = PRIMARY_FILE
     QUARANTINE_FILE: str = "accounts_delayed_gifts_credits.json" # 2. الحسابات متأخرة الهدية
     FAILED_FILE: str = "accounts_failed.json"                    # 3. الحسابات الفاشلة والميتة
     DEAD_FILE: str = "dead_accounts.json"                        # مزامنة للملف القديم للرجوع إليه
@@ -121,6 +123,14 @@ class Config:
     # ⏱️ مهلة التأخير العشوائي بالثواني بين كل فحص حساب (حماية ضد الـ Rate Limit)
     MIN_DELAY: float = 10.0
     MAX_DELAY: float = 60.0
+
+    # 🔁 [MAINT-6/D48] ماكينة الفحص والتنشيط الدوار بالتنقيط (--sweep): وجبة من الأساسي 06:00/18:00 (فويسات 123–133)
+    SWEEP_BATCH_SIZE: int = 10                 # حجم الوجبة الافتراضي
+    SWEEP_MAX_BATCH: int = 20                  # Q-24: سقف إجباري لـ -l مع --sweep
+    SWEEP_SCAN_MODE: str = "first_n"           # Q-21: مسح تسلسلي محكم
+    SWEEP_MIN_DELAY: float = 60.0              # فويس 130: من دقيقة إلى 5 دقائق بين الحسابات أثناء الكنس
+    SWEEP_MAX_DELAY: float = 300.0
+    ROTATION_CHECKPOINT_FILE: str = "genspark_rotation_checkpoint.json"  # Q-23: بصمات sha256 فقط + في .gitignore
 
     # 🧪 وضع المعاينة فقط بدون تعديل أي ملف (False = حفظ فعلي | True = معاينة)
     DRY_RUN: bool = False
@@ -247,32 +257,115 @@ def load_accounts(file_path: Path) -> List[Dict[str, Any]]:
 
 
 def resolve_file_path(filename: str) -> Path:
-    """تحديد المسار الفعلي للملف والبحث في مجلدات المشروع"""
+    """تحديد المسار الفعلي للملف والبحث الهرمي في مجلدات المشروع عاكساً لـ P23:
+    1. المسار المطلق إن كان موجوداً.
+    2. المحلي جنب السكريبت (SCRIPT_DIR / filename).
+    3. المجلد الأب المركزي (SCRIPT_DIR.parent / filename) — حيث تستقر الحسابات المركزية.
+    4. المرشحات القديمة للتوافق التاريخي.
+    5. إن لم يوجد في أي مكان، يُعاد مسار الأب إذا كان ملف حسابات معروفاً وموجوداً في الأب، وإلا المحلي للإنشاء.
+    """
     p = Path(filename)
     if p.is_absolute() and p.exists():
         return p
+    name = p.name
     candidates = [
         SCRIPT_DIR / filename,
-        SCRIPT_DIR.parent / "Genspark" / "W___webapp" / filename,
-        SCRIPT_DIR.parent / "Genspark" / filename,
-        SCRIPT_DIR.parent / "Genspark_Account_Manager" / filename,
+        SCRIPT_DIR / name,
+        SCRIPT_DIR.parent / filename,
+        SCRIPT_DIR.parent / name,
+        SCRIPT_DIR.parent / "Genspark" / "W___webapp" / name,
+        SCRIPT_DIR.parent / "Genspark" / name,
+        SCRIPT_DIR.parent / "Genspark_Account_Manager" / name,
     ]
+    seen = set()
     for c in candidates:
-        if c.exists():
-            return c
+        try:
+            resolved = c.resolve()
+        except OSError:
+            resolved = c
+        if resolved not in seen:
+            seen.add(resolved)
+            if c.exists():
+                return c
+    if p.is_absolute():
+        return p
+    if (SCRIPT_DIR.parent / filename).exists():
+        return SCRIPT_DIR.parent / filename
     return SCRIPT_DIR / filename
 
 
 # ════════════════════════════════════════════════════════════════════════════════
 # 🎯 محرك الفحص والفرز الثلاثي (Tri-State Manager Engine)
 # ════════════════════════════════════════════════════════════════════════════════
+class RotationCheckpoint:
+    """[MAINT-6/D48] ملف الحالة الموازي لماكينة الكنس الدوار (فويس 124/130 — Q-23):
+    يسجّل بصمة sha256 لبريد كل حساب فُحص في الدورة الحالية (لا بريد ولا باسورد داخل الملف)،
+    ويُصفَّر تلقائياً عندما يصبح (الأساسي الحالي − المفحوص) فارغاً ⇒ حلقة لا نهائية.
+    حفظ ذري فور كل حساب عبر atomic_save_json (العقبة 3: انقطاع الكهرباء/مهلة المجدول)."""
+    SCHEMA = 1
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        self.state: Dict[str, Any] = self._fresh(1)
+        self.load()
+
+    @staticmethod
+    def _fresh(cycle_no: int) -> Dict[str, Any]:
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        return {"schema": RotationCheckpoint.SCHEMA, "cycle_no": int(cycle_no), "cycle_started_at": now_iso,
+                "last_run_at": now_iso, "checked": []}
+
+    @staticmethod
+    def key(email: str) -> str:
+        """بصمة البريد (lower/strip) — الهوية المستقرة بديلاً عن الـID (فويس 124) وبلا تسريب (Q-23)"""
+        return hashlib.sha256((email or "").strip().lower().encode("utf-8")).hexdigest()
+
+    def load(self) -> None:
+        try:
+            raw = json.loads(self.path.read_text(encoding="utf-8")) if self.path.exists() else None
+        except Exception:
+            raw = None
+        if isinstance(raw, dict) and isinstance(raw.get("checked"), list):
+            self.state = {**self._fresh(raw.get("cycle_no") or 1), **raw}
+            self.state["checked"] = [str(h) for h in raw["checked"]]
+        else:
+            self.state = self._fresh(1)
+
+    def save(self) -> bool:
+        self.state["last_run_at"] = datetime.now().isoformat(timespec="seconds")
+        return atomic_save_json(self.path, self.state)
+
+    @property
+    def checked(self) -> Set[str]:
+        return set(self.state.get("checked") or [])
+
+    def begin_cycle(self, emails: List[str]) -> Set[str]:
+        """يعيد مجموعة البريد (lower) المتبقية للفحص؛ يقلّم البصمات اليتيمة (حسابات غادرت الأساسي — العقبة 2)
+        ويصفّر الدورة إذا اكتملت: المتبقي = الأساسي الحالي − المفحوص == 0 (فويس 130). لا يحفظ بنفسه."""
+        live = {str(e or "").strip().lower() for e in emails if e}
+        live_keys = {self.key(e): e for e in live}
+        kept = [h for h in (self.state.get("checked") or []) if h in live_keys]
+        remaining = {e for h, e in live_keys.items() if h not in set(kept)}
+        if live and not remaining:
+            self.state = self._fresh(int(self.state.get("cycle_no") or 1) + 1)
+            return set(live)
+        self.state["checked"] = kept
+        return remaining
+
+    def mark(self, email: str) -> bool:
+        """تسجيل الحساب كمفحوص + حفظ ذري فوري"""
+        h = self.key(email)
+        if h not in self.checked:
+            self.state.setdefault("checked", []).append(h)
+        return self.save()
+
+
 class MasterDelayedGiftsManager:
     """المحرك الموحد لفرز وقص ونقل الحسابات إلى 3 ملفات رئيسية"""
 
     def __init__(
         self,
         primary_path: Path,
-        success_path: Path,
         quarantine_path: Path,
         failed_path: Path,
         dead_path: Path,
@@ -283,7 +376,6 @@ class MasterDelayedGiftsManager:
         max_delay: float = 2.5,
     ):
         self.primary_path = primary_path
-        self.success_path = success_path
         self.quarantine_path = quarantine_path
         self.failed_path = failed_path
         self.dead_path = dead_path
@@ -415,10 +507,13 @@ class MasterDelayedGiftsManager:
 
         return "AUTH_FAILED", None, "خطأ شبكة أثناء قراءة سجل الهدايا", real_balance, None
 
-    def run_quarantine(self, scan_mode: str = "all", limit: int = 10, dry_run: bool = False) -> Dict[str, Any]:
+    def run_quarantine(self, scan_mode: str = "all", limit: int = 10, dry_run: bool = False,
+                       rotation: Optional["RotationCheckpoint"] = None,
+                       on_account: Optional[Callable[[str, str, Optional[int], str], None]] = None,
+                       stop_flag: Optional[Path] = None) -> Dict[str, Any]:
         """
         تشغيل عملية الفرز الثلاثي والقص والنقل (Cut & Move):
-        - السليم والنشط    -> accounts_success.json + يبقى في accounts_genspark.json
+        - السليم والنشط    -> يبقى في accounts_genspark.json (MAINT-4-E: لا ملف ناجح)
         - متأخر الهدية     -> accounts_delayed_gifts_credits.json
         - الميت أو المحظور  -> accounts_failed.json + dead_accounts.json
         """
@@ -426,7 +521,6 @@ class MasterDelayedGiftsManager:
         print(f"{C}{B}🚀 Genspark Master Tri-State Manager & Cleaner (3-File Architecture v2.0){RST}")
         print(f"{C}{B}{'═'*95}{RST}")
         print(f" 📁 1. الملف الأساسي المنظف : {W}{self.primary_path.name}{RST}")
-        print(f" 🎯 2. ملف الحسابات الناجحة : {G}{self.success_path.name}{RST} (نشط + رصيد + هدية حديثة)")
         print(f" 📦 3. معزل متأخري الهدية   : {Y}{self.quarantine_path.name}{RST} (> {self.threshold_days} يوم بدون هدية)")
         print(f" 🗑️ 4. سلة الحسابات الفاشلة : {R}{self.failed_path.name}{RST} (باسورد غلط / حظر / تعليق)")
         print(f" ⏱️ مهلة الهدية المعتمدة    : {M}أكثر من {self.threshold_days} يوماً بدون هدية يومية{RST}")
@@ -436,14 +530,12 @@ class MasterDelayedGiftsManager:
             print(f" ⚠️ {Y}{B}[وضع المعاينة التجريبي DRY-RUN]: لن يتم حفظ أو تعديل أي ملف فعلياً{RST}")
 
         primary_accounts = load_accounts(self.primary_path)
-        success_accounts = load_accounts(self.success_path)
         quarantined_accounts = load_accounts(self.quarantine_path)
         failed_accounts = load_accounts(self.failed_path)
         dead_accounts = load_accounts(self.dead_path)
 
         print(f"\n 📊 إحصائيات الملفات الحالية قبل البدء:")
         print(f"  • الحسابات بالملف الأساسي : {W}{len(primary_accounts)}{RST} حساب")
-        print(f"  • الحسابات بملف الناجح    : {G}{len(success_accounts)}{RST} حساب")
         print(f"  • الحسابات بمعزل الهدية   : {Y}{len(quarantined_accounts)}{RST} حساب")
         print(f"  • الحسابات بملف الفاشل    : {R}{len(failed_accounts)}{RST} حساب\n")
 
@@ -452,15 +544,21 @@ class MasterDelayedGiftsManager:
             return {"error": "No accounts found"}
 
         # استبعاد الحسابات المفحوصة والمحفوظة مسبقاً لتفادي تكرار الفحص
-        already_done = (
-            {a.get("email", "").lower() for a in success_accounts}
-            | {a.get("email", "").lower() for a in quarantined_accounts}
+        already_done = (  # [MAINT-4-E] لا استثناء عبر ملف الناجح — كل حساب في الأساسي يُفحص
+            {a.get("email", "").lower() for a in quarantined_accounts}
             | {a.get("email", "").lower() for a in failed_accounts}
             | {a.get("email", "").lower() for a in dead_accounts}
         )
 
         unprocessed = [a for a in primary_accounts if a.get("email", "").lower() not in already_done]
         print(f"  • الحسابات المتبقية المطلوب فحصها : {C}{B}{len(unprocessed)}{RST} حساب (تم تخطي {len(already_done)} مفحوص مسبقاً)\n")
+
+        if rotation is not None:  # [MAINT-6/D48] الدورة اللانهائية: استبعاد مفحوصي الشيك بوينت + تصفير تلقائي عند الاكتمال
+            remaining = rotation.begin_cycle([a.get("email", "") for a in unprocessed])
+            unprocessed = [a for a in unprocessed if a.get("email", "").lower() in remaining]
+            if not dry_run:
+                rotation.save()
+            print(f"  • 🔁 الشيك بوينت الدوار (دورة #{rotation.state.get('cycle_no')}): مفحوص {len(rotation.checked)} | متبقٍ {len(unprocessed)} | {rotation.path.name}\n")
 
         # اختيار الحسابات المطلوب فحصها حسب النمط
         if scan_mode == "first_n":
@@ -480,34 +578,42 @@ class MasterDelayedGiftsManager:
         print(f"{'-'*33}-+-{'-'*15}-+-{'-'*7}-+-{'-'*35}")
         sys.stdout.flush()
 
-        def save_checkpoint(is_final: bool = False):
-            """حفظ ذري دوري للملفات لحماية التقدم كل 10 حسابات"""
+        # [MAINT-6/Q-22] حقول 05.02 التي تُدمج في سجل الأساسي الطازج بدل استبداله (01.33 قد يكتب last_used/… أثناء الفحص)
+        MERGE_FIELDS = tuple("balance last_checked last_gift_date days_without_gift cookies data_retention_enabled "
+                             "data_retention_status status active cooldown_until cooldown_released_at last_updated".split())
+
+        def save_checkpoint(is_final: bool = False) -> bool:
+            """حفظ ذري دوري للملفات لحماية التقدم (كل 10 حسابات؛ وبعد كل حساب مع --sweep).
+            [MAINT-6/Q-22] تحت القفل المشترك D33 (نفسه في run_revival و01.33) + دمج حقول لا استبدال.
+            يعيد False فقط إذا كان القفل مشغولاً (لم يُحفظ شيء)."""
             all_cut_emails = {a.get("email", "").lower() for a in (stale_to_cut + dead_to_cut)}
-            if not dry_run and (all_cut_emails or healthy_tested):
-                # 1. تحديث الأساسي
+            if dry_run or not (all_cut_emails or healthy_tested):
+                return True
+
+            def _commit() -> bool:
+                # 1. تحديث الأساسي — إعادة تحميل طازجة تحت القفل
                 p_map = {a.get("email", "").lower(): a for a in load_accounts(self.primary_path)}
                 for cut_e in all_cut_emails:
                     p_map.pop(cut_e, None)
                 for h in healthy_tested:
-                    p_map[h.get("email", "").lower()] = h
+                    key = h.get("email", "").lower()
+                    fresh = p_map.get(key)
+                    if isinstance(fresh, dict):
+                        fresh.update({k: h[k] for k in MERGE_FIELDS if k in h})
+                        fresh.pop("quarantine_info", None)
+                        fresh.pop("quarantined", None)
+                    else:
+                        p_map[key] = h
                 final_p = list(p_map.values())
                 if self.sort_by_balance:
                     final_p.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
 
-                # 2. تحديث الناجح
-                s_map = {a.get("email", "").lower(): a for a in load_accounts(self.success_path)}
-                for cut_e in all_cut_emails:
-                    s_map.pop(cut_e, None)
-                for h in healthy_tested:
-                    s_map[h.get("email", "").lower()] = h
-                final_s = list(s_map.values())
-                if self.sort_by_balance:
-                    final_s.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
+                # 2. [MAINT-4-E] لا ملف ناجح — السليم المفعَّل يبقى في الأساسي فقط
 
                 # 3. تحديث المعزل
                 q_map = {a.get("email", "").lower(): a for a in load_accounts(self.quarantine_path)}
-                for s in stale_to_cut:
-                    q_map[s.get("email", "").lower()] = s
+                for st in stale_to_cut:
+                    q_map[st.get("email", "").lower()] = st
                 final_q = list(q_map.values())
 
                 # 4. تحديث الفاشل والميت
@@ -523,16 +629,22 @@ class MasterDelayedGiftsManager:
                     create_backup(self.primary_path)
 
                 atomic_save_json(self.primary_path, final_p)
-                atomic_save_json(self.success_path, final_s)
                 atomic_save_json(self.quarantine_path, final_q)
                 atomic_save_json(self.failed_path, final_f)
                 atomic_save_json(self.dead_path, final_d)
+                return True
+
+            acquired, _ = self._with_vault_lock(self.primary_path.parent / self.COOLDOWN_VAULT_LOCK_FILENAME, _commit)
+            if not acquired:
+                print(f"  {R}❌ لم يُحفظ: القفل المشترك مشغول ({self.COOLDOWN_VAULT_LOCK_FILENAME}) — يُعاد مع الحساب التالي.{RST}")
+            return bool(acquired)
 
         current_batch: List[Tuple[str, str, int, str]] = []
         batch_num = 1
 
         for idx, acc in enumerate(targets_to_check, start=1):
-            if not IS_RUNNING:
+            # [MAINT-9/S4+S7] stop_flag: ملف راية يستطلعه المشغّل اللايف بين الحسابات (ويندوز بلا إشارات) — None = سلوك CLI كما هو
+            if not IS_RUNNING or (stop_flag is not None and stop_flag.exists()):
                 print(f"\n{Y}⚠️ تم استلام إشارة إيقاف.. جاري الحفظ الذري والخروج الآمن...{RST}")
                 save_checkpoint()
                 break
@@ -544,9 +656,11 @@ class MasterDelayedGiftsManager:
 
             if status == "HEALTHY":
                 total_live_credits += (bal or 0)
+                self._activate_for_bot31(acc, bal)                     # [MAINT-4-C/D40] تفعيل فوري لبوت 31
                 healthy_tested.append(acc)
                 ret_tag = "🔓" if acc.get("data_retention_enabled") else "⚠️"
-                tag = f"{G}نشط سليم ✅ {ret_tag}{RST}"
+                ready_31 = " [جاهز للبوت 31 ⚡]" if (bal or 0) >= 100 else ""
+                tag = f"{G}نشط سليم ✅ {ret_tag}{M}{ready_31}{RST}"
                 print(f"{W}{email:<33}{RST} | {tag:<27} | {G}{bal_str:>7}{RST} | آخر هدية: {diag_msg} ({days} يوم)")
 
             elif status == "STALE":
@@ -577,6 +691,18 @@ class MasterDelayedGiftsManager:
                 tag = f"{M}خطأ اتصال ⚠️{RST}"
                 print(f"{W}{email:<33}{RST} | {tag:<25} | {bal_str:>7} | {diag_msg}")
 
+            if rotation is not None and not dry_run:
+                # [MAINT-6] حفظ ذري للملفات بعد كل حساب ثم تسجيل البصمة (فويس 130/العقبة 3)؛ خطأ الشبكة يُحتسب مفحوصاً (Q-20)
+                if save_checkpoint():
+                    rotation.mark(email)
+
+            # [MAINT-9/S7] خُطّاف اختياري بعد الحفظ الذري (الإشعار لا يسبق الحقيقة على القرص)؛ استثناؤه لا يوقف الحلقة
+            if on_account is not None:
+                try:
+                    on_account(email, status, bal, diag_msg or "")
+                except Exception as hook_err:
+                    print(f"  {Y}⚠️ on_account hook: {type(hook_err).__name__}: {hook_err}{RST}")
+
             sys.stdout.flush()
 
             # ── حفظ دوري كل 10 حسابات وعرض ملخص الدفعة ──
@@ -605,14 +731,21 @@ class MasterDelayedGiftsManager:
             # تأخير أمان عشوائي بين الحسابات
             if idx < len(targets_to_check) and IS_RUNNING:
                 delay_sec = random.uniform(self.min_delay, self.max_delay)
-                time.sleep(delay_sec)
+                if stop_flag is None:
+                    time.sleep(delay_sec)
+                else:
+                    # [MAINT-9/S4] نوم مجزّأ بثانية: الإيقاف بالملف لا ينتظر الفاصل كاملاً (حتى 300s)
+                    deadline = time.monotonic() + delay_sec
+                    while time.monotonic() < deadline and IS_RUNNING and not stop_flag.exists():
+                        time.sleep(min(1.0, max(0.0, deadline - time.monotonic())))
 
         # ── التقرير الإحصائي الأنيق الختامي ──
-        save_checkpoint(is_final=True)
+        if not save_checkpoint(is_final=True):  # [MAINT-6/Q-22] القفل مشغول ⇒ خطأ معلن (D39: exit 1)
+            return {"error": "vault_lock_busy", "scanned": len(targets_to_check)}
         print(f"\n{C}{B}{'═'*95}{RST}")
         print(f"📌 {B}ملخص نتائج الفحص والفرز الختامي:{RST}")
         print(f"  • الحسابات المفحوصة في هذه الدورة       : {len(targets_to_check)}")
-        print(f"  • الحسابات الناجحة (نشطة + هدية حديثة)  : {G}{B}{len(healthy_tested)}{RST} حساب (-> {self.success_path.name})")
+        print(f"  • الحسابات الناجحة (نشطة + هدية حديثة)  : {G}{B}{len(healthy_tested)}{RST} حساب (تبقى في {self.primary_path.name})")
         print(f"  • الحسابات متأخرة الهدية (لقصها للمعزل) : {Y}{B}{len(stale_to_cut)}{RST} حساب (-> {self.quarantine_path.name})")
         print(f"  • الحسابات الفاشلة والميتة (لقصها للميت): {R}{B}{len(dead_to_cut)}{RST} حساب (-> {self.failed_path.name})")
         print(f"  • الحسابات المعلقة بشبكة/مؤقتة          : {M}{auth_failed_count}{RST} حساب")
@@ -629,6 +762,120 @@ class MasterDelayedGiftsManager:
             "total_credits": total_live_credits,
         }
 
+    # ── [MAINT-4-B] ثوابت المعزل المشتركة مع 01.33 (D28/D32/D33) ──
+    COOLDOWN_VAULT_LOCK_FILENAME = "accounts_cooldown.json.lock"   # R-B: الاسم نفسه في 01.33
+    COOLDOWN_VAULT_LOCK_TIMEOUT_S = 30.0
+    COOLDOWN_VAULT_LOCK_ORPHAN_S = 60.0
+    ACCOUNT_LOG_FILENAME = "account_log.jsonl"                     # JSON Lines — سطر لكل حركة
+    ACCOUNT_LOG_RETENTION_DAYS = 30                                # D32: التقليم هنا فقط (عند بدء run_revival)
+    ACCOUNT_LOG_MAX_ENTRIES = 5000
+
+    def _with_vault_lock(self, lock_path: Path, fn):
+        """[MAINT-4-B/D33 R-B] قفل عبر العمليات بملف O_CREAT|O_EXCL يشاركه 01.33؛ مهلة ثم تجاوز اليتيم بتحذير."""
+        deadline = time.time() + self.COOLDOWN_VAULT_LOCK_TIMEOUT_S
+        while True:
+            try:
+                fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                break
+            except FileExistsError:
+                try:
+                    age = time.time() - lock_path.stat().st_mtime
+                except OSError:
+                    age = 0.0
+                if age > self.COOLDOWN_VAULT_LOCK_ORPHAN_S:
+                    print(f"  {Y}⚠️ قفل يتيم (orphan lock) عمره {age:.0f}s — يُتجاوز: {lock_path.name}{RST}")
+                    try:
+                        lock_path.unlink()
+                    except OSError:
+                        pass
+                    continue
+                if time.time() >= deadline:
+                    print(f"  {R}❌ تعذر الحصول على القفل المشترك خلال {self.COOLDOWN_VAULT_LOCK_TIMEOUT_S:g}s: {lock_path.name}{RST}")
+                    return False, None
+                time.sleep(0.1)
+        try:
+            try:
+                os.write(fd, f"{os.getpid()} 05.02 {datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}".encode("utf-8"))
+            finally:
+                os.close(fd)
+            return True, fn()
+        finally:
+            try:
+                lock_path.unlink()
+            except OSError:
+                pass
+
+    def _log_move(self, acc: Dict[str, Any], event: str, reason: str, src: Path, dst: Path) -> None:
+        """[MAINT-4-B/D28] سطر JSON واحد في account_log.jsonl ببيانات الحساب الكاملة (إيميل/باسورد/كوكيز/وقت/سبب/مسار)
+        بقرار المالك المحلي وبلا حجب — نفس صيغة 01.33 (by=05.02). best-effort."""
+        try:
+            entry = {"ts": time.time(), "at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "event": event,
+                     "email": acc.get("email", ""), "password": acc.get("password", ""), "cookies": acc.get("cookies", {}),
+                     "reason": reason, "from_path": str(src), "to_path": str(dst), "by": "05.02"}
+            with open(src.parent / self.ACCOUNT_LOG_FILENAME, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
+        except Exception as e:
+            print(f"  {Y}⚠️ تعذر كتابة account_log.jsonl: {type(e).__name__}{RST}")
+
+    def _trim_account_log(self, folder: Path) -> None:
+        """[MAINT-4-B/D32] تقليم السجل مرة عند بدء run_revival فقط: إبقاء آخر 30 يوماً وبحد 5000 سطر؛ الأسطر التالفة تُهمل."""
+        log_path = folder / self.ACCOUNT_LOG_FILENAME
+        if not log_path.exists():
+            return
+        try:
+            cutoff = time.time() - self.ACCOUNT_LOG_RETENTION_DAYS * 86400
+            kept: List[str] = []
+            for line in log_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+                try:
+                    if float(json.loads(line).get("ts") or 0) >= cutoff:
+                        kept.append(line)
+                except Exception:
+                    continue
+            kept = kept[-self.ACCOUNT_LOG_MAX_ENTRIES:]
+            tmp = log_path.with_name(log_path.name + ".tmp")
+            tmp.write_text("".join(l + "\n" for l in kept), encoding="utf-8")
+            tmp.replace(log_path)
+        except Exception as e:
+            print(f"  {Y}⚠️ تعذر تقليم account_log.jsonl: {type(e).__name__}{RST}")
+
+    @staticmethod
+    def _activate_for_bot31(acc: Dict[str, Any], bal: Optional[int]) -> Dict[str, Any]:
+        """[MAINT-4-C/D40+D41 + MAINT-4-D] تفعيل/تبريد متوافق مع is_account_ready في 01.33 (helper واحد — DRY):
+        رصيد >= 100 ⇒ status=active + active=True + cooldown_until=0 + cooldown_released_at (Q-1)؛
+        رصيد < 100 ⇒ [MAINT-4-D — الوثيقتان 19/20] status=cooldown + active=False + cooldown_until=now+29h
+        (نفس شكل mark_account_cooldown في 01.33 — تبريد في مكانه، لا نقل لملف خارجي)؛
+        في الحالتين: last_updated + مسح وسوم العزل القديمة quarantine_info/quarantined. يعدّل القاموس في مكانه ويعيده."""
+        now_iso = datetime.now().isoformat(timespec="seconds")
+        if (bal or 0) >= 100:
+            acc["status"] = "active"
+            acc["active"] = True
+            acc["cooldown_until"] = 0
+            acc["cooldown_released_at"] = now_iso
+        else:
+            now_ts = time.time()
+            try:
+                current_cd = float(acc.get("cooldown_until") or 0)
+            except (TypeError, ValueError):
+                current_cd = 0.0
+            acc["status"] = "cooldown"
+            acc["active"] = False
+            # [MAINT-6/Q-19 — فويس 124] تبريد سارٍ وضعه 01.33 (الآن < cooldown_until ≤ الآن+29h) يُترك «زي ما هو ولا يُلمس»؛
+            # غير ذلك (منتهٍ / صفر / قيمة شاذة أبعد من 29h) ⇒ now+29h كما في D45
+            if not (now_ts < current_cd <= now_ts + 29 * 3600):
+                acc["cooldown_until"] = int(now_ts + 29 * 3600)
+        acc["last_updated"] = now_iso
+        acc.pop("quarantine_info", None)
+        acc.pop("quarantined", None)
+        return acc
+
+    def _merge_by_email(self, path: Path, accounts: List[Dict[str, Any]], sort: bool = False) -> None:
+        """[MAINT-3-B/D24] دمج ذري بمفتاح البريد (lower) في ملف وجهة مع .bak قبل الكتابة — بديل DRY لخرائط p_map/s_map"""
+        merged = {a.get("email", "").lower(): a for a in load_accounts(path)}
+        merged.update({a.get("email", "").lower(): a for a in accounts})
+        final = sorted(merged.values(), key=lambda x: (x.get("balance") or -1), reverse=True) if sort else list(merged.values())
+        create_backup(path)
+        atomic_save_json(path, final)
+
     def run_revival(self, limit: int = 50, dry_run: bool = False) -> Dict[str, Any]:
         """
         فحص الحسابات المعزولة في accounts_delayed_gifts_credits.json،
@@ -639,11 +886,15 @@ class MasterDelayedGiftsManager:
         print(f"{C}{B}{'═'*95}{RST}")
         print(f" 📦 ملف المعزل المفحوص : {Y}{self.quarantine_path.name}{RST}")
         print(f" 📁 ملف الوجهة الأساسي  : {G}{self.primary_path.name}{RST}")
-        print(f" 🎯 ملف الوجهة الناجح   : {G}{self.success_path.name}{RST}")
 
+        self._trim_account_log(self.quarantine_path.parent)      # [MAINT-4-B/D32] التقليم هنا فقط
+        if limit is None or limit <= 0:                            # [MAINT-4-B/D38] -l 0 = الكل
+            limit = None
         quarantined_accounts = load_accounts(self.quarantine_path)
-        primary_accounts = load_accounts(self.primary_path)
-        success_accounts = load_accounts(self.success_path)
+        # [MAINT-3-B/S1] وجهتا الكتابة فقط (⛔ لا تُفحصان): الفاشل + معزل الهدية (C2: resolve لأن -q قد يكون معزل التبريد)
+        delayed_path = resolve_file_path(Config.QUARANTINE_FILE)
+        dead_moves: List[Dict[str, Any]] = []
+        stale_moves: List[Dict[str, Any]] = []
 
         if not quarantined_accounts:
             print(f"{Y}ℹ️ ملف المعزل فارغ، لا توجد حسابات معزولة حالياً.{RST}")
@@ -661,44 +912,54 @@ class MasterDelayedGiftsManager:
             # إذا استلم الحساب هدية حديثة (خلال آخر 3 أيام) يعود فورياً للناجح والأساسي
             if status == "HEALTHY" and days is not None and days <= 3:
                 print(f"  🎉 {G}مبروك! الحساب {W}{email}{G} عاد له الرصيد ({bal:,} نقطة | هدية منذ {days} يوم) -> استرجاع!{RST}")
-                clean_acc = dict(acc)
-                clean_acc.pop("quarantine_info", None)
-                clean_acc["status"] = "active"
+                clean_acc = self._activate_for_bot31(dict(acc), bal)  # [MAINT-4-C/D41] نفس الحقول الأربعة (Q-1: >=100)
                 revived_accounts.append(clean_acc)
+            elif status == "DEAD":  # [MAINT-3-B/S2] الميت → الفاشل
+                dead_moves.append(acc)
+                print(f"  💀 {R}الحساب {email} ميت ({gift_time}) -> نقل إلى {self.failed_path.name}{RST}")
+            elif status == "STALE":  # [MAINT-3-B/S2] المتأخر → معزل الهدية (عودته يدوية — D23)
+                stale_moves.append(acc)
+                print(f"  📦 {Y}الحساب {email} متأخر الهدية ({days or '?'} يوم) -> نقل إلى {delayed_path.name}{RST}")
             else:
                 still_stale_count += 1
                 print(f"  ⏳ {Y}الحساب {email} ما زال منقطعاً ({days or '?'} يوم | رصيد: {bal or 0}){RST}")
 
             time.sleep(random.uniform(self.min_delay, self.max_delay))
 
-        if revived_accounts and not dry_run:
-            revived_emails = {a.get("email", "").lower() for a in revived_accounts}
-            new_quarantine = [a for a in quarantined_accounts if a.get("email", "").lower() not in revived_emails]
+        if (revived_accounts or dead_moves or stale_moves) and not dry_run:  # [MAINT-3-B/S3]
+            moved_emails = {a.get("email", "").lower() for a in revived_accounts + dead_moves + stale_moves}  # [S4]
 
-            # دمج الحسابات المنعشة في الأساسي والناجح
-            p_map = {a.get("email", "").lower(): a for a in primary_accounts}
-            s_map = {a.get("email", "").lower(): a for a in success_accounts}
-            for a in revived_accounts:
-                k = a.get("email", "").lower()
-                p_map[k] = a
-                s_map[k] = a
+            def _commit_moves():
+                # [MAINT-4-B/R-A] إعادة تحميل المعزل من القرص تحت القفل — ما أضافه 01.33 أثناء الفحص لا يُفقد
+                fresh_vault = load_accounts(self.quarantine_path)
+                new_quarantine = [a for a in fresh_vault if a.get("email", "").lower() not in moved_emails]
+                # [MAINT-3-B/S5+S6] دمج كل وجهة عبر _merge_by_email (D24) — الوجهة الفارغة لا تُكتب (صفر زيادة على الفاضي)
+                if revived_accounts:
+                    self._merge_by_email(self.primary_path, revived_accounts, sort=self.sort_by_balance)
+                if dead_moves:
+                    self._merge_by_email(self.failed_path, dead_moves)
+                if stale_moves:
+                    self._merge_by_email(delayed_path, stale_moves)
+                create_backup(self.quarantine_path)
+                atomic_save_json(self.quarantine_path, new_quarantine)
+                # [MAINT-4-B/D28] سطر لكل حركة ببيانات الحساب الكاملة
+                for a in revived_accounts:
+                    self._log_move(a, "return_to_primary", "HEALTHY", self.quarantine_path, self.primary_path)
+                for a in dead_moves:
+                    self._log_move(a, "move_to_failed", "DEAD", self.quarantine_path, self.failed_path)
+                for a in stale_moves:
+                    self._log_move(a, "move_to_delayed_gifts", "STALE", self.quarantine_path, delayed_path)
+                return True
 
-            final_p = list(p_map.values())
-            final_s = list(s_map.values())
-            if self.sort_by_balance:
-                final_p.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
-                final_s.sort(key=lambda x: (x.get("balance") or -1), reverse=True)
+            # [MAINT-4-B/R-B] القفل المشترك مع 01.33 (accounts_cooldown.json.lock بجوار المعزل)
+            acquired, _ = self._with_vault_lock(self.quarantine_path.parent / self.COOLDOWN_VAULT_LOCK_FILENAME, _commit_moves)
+            if not acquired:
+                print(f"{R}❌ لم يُحفظ شيء: القفل المشترك مشغول — أعد التشغيل لاحقاً (لا فقدان بيانات).{RST}")
+                return {"error": "vault_lock_busy", "revived": 0}
+            print(f"\n{G}{B}✅ استرجاع {len(revived_accounts)} | 💀 إلى الفاشل {len(dead_moves)} | 📦 إلى معزل الهدية {len(stale_moves)}{RST}")
 
-            create_backup(self.primary_path)
-            create_backup(self.success_path)
-            create_backup(self.quarantine_path)
-
-            atomic_save_json(self.primary_path, final_p)
-            atomic_save_json(self.success_path, final_s)
-            atomic_save_json(self.quarantine_path, new_quarantine)
-            print(f"\n{G}{B}✅ تم استرجاع {len(revived_accounts)} حساب إلى الملف الأساسي والناجح بنجاح!{RST}")
-
-        return {"revived": len(revived_accounts), "still_stale": still_stale_count}
+        return {"revived": len(revived_accounts), "still_stale": still_stale_count,
+                "moved_to_failed": len(dead_moves), "moved_to_delayed": len(stale_moves)}  # [S7]
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -710,46 +971,83 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument("-d", "--days", type=int, default=Config.STALE_GIFT_DAYS_THRESHOLD, help=f"مهلة الأيام بدون هدية (الافتراضي: {Config.STALE_GIFT_DAYS_THRESHOLD})")
-    parser.add_argument("-m", "--mode", type=str, default=Config.SCAN_MODE, choices=["all", "first_n", "random"], help=f"نمط الفحص (الافتراضي: {Config.SCAN_MODE})")
-    parser.add_argument("-l", "--limit", type=int, default=Config.SCAN_LIMIT, help=f"عدد الحسابات للأنماط المحدودة (الافتراضي: {Config.SCAN_LIMIT})")
+    parser.add_argument("-m", "--mode", type=str, default=None, choices=["all", "first_n", "random"], help=f"نمط الفحص (الافتراضي: {Config.SCAN_MODE}؛ مع --sweep الافتراضي {Config.SWEEP_SCAN_MODE} و\"all\" مرفوض)")
+    parser.add_argument("-l", "--limit", type=int, default=None, help=f"عدد الحسابات للأنماط المحدودة (الافتراضي: {Config.SCAN_LIMIT}؛ مع --revive الافتراضي 0 = كل المعزل [MAINT-5/Q-15])")
     parser.add_argument("-f", "--file", type=str, default=Config.PRIMARY_FILE, help=f"ملف الحسابات الأساسي (الافتراضي: {Config.PRIMARY_FILE})")
-    parser.add_argument("--success-file", type=str, default=Config.SUCCESS_FILE, help=f"ملف الحسابات الناجحة (الافتراضي: {Config.SUCCESS_FILE})")
+    parser.add_argument("--success-file", type=str, default=None, help="[DEPRECATED — MAINT-4-E] مهمَل ويُتجاهَل؛ لا ملف ناجح منفصل")
     parser.add_argument("-q", "--quarantine-file", type=str, default=Config.QUARANTINE_FILE, help=f"ملف المعزل (الافتراضي: {Config.QUARANTINE_FILE})")
     parser.add_argument("--failed-file", type=str, default=Config.FAILED_FILE, help=f"ملف الحسابات الفاشلة (الافتراضي: {Config.FAILED_FILE})")
     parser.add_argument("--no-sort", action="store_true", help="تعطيل الترتيب التنازلي حسب الرصيد")
     parser.add_argument("--dry-run", action="store_true", help="معاينة تجريبية دون تعديل الملفات")
     parser.add_argument("--revive", action="store_true", help="فحص المعزل واسترجاع الحسابات التي عاد لها الرصيد")
+    parser.add_argument("--allow-primary-scan", action="store_true", help="[MAINT-5/Q-14] إذن صريح لفحص الملف الأساسي شبكياً (بلا --revive). بدونه يُرفض الفحص حمايةً من Rate Limit (7.11)")
+    parser.add_argument("--sweep", action="store_true", help=f"[MAINT-6/D48] الكنس الدوار بالتنقيط: وجبة ≤{Config.SWEEP_MAX_BATCH} حساب من الأساسي (الافتراضي {Config.SWEEP_BATCH_SIZE}) مع شيك بوينت {Config.ROTATION_CHECKPOINT_FILE} وتصفير تلقائي عند اكتمال الدورة؛ فاصل {Config.SWEEP_MIN_DELAY:g}–{Config.SWEEP_MAX_DELAY:g}s")
     args = parser.parse_args()
 
     primary_path = resolve_file_path(args.file)
     folder = primary_path.parent
 
-    success_path = folder / args.success_file
+    if args.success_file is not None:  # [MAINT-4-E/Q-10] توافق خلفي: تحذير بلا انهيار
+        print(f"{Y}⚠️ [DEPRECATED] --success-file مهمَل ويُتجاهَل (فويس 104): السليم يبقى في {primary_path.name} فقط.{RST}")
     quarantine_path = folder / args.quarantine_file
     failed_path = folder / args.failed_file
     dead_path = folder / Config.DEAD_FILE
 
     manager = MasterDelayedGiftsManager(
         primary_path=primary_path,
-        success_path=success_path,
         quarantine_path=quarantine_path,
         failed_path=failed_path,
         dead_path=dead_path,
         threshold_days=args.days,
         sort_by_balance=not args.no_sort and Config.SORT_BY_BALANCE,
         auto_relogin=Config.AUTO_RELOGIN,
-        min_delay=Config.MIN_DELAY,
-        max_delay=Config.MAX_DELAY,
+        min_delay=Config.SWEEP_MIN_DELAY if args.sweep else Config.MIN_DELAY,   # [MAINT-6] فويس 130: 60–300s أثناء الكنس
+        max_delay=Config.SWEEP_MAX_DELAY if args.sweep else Config.MAX_DELAY,
     )
 
-    if args.revive:
-        manager.run_revival(limit=args.limit, dry_run=args.dry_run or Config.DRY_RUN)
-    else:
-        manager.run_quarantine(
-            scan_mode=args.mode,
-            limit=args.limit,
-            dry_run=args.dry_run or Config.DRY_RUN,
-        )
+    # [MAINT-5/Q-14 — كارت GO 2026-11-02] حارس Rate Limit (الثابت 7.11): الفحص الشبكي الدوري حصري لمعزل التبريد.
+    # فحص الأساسي (الوضع الافتراضي بلا --revive) يحتاج إذناً صريحاً — حتى مع --dry-run لأن check_account_status يتصل بالشبكة.
+    # [MAINT-6/D48] --sweep = الاستثناء المحدود الثاني من 7.11 (وجبة ≤ SWEEP_MAX_BATCH بشيك بوينت دوار) — لا يجتمع مع --revive
+    if args.sweep and args.revive:
+        print(f"{R}⛔ [MAINT-6] --sweep و--revive لا يجتمعان في تشغيل واحد (دورتان مستقلتان: 06/18 للأساسي، 12/00 للمعزل).{RST}")
+        sys.exit(1)
+    if not args.revive and not args.allow_primary_scan and not args.sweep:
+        print(f"{R}⛔ [MAINT-5/Q-14] مرفوض: فحص {primary_path.name} شبكياً بدون --allow-primary-scan (حماية Rate Limit 429).{RST}")
+        print(f"{Y}   الدورة المجدولة = --revive -q accounts_cooldown.json (المعزل فقط). للفحص الكامل للأساسي أضف --allow-primary-scan صراحةً.{RST}")
+        sys.exit(1)
+    # [MAINT-5/Q-15] -l بلا قيمة: --revive ⇒ 0 (كل المعزل، D38)؛ الفحص الأساسي ⇒ SCAN_LIMIT القديم
+    limit = args.limit if args.limit is not None else (0 if args.revive else (Config.SWEEP_BATCH_SIZE if args.sweep else Config.SCAN_LIMIT))
+    scan_mode = args.mode if args.mode is not None else (Config.SWEEP_SCAN_MODE if args.sweep else Config.SCAN_MODE)
+    if args.sweep:
+        if scan_mode == "all":
+            print(f"{R}⛔ [MAINT-6/Q-21] --sweep لا يقبل -m all (الوجبة محدودة بالتصميم: first_n أو random).{RST}")
+            sys.exit(1)
+        if limit <= 0 or limit > Config.SWEEP_MAX_BATCH:
+            print(f"{R}⛔ [MAINT-6/Q-24] --sweep يقبل -l بين 1 و{Config.SWEEP_MAX_BATCH} فقط (المطلوب: {limit}).{RST}")
+            sys.exit(1)
+
+    # [MAINT-4-B/D39 — إذن صريح بتوسيع A5 لـmain()] كود خروج ≠ 0 عند الفشل ليميّزه المجدول/main.py الخارجي
+    try:
+        if args.revive:
+            result = manager.run_revival(limit=limit, dry_run=args.dry_run or Config.DRY_RUN)
+        elif args.sweep:
+            result = manager.run_quarantine(
+                scan_mode=scan_mode,
+                limit=limit,
+                dry_run=args.dry_run or Config.DRY_RUN,
+                rotation=RotationCheckpoint(folder / Config.ROTATION_CHECKPOINT_FILE),
+            )
+        else:
+            result = manager.run_quarantine(
+                scan_mode=scan_mode,
+                limit=limit,
+                dry_run=args.dry_run or Config.DRY_RUN,
+            )
+    except Exception as e:
+        print(f"{R}❌ فشل التشغيل: {type(e).__name__}: {e}{RST}")
+        sys.exit(1)
+    if isinstance(result, dict) and result.get("error"):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

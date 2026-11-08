@@ -74,34 +74,35 @@ PROJECT_REGISTRY_INDEX_FILE = PROJECT_REGISTRY_HOME / "registry.json"
 CONTRACT_VERSION = "v15"
 
 AVAILABLE_MODELS = [
-    "claude-fable-5-1",
-    "claude-opus-5-5",
-    "claude-sonnet-5",
-    "gpt-6-astra",
-    "gpt-5.6-sol",
-    "kimi-k3",
+    "grok-4.7",
+    "muse-spark-open",
+    "claude-sonnet-5-5",
+    "gemini-4-argon",
+    "gpt-6.1-sol",
+    "kimi-k3.1-pro",
 ]
-DEFAULT_PROJECT_MODEL = "claude-fable-5-1"
+DEFAULT_PROJECT_MODEL = "grok-4.7"
 PROTECTED_MODELS = frozenset({"gpt-5.5", "claude-opus-4-8"})
 
 MODEL_DISPLAY_NAMES = {
-    "claude-fable-5-1": "🧠 Claude Fable 5.1",
-    "claude-opus-5-5": "👑 Claude Opus 5.5",
-    "claude-sonnet-5": "🎭 Claude Sonnet 5",
-    "gpt-6-astra": "⚡ GPT-6 Astra",
-    "gpt-5.6-sol": "☀️ GPT-5.6 Sol",
-    "kimi-k3": "🚀 Kimi K3",
+    "grok-4.7": "🌌 Grok 4.7",
+    "muse-spark-open": "🎨 Muse Spark Open",
+    "claude-sonnet-5-5": "🎭 Claude Sonnet 5.5",
+    "gemini-4-argon": "💎 Gemini 4 Argon",
+    "gpt-6.1-sol": "☀️ GPT-6.1 Sol",
+    "kimi-k3.1-pro": "🚀 Kimi K3.1 Pro",
 }
 
 MODEL_ALIASES = {
-    "claude-fable-5-1": "claude-fable-5-1", "claude-fable-5.1": "claude-fable-5-1", "claude fable 5.1": "claude-fable-5-1", "claude-fable-5": "claude-fable-5-1", "claude fable 5": "claude-fable-5-1",
-    "fable 5.1": "claude-fable-5-1", "fable 5": "claude-fable-5-1", "🧠 claude fable 5.1": "claude-fable-5-1",
-    "claude-opus-5-5": "claude-opus-5-5", "claude-opus-5.5": "claude-opus-5-5", "claude opus 5.5": "claude-opus-5-5", "opus 5.5": "claude-opus-5-5", "👑 claude opus 5.5": "claude-opus-5-5",
-    "claude-opus-5": "claude-opus-5-5", "claude opus 5": "claude-opus-5-5", "opus 5": "claude-opus-5-5", "👑 claude opus 5": "claude-opus-5-5",
-    "claude-sonnet-5": "claude-sonnet-5", "claude sonnet 5": "claude-sonnet-5", "sonnet 5": "claude-sonnet-5", "🎭 claude sonnet 5": "claude-sonnet-5",
-    "gpt-6-astra": "gpt-6-astra", "gpt-6 astra": "gpt-6-astra", "gpt 6 astra": "gpt-6-astra", "astra": "gpt-6-astra", "⚡ gpt-6 astra": "gpt-6-astra", "⚡ gpt-6-astra": "gpt-6-astra",
-    "gpt-5.6-sol": "gpt-5.6-sol", "gpt 5.6 sol": "gpt-5.6-sol", "gpt 5.6": "gpt-5.6-sol", "☀️ gpt-5.6 sol": "gpt-5.6-sol",
-    "kimi-k3": "kimi-k3", "kimi k3": "kimi-k3", "k3": "kimi-k3", "🚀 kimi k3": "kimi-k3",
+    "grok-4.7": "grok-4.7", "grok 4.7": "grok-4.7", "grok": "grok-4.7", "🌌 grok 4.7": "grok-4.7",
+    "claude-fable-5-1": "grok-4.7", "claude-fable-5.1": "grok-4.7", "claude fable 5.1": "grok-4.7", "fable 5.1": "grok-4.7", "fable 5": "grok-4.7",
+    "muse-spark-open": "muse-spark-open", "muse spark open": "muse-spark-open", "muse": "muse-spark-open", "🎨 muse spark open": "muse-spark-open",
+    "claude-opus-5-5": "muse-spark-open", "claude-opus-5.5": "muse-spark-open", "opus 5.5": "muse-spark-open", "claude-opus-5": "muse-spark-open", "opus 5": "muse-spark-open",
+    "claude-sonnet-5-5": "claude-sonnet-5-5", "claude-sonnet-5.5": "claude-sonnet-5-5", "claude sonnet 5.5": "claude-sonnet-5-5", "🎭 claude sonnet 5.5": "claude-sonnet-5-5", "claude-sonnet-5": "claude-sonnet-5-5", "claude sonnet 5": "claude-sonnet-5-5", "sonnet 5": "claude-sonnet-5-5",
+    "gemini-4-argon": "gemini-4-argon", "gemini 4 argon": "gemini-4-argon", "gemini 4": "gemini-4-argon", "💎 gemini 4 argon": "gemini-4-argon",
+    "gpt-6-astra": "gemini-4-argon", "gpt-6 astra": "gemini-4-argon", "gpt 6 astra": "gemini-4-argon", "astra": "gemini-4-argon", "⚡ gpt-6 astra": "gemini-4-argon",
+    "gpt-6.1-sol": "gpt-6.1-sol", "gpt 6.1 sol": "gpt-6.1-sol", "gpt-6.1": "gpt-6.1-sol", "☀️ gpt-6.1 sol": "gpt-6.1-sol", "gpt-5.6-sol": "gpt-6.1-sol", "gpt 5.6 sol": "gpt-6.1-sol", "gpt 5.6": "gpt-6.1-sol",
+    "kimi-k3.1-pro": "kimi-k3.1-pro", "kimi k3.1 pro": "kimi-k3.1-pro", "kimi 3.1": "kimi-k3.1-pro", "🚀 kimi k3.1 pro": "kimi-k3.1-pro", "kimi-k3": "kimi-k3.1-pro", "kimi k3": "kimi-k3.1-pro", "k3": "kimi-k3.1-pro",
     "gpt-5.5": "gpt-5.5", "gpt 5.5": "gpt-5.5", "gpt5.5": "gpt-5.5",
     "claude-opus-4-8": "claude-opus-4-8", "claude opus 4.8": "claude-opus-4-8", "claude opus 4.8 pro": "claude-opus-4-8",
 }
@@ -109,13 +110,12 @@ MODEL_ALIASES = {
 # ── عقود الموديلات (CONTRACTS) — SSOT موحد ──────────────────────────────
 # model_slug → (models_list, use_model, ai_chat_model, inject_msg_id)
 CONTRACTS = {
-    "claude-fable-5-1":  (["gpt-4.1"],          "claude-fable-5-1",  None,              True),
-    "claude-opus-5-5": (["gpt-4.1"],          "claude-opus-5-5", None,              True),
-    "claude-opus-5":   (["gpt-4.1"],          "claude-opus-5-5", None,              True),
-    "claude-sonnet-5": (["claude-sonnet-5"],  "claude-sonnet-5", "claude-sonnet-5", True),
-    "gpt-6-astra":     (["gpt-4.1"],          "gpt-6-astra",     None,              True),
-    "gpt-5.6-sol":     (["gpt-5.6-sol"],      "gpt-5.6-sol",     "gpt-5.6-sol",     True),
-    "kimi-k3":         (["kimi-k3"],          "kimi-k3",         "kimi-k3",         True),
+    "grok-4.7":          (["grok-4.7"],          "grok-4.7",          None, True),
+    "muse-spark-open":   (["muse-spark-open"],   "muse-spark-open",   None, True),
+    "claude-sonnet-5-5": (["claude-sonnet-5-5"], "claude-sonnet-5-5", None, True),
+    "gemini-4-argon":    (["gemini-4-argon"],    "gemini-4-argon",    None, True),
+    "gpt-6.1-sol":       (["gpt-6.1-sol"],       "gpt-6.1-sol",       None, True),
+    "kimi-k3.1-pro":     (["kimi-k3.1-pro"],     "kimi-k3.1-pro",     None, True),
 }
 
 def is_protected(model: str | None) -> bool:

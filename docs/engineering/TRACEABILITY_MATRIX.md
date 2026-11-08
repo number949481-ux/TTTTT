@@ -114,3 +114,24 @@
 | **FEAT-CS-39** | `TSK-3703` | `copy_project_settings_to_new_project`: نسخ GitHub repo/branch/token (مخزن المشروع فقط `allow_env_fallback=False`) + الموديل + برومبت الاستئناف | `01.30_telegram_gen_bridge.py` | `TestCopyProjectSettings` | هذا الـ commit | ✅ مغلقة |
 | **FEAT-CS-40** | `TSK-3704` | واجهة تيليجرام: زر «📋 نسخ إعدادات من مشروع آخر» + لوحة `cpysrc:` + الملخص + 3 callbacks | `01.30_telegram_gen_bridge.py` | `TestCopySettingsKeyboard` + `TestHandlersIntegration` | هذا الـ commit | ✅ مغلقة |
 | **FEAT-CS-41** | `TSK-3705..3706` | حزمة 24 اختباراً + مواءمة scripts/tests/bridge_refactor بتطابق بايت + بوابة 195/195 | البوت + `scripts/` + `tests/` | `tests/test_p19_copy_settings.py` (24/24) + Gate 195/195 Exit 0 | هذا الـ commit | ✅ مغلقة |
+
+---
+
+## 🛡️ مصفوفة تتبع MAINT-10 — تصليب الـ Vault ودورة حياة الحسابات (S79)
+
+| Feature ID | Task # | البيان الهندسي | Source File | Test File | Commit Hash | الحالة |
+|:---:|:---:|---|---|---|:---:|:---:|
+| **FEAT-M10-01** | `MAINT-10` | منع نقل الحسابات للـ Vault في أخطاء FORBIDDEN و 403 وحصر المعزل بنفاد الرصيد الصريح | `01.33_telegram_gen_bridge.py` | `tests/test_p59_maint10_lifecycle.py` | DEC-041 | ✅ مغلقة |
+| **FEAT-M10-02** | `MAINT-10` | فلتر الرصيد الأوفلاين < 100 مع استثناء الحسابات منتهية التبريد (LOCKOUT-FIX) | `01.33_telegram_gen_bridge.py` | `tests/test_p59_maint10_lifecycle.py` | DEC-041 | ✅ مغلقة |
+| **FEAT-M10-03** | `MAINT-10` | حفظ الرصيد الحقيقي وعدم تصفير رصيد الحسابات للأعطال المؤقتة + استعادة 29 ساعة | `01.33_telegram_gen_bridge.py` | `tests/test_p59_maint10_lifecycle.py` | DEC-041 | ✅ مغلقة |
+
+---
+
+## 🛡️ مصفوفة تتبع MAINT-11 — بوابة فحص الصلاحيات السريعة 403 وحماية الأسطول (S80)
+
+| Feature ID | Task # | البيان الهندسي | Source File | Test File | Commit Hash | الحالة |
+|:---:|:---:|---|---|---|:---:|:---:|
+| **FEAT-M11-01** | `MAINT-11` | فحص استباقي pre-flight لـ HTTP 403 / status: -13 بـ curl_cffi Chrome 124 مع بصمة الحساب | `01.33_telegram_gen_bridge.py` | `tests/test_p60_maint11_private_project_gate.py` | DEC-042 | ✅ مغلقة |
+| **FEAT-M11-02** | `MAINT-11` | حجب بطاقة البدء الكاذبة F-9 على carry_pid و orig_pid قبل on_project_start_callback | `01.33_telegram_gen_bridge.py` | `tests/test_p60_maint11_private_project_gate.py` | DEC-042 | ✅ مغلقة |
+| **FEAT-M11-03** | `MAINT-11` | كسر حلقة تدوير الحسابات فوراً (Zero Failover) وتبريد 300ث موضعي للحساب البريء بلا نقل للـ Vault | `01.33_telegram_gen_bridge.py` | `tests/test_p60_maint11_private_project_gate.py` | DEC-042 | ✅ مغلقة |
+| **FEAT-M11-04** | `MAINT-11` | توقيع خماسي صريح (None, 'FORBIDDEN', None, None, error_msg) وخط دفاع ثانٍ استدراكي حقيقي | `01.33_telegram_gen_bridge.py` | `tests/test_p60_maint11_private_project_gate.py` | DEC-042 | ✅ مغلقة |

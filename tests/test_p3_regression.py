@@ -54,12 +54,12 @@ class TestP3RegressionSnapshots(unittest.TestCase):
 
     def test_ultra_flag_untouched_by_adapter(self):
         """التحقق من أن flag الـ Ultra mode يعمل كما هو دون مساس من الـ adapter"""
-        payload = {"models": ["gpt-4.1"], "type": "super_agent"}
-        payload = apply_contract(payload, "claude-fable-5-1", "m1")
+        payload = {"models": ["grok-4.7"], "type": "code_sandbox"}
+        payload = apply_contract(payload, "grok-4.7", "m1")
         # Simulator of ultra flag injection in engine:
         payload["ultra_mode"] = True
         self.assertTrue(payload.get("ultra_mode"))
-        self.assertEqual(payload["use_model"], "claude-fable-5-1")
+        self.assertEqual(payload["use_model"], "grok-4.7")
 
     def test_continue_chat_payload_identical(self):
         """التحقق من أن مفاتيح الـ Continue والـ Force لا تتأثر بالـ Adapter"""
@@ -75,42 +75,49 @@ class TestP3RegressionSnapshots(unittest.TestCase):
         self.assertTrue(payload["speed_mode"])
 
     # ════════════════════════════════════════════════════════════════
-    # Category B: Expected Contract Changes (الموديلات الـ 5 المصححة)
+    # Category B: Expected Contract Changes (الموديلات الـ 6 بنمط code_sandbox)
     # ════════════════════════════════════════════════════════════════
 
-    def test_fable_payload_matches_new_contract(self):
-        payload = apply_contract({"type": "super_agent"}, "claude-fable-5-1", "msg_fable")
-        self.assertEqual(payload["models"], ["gpt-4.1"])
-        self.assertEqual(payload["use_model"], "claude-fable-5-1")
-        self.assertEqual(payload["client_message_id"], "msg_fable")
+    def test_grok_payload_matches_new_contract(self):
+        payload = apply_contract({"type": "code_sandbox"}, "grok-4.7", "msg_grok")
+        self.assertEqual(payload["models"], ["grok-4.7"])
+        self.assertEqual(payload["use_model"], "grok-4.7")
+        self.assertEqual(payload["client_message_id"], "msg_grok")
         self.assertNotIn("ai_chat_model", payload)
 
-    def test_sonnet5_payload_matches_new_contract(self):
-        payload = apply_contract({"type": "super_agent"}, "claude-sonnet-5", "msg_sonnet")
-        self.assertEqual(payload["models"], ["claude-sonnet-5"])
-        self.assertEqual(payload["use_model"], "claude-sonnet-5")
-        self.assertEqual(payload["ai_chat_model"], "claude-sonnet-5")
+    def test_sonnet55_payload_matches_new_contract(self):
+        payload = apply_contract({"type": "code_sandbox"}, "claude-sonnet-5-5", "msg_sonnet")
+        self.assertEqual(payload["models"], ["claude-sonnet-5-5"])
+        self.assertEqual(payload["use_model"], "claude-sonnet-5-5")
+        self.assertNotIn("ai_chat_model", payload)
         self.assertEqual(payload["client_message_id"], "msg_sonnet")
 
-    def test_gpt56_sol_matches_new_contract(self):
-        payload = apply_contract({"type": "super_agent"}, "gpt-5.6-sol", "msg_sol")
-        self.assertEqual(payload["models"], ["gpt-5.6-sol"])
-        self.assertEqual(payload["use_model"], "gpt-5.6-sol")
-        self.assertEqual(payload["ai_chat_model"], "gpt-5.6-sol")
+    def test_gpt61_sol_matches_new_contract(self):
+        payload = apply_contract({"type": "code_sandbox"}, "gpt-6.1-sol", "msg_sol")
+        self.assertEqual(payload["models"], ["gpt-6.1-sol"])
+        self.assertEqual(payload["use_model"], "gpt-6.1-sol")
+        self.assertNotIn("ai_chat_model", payload)
         self.assertEqual(payload["client_message_id"], "msg_sol")
 
-    def test_kimi_k3_matches_new_contract(self):
-        payload = apply_contract({"type": "super_agent"}, "kimi-k3", "msg_kimi")
-        self.assertEqual(payload["models"], ["kimi-k3"])
-        self.assertEqual(payload["use_model"], "kimi-k3")
-        self.assertEqual(payload["ai_chat_model"], "kimi-k3")
+    def test_kimi_k31_matches_new_contract(self):
+        payload = apply_contract({"type": "code_sandbox"}, "kimi-k3.1-pro", "msg_kimi")
+        self.assertEqual(payload["models"], ["kimi-k3.1-pro"])
+        self.assertEqual(payload["use_model"], "kimi-k3.1-pro")
+        self.assertNotIn("ai_chat_model", payload)
         self.assertEqual(payload["client_message_id"], "msg_kimi")
 
-    def test_opus5_matches_new_contract(self):
-        payload = apply_contract({"type": "super_agent"}, "claude-opus-5", "msg_opus")
-        self.assertEqual(payload["models"], ["claude-opus-5"])
-        self.assertEqual(payload["use_model"], "claude-opus-5")
-        self.assertEqual(payload["client_message_id"], "msg_opus")
+    def test_muse_matches_new_contract(self):
+        payload = apply_contract({"type": "code_sandbox"}, "muse-spark-open", "msg_muse")
+        self.assertEqual(payload["models"], ["muse-spark-open"])
+        self.assertEqual(payload["use_model"], "muse-spark-open")
+        self.assertEqual(payload["client_message_id"], "msg_muse")
+        self.assertNotIn("ai_chat_model", payload)
+
+    def test_gemini_argon_matches_new_contract(self):
+        payload = apply_contract({"type": "code_sandbox"}, "gemini-4-argon", "msg_gemini")
+        self.assertEqual(payload["models"], ["gemini-4-argon"])
+        self.assertEqual(payload["use_model"], "gemini-4-argon")
+        self.assertEqual(payload["client_message_id"], "msg_gemini")
         self.assertNotIn("ai_chat_model", payload)
 
     # ════════════════════════════════════════════════════════════════
@@ -127,10 +134,10 @@ class TestP3RegressionSnapshots(unittest.TestCase):
         """التحقق من أن المحرك الأساسي المحمل قادر على معالجة عقود الموديلات"""
         engine = bridge.get_genspark_engine()
         # Verify engine can construct payload correctly with apply_contract
-        test_payload = {"models": ["placeholder"], "type": "super_agent"}
-        result = apply_contract(test_payload, "claude-sonnet-5", "m_eng")
-        self.assertEqual(result["use_model"], "claude-sonnet-5")
-        self.assertEqual(result["ai_chat_model"], "claude-sonnet-5")
+        test_payload = {"models": ["placeholder"], "type": "code_sandbox"}
+        result = apply_contract(test_payload, "grok-4.7", "m_eng")
+        self.assertEqual(result["use_model"], "grok-4.7")
+        self.assertNotIn("ai_chat_model", result)
 
 
 if __name__ == "__main__":

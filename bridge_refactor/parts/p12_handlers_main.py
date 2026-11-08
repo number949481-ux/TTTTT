@@ -1,6 +1,6 @@
 """[VERBATIM SLICE] p12_handlers_main
-المصدر: 01.33_telegram_gen_bridge.py — الأسطر 8249..9802
-المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P42: كتلة Intent Guard & Safe Project Creation — AWAITING_PROJECT_CONFIRMATION + الثوابت top-level + classify_idle_text_intent (strong/ambiguous — صياغة فقط) + build_project_confirmation_keyboard (nonce لا نص — حد 64 بايت) + render_project_confirmation_card + handle_idle_intent_guard (البديل الوحيد للـ Fallback المحذوف — صفر Mutation) + forward_pending_prompt_after_wizard (Smart Prompt Forwarding بعد اكتمال الـ Wizard) + معالج pconf:yes/no:<nonce> ككتلة معزولة مبكرة (Anti-Stale + Idempotent Double-Click) + فرع حالة AWAITING_PROJECT_CONFIRMATION (نص جديد يُبطل البطاقة + Edge 6: رابط مشروع يفوز عبر منطق P41) + حمل pending_prompt في AWAITING_NEW_PROJECT_NAME + استدعاء forward في موضعي finalize | P41: handle_prompt_context_collision — حارس تصادم السياق النشط في فرعي AWAITING_NEW_PROMPT/AWAITING_CONT_PROMPT (سياق A نشط + رابط B ⟔ إغلاق السياق وتوجيه شرعي بدل التنفيذ الخطأ) + رفض صريح للرابط المشوّه في AWAITING_CONT_URL والفرع العام + عميل getUpdates = requests النقية حصرياً في run_telegram_polling (Clean Shutdown — curl_cffi باقٍ بكل مسارات Genspark) + KeyboardInterrupt/SystemExit يصعد من داخل الحلقة + خروج نظيف برسالة + sys.exit(0) | P37: معالج cmd:decline_retry:{key} — فتح بطاقة ملخص الاستئناف فوراً عبر start_project_resume_from_key + AWAITING_PROJECT_RESUME_DECISION بسياق نظيف + fallback مهذب عند الفشل | P35: معالجا cmd:decline_retry (إرشاد إعادة الصياغة — fallback بلا مفتاح) + cmd:decline_dashboard (لوحة التحكم — مكافئ حرفياً لـ cmd:dashboard بفرع منفصل) | P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place | P28: كتلة Document Ingestion المعزولة — .txt/.md → text بعد بوابة الصلاحيات وقبل /start مع دمج Caption ورفض ودي للامتداد/الحجم | P32: معالجات cmd:account_pwd_lookup/acc_page:/acc_view:/acc_cancel + المسار اليدوي AWAITING_ACCOUNT_PASSWORD_LOOKUP كأول فحص في سلسلة الحالات | P33: فرع cmd:dashboard المكافئ حرفياً لـ cmd:show_dashboard | P43: معالجا cmd:new_proj_fast_no/yes لخطوة Wizard وضع الملفات (pending_fast_mode في state) + عرض الخطوة فقط عند تخطي GitHub (D3) + معالج pset:fastmode (toggle bool حصراً) + معالج pctl:fetch — التنزيل المتأخر بالدوال القائمة مع رسالة فشل صريحة للجلسة المنتهية (D6))
+المصدر: 01.33_telegram_gen_bridge.py — الأسطر 8791..10552
+المحتوى: get_main_keyboard + handle_telegram_update + offset + polling + main (P42: كتلة Intent Guard & Safe Project Creation — AWAITING_PROJECT_CONFIRMATION + الثوابت top-level + classify_idle_text_intent (strong/ambiguous — صياغة فقط) + build_project_confirmation_keyboard (nonce لا نص — حد 64 بايت) + render_project_confirmation_card + handle_idle_intent_guard (البديل الوحيد للـ Fallback المحذوف — صفر Mutation) + forward_pending_prompt_after_wizard (Smart Prompt Forwarding بعد اكتمال الـ Wizard) + معالج pconf:yes/no:<nonce> ككتلة معزولة مبكرة (Anti-Stale + Idempotent Double-Click) + فرع حالة AWAITING_PROJECT_CONFIRMATION (نص جديد يُبطل البطاقة + Edge 6: رابط مشروع يفوز عبر منطق P41) + حمل pending_prompt في AWAITING_NEW_PROJECT_NAME + استدعاء forward في موضعي finalize | P41: handle_prompt_context_collision — حارس تصادم السياق النشط في فرعي AWAITING_NEW_PROMPT/AWAITING_CONT_PROMPT (سياق A نشط + رابط B ⟔ إغلاق السياق وتوجيه شرعي بدل التنفيذ الخطأ) + رفض صريح للرابط المشوّه في AWAITING_CONT_URL والفرع العام + عميل getUpdates = requests النقية حصرياً في run_telegram_polling (Clean Shutdown — curl_cffi باقٍ بكل مسارات Genspark) + KeyboardInterrupt/SystemExit يصعد من داخل الحلقة + خروج نظيف برسالة + sys.exit(0) | P37: معالج cmd:decline_retry:{key} — فتح بطاقة ملخص الاستئناف فوراً عبر start_project_resume_from_key + AWAITING_PROJECT_RESUME_DECISION بسياق نظيف + fallback مهذب عند الفشل | P35: معالجا cmd:decline_retry (إرشاد إعادة الصياغة — fallback بلا مفتاح) + cmd:decline_dashboard (لوحة التحكم — مكافئ حرفياً لـ cmd:dashboard بفرع منفصل) | P17: بوابة is_chat_allowed للمسارين | P19: معالجات cmd:resume_copy_settings + cpysrc: | P25: معالجات cancel_prompt/cancel_exec/cancel_abort | P26: معالجات pdel_prompt/pdel_abort/pdel_exec ككتلة معزولة مبكرة | P27: معالجات cmd:list_projects/plist:page:/plist:noop — تصفح الصفحات In-Place | P28: كتلة Document Ingestion المعزولة — .txt/.md → text بعد بوابة الصلاحيات وقبل /start مع دمج Caption ورفض ودي للامتداد/الحجم | P32: معالجات cmd:account_pwd_lookup/acc_page:/acc_view:/acc_cancel + المسار اليدوي AWAITING_ACCOUNT_PASSWORD_LOOKUP كأول فحص في سلسلة الحالات | P33: فرع cmd:dashboard المكافئ حرفياً لـ cmd:show_dashboard | P43: معالجا cmd:new_proj_fast_no/yes لخطوة Wizard وضع الملفات (pending_fast_mode في state) + عرض الخطوة فقط عند تخطي GitHub (D3) + معالج pset:fastmode (toggle bool حصراً) + معالج pctl:fetch — التنزيل المتأخر بالدوال القائمة مع رسالة فشل صريحة للجلسة المنتهية (D6) | MAINT-9/D62–D70: ثوابت LIVE_CHECK_* + live_check_paths/read_live_check_state/is_live_check_running/live_check_remaining/launch_live_checker/request_live_check_stop/handle_live_check_callback + كتلة cmd:live_check/lc_* المعزولة المبكرة قبل P25 — المشغّل bridge_refactor/live_account_checker.py عملية مستقلة)
 ⚠️ ممنوع التعديل اليدوي — يُعاد توليده عبر scripts/rebuild_refactor.py
 """
 # ══════════════════════════════════════════════════════════════
@@ -152,6 +152,206 @@ def handle_prompt_context_collision(chat_id: int, state: dict, text: str, action
     return True
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 🔍 [MAINT-9/D62–D70] فحص وتنشيط الحسابات لايف — المساعدون (الحقيقة في الملفات، لا في user_state)
+# الملفات بجوار accounts_genspark.json (الأب عادةً): live_check.busy / live_check.stop /
+# live_check_state.json / live_check_queue.json / genspark_rotation_checkpoint.json (05.02)
+# المشغّل: bridge_refactor/live_account_checker.py — عملية مستقلة (Popen) لا تعطّل البوت ثانية (فويس 181)
+# ══════════════════════════════════════════════════════════════════════════
+LIVE_CHECK_BUSY_FILENAME = "live_check.busy"
+LIVE_CHECK_STOP_FILENAME = "live_check.stop"
+LIVE_CHECK_STATE_FILENAME = "live_check_state.json"
+LIVE_CHECK_CHECKPOINT_FILENAME = "genspark_rotation_checkpoint.json"   # = Config.ROTATION_CHECKPOINT_FILE في 05.02
+LIVE_CHECK_BUSY_ORPHAN_S = 900.0                                        # = LIVE_BUSY_ORPHAN_S في main_upgrade.py
+LIVE_CHECK_RUNNER = SCRIPT_DIR / "bridge_refactor" / "live_account_checker.py"
+LIVE_CHECK_LOG_NAME = "live_check.log"
+
+
+def live_check_paths() -> dict:
+    """مسارات ملفات الفحص اللايف بجوار الملف الأساسي (أو الأب افتراضياً إن غاب الأساسي)"""
+    primary = get_accounts_file_path()
+    folder = primary.parent if primary else SCRIPT_DIR.parent
+    return {
+        "primary": primary,
+        "folder": folder,
+        "busy": folder / LIVE_CHECK_BUSY_FILENAME,
+        "stop": folder / LIVE_CHECK_STOP_FILENAME,
+        "state": folder / LIVE_CHECK_STATE_FILENAME,
+        "checkpoint": folder / LIVE_CHECK_CHECKPOINT_FILENAME,
+    }
+
+
+def read_live_check_state() -> dict:
+    """قراءة live_check_state.json بأمان (قد يكتبه المشغّل الآن ذرياً) — {} عند الغياب/التلف"""
+    try:
+        p = live_check_paths()["state"]
+        if p.exists():
+            data = json.loads(p.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        pass
+    return {}
+
+
+def is_live_check_running(now: float | None = None) -> bool:
+    """علامة «مشغول» موجودة وحديثة (heartbeat ≤ 15 دقيقة) — أقدم = يتيمة (قتل عنيف) وتُعامل كغير جارية"""
+    try:
+        busy = live_check_paths()["busy"]
+        if not busy.exists():
+            return False
+        age = (time.time() if now is None else now) - busy.stat().st_mtime
+        return age < LIVE_CHECK_BUSY_ORPHAN_S
+    except OSError:
+        return False
+
+
+def live_check_remaining() -> dict:
+    """لقطة الدورة الحالية: total (الأساسي) / checked (بصمات الشيك بوينت الموجودة في الأساسي) / remaining.
+    البصمة = sha256(email.strip().lower()) — مطابقة حرفياً لـ RotationCheckpoint.key في 05.02؛ اليتيمة تُهمل."""
+    paths = live_check_paths()
+    emails = [str(a.get("email") or "").strip().lower() for a in read_accounts_safe() if a.get("email")]
+    live_keys = {hashlib.sha256(e.encode("utf-8")).hexdigest() for e in emails}
+    checked_keys: set = set()
+    cycle_no = 1
+    try:
+        if paths["checkpoint"].exists():
+            raw = json.loads(paths["checkpoint"].read_text(encoding="utf-8"))
+            if isinstance(raw, dict) and isinstance(raw.get("checked"), list):
+                checked_keys = {str(h) for h in raw["checked"]} & live_keys
+                cycle_no = int(raw.get("cycle_no") or 1)
+    except Exception:
+        checked_keys = set()
+    total = len(live_keys)
+    checked = len(checked_keys)
+    return {"total": total, "checked": checked, "remaining": max(0, total - checked), "cycle_no": cycle_no}
+
+
+def launch_live_checker(chat_id: int, mode: str) -> dict:
+    """يرسل رسالة اللايف أولاً (ليحصل على message_id) ثم يطلق المشغّل كعملية مستقلة.
+    يعيد {"ok", "message_id", "pid", "error"}. حارس الضغط المزدوج: busy يُفحص قبل Popen."""
+    mode = "fresh" if str(mode).lower() in ("fresh", "reset") else "resume"
+    if is_live_check_running():
+        return {"ok": False, "message_id": None, "pid": None, "error": "ALREADY_RUNNING"}
+    if not LIVE_CHECK_RUNNER.exists():
+        log_event("error", f"[MAINT-9] المشغّل غير موجود: {LIVE_CHECK_RUNNER.name}")
+        return {"ok": False, "message_id": None, "pid": None, "error": "RUNNER_MISSING"}
+    snap = live_check_remaining()
+    first_text = (
+        "🔍 <b>فحص وتنشيط الحسابات لايف — جارٍ البدء…</b>\n"
+        f"📊 التقدم: <b>0</b> من <b>{snap['remaining'] if mode == 'resume' else snap['total']}</b>\n"
+        "⏳ أول حساب خلال لحظات — هذه الرسالة تتحدث مع كل حساب."
+    )
+    sent = send_telegram_message_detailed(chat_id, first_text, reply_markup=build_live_check_running_keyboard())
+    message_id = sent.get("message_id") if isinstance(sent, dict) else None
+    cmd = [sys.executable, str(LIVE_CHECK_RUNNER), "--chat-id", str(int(chat_id)),
+           "--message-id", str(int(message_id or 0)), "--mode", mode]
+    logs_dir = SCRIPT_DIR / "logs"
+    popen_kwargs: dict = {"cwd": str(SCRIPT_DIR), "stdin": subprocess.DEVNULL}
+    if sys.platform.startswith("win"):
+        popen_kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    try:
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        log_fh = open(logs_dir / LIVE_CHECK_LOG_NAME, "a", encoding="utf-8", errors="replace")
+        popen_kwargs["stdout"] = log_fh
+        popen_kwargs["stderr"] = subprocess.STDOUT
+        proc = subprocess.Popen(cmd, **popen_kwargs)
+        log_fh.close()  # الابن ورث المقبض؛ الأب لا يحتاجه
+        log_event("info", f"[MAINT-9] أُطلق الفحص اللايف pid={proc.pid} mode={mode} msg={message_id}")
+        return {"ok": True, "message_id": message_id, "pid": proc.pid, "error": ""}
+    except Exception as e:
+        log_event("error", f"[MAINT-9] فشل إطلاق المشغّل: {type(e).__name__}: {e}")
+        if message_id:
+            edit_telegram_message_text(chat_id, message_id, f"❌ <b>تعذر إطلاق الفحص اللايف</b>: {html_escape(type(e).__name__)}", reply_markup=None)
+        return {"ok": False, "message_id": message_id, "pid": None, "error": f"{type(e).__name__}"}
+
+
+def request_live_check_stop() -> bool:
+    """كتابة راية الإيقاف live_check.stop (المشغّل يستطلعها بين الحسابات وداخل الفاصل المجزّأ)"""
+    try:
+        live_check_paths()["stop"].write_text(
+            json.dumps({"requested_at": datetime.now().isoformat(timespec="seconds"), "by": "bot31"}), encoding="utf-8"
+        )
+        return True
+    except OSError as e:
+        log_event("error", f"[MAINT-9] تعذر كتابة راية الإيقاف: {type(e).__name__}")
+        return False
+
+
+def handle_live_check_callback(chat_id: int, data: str, msg_info: dict) -> None:
+    """آلة الحالات (SPEC §5): cmd:live_check / lc_pick:* / lc_go:* / lc_stop / lc_stop_yes / lc_stop_no / lc_cancel.
+    عديمة الحالة: الحقيقة في الملفات؛ ضغطة قديمة تُجاب بأدب. شاشة تأكيد الإيقاف رسالة جديدة (Q-GO-5)."""
+    card_msg_id = msg_info.get("message_id")
+    if data == LIVE_CHECK_CALLBACK:
+        if is_live_check_running():
+            st = read_live_check_state()
+            send_telegram_message(chat_id, render_live_check_prompt_text("running", st), reply_markup=build_live_check_running_keyboard())
+            return
+        snap = live_check_remaining()
+        if snap["total"] <= 0:
+            send_telegram_message(chat_id, render_live_check_prompt_text("none", snap), reply_markup=get_main_keyboard(chat_id))
+            return
+        if snap["remaining"] > 0 and snap["checked"] > 0:
+            send_telegram_message(chat_id, render_live_check_prompt_text("choice", snap), reply_markup=build_live_check_choice_keyboard())
+            return
+        send_telegram_message(chat_id, render_live_check_prompt_text("fresh", snap), reply_markup=build_live_check_confirm_keyboard("fresh"))
+        return
+    if data.startswith("lc_pick:"):
+        kind = "resume" if data.endswith(":resume") else "reset"
+        snap = live_check_remaining()
+        text = render_live_check_prompt_text(kind, snap)
+        if card_msg_id:
+            edit_telegram_message_text(chat_id, card_msg_id, text, reply_markup=build_live_check_confirm_keyboard(kind))
+        else:
+            send_telegram_message(chat_id, text, reply_markup=build_live_check_confirm_keyboard(kind))
+        return
+    if data.startswith("lc_go:"):
+        kind = data.partition(":")[2].strip().lower()
+        if card_msg_id:
+            edit_telegram_message_reply_markup(chat_id, card_msg_id, None)   # منع الضغط المزدوج على الأخضر
+        if is_live_check_running():
+            send_telegram_message(chat_id, "ℹ️ فحص لايف يعمل بالفعل — لا يُطلق فحص ثانٍ.", reply_markup=build_live_check_running_keyboard())
+            return
+        res = launch_live_checker(chat_id, "fresh" if kind in ("fresh", "reset") else "resume")
+        if not res.get("ok"):
+            err = res.get("error") or "UNKNOWN"
+            if err == "ALREADY_RUNNING":
+                send_telegram_message(chat_id, "ℹ️ فحص لايف يعمل بالفعل — لا يُطلق فحص ثانٍ.", reply_markup=build_live_check_running_keyboard())
+            elif err == "RUNNER_MISSING":
+                send_telegram_message(chat_id, "❌ المشغّل bridge_refactor/live_account_checker.py غير موجود بجوار البوت.", reply_markup=get_main_keyboard(chat_id))
+            else:
+                send_telegram_message(chat_id, f"❌ تعذر إطلاق الفحص اللايف ({html_escape(str(err))}).", reply_markup=get_main_keyboard(chat_id))
+        return
+    if data == "lc_stop":
+        if not is_live_check_running():
+            send_telegram_message(chat_id, "ℹ️ لا يوجد فحص لايف جارٍ الآن.", reply_markup=get_main_keyboard(chat_id))
+            return
+        # Q-GO-5: رسالة جديدة مستقلة — رسالة اللايف يعيد المشغّل كتابتها كل حساب فلا نُعدّلها هنا
+        send_telegram_message(chat_id, render_live_check_prompt_text("stop_confirm"), reply_markup=build_live_check_stop_confirm_keyboard())
+        return
+    if data == "lc_stop_yes":
+        if not is_live_check_running():
+            text = "ℹ️ الفحص انتهى بالفعل — لا شيء لإيقافه."
+        elif request_live_check_stop():
+            text = render_live_check_prompt_text("stop_ack")
+        else:
+            text = "❌ تعذر كتابة راية الإيقاف — راجع صلاحيات المجلد."
+        if card_msg_id:
+            edit_telegram_message_text(chat_id, card_msg_id, text, reply_markup=None)
+        else:
+            send_telegram_message(chat_id, text)
+        return
+    if data == "lc_stop_no":
+        if card_msg_id:
+            edit_telegram_message_text(chat_id, card_msg_id, "🟢 الفحص مستمر.", reply_markup=None)
+        return
+    if data == "lc_cancel":
+        if card_msg_id:
+            edit_telegram_message_reply_markup(chat_id, card_msg_id, None)
+        send_telegram_message(chat_id, render_live_check_prompt_text("cancelled"), reply_markup=get_main_keyboard(chat_id))
+        return
+    send_telegram_message(chat_id, "ℹ️ زر فحص لايف غير معروف أو منتهٍ.", reply_markup=get_main_keyboard(chat_id))
+
+
 def handle_telegram_update(update: dict):
     if "callback_query" in update:
         cb = update["callback_query"]
@@ -163,6 +363,14 @@ def handle_telegram_update(update: dict):
         # [P17] مسار callback: نحكم بالجروب أو بهوية الضاغط نفسه (cb.from)
         if not is_chat_allowed(chat_id, (cb.get("from") or {}).get("id")):
             send_telegram_message(chat_id, "⛔ غير مصرح لك باستخدام هذا البوت.")
+            return
+
+        # ══════════════════════════════════════════════════════
+        # 🔍 [MAINT-9] فحص وتنشيط الحسابات لايف — كتلة معزولة مبكرة (نمط P25)
+        # 9 callbacks: cmd:live_check + lc_* — الحقيقة في الملفات، لا تلامس user_state ولا السلسلة أدناه
+        # ══════════════════════════════════════════════════════
+        if data == LIVE_CHECK_CALLBACK or data.startswith("lc_"):
+            handle_live_check_callback(chat_id, data, msg_info)
             return
 
         # ══════════════════════════════════════════════════════

@@ -128,7 +128,6 @@ def _iso_days_ago(days, hours=0):
 def make_manager(tmp_path, **overrides):
     kwargs = dict(
         primary_path=tmp_path / "accounts_genspark.json",
-        success_path=tmp_path / "accounts_success.json",
         quarantine_path=tmp_path / "accounts_delayed_gifts_credits.json",
         failed_path=tmp_path / "accounts_failed.json",
         dead_path=tmp_path / "dead_accounts.json",
@@ -412,9 +411,9 @@ class TestRouting:
         primary = {a["email"] for a in _read(mgr.primary_path)}
         assert primary == {"fresh@x.com", "net@x.com"}  # stale+dead cut; AUTH_FAILED untouched
 
-        success = _read(mgr.success_path)
-        assert [a["email"] for a in success] == ["fresh@x.com"]
-        assert success[0]["balance"] == 150
+        assert not (tmp_path / "accounts_success.json").exists()  # MAINT-4-E: no success file
+        fresh = next(a for a in _read(mgr.primary_path) if a["email"] == "fresh@x.com")
+        assert fresh["balance"] == 150
 
         quarantine = _read(mgr.quarantine_path)
         assert [a["email"] for a in quarantine] == ["stale@x.com"]
@@ -438,7 +437,7 @@ class TestRouting:
         result = mgr.run_quarantine(dry_run=True)
         assert result["scanned"] == 4
         assert mgr.primary_path.read_bytes() == before
-        for p in (mgr.success_path, mgr.quarantine_path, mgr.failed_path, mgr.dead_path):
+        for p in (tmp_path / "accounts_success.json", mgr.quarantine_path, mgr.failed_path, mgr.dead_path):
             assert not p.exists()
 
     def test_already_classified_accounts_are_skipped(self, tmp_path, monkeypatch):
@@ -461,14 +460,14 @@ class TestRouting:
         mgr = make_manager(tmp_path)
         _seed_primary(mgr, list(table))
         mgr.run_quarantine()
-        assert [a["email"] for a in _read(mgr.success_path)] == ["b@x.com", "c@x.com", "a@x.com"]
         assert [a["email"] for a in _read(mgr.primary_path)] == ["b@x.com", "c@x.com", "a@x.com"]
+        assert not (tmp_path / "accounts_success.json").exists()  # MAINT-4-E
 
     def test_empty_primary_returns_error(self, tmp_path, monkeypatch):
         _route_by_email(monkeypatch, ROUTE_TABLE)
         mgr = make_manager(tmp_path)
         assert mgr.run_quarantine() == {"error": "No accounts found"}
-        assert not mgr.success_path.exists()
+        assert not (tmp_path / "accounts_success.json").exists()
 
 
 # ─────────────────────────────────────────────────────────────────────────────

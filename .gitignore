@@ -8,6 +8,20 @@ __pycache__/
 
 # Secrets & Accounts (Strict Protection)
 accounts*.json
+# [MAINT-4-B B-0 / D37] سجل الحركات ببيانات كاملة + أقفال + نسخ احتياطية تحوي حسابات — لا تُرفع أبداً
+account_log.jsonl*
+account_log.json*
+*.lock
+*.cooldown_move.bak
+accounts*.json.tmp*
+# [MAINT-6/Q-23] شيك بوينت الكنس الدوار (بصمات sha256 للبريد) — لا يُرفع أبداً
+genspark_rotation_checkpoint.json*
+# [MAINT-9/D68-D69] حالة الفحص اللايف (بصمات + عدادات + أعلام) — لا تُرفع أبداً
+live_check_queue.json*
+live_check_state.json*
+live_check.stop
+*.busy
+*.bak
 *.pem
 *.key
 telegram_bot_token.txt
@@ -24,3 +38,5 @@ cache/
 # Test cache
 .pytest_cache/
 bridge_bot.log
+
+tmp*/
